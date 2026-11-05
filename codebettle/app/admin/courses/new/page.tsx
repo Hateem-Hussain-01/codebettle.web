@@ -1,0 +1,327 @@
+'use client';
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import Button from '@/components/ui/Button';
+import Input from '@/components/ui/Input';
+import Textarea from '@/components/ui/Textarea';
+import Select from '@/components/ui/Select';
+import Card from '@/components/ui/Card';
+import { Save, ArrowLeft, Video, Plus, Trash2, ChevronDown, ChevronUp, X, Calendar, Clock, Info } from 'lucide-react';
+import { getInstructors } from '@/lib/data/users';
+import { courses } from '@/lib/data/courses';
+import Link from 'next/link';
+import toast from 'react-hot-toast';
+
+const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+
+const SCHEDULE_PRESETS: Record<string, string[]> = {
+  'weekdays': ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'],
+  'weekends': ['Saturday', 'Sunday'],
+  'whole-week': ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'],
+  'custom': [],
+};
+
+interface ClassSession { id: string; title: string; description: string; date: string; duration: string; }
+interface Module { id: string; title: string; lessons: ClassSession[]; }
+
+export default function AdminCreateCoursePage() {
+  const router = useRouter();
+  const instructors = getInstructors().filter(i => i.status === 'active');
+  const [saving, setSaving] = useState(false);
+  const [showCurriculum, setShowCurriculum] = useState(false);
+
+  const [form, setForm] = useState({
+    title: '', description: '', longDescription: '',
+    category: 'Web Development', level: 'beginner',
+    price: '', isFree: false,
+    instructorId: instructors[0]?.id || '',
+    zoomLink: '', thumbnail: '',
+    requirements: [''], whatYouLearn: [''],
+  });
+
+  const [schedule, setSchedule] = useState({
+    classTime: '', classDuration: '', scheduleType: 'weekdays' as string,
+    customDays: [] as string[], startDate: '', notes: '',
+  });
+
+  const [modules, setModules] = useState<Module[]>([]);
+  const [openModules, setOpenModules] = useState<Record<string, boolean>>({});
+
+  const set = (field: string) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) =>
+    setForm(f => ({ ...f, [field]: e.target.value }));
+  const setScheduleField = (field: string) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    const val = e.target.value;
+    setSchedule(s => {
+      const next = { ...s, [field]: val };
+      if (field === 'scheduleType' && val !== 'custom') next.customDays = SCHEDULE_PRESETS[val] || [];
+      return next;
+    });
+  };
+  const toggleDay = (day: string) => {
+    setSchedule(s => ({
+      ...s,
+      customDays: s.customDays.includes(day) ? s.customDays.filter(d => d !== day) : [...s.customDays, day],
+    }));
+  };
+
+  const addModule = () => {
+    const id = Date.now().toString();
+    setModules(m => [...m, { id, title: `Module ${m.length + 1}`, lessons: [{ id: `${id}-1`, title: 'Class 1', description: '', date: '', duration: '' }] }]);
+    setOpenModules(o => ({ ...o, [id]: true }));
+  };
+  const removeModule = (id: string) => setModules(ms => ms.filter(m => m.id !== id));
+  const addSession = (modId: string) => {
+    setModules(ms => ms.map(m => m.id === modId
+      ? { ...m, lessons: [...m.lessons, { id: Date.now().toString(), title: `Class ${m.lessons.length + 1}`, description: '', date: '', duration: '' }] }
+      : m));
+  };
+  const removeSession = (modId: string, sesId: string) =>
+    setModules(ms => ms.map(m => m.id === modId ? { ...m, lessons: m.lessons.filter(l => l.id !== sesId) } : m));
+  const updateModule = (id: string, val: string) => setModules(ms => ms.map(m => m.id === id ? { ...m, title: val } : m));
+  const updateSession = (modId: string, sesId: string, field: string, val: string) =>
+    setModules(ms => ms.map(m => m.id === modId ? { ...m, lessons: m.lessons.map(l => l.id === sesId ? { ...l, [field]: val } : l) } : m));
+
+  const getActiveDays = () => schedule.scheduleType === 'custom' ? schedule.customDays : SCHEDULE_PRESETS[schedule.scheduleType] || [];
+
+  const handleSave = async (publish = false) => {
+    if (!form.title.trim()) { toast.error('Course title is required'); return; }
+    if (!form.instructorId) { toast.error('Please assign an instructor'); return; }
+    if (!form.zoomLink.trim()) { toast.error('Zoom link is required'); return; }
+    setSaving(true);
+    await new Promise(r => setTimeout(r, 700));
+
+    const fullModules = modules.map(m => ({
+      ...m,
+      lessons: m.lessons.map(l => ({ ...l, driveRecordingUrl: '', materials: [] })),
+    }));
+
+    const activeDays = getActiveDays();
+    const newCourse = {
+      id: `course-${Date.now()}`,
+      slug: form.title.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, ''),
+      title: form.title, description: form.description, longDescription: form.longDescription,
+      thumbnail: form.thumbnail || 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=800&q=80',
+      category: form.category as any, level: form.level as any,
+      price: form.isFree ? 0 : parseFloat(form.price) || 0, isFree: form.isFree,
+      instructorId: form.instructorId, zoomLink: form.zoomLink,
+      schedule: schedule.classTime ? { classTime: schedule.classTime, classDuration: schedule.classDuration, scheduleType: schedule.scheduleType as any, customDays: activeDays, startDate: schedule.startDate, notes: schedule.notes } : undefined,
+      status: (publish ? 'published' : 'draft') as any,
+      isFeatured: false, isCompleted: false,
+      modules: fullModules,
+      requirements: form.requirements.filter(Boolean),
+      whatYouLearn: form.whatYouLearn.filter(Boolean),
+      tags: [], enrolledCount: 0, rating: 0, reviewCount: 0,
+      createdAt: new Date().toISOString().split('T')[0],
+      updatedAt: new Date().toISOString().split('T')[0],
+    };
+    courses.push(newCourse as any);
+    toast.success(publish ? 'Course published!' : 'Course saved as draft — instructor can now add curriculum!');
+    router.push('/admin/courses');
+    setSaving(false);
+  };
+
+  const activeDays = getActiveDays();
+
+  return (
+    <div className="space-y-6 max-w-4xl">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <Link href="/admin/courses"><Button variant="ghost" size="sm"><ArrowLeft className="w-4 h-4" /></Button></Link>
+          <div>
+            <h1 className="text-2xl font-black text-white">Create New Course</h1>
+            <p className="text-muted text-sm mt-0.5">Save as draft — instructor will add curriculum, then you publish</p>
+          </div>
+        </div>
+        <div className="flex gap-2">
+          <Button variant="secondary" onClick={() => handleSave(false)} loading={saving}><Save className="w-4 h-4" />Save Draft</Button>
+          <Button onClick={() => handleSave(true)} loading={saving}>Publish Course</Button>
+        </div>
+      </div>
+
+      {/* Draft flow info */}
+      <div className="bg-primary/5 border border-primary/20 rounded-xl p-4 flex items-start gap-3">
+        <Info className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
+        <div className="text-sm">
+          <p className="text-white font-medium">Recommended Workflow</p>
+          <p className="text-muted mt-0.5">Save as <span className="text-primary">Draft</span> → Instructor adds curriculum → You <span className="text-primary">Publish</span>. You can also publish without curriculum — instructor can add it anytime later.</p>
+        </div>
+      </div>
+
+      {/* Basic Info */}
+      <Card>
+        <h2 className="text-white font-bold mb-4">Course Details</h2>
+        <div className="space-y-4">
+          <Input label="Course Title *" placeholder="e.g., Complete React & Next.js Course" value={form.title} onChange={set('title')} />
+          <Textarea label="Short Description" placeholder="Shown on course cards (1–2 sentences)" value={form.description} onChange={set('description')} rows={2} />
+          <Textarea label="Full Description" placeholder="Detailed course overview" value={form.longDescription} onChange={set('longDescription')} rows={4} />
+          <Input label="Thumbnail URL" placeholder="https://images.unsplash.com/..." value={form.thumbnail} onChange={set('thumbnail')} />
+          <div className="grid sm:grid-cols-3 gap-4">
+            <Select label="Category" value={form.category} onChange={set('category')} options={['Web Development','Mobile Development','Data Science','UI/UX Design','DevOps','Programming'].map(c => ({ value: c, label: c }))} />
+            <Select label="Level" value={form.level} onChange={set('level')} options={[{ value: 'beginner', label: 'Beginner' }, { value: 'intermediate', label: 'Intermediate' }, { value: 'advanced', label: 'Advanced' }]} />
+            <div className="flex flex-col gap-1.5">
+              <Input label="Price (PKR)" type="number" placeholder="0" value={form.price} onChange={set('price')} disabled={form.isFree} />
+              <label className="flex items-center gap-2 cursor-pointer mt-1">
+                <input type="checkbox" checked={form.isFree} onChange={e => setForm(f => ({ ...f, isFree: e.target.checked }))} className="w-4 h-4 accent-primary" />
+                <span className="text-xs text-muted">Free Course</span>
+              </label>
+            </div>
+          </div>
+        </div>
+      </Card>
+
+      {/* Instructor & Zoom */}
+      <Card className="border-blue-500/20">
+        <h2 className="text-white font-bold mb-4 flex items-center gap-2"><Video className="w-5 h-5 text-blue-400" />Instructor & Zoom</h2>
+        <div className="grid sm:grid-cols-2 gap-4">
+          <div>
+            <Select label="Assign Instructor *" value={form.instructorId} onChange={set('instructorId')} options={instructors.map(i => ({ value: i.id, label: i.name }))} />
+            {form.instructorId && (
+              <div className="mt-2 flex items-center gap-2 bg-dark-border/30 rounded-lg px-3 py-2">
+                <img src={instructors.find(i => i.id === form.instructorId)?.avatar || ''} className="w-7 h-7 rounded-full border border-primary/30" alt="" />
+                <div>
+                  <p className="text-white text-xs font-medium">{instructors.find(i => i.id === form.instructorId)?.name}</p>
+                  <p className="text-muted text-xs">{instructors.find(i => i.id === form.instructorId)?.expertise?.slice(0, 2).join(' · ')}</p>
+                </div>
+              </div>
+            )}
+          </div>
+          <div>
+            <Input label="Zoom Meeting Link *" placeholder="https://zoom.us/j/your-meeting-id" value={form.zoomLink} onChange={set('zoomLink')} />
+            <p className="text-muted text-xs mt-1.5">Students use this to join live classes.</p>
+          </div>
+        </div>
+      </Card>
+
+      {/* Schedule */}
+      <Card className="border-green-500/20">
+        <h2 className="text-white font-bold mb-4 flex items-center gap-2"><Calendar className="w-5 h-5 text-green-400" />Class Schedule</h2>
+        <div className="space-y-4">
+          <div className="grid sm:grid-cols-3 gap-4">
+            <Input label="Class Time" type="time" value={schedule.classTime} onChange={setScheduleField('classTime')} />
+            <Input label="Class Duration" placeholder="e.g. 1.5 hours" value={schedule.classDuration} onChange={setScheduleField('classDuration')} />
+            <Input label="Start Date" type="date" value={schedule.startDate} onChange={setScheduleField('startDate')} />
+          </div>
+          <div>
+            <label className="text-sm font-medium text-white/80 block mb-2">Schedule Type</label>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-3">
+              {[{ value: 'weekdays', label: 'Mon – Fri' }, { value: 'weekends', label: 'Weekends' }, { value: 'whole-week', label: 'All 7 Days' }, { value: 'custom', label: 'Custom Days' }].map(opt => (
+                <button
+                  key={opt.value}
+                  onClick={() => { setSchedule(s => ({ ...s, scheduleType: opt.value, customDays: opt.value !== 'custom' ? SCHEDULE_PRESETS[opt.value] : s.customDays })); }}
+                  className={`py-2 px-3 rounded-lg border text-sm font-medium transition-all cursor-pointer ${schedule.scheduleType === opt.value ? 'bg-primary text-dark border-primary' : 'border-dark-border text-muted hover:border-primary/40'}`}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+            {schedule.scheduleType === 'custom' && (
+              <div className="flex flex-wrap gap-2 mb-3">
+                {DAYS.map(day => (
+                  <button
+                    key={day}
+                    onClick={() => toggleDay(day)}
+                    className={`py-1.5 px-3 rounded-lg border text-xs font-medium transition-all cursor-pointer ${schedule.customDays.includes(day) ? 'bg-primary/20 text-primary border-primary/40' : 'border-dark-border text-muted hover:border-primary/30'}`}
+                  >
+                    {day}
+                  </button>
+                ))}
+              </div>
+            )}
+            {activeDays.length > 0 && (
+              <div className="flex items-center gap-2 text-xs text-muted bg-dark-border/30 rounded-lg px-3 py-2">
+                <Clock className="w-3.5 h-3.5 text-green-400" />
+                <span className="text-green-400 font-medium">Classes on:</span>
+                <span>{activeDays.join(', ')} {schedule.classTime && `at ${schedule.classTime}`}</span>
+              </div>
+            )}
+          </div>
+          <Input label="Additional Notes" placeholder="e.g. Public holidays excluded, extra sessions on request..." value={schedule.notes} onChange={setScheduleField('notes')} />
+        </div>
+      </Card>
+
+      {/* Requirements & Outcomes */}
+      <Card>
+        <h2 className="text-white font-bold mb-4">Requirements & Outcomes</h2>
+        <div className="grid sm:grid-cols-2 gap-6">
+          <div>
+            <label className="text-sm font-medium text-white/80 block mb-2">Requirements</label>
+            {form.requirements.map((req, i) => (
+              <div key={i} className="flex gap-2 mb-2">
+                <Input value={req} onChange={e => { const r = [...form.requirements]; r[i] = e.target.value; setForm(f => ({ ...f, requirements: r })); }} placeholder={`Requirement ${i + 1}`} />
+                {form.requirements.length > 1 && <button onClick={() => setForm(f => ({ ...f, requirements: f.requirements.filter((_, j) => j !== i) }))} className="text-muted hover:text-red-400 cursor-pointer"><X className="w-4 h-4" /></button>}
+              </div>
+            ))}
+            <button onClick={() => setForm(f => ({ ...f, requirements: [...f.requirements, ''] }))} className="text-primary text-xs hover:underline cursor-pointer">+ Add</button>
+          </div>
+          <div>
+            <label className="text-sm font-medium text-white/80 block mb-2">What Students Will Learn</label>
+            {form.whatYouLearn.map((item, i) => (
+              <div key={i} className="flex gap-2 mb-2">
+                <Input value={item} onChange={e => { const w = [...form.whatYouLearn]; w[i] = e.target.value; setForm(f => ({ ...f, whatYouLearn: w })); }} placeholder={`Outcome ${i + 1}`} />
+                {form.whatYouLearn.length > 1 && <button onClick={() => setForm(f => ({ ...f, whatYouLearn: f.whatYouLearn.filter((_, j) => j !== i) }))} className="text-muted hover:text-red-400 cursor-pointer"><X className="w-4 h-4" /></button>}
+              </div>
+            ))}
+            <button onClick={() => setForm(f => ({ ...f, whatYouLearn: [...f.whatYouLearn, ''] }))} className="text-primary text-xs hover:underline cursor-pointer">+ Add</button>
+          </div>
+        </div>
+      </Card>
+
+      {/* Curriculum — optional */}
+      <Card>
+        <div className="flex items-center justify-between mb-2">
+          <div>
+            <h2 className="text-white font-bold">Curriculum <span className="text-muted text-sm font-normal">(Optional)</span></h2>
+            <p className="text-muted text-xs mt-0.5">Leave empty — instructor will design the curriculum. Or add modules now if you prefer.</p>
+          </div>
+          <Button size="sm" variant="secondary" onClick={() => { setShowCurriculum(true); addModule(); }}>
+            <Plus className="w-3.5 h-3.5" />Add Module
+          </Button>
+        </div>
+
+        {modules.length === 0 ? (
+          <div className="border-2 border-dashed border-dark-border rounded-xl py-8 text-center">
+            <p className="text-muted text-sm">No curriculum added yet</p>
+            <p className="text-muted text-xs mt-1">The instructor will add class sessions after the course is saved as draft.</p>
+          </div>
+        ) : (
+          <div className="space-y-4 mt-4">
+            {modules.map((mod, mi) => (
+              <div key={mod.id} className="border border-dark-border rounded-xl overflow-hidden">
+                <div className="flex items-center gap-3 px-4 py-3 bg-dark-border/30">
+                  <button onClick={() => setOpenModules(o => ({ ...o, [mod.id]: !o[mod.id] }))} className="text-muted cursor-pointer">
+                    {openModules[mod.id] ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                  </button>
+                  <Input value={mod.title} onChange={e => updateModule(mod.id, e.target.value)} placeholder={`Module ${mi + 1}`} className="flex-1 text-sm" />
+                  <button onClick={() => removeModule(mod.id)} className="text-muted hover:text-red-400 cursor-pointer"><Trash2 className="w-4 h-4" /></button>
+                </div>
+                {openModules[mod.id] && (
+                  <div className="p-4 space-y-3">
+                    {mod.lessons.map((ses, si) => (
+                      <div key={ses.id} className="bg-dark-border/20 rounded-lg p-3 grid sm:grid-cols-2 gap-3">
+                        <Input value={ses.title} onChange={e => updateSession(mod.id, ses.id, 'title', e.target.value)} placeholder={`Class ${si + 1} title`} />
+                        <div className="flex gap-2">
+                          <Input type="date" value={ses.date} onChange={e => updateSession(mod.id, ses.id, 'date', e.target.value)} />
+                          <Input value={ses.duration} onChange={e => updateSession(mod.id, ses.id, 'duration', e.target.value)} placeholder="Duration" />
+                          {mod.lessons.length > 1 && <button onClick={() => removeSession(mod.id, ses.id)} className="text-muted hover:text-red-400 cursor-pointer"><X className="w-4 h-4" /></button>}
+                        </div>
+                        <Input value={ses.description} onChange={e => updateSession(mod.id, ses.id, 'description', e.target.value)} placeholder="Description" className="sm:col-span-2" />
+                      </div>
+                    ))}
+                    <button onClick={() => addSession(mod.id)} className="text-primary text-sm hover:underline cursor-pointer flex items-center gap-1"><Plus className="w-3.5 h-3.5" />Add Class</button>
+                  </div>
+                )}
+              </div>
+            ))}
+            <button onClick={addModule} className="text-primary text-sm hover:underline cursor-pointer flex items-center gap-1"><Plus className="w-3.5 h-3.5" />Add Module</button>
+          </div>
+        )}
+      </Card>
+
+      <div className="flex justify-end gap-3 pb-8">
+        <Link href="/admin/courses"><Button variant="secondary">Cancel</Button></Link>
+        <Button variant="outline" onClick={() => handleSave(false)} loading={saving}><Save className="w-4 h-4" />Save Draft</Button>
+        <Button onClick={() => handleSave(true)} loading={saving}>Publish Course</Button>
+      </div>
+    </div>
+  );
+}

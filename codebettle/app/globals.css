@@ -1,0 +1,62 @@
+@import "tailwindcss";
+
+@theme inline {
+  --color-primary: #F5C518;
+  --color-primary-dark: #C9A000;
+  --color-primary-light: #FDE68A;
+  --color-dark: #111111;
+  --color-dark-card: #1C1C1C;
+  --color-dark-border: #2A2A2A;
+  --color-muted: #6B7280;
+  --color-background: #0A0A0A;
+  --color-surface: #141414;
+  --color-foreground: #FFFFFF;
+  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-mono: "Courier New", Courier, monospace;
+}
+
+* {
+  scroll-behavior: smooth;
+}
+
+body {
+  background: var(--color-background);
+  color: var(--color-foreground);
+  font-family: var(--font-sans), Arial, sans-serif;
+}
+
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #1C1C1C;
+}
+::-webkit-scrollbar-thumb {
+  background: #F5C518;
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #C9A000;
+}
+
+.gradient-text {
+  background: linear-gradient(135deg, #F5C518, #FDE68A);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.glass-card {
+  background: rgba(28, 28, 28, 0.8);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(245, 197, 24, 0.15);
+}
+
+.glow {
+  box-shadow: 0 0 20px rgba(245, 197, 24, 0.3);
+}
+
+.glow-sm {
+  box-shadow: 0 0 10px rgba(245, 197, 24, 0.2);
+}
