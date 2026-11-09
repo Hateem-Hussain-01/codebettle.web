@@ -69,3 +69,50 @@ export function getSafeRedirect(raw: string | null | undefined, fallback = '/'):
     return fallback;
   }
 }
+
+// ---------------------------------------------------------------------------
+// Content-Security-Policy (Phase 7 — SEC-09).
+// ---------------------------------------------------------------------------
+
+/**
+ * Build the Content-Security-Policy header value for one request.
+ * Pure function — unit-tested. The proxy (proxy.ts) generates one fresh
+ * nonce per request; Next.js reads the nonce out of the CSP header
+ * during server rendering and stamps it on the framework's own inline
+ * scripts, so a nonce-based policy works without 'unsafe-inline' on
+ * script-src.
+ *
+ * Deliberate exception — style-src keeps 'unsafe-inline': React and
+ * framer-motion set inline `style="..."` attributes, which a nonce
+ * does NOT cover (nonces only apply to <style> blocks). A nonce-only
+ * style-src would break the app's styling, so inline styles stay
+ * allowed; scripts — the XSS vector that matters — are nonce-locked.
+ *
+ * img-src allows https: because course thumbnails (Unsplash) and
+ * avatars (DiceBear) are hot-linked in the seed data (SEC-10, still
+ * open as a dependency, documented in the runbook).
+ * connect-src is 'self' only: no browser Supabase client exists in
+ * this codebase (all Supabase access is server-side), so the browser
+ * only ever talks to this origin.
+ */
+export function buildCspHeader(nonce: string, isDev = false): string {
+  const csp = `
+    default-src 'self';
+    script-src 'self' 'nonce-${nonce}' 'strict-dynamic'${isDev ? " 'unsafe-eval'" : ''};
+    style-src 'self' 'unsafe-inline';
+    img-src 'self' data: https:;
+    font-src 'self' data:;
+    connect-src 'self';
+    object-src 'none';
+    base-uri 'self';
+    form-action 'self';
+    frame-ancestors 'none';
+    upgrade-insecure-requests;
+  `;
+  return csp.replace(/\s{2,}/g, ' ').trim();
+}
+
+/** One fresh, unpredictable nonce per request (base64 of a UUID). */
+export function generateNonce(): string {
+  return Buffer.from(crypto.randomUUID()).toString('base64');
+}
