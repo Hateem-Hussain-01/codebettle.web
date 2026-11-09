@@ -19,7 +19,7 @@ export default function RegisterPage() {
     const e: Record<string, string> = {};
     if (!form.name.trim()) e.name = 'Name is required';
     if (!form.email.includes('@')) e.email = 'Valid email required';
-    if (form.password.length < 6) e.password = 'Password must be at least 6 characters';
+    if (form.password.length < 8) e.password = 'Password must be at least 8 characters';
     if (form.password !== form.confirmPassword) e.confirmPassword = 'Passwords do not match';
     setErrors(e);
     return Object.keys(e).length === 0;
@@ -69,7 +69,7 @@ export default function RegisterPage() {
               <Input
                 label="Password"
                 type={showPassword ? 'text' : 'password'}
-                placeholder="Min. 6 characters"
+                placeholder="Min. 8 characters"
                 value={form.password}
                 onChange={set('password')}
                 icon={<Lock className="w-4 h-4" />}
