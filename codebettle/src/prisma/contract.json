@@ -3073,6 +3073,13 @@
                   "kind": "scalar"
                 }
               },
+              "notificationPrefs": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/json@1",
+                  "kind": "scalar"
+                }
+              },
               "passwordHash": {
                 "nullable": false,
                 "type": {
@@ -3341,6 +3348,9 @@
                 },
                 "name": {
                   "column": "name"
+                },
+                "notificationPrefs": {
+                  "column": "notificationPrefs"
                 },
                 "passwordHash": {
                   "column": "passwordHash"
@@ -5791,6 +5801,11 @@
                   "dataType": "pg/text",
                   "nullable": false
                 },
+                "notificationPrefs": {
+                  "codecId": "pg/json@1",
+                  "dataType": "pg/json",
+                  "nullable": true
+                },
                 "passwordHash": {
                   "codecId": "pg/text@1",
                   "dataType": "pg/text",
@@ -5945,7 +5960,7 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "5981cbb700a4b6fd8e00afcc9e53948466c5c83fc644f0148074d7408f9d6afe"
+    "storageHash": "238127c695653ffee40c8b8f5654167f9edcc86f3df77f4cc55473e4770feda0"
   },
   "execution": {
     "executionHash": "ed225674692a0ad9d13dc048e5c52a023284b1dfdede1ce48dd2eb427f80b8cd",

@@ -30,6 +30,10 @@ import type {
   LessonRow,
   Module,
   ModuleRow,
+  Notification,
+  NotificationEventKey,
+  NotificationPrefs,
+  NotificationRow,
   Review,
   ReviewRow,
   SocialLinks,
@@ -38,6 +42,7 @@ import type {
   User,
   UserRow,
 } from './types';
+import { DEFAULT_NOTIFICATION_PREFS, NOTIFICATION_EVENT_KEYS } from './types';
 
 export const CATEGORY_TO_STORAGE: Record<CourseCategory, CourseRow['category']> = {
   'Web Development': 'Web_Development',
@@ -117,8 +122,7 @@ export function toSocialLinks(value: unknown): SocialLinks | undefined {
   return out;
 }
 
-/** Safely read a Json column as a CourseSchedule object (undefined when absent/invalid). */
-export function toSchedule(value: unknown): Course['schedule'] {
+/** Safely read a Json column as a CourseSchedule object (undefined when absent/invalid). */export function toSchedule(value: unknown): Course['schedule'] {
   if (value === null || value === undefined) return undefined;
   if (typeof value !== 'object' || Array.isArray(value)) return undefined;
   const v = value as Record<string, unknown>;
@@ -140,6 +144,34 @@ export function toSchedule(value: unknown): Course['schedule'] {
     customDays: Array.isArray(v.customDays) ? (v.customDays.filter((x) => typeof x === 'string') as string[]) : undefined,
     startDate: v.startDate,
     notes: typeof v.notes === 'string' ? v.notes : undefined,
+  };
+}
+
+/** Safely read a Json column as NotificationPrefs. NULL (or a missing /
+ * non-boolean field) falls back to the defaults — so a partially-written
+ * prefs object never disables a channel by accident. */
+export function toNotificationPrefs(value: unknown): NotificationPrefs {
+  const defaults = DEFAULT_NOTIFICATION_PREFS;
+  if (value === null || value === undefined || typeof value !== 'object' || Array.isArray(value)) {
+    return {
+      inApp: defaults.inApp,
+      email: defaults.email,
+      events: { ...defaults.events },
+    };
+  }
+  const v = value as Record<string, unknown>;
+  const eventsRaw = v.events;
+  const events = { ...defaults.events };
+  if (eventsRaw !== null && typeof eventsRaw === 'object' && !Array.isArray(eventsRaw)) {
+    for (const key of NOTIFICATION_EVENT_KEYS as readonly NotificationEventKey[]) {
+      const flag = (eventsRaw as Record<string, unknown>)[key];
+      if (typeof flag === 'boolean') events[key] = flag;
+    }
+  }
+  return {
+    inApp: typeof v.inApp === 'boolean' ? v.inApp : defaults.inApp,
+    email: typeof v.email === 'boolean' ? v.email : defaults.email,
+    events,
   };
 }
 
@@ -170,6 +202,7 @@ export function mapUserRow(row: UserRow, enrolledCourseIds?: string[]): User {
     phone: row.phone ?? undefined,
     expertise: [...(row.expertise ?? [])],
     socialLinks: toSocialLinks(row.socialLinks),
+    notificationPrefs: toNotificationPrefs(row.notificationPrefs),
     status: row.status,
     joinedAt: dateToString(row.joinedAt),
     enrolledCourses: enrolledCourseIds ?? [],
@@ -296,6 +329,18 @@ export function mapAnnouncementRow(row: AnnouncementRow): Announcement {
     authorId: row.authorId,
     createdAt: dateToString(row.createdAt),
     isActive: row.isActive,
+  };
+}
+
+export function mapNotificationRow(row: NotificationRow): Notification {
+  return {
+    id: row.id,
+    userId: row.userId,
+    type: row.type,
+    title: row.title,
+    body: row.body,
+    readAt: row.readAt ? dateToString(row.readAt) : null,
+    createdAt: dateToString(row.createdAt),
   };
 }
 

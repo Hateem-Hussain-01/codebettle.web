@@ -48,11 +48,12 @@ const RELATIONS: Record<string, Record<string, { model: string; fk: string }>> =
  * omitted nullable field; the fake must do the same, or code that
  * checks `row.x !== null` would see `undefined` and misbehave. */
 const NULLABLE_FIELDS: Record<string, string[]> = {
-  User: ['avatar', 'bio', 'phone', 'deletedAt'],
+  User: ['avatar', 'bio', 'phone', 'notificationPrefs', 'deletedAt'],
   Course: ['longDescription', 'thumbnail', 'zoomLink', 'schedule', 'completedAt'],
   Lesson: ['videoUrl', 'content', 'date'],
   Enrollment: ['completedAt', 'couponUsed', 'deletedAt'],
   Announcement: ['courseId'],
+  Notification: ['readAt'],
   BlogPost: ['pdfUrl'],
   Session: ['revokedAt', 'ip', 'userAgent'],
   AuditLog: ['entityId', 'detail', 'ip'],
@@ -324,10 +325,15 @@ export class FakeDb {
     };
   }
 
-  /** Seed a table directly (rows are stored as given). */
+  /** Seed a table directly (rows are stored as given). Rows without an
+   * `id` (e.g. LessonProgress, whose key is composite) are keyed by their
+   * JSON content so several such rows do not overwrite each other. */
   seed(model: string, rows: Row[]): void {
     if (!this.tables[model]) this.tables[model] = new Map();
-    for (const row of rows) this.tables[model].set(row.id as string, { ...row });
+    for (const row of rows) {
+      const key = row.id !== undefined && row.id !== null ? (row.id as string) : JSON.stringify(row);
+      this.tables[model].set(key, { ...row });
+    }
   }
 
   /** Clear every table (test reset). */

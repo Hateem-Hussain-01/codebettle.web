@@ -23,7 +23,7 @@ import type {
 } from '@prisma/orm-postgres/contract/types';
 
 export type StorageHash =
-  StorageHashBase<'5981cbb700a4b6fd8e00afcc9e53948466c5c83fc644f0148074d7408f9d6afe'>;
+  StorageHashBase<'238127c695653ffee40c8b8f5654167f9edcc86f3df77f4cc55473e4770feda0'>;
 export type ExecutionHash =
   ExecutionHashBase<'ed225674692a0ad9d13dc048e5c52a023284b1dfdede1ce48dd2eb427f80b8cd'>;
 export type ProfileHash =
@@ -731,6 +731,7 @@ export namespace Models {
     id: FieldOutputTypes['public']['User']['id'];
     joinedAt: FieldOutputTypes['public']['User']['joinedAt'];
     name: FieldOutputTypes['public']['User']['name'];
+    notificationPrefs: FieldOutputTypes['public']['User']['notificationPrefs'];
     passwordHash: FieldOutputTypes['public']['User']['passwordHash'];
     phone: FieldOutputTypes['public']['User']['phone'];
     role: FieldOutputTypes['public']['User']['role'];
@@ -2703,6 +2704,12 @@ type ContractBase = Omit<
                   readonly nullable: false;
                   readonly many: false;
                 };
+                readonly notificationPrefs: {
+                  readonly dataType: 'pg/json';
+                  readonly codecId: 'pg/json@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
                 readonly passwordHash: {
                   readonly dataType: 'pg/text';
                   readonly codecId: 'pg/text@1';
@@ -4570,6 +4577,10 @@ type ContractBase = Omit<
                 readonly nullable: false;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
               };
+              readonly notificationPrefs: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/json@1' };
+              };
               readonly passwordHash: {
                 readonly nullable: false;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
@@ -4746,6 +4757,7 @@ type ContractBase = Omit<
                 readonly id: { readonly column: 'id' };
                 readonly joinedAt: { readonly column: 'joinedAt' };
                 readonly name: { readonly column: 'name' };
+                readonly notificationPrefs: { readonly column: 'notificationPrefs' };
                 readonly passwordHash: { readonly column: 'passwordHash' };
                 readonly phone: { readonly column: 'phone' };
                 readonly role: { readonly column: 'role' };

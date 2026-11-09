@@ -36,6 +36,57 @@ export interface SocialLinks {
   website?: string;
 }
 
+/**
+ * Notification preferences (Phase 4). Stored as a nullable Json column
+ * (`User.notificationPrefs`); NULL means the defaults below. Declared as
+ * a `type` (not an `interface`) on purpose: Prisma's JsonValue requires
+ * an index signature, which interfaces do not carry implicitly — as a
+ * type alias this shape is assignable to JsonValue, so repositories can
+ * store it in the Json column (same reason as CourseSchedule).
+ *
+ * The `email` flag is informational only until Resend exists — the email
+ * hook never attempts delivery while no provider is configured.
+ */
+export type NotificationEventKey =
+  | 'enrollment'
+  | 'completion'
+  | 'certificate'
+  | 'application'
+  | 'announcement';
+
+export type NotificationPrefs = {
+  inApp: boolean;
+  email: boolean;
+  events: {
+    enrollment: boolean;
+    completion: boolean;
+    certificate: boolean;
+    application: boolean;
+    announcement: boolean;
+  };
+};
+
+export const NOTIFICATION_EVENT_KEYS: readonly NotificationEventKey[] = [
+  'enrollment',
+  'completion',
+  'certificate',
+  'application',
+  'announcement',
+] as const;
+
+/** Defaults applied when the stored prefs are NULL (or a field is missing). */
+export const DEFAULT_NOTIFICATION_PREFS: NotificationPrefs = {
+  inApp: true,
+  email: false,
+  events: {
+    enrollment: true,
+    completion: true,
+    certificate: true,
+    application: true,
+    announcement: true,
+  },
+};
+
 export interface User {
   id: string;
   name: string;
@@ -47,6 +98,8 @@ export interface User {
   phone?: string;
   expertise?: string[];
   socialLinks?: SocialLinks;
+  /** Null in the DB (or absent) means defaults: inApp on, email off, all events on. */
+  notificationPrefs?: NotificationPrefs;
   status: UserStatus;
   joinedAt: string;
   /** Course ids the student is enrolled in. Populated by list/getStudents and getUserByIdWithEnrollments; undefined otherwise. */
@@ -296,6 +349,7 @@ export type UserRow = Pick<
   | 'phone'
   | 'expertise'
   | 'socialLinks'
+  | 'notificationPrefs'
   | 'status'
   | 'joinedAt'
   | 'deletedAt'
@@ -426,4 +480,9 @@ export type LoginEventRow = Pick<
 export type PasswordResetRow = Pick<
   Models.public_PasswordReset,
   'id' | 'userId' | 'tokenHash' | 'expiresAt' | 'usedAt' | 'createdAt'
+>;
+
+export type NotificationRow = Pick<
+  Models.public_Notification,
+  'id' | 'userId' | 'type' | 'title' | 'body' | 'readAt' | 'createdAt'
 >;

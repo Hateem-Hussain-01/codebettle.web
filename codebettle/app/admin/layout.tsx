@@ -11,6 +11,7 @@ const NAV_ITEMS = [
   { href: '/admin/enrollments', label: 'Enrollments', icon: <ClipboardList className="w-5 h-5" /> },
   { href: '/admin/coupons', label: 'Coupon Codes', icon: <Tag className="w-5 h-5" /> },
   { href: '/admin/announcements', label: 'Announcements', icon: <Bell className="w-5 h-5" /> },
+  { href: '/admin/notifications', label: 'Notifications', icon: <Bell className="w-5 h-5" /> },
   { href: '/admin/blog', label: 'Blog', icon: <Newspaper className="w-5 h-5" /> },
   { href: '/admin/content', label: 'Content', icon: <FileText className="w-5 h-5" /> },
   { href: '/admin/reports', label: 'Reports', icon: <BarChart2 className="w-5 h-5" /> },

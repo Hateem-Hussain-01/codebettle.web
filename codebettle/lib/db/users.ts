@@ -15,9 +15,9 @@
  *   the old lib/data shape pages rely on.
  */
 import { getDb } from './client';
-import { mapUserRow, stripUndefined, toSafeUser } from './mappers';
+import { mapUserRow, stripUndefined, toNotificationPrefs, toSafeUser } from './mappers';
 import { parsePageParams, toPage, type Page } from './pagination';
-import type { SafeUser, SocialLinks, User, UserRole, UserStatus } from './types';
+import type { NotificationPrefs, SafeUser, SocialLinks, User, UserRole, UserStatus } from './types';
 
 export async function getUserById(id: string): Promise<SafeUser | null> {
   const row = await getDb()
@@ -226,4 +226,36 @@ export async function getAllUsers(): Promise<SafeUser[]> {
     .orderBy((u) => u.createdAt.desc())
     .all();
   return rows.map((r) => toSafeUser(mapUserRow(r)));
+}
+
+/**
+ * Notification preferences (Phase 4). NULL in the DB (or a missing /
+ * non-boolean field) falls back to the defaults — inApp on, email off,
+ * all events on. Returns null when the user does not exist (or is
+ * soft-deleted).
+ */
+export async function getUserNotificationPrefs(id: string): Promise<NotificationPrefs | null> {
+  const row = await getDb()
+    .orm.public.User.where({ id })
+    .where((u) => u.deletedAt.isNull())
+    .first();
+  if (!row) return null;
+  return toNotificationPrefs(row.notificationPrefs);
+}
+
+/** Replace a user's notification preferences wholesale. Returns null when the user does not exist (or is soft-deleted). */
+export async function updateUserNotificationPrefs(
+  id: string,
+  prefs: NotificationPrefs,
+): Promise<NotificationPrefs | null> {
+  const row = await getDb()
+    .orm.public.User.where({ id })
+    .where((u) => u.deletedAt.isNull())
+    .update({
+      // JSON round-trip: NotificationPrefs is a type alias with an index
+      // signature, but the parsed value is plain JSON either way.
+      notificationPrefs: JSON.parse(JSON.stringify(prefs)),
+    });
+  if (!row) return null;
+  return toNotificationPrefs(row.notificationPrefs);
 }

@@ -93,6 +93,7 @@ model User {
   phone              String?
   expertise          String[]
   socialLinks        Json?
+  notificationPrefs  Json?
   status             UserStatus              @default(active)
   joinedAt           DateTime                @default(now())
   deletedAt          DateTime?
