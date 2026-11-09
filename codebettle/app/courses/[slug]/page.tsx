@@ -1,3 +1,4 @@
+import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { connection } from 'next/server';
 import { getSession } from '@/lib/auth';
@@ -16,6 +17,26 @@ import CourseDetailClient from './course-detail-client';
  * `await connection()` opts out of build-time prerendering (public page,
  * no session to read, and the slug is only known at request time).
  */
+/**
+ * Per-course metadata (Phase 7, CB-16 SEO): the course title and
+ * description in the tab and in link previews, instead of the generic
+ * site title on every course page.
+ */
+export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
+  const { slug } = await params;
+  const course = await getCourseBySlug(slug);
+  if (!course) return { title: 'Course not found | CodeBettle' };
+  return {
+    title: `${course.title} | CodeBettle`,
+    description: course.description,
+    openGraph: {
+      title: `${course.title} | CodeBettle`,
+      description: course.description,
+      images: course.thumbnail ? [{ url: course.thumbnail }] : undefined,
+    },
+  };
+}
+
 export default async function CourseDetailPage({ params }: PageProps<'/courses/[slug]'>) {
   await connection();
   const { slug } = await params;

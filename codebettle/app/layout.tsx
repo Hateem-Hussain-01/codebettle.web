@@ -4,6 +4,7 @@ import { Toaster } from 'react-hot-toast';
 import { MotionConfig } from 'framer-motion';
 
 export const metadata: Metadata = {
+  metadataBase: new URL('https://codebettle-web.vercel.app'),
   title: 'CodeBettle — Learn to Code, Build Your Future',
   description: 'CodeBettle is a premier digital institute offering expert-led courses in web development, mobile development, data science, UI/UX design, and more.',
   keywords: ['coding courses', 'programming', 'web development', 'Pakistan', 'online learning'],

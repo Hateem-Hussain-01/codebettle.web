@@ -1,3 +1,4 @@
+import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
@@ -8,11 +9,30 @@ import { sanitizeBlogHtml } from '@/lib/sanitize';
 import { Clock, Tag, FileText, Download } from 'lucide-react';
 
 /** A post's `content` is HTML when it was written in the admin rich-text
- * editor, and plain text for older posts. Render HTML as-is (authors are
- * admin/instructor only — that is the trust boundary); keep the old
+ * editor, and plain text for older posts. HTML is sanitized before it is
+ * rendered (Phase 7, SEC-08 — see lib/sanitize.ts); keep the old
  * paragraph split for plain-text posts. */
 function isHtml(content: string): boolean {
   return /<[a-z][\s\S]*>/i.test(content);
+}
+
+/**
+ * Per-post metadata (Phase 7, CB-16 SEO): the post title and excerpt
+ * in the tab and in link previews.
+ */
+export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
+  const { slug } = await params;
+  const post = await getPostBySlug(slug);
+  if (!post) return { title: 'Post not found | CodeBettle' };
+  return {
+    title: `${post.title} | CodeBettle`,
+    description: post.excerpt,
+    openGraph: {
+      title: `${post.title} | CodeBettle`,
+      description: post.excerpt,
+      images: post.thumbnail ? [{ url: post.thumbnail }] : undefined,
+    },
+  };
 }
 
 export default async function BlogPostPage({ params }: PageProps<'/blog/[slug]'>) {
