@@ -44,7 +44,7 @@ export default function StudentQuizStartClient({
     return <p className="text-muted text-sm">You have used all attempts for this quiz.</p>;
   }
   return (
-    <Button onClick={() => void handleStart()} disabled={starting}>
+    <Button neon onClick={() => void handleStart()} disabled={starting}>
       {starting ? 'Starting…' : 'Start quiz'}
     </Button>
   );

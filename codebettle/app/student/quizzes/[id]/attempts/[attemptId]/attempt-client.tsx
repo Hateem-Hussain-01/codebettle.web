@@ -308,7 +308,7 @@ export default function AttemptClient({
           Previous
         </Button>
         {isLast ? (
-          <Button onClick={() => void submit()} disabled={submitting}>
+          <Button neon onClick={() => void submit()} disabled={submitting}>
             {submitting ? 'Submitting…' : 'Submit quiz'}
           </Button>
         ) : (

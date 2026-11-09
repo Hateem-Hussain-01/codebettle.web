@@ -114,7 +114,7 @@ export default function CourseDetailClient({ course, instructor, reviews, slug }
                         <Button variant="outline" size="sm" onClick={handleApplyCoupon} className="flex-shrink-0">Apply</Button>
                       </div>
                     )}
-                    <Button fullWidth size="lg" onClick={handleEnroll} className="mb-3">
+                    <Button fullWidth size="lg" neon onClick={handleEnroll} className="mb-3">
                       {course.isFree ? 'Enroll for Free' : 'Enroll Now'}
                     </Button>
                     <p className="text-muted text-xs text-center">30-day money-back guarantee</p>

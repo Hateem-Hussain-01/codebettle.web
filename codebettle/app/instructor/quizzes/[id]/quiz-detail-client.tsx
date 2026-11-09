@@ -498,6 +498,7 @@ export default function QuizDetailClient({ quiz: initial }: { quiz: Quiz }) {
       <div className="flex flex-wrap gap-2">
         {isDraft && (
           <Button
+            neon
             onClick={() => void doAction('publish')}
             disabled={saving || questions.length === 0 || unreviewedCount > 0}
           >
