@@ -51,11 +51,12 @@ export function getBlogStorageClient(): SupabaseClient {
 /**
  * Upload a blog PDF to `blog-pdfs/blogs/<uuid>.pdf`.
  * Returns the public URL and the storage path. The path (not the URL) is
- * what deleteBlogPdf needs.
+ * what deleteBlogPdf needs. Validation runs before the client is built,
+ * so a bad file is a 400 even when the service-role key is missing.
  */
 export async function uploadBlogPdf(
   file: BlogPdfFile,
-  client: SupabaseClient = getBlogStorageClient(),
+  client?: SupabaseClient,
 ): Promise<{ url: string; path: string }> {
   if (file.type !== 'application/pdf') {
     throw new Error('Only PDF files are allowed');
@@ -68,23 +69,22 @@ export async function uploadBlogPdf(
   if (body.byteLength > MAX_BLOG_PDF_BYTES) {
     throw new Error('PDF must be 10 MB or smaller');
   }
+  const storage = client ?? getBlogStorageClient();
   const path = `blogs/${randomUUID()}.pdf`;
-  const { data, error } = await client.storage
+  const { data, error } = await storage.storage
     .from(BLOG_PDF_BUCKET)
     .upload(path, body, { contentType: 'application/pdf', upsert: false });
   if (error || !data) {
     throw new Error(`Blog PDF upload failed: ${error?.message ?? 'unknown error'}`);
   }
-  const { data: publicUrl } = client.storage.from(BLOG_PDF_BUCKET).getPublicUrl(data.path);
+  const { data: publicUrl } = storage.storage.from(BLOG_PDF_BUCKET).getPublicUrl(data.path);
   return { url: publicUrl.publicUrl, path: data.path };
 }
 
 /** Delete a previously uploaded blog PDF by its storage path (e.g. `blogs/<uuid>.pdf`). */
-export async function deleteBlogPdf(
-  path: string,
-  client: SupabaseClient = getBlogStorageClient(),
-): Promise<void> {
-  const { error } = await client.storage.from(BLOG_PDF_BUCKET).remove([path]);
+export async function deleteBlogPdf(path: string, client?: SupabaseClient): Promise<void> {
+  const storage = client ?? getBlogStorageClient();
+  const { error } = await storage.storage.from(BLOG_PDF_BUCKET).remove([path]);
   if (error) {
     throw new Error(`Blog PDF delete failed: ${error.message}`);
   }
