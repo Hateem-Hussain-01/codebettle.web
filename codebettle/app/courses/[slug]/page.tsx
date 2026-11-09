@@ -1,6 +1,8 @@
 import { notFound } from 'next/navigation';
 import { connection } from 'next/server';
+import { getSession } from '@/lib/auth';
 import { getCourseBySlug } from '@/lib/db/courses';
+import { isEnrolled } from '@/lib/db/enrollments';
 import { toPublicCourse } from '@/lib/db/mappers';
 import { getUserById } from '@/lib/db/users';
 import { getReviewsByCourse } from '@/lib/db/reviews';
@@ -22,5 +24,9 @@ export default async function CourseDetailPage({ params }: PageProps<'/courses/[
 
   const instructor = await getUserById(course.instructorId);
   const reviews = await getReviewsByCourse(course.id);
-  return <CourseDetailClient course={toPublicCourse(course)} instructor={instructor} reviews={reviews} slug={slug} />;
+  // Already-enrolled students see "Continue Learning" instead of the
+  // enrol button (the page itself stays public — no session = not enrolled).
+  const session = await getSession();
+  const enrolled = session?.role === 'student' ? await isEnrolled(session.id, course.id) : false;
+  return <CourseDetailClient course={toPublicCourse(course)} instructor={instructor} reviews={reviews} slug={slug} enrolled={enrolled} />;
 }

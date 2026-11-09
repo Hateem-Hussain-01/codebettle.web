@@ -17,15 +17,18 @@ interface CourseDetailClientProps {
   instructor: SafeUser | null;
   reviews: Review[];
   slug: string;
+  /** True when the signed-in student is already enrolled (false for visitors / other roles). */
+  enrolled: boolean;
 }
 
-export default function CourseDetailClient({ course, instructor, reviews, slug }: CourseDetailClientProps) {
+export default function CourseDetailClient({ course, instructor, reviews, slug, enrolled }: CourseDetailClientProps) {
   const totalLessons = getTotalLessonsCount(course.modules);
   const duration = getCourseDuration(course.modules);
 
   const [openModules, setOpenModules] = useState<Record<string, boolean>>({ [course.modules[0]?.id]: true });
   const [couponCode, setCouponCode] = useState('');
   const [appliedCoupon, setAppliedCoupon] = useState<{ type: string; value: number } | null>(null);
+  const [enrolling, setEnrolling] = useState(false);
 
   const toggleModule = (id: string) => setOpenModules(prev => ({ ...prev, [id]: !prev[id] }));
 
@@ -55,9 +58,54 @@ export default function CourseDetailClient({ course, instructor, reviews, slug }
       : Math.max(0, course.price - appliedCoupon.value)
     : course.price;
 
-  const handleEnroll = () => {
-    toast.success('Redirecting to enrollment...');
-    setTimeout(() => window.location.href = '/auth/login?redirect=/courses/' + slug, 1000);
+  /**
+   * Real enrolment (Phase 7). POSTs to /api/student/enrollments: free
+   * courses enrol immediately, paid courses enrol as payment-pending
+   * (no payment gateway — an admin confirms the payment). Not signed
+   * in → login with a redirect back here. Already enrolled (409) →
+   * straight to the student course page.
+   */
+  const handleEnroll = async () => {
+    if (enrolled) {
+      window.location.href = `/student/courses/${course.id}`;
+      return;
+    }
+    setEnrolling(true);
+    try {
+      const res = await fetch('/api/student/enrollments', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          courseId: course.id,
+          couponCode: appliedCoupon ? couponCode : undefined,
+        }),
+      });
+      if (res.status === 401) {
+        toast.success('Please sign in to enrol');
+        setTimeout(() => window.location.href = '/auth/login?redirect=/courses/' + slug, 800);
+        return;
+      }
+      const data = await res.json().catch(() => ({}));
+      if (res.status === 409) {
+        toast.success('You are already enrolled');
+        setTimeout(() => window.location.href = `/student/courses/${course.id}`, 800);
+        return;
+      }
+      if (!res.ok) {
+        toast.error(data.error || 'Enrolment failed — please try again');
+        return;
+      }
+      toast.success(
+        data.enrollment?.paymentStatus === 'pending'
+          ? 'Enrolled! Your payment is pending — an admin will confirm it.'
+          : 'Enrolled! Welcome to the course.',
+      );
+      setTimeout(() => window.location.href = `/student/courses/${course.id}`, 800);
+    } catch {
+      toast.error('Enrolment failed — please try again');
+    } finally {
+      setEnrolling(false);
+    }
   };
 
   return (
@@ -114,8 +162,8 @@ export default function CourseDetailClient({ course, instructor, reviews, slug }
                         <Button variant="outline" size="sm" onClick={handleApplyCoupon} className="flex-shrink-0">Apply</Button>
                       </div>
                     )}
-                    <Button fullWidth size="lg" neon onClick={handleEnroll} className="mb-3">
-                      {course.isFree ? 'Enroll for Free' : 'Enroll Now'}
+                    <Button fullWidth size="lg" neon onClick={handleEnroll} disabled={enrolling} className="mb-3">
+                      {enrolled ? 'Continue Learning' : enrolling ? 'Enrolling…' : course.isFree ? 'Enroll for Free' : 'Enroll Now'}
                     </Button>
                     <p className="text-muted text-xs text-center">30-day money-back guarantee</p>
                     <div className="mt-4 pt-4 border-t border-dark-border space-y-2 text-xs text-muted">

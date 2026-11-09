@@ -30,3 +30,7 @@ export function forbidden(message: string): ServiceError {
 export function badRequest(message: string): ServiceError {
   return { error: message, status: 400 };
 }
+
+export function conflict(message: string): ServiceError {
+  return { error: message, status: 409 };
+}

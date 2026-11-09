@@ -23,6 +23,11 @@ export default async function StudentCourseViewPage({ params }: PageProps<'/stud
   const enrollments = await getEnrollmentsByStudent(session!.id);
   const enrollment = enrollments.find(e => e.courseId === id);
   if (!enrollment) notFound();
+  // Paid courses enrol as 'pending' until an admin confirms the payment
+  // (Phase 7 self-enrolment). Until then the Zoom link, recordings and
+  // materials stay locked — the student can see the course exists and
+  // read announcements, but cannot join or watch anything.
+  const paymentPending = enrollment.paymentStatus === 'pending';
 
   const announcements = await getCourseAnnouncements(id);
   const instructor = await getUserById(course.instructorId);
@@ -95,8 +100,16 @@ export default async function StudentCourseViewPage({ params }: PageProps<'/stud
       {/* ── (Instructor class review was removed in Phase 7: the field was
            never populated — no review data exists for it.) ── */}
 
-      {/* Zoom link */}
-      {course.zoomLink ? (
+      {/* Zoom link — withheld while payment is pending */}
+      {paymentPending ? (
+        <div className="bg-gradient-to-r from-yellow-500/15 to-transparent border border-yellow-500/30 rounded-xl p-4 flex flex-col sm:flex-row items-start sm:items-center gap-4">
+          <div className="w-10 h-10 rounded-xl bg-yellow-500/20 flex items-center justify-center flex-shrink-0"><Lock className="w-5 h-5 text-yellow-400" /></div>
+          <div className="flex-1">
+            <p className="text-white font-bold text-sm">Payment pending</p>
+            <p className="text-muted text-xs mt-0.5">You are enrolled, but your payment has not been confirmed yet. The Zoom link, recordings and materials unlock once an admin confirms your payment.</p>
+          </div>
+        </div>
+      ) : course.zoomLink ? (
         <div className="bg-gradient-to-r from-blue-500/15 to-transparent border border-blue-500/30 rounded-xl p-4 flex flex-col sm:flex-row items-start sm:items-center gap-4">
           <div className="w-10 h-10 rounded-xl bg-blue-500/20 flex items-center justify-center flex-shrink-0"><Video className="w-5 h-5 text-blue-400" /></div>
           <div className="flex-1">
@@ -180,16 +193,22 @@ export default async function StudentCourseViewPage({ params }: PageProps<'/stud
                       </div>
                       <div className="ml-10">
                         {hasRec ? (
-                          <a href={ses.driveRecordingUrl} target="_blank" rel="noopener noreferrer"
-                            className="inline-flex items-center gap-2 text-sm font-medium text-green-400 bg-green-500/10 border border-green-500/20 hover:bg-green-500/20 rounded-lg px-4 py-2 transition-all">
-                            <ExternalLink className="w-4 h-4" />Watch Recording (Google Drive)
-                          </a>
+                          paymentPending ? (
+                            <div className="flex items-center gap-2 text-xs text-muted bg-dark-border/30 rounded-lg px-3 py-2 w-fit">
+                              <Lock className="w-3.5 h-3.5" />Recording locked until your payment is confirmed
+                            </div>
+                          ) : (
+                            <a href={ses.driveRecordingUrl} target="_blank" rel="noopener noreferrer"
+                              className="inline-flex items-center gap-2 text-sm font-medium text-green-400 bg-green-500/10 border border-green-500/20 hover:bg-green-500/20 rounded-lg px-4 py-2 transition-all">
+                              <ExternalLink className="w-4 h-4" />Watch Recording (Google Drive)
+                            </a>
+                          )
                         ) : (
                           <div className="flex items-center gap-2 text-xs text-muted bg-dark-border/30 rounded-lg px-3 py-2 w-fit">
                             <Lock className="w-3.5 h-3.5" />Recording will appear here after the live class
                           </div>
                         )}
-                        {ses.materials && ses.materials.length > 0 && (
+                        {!paymentPending && ses.materials && ses.materials.length > 0 && (
                           <div className="flex flex-wrap gap-2 mt-2">
                             {ses.materials.map((mat, mi) => (
                               <a key={mi} href={mat.url}
@@ -216,7 +235,7 @@ export default async function StudentCourseViewPage({ params }: PageProps<'/stud
               <p>Category: <span className="text-white">{course.category}</span></p>
               <p>Level: <span className="text-white capitalize">{course.level}</span></p>
               <p>Total Classes: <span className="text-white">{totalSessions}</span></p>
-              <p>Recordings: <span className="text-green-400 font-medium">{uploadedCount} available</span></p>
+              <p>Recordings: {paymentPending ? <span className="text-yellow-400 font-medium">Locked until payment is confirmed</span> : <span className="text-green-400 font-medium">{uploadedCount} available</span>}</p>
               <p>Status: <span className={course.isCompleted ? 'text-green-400 font-medium' : 'text-primary font-medium'}>{course.isCompleted ? 'Completed' : 'Active'}</span></p>
             </div>
           </Card>

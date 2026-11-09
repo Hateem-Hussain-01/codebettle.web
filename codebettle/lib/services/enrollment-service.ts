@@ -5,19 +5,15 @@
  * create, edit or soft-delete enrolments. No Next.js imports —
  * unit-testable with the fake db. Every mutation writes an audit entry.
  */
-import {
-  createEnrollment,
-  getEnrollmentById,
-  softDeleteEnrollment,
-  updateEnrollment,
-} from '../db/enrollments';
+import { createEnrollment, getEnrollmentById, isEnrolled, softDeleteEnrollment, updateEnrollment } from '../db/enrollments';
 import { getCertificateByCourseAndStudent } from '../db/certificates';
 import { getCourseById } from '../db/courses';
+import { validateCoupon } from '../db/coupons';
 import { getUserById } from '../db/users';
 import { logAudit } from '../db/audit';
 import { onCertificateIssued, onCourseCompleted, onEnrollmentCreated } from './notification-service';
 import type { Certificate, Enrollment, EnrollmentPaymentStatus } from '../db/types';
-import { badRequest, forbidden, notFound, type Actor, type ServiceError } from './errors';
+import { badRequest, conflict, forbidden, notFound, type Actor, type ServiceError } from './errors';
 import { issueCertificateWithRetry } from './certificate-service';
 
 type Result<T> = T | ServiceError;
@@ -77,6 +73,76 @@ export interface UpdateEnrollmentServiceInput {
   paymentStatus?: EnrollmentPaymentStatus;
   amountPaid?: number;
   certificateEligible?: boolean;
+}
+
+/**
+ * Student self-enrolment (Phase 7 — the enrolment flow was dead: the
+ * course page only toasted and sent everyone to the login page, and no
+ * student enrolment route existed at all).
+ *
+ * Student-only: the actor enrols THEMSELVES (actor.id is the student —
+ * there is no studentId in the input, so one student cannot enrol
+ * another). The course must exist and be published (draft and archived
+ * courses reject). A duplicate enrolment is a 409.
+ *
+ * There is no payment gateway (master prompt scope), so a paid course
+ * enrols as paymentStatus 'pending' with amountPaid 0 — an admin
+ * confirms the payment later via the admin enrolment update, which
+ * flips it to 'paid'. A free course enrols as 'free'. Until payment is
+ * confirmed the student course page shows the enrolment as pending and
+ * withholds the Zoom link, recordings and materials.
+ *
+ * A coupon code is re-validated server-side (the client-side check is
+ * display-only) and recorded as couponUsed when valid; it does not
+ * change amountPaid here — the amount is settled when the admin
+ * confirms payment.
+ */
+export interface EnrollSelfServiceInput {
+  courseId: string;
+  couponCode?: string;
+}
+
+export async function enrollSelfService(
+  actor: Actor,
+  input: EnrollSelfServiceInput,
+): Promise<Result<{ enrollment: Enrollment }>> {
+  if (actor.role !== 'student') {
+    return forbidden('Only students can enrol in a course');
+  }
+  const course = await getCourseById(input.courseId);
+  if (!course) return notFound('Course');
+  if (course.status !== 'published') {
+    return badRequest('This course is not open for enrolment');
+  }
+  if (await isEnrolled(actor.id, input.courseId)) {
+    return conflict('You are already enrolled in this course');
+  }
+  let couponUsed: string | undefined;
+  const couponCode = input.couponCode?.trim();
+  if (couponCode) {
+    const coupon = await validateCoupon(couponCode);
+    if (!coupon) return badRequest('Coupon code is invalid or expired');
+    couponUsed = coupon.code;
+  }
+  const paymentStatus: EnrollmentPaymentStatus = course.isFree ? 'free' : 'pending';
+  const created = await createEnrollment({
+    studentId: actor.id,
+    courseId: input.courseId,
+    paymentStatus,
+    amountPaid: 0,
+    couponUsed,
+  });
+  if ('error' in created) return conflict('You are already enrolled in this course');
+  await logAudit({
+    actorId: actor.id,
+    action: 'enrollment.create',
+    entity: 'enrollment',
+    entityId: created.enrollment.id,
+    detail: `self: ${actor.id} -> ${input.courseId} (${paymentStatus})`,
+  });
+  // Notify the student (Phase 4 hook — best-effort, never throws).
+  await onEnrollmentCreated(created.enrollment);
+  return { enrollment: created.enrollment };
 }
 
 export async function updateEnrollmentService(
