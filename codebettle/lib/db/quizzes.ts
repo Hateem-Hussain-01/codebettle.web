@@ -91,6 +91,15 @@ export async function listQuizzesByCreator(createdById: string): Promise<Quiz[]>
   return rows.map((r) => mapQuizRow(r, []));
 }
 
+/** All non-deleted quizzes (admin lists). */
+export async function listAllQuizzes(): Promise<Quiz[]> {
+  const rows = await getDb()
+    .orm.public.Quiz.where((q) => q.deletedAt.isNull())
+    .orderBy((q) => q.createdAt.desc())
+    .all();
+  return rows.map((r) => mapQuizRow(r, []));
+}
+
 export async function listPublishedQuizzesByCourse(courseId: string): Promise<Quiz[]> {
   const rows = await getDb()
     .orm.public.Quiz.where({ courseId })
@@ -333,12 +342,14 @@ export async function createAttempt(input: {
   quizId: string;
   studentId: string;
   dueAt?: Date | null;
+  /** Defaults to now; the service passes its own `now` so timing is testable. */
+  startedAt?: Date;
 }): Promise<QuizAttempt> {
   const row = await getDb().orm.public.QuizAttempt.create({
     quizId: input.quizId,
     studentId: input.studentId,
     status: 'in_progress',
-    startedAt: new Date(),
+    startedAt: input.startedAt ?? new Date(),
     dueAt: input.dueAt ?? null,
     submittedAt: null,
     score: null,
