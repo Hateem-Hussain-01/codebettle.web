@@ -5,7 +5,7 @@ import { motion } from 'framer-motion';
 import { Star, Users, BookOpen, Heart } from 'lucide-react';
 import Badge from './Badge';
 import { formatPrice, getLevelColor, getCategoryColor } from '@/lib/utils';
-import type { Course } from '@/lib/data/courses';
+import type { Course } from '@/lib/db/types';
 
 interface CourseCardProps {
   course: Course;

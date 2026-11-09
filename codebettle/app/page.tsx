@@ -8,9 +8,11 @@ import TestimonialsSection from '@/components/sections/TestimonialsSection';
 import BlogPreview from '@/components/sections/BlogPreview';
 import CTABanner from '@/components/sections/CTABanner';
 import { getSession } from '@/lib/auth';
+import { listTestimonials } from '@/lib/db/testimonials';
 
 export default async function Home() {
   const session = await getSession();
+  const testimonials = await listTestimonials();
 
   return (
     <>
@@ -20,7 +22,7 @@ export default async function Home() {
         <StatsSection />
         <FeaturedCourses />
         <HowItWorks />
-        <TestimonialsSection />
+        <TestimonialsSection testimonials={testimonials} />
         <BlogPreview />
         <CTABanner />
       </main>

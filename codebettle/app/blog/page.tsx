@@ -1,13 +1,13 @@
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
 import Link from 'next/link';
-import { getPublishedPosts } from '@/lib/data/blog';
+import { getPublishedPosts } from '@/lib/db/blog';
 import { getSession } from '@/lib/auth';
 import { Clock, ArrowRight } from 'lucide-react';
 
 export default async function BlogPage() {
   const session = await getSession();
-  const posts = getPublishedPosts();
+  const posts = await getPublishedPosts();
 
   return (
     <>
