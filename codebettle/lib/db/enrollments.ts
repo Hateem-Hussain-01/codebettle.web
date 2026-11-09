@@ -8,9 +8,9 @@
  * and returns a clear error, the constraint is the backstop.
  */
 import { getDb } from './client';
-import { mapEnrollmentRow } from './mappers';
+import { mapEnrollmentRow, stringToDate, stripUndefined } from './mappers';
 import { parsePageParams, toPage, type Page } from './pagination';
-import type { Enrollment } from './types';
+import type { Enrollment, EnrollmentPaymentStatus } from './types';
 
 async function progressFor(enrollmentIds: string[]) {
   if (enrollmentIds.length === 0) return [];
@@ -105,6 +105,39 @@ export async function markLessonComplete(
   if (existing) return { ok: true };
   await getDb().orm.public.LessonProgress.create({ enrollmentId, lessonId });
   return { ok: true };
+}
+
+export interface UpdateEnrollmentInput {
+  isCompleted?: boolean;
+  completedAt?: string | null;
+  paymentStatus?: EnrollmentPaymentStatus;
+  amountPaid?: number;
+  certificateEligible?: boolean | null;
+}
+
+/** Update an enrolment. Returns null when it does not exist (or is soft-deleted). */
+export async function updateEnrollment(id: string, input: UpdateEnrollmentInput): Promise<Enrollment | null> {
+  const data: Record<string, unknown> = {};
+  if (input.isCompleted !== undefined) data.isCompleted = input.isCompleted;
+  if (input.completedAt !== undefined) data.completedAt = stringToDate(input.completedAt);
+  if (input.paymentStatus !== undefined) data.paymentStatus = input.paymentStatus;
+  if (input.amountPaid !== undefined) data.amountPaid = input.amountPaid;
+  if (input.certificateEligible !== undefined) data.certificateEligible = input.certificateEligible;
+  const row = await getDb()
+    .orm.public.Enrollment.where({ id })
+    .where((e) => e.deletedAt.isNull())
+    .update(stripUndefined(data));
+  if (!row) return null;
+  return getEnrollmentById(id);
+}
+
+/** Soft delete: sets deletedAt. Returns false when the enrolment does not exist or is already deleted. */
+export async function softDeleteEnrollment(id: string): Promise<boolean> {
+  const row = await getDb()
+    .orm.public.Enrollment.where({ id })
+    .where((e) => e.deletedAt.isNull())
+    .update({ deletedAt: new Date() });
+  return row !== null;
 }
 
 export interface ListEnrollmentsOptions {

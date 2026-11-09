@@ -9,6 +9,7 @@
 import { randomBytes } from 'node:crypto';
 import { getDb } from './client';
 import { mapCertificateRow } from './mappers';
+import { parsePageParams, toPage, type Page } from './pagination';
 import type { Certificate } from './types';
 
 export async function getCertificatesByStudent(studentId: string): Promise<Certificate[]> {
@@ -38,6 +39,30 @@ export async function getCertificateByNumber(
     .first();
   if (!row) return null;
   return mapCertificateRow(row);
+}
+
+export interface ListCertificatesOptions {
+  studentId?: string;
+  courseId?: string;
+  page?: string | string[];
+  limit?: string | string[];
+}
+
+/** Paginated certificate list (admin). */
+export async function listCertificates(opts: ListCertificatesOptions = {}): Promise<Page<Certificate>> {
+  const params = parsePageParams({ page: opts.page, limit: opts.limit });
+  let query = getDb().orm.public.Certificate;
+  if (opts.studentId) query = query.where({ studentId: opts.studentId });
+  if (opts.courseId) query = query.where({ courseId: opts.courseId });
+  const total = (await query.all()).length;
+  const rows = await query.orderBy((c) => c.issuedAt.desc()).limit(params.limit).offset(params.offset).all();
+  return toPage(rows.map(mapCertificateRow), total, params);
+}
+
+/** Total certificate count — used to generate the next CB-<year>-<seq> number. */
+export async function countCertificates(): Promise<number> {
+  const rows = await getDb().orm.public.Certificate.all();
+  return rows.length;
 }
 
 export interface IssueCertificateInput {

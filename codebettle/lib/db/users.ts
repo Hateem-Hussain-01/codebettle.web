@@ -15,9 +15,9 @@
  *   the old lib/data shape pages rely on.
  */
 import { getDb } from './client';
-import { mapUserRow, toSafeUser } from './mappers';
+import { mapUserRow, stripUndefined, toSafeUser } from './mappers';
 import { parsePageParams, toPage, type Page } from './pagination';
-import type { SafeUser, User, UserRole, UserStatus } from './types';
+import type { SafeUser, SocialLinks, User, UserRole, UserStatus } from './types';
 
 export async function getUserById(id: string): Promise<SafeUser | null> {
   const row = await getDb()
@@ -150,6 +150,47 @@ export async function createUser(input: CreateUserInput): Promise<SafeUser> {
     expertise: [],
   });
   return toSafeUser(mapUserRow(row));
+}
+
+export interface UpdateUserInput {
+  name?: string;
+  email?: string;
+  phone?: string | null;
+  avatar?: string | null;
+  bio?: string | null;
+  expertise?: string[];
+  socialLinks?: SocialLinks | null;
+  /** Role changes are policy-checked in admin-service; the repository just applies them. */
+  role?: UserRole;
+}
+
+/**
+ * Update a user's editable details. Returns the safe user (never the hash),
+ * or null when the user does not exist (or is soft-deleted). No hard deletes
+ * anywhere — deletion stays softDeleteUser.
+ */
+export async function updateUser(id: string, input: UpdateUserInput): Promise<SafeUser | null> {
+  const row = await getDb()
+    .orm.public.User.where({ id })
+    .where((u) => u.deletedAt.isNull())
+    .update(
+      stripUndefined({
+        name: input.name,
+        email: input.email,
+        phone: input.phone,
+        avatar: input.avatar,
+        bio: input.bio,
+        expertise: input.expertise,
+        // JSON round-trip: SocialLinks has no index signature, so it is not
+        // assignable to Prisma's JsonValue; the parsed value is plain JSON.
+        socialLinks: input.socialLinks
+          ? JSON.parse(JSON.stringify(input.socialLinks))
+          : input.socialLinks,
+        role: input.role,
+      }),
+    );
+  if (!row) return null;
+  return getUserById(id);
 }
 
 export async function updateUserPassword(id: string, passwordHash: string): Promise<boolean> {

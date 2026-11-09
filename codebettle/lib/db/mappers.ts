@@ -91,6 +91,20 @@ export function stringToDate(s: string | null | undefined): Date | null {
   return d;
 }
 
+/**
+ * Drop keys whose value is undefined from a partial update object.
+ * Real Prisma ignores undefined in update data, but the in-memory fake
+ * (tests) applies Object.assign, which would overwrite a stored value
+ * with undefined — so every repository update strips them first.
+ */
+export function stripUndefined<T extends Record<string, unknown>>(obj: T): Partial<T> {
+  const out: Record<string, unknown> = {};
+  for (const [k, v] of Object.entries(obj)) {
+    if (v !== undefined) out[k] = v;
+  }
+  return out as Partial<T>;
+}
+
 /** Safely read a Json column as a SocialLinks object (null when absent/invalid). */
 export function toSocialLinks(value: unknown): SocialLinks | undefined {
   if (value === null || value === undefined) return undefined;

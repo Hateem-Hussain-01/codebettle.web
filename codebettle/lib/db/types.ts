@@ -207,6 +207,19 @@ export interface BlogPost {
   tags: string[];
 }
 
+/** An instructor application from the become-instructor form. No message field exists in the contract — the form's free-text message has nowhere to be stored (see Phase 3 report). */
+export interface InstructorApplication {
+  id: string;
+  name: string;
+  email: string;
+  phone?: string;
+  expertise?: string;
+  experience?: string;
+  status: ApplicationStatus;
+  reviewedBy?: string;
+  createdAt: string;
+}
+
 export interface SessionRecord {
   /** SHA-256 hash of the opaque token. The raw token is never stored. */
   id: string;
@@ -380,6 +393,11 @@ export type BlogPostRow = Pick<
   | 'tags'
   | 'createdAt'
   | 'updatedAt'
+>;
+
+export type ApplicationRow = Pick<
+  Models.public_InstructorApplication,
+  'id' | 'name' | 'email' | 'phone' | 'expertise' | 'experience' | 'status' | 'reviewedBy' | 'createdAt'
 >;
 
 export type SessionRow = Pick<
