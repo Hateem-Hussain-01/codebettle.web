@@ -7,6 +7,8 @@
  */
 import { createBlogPost, deleteBlogPost, getBlogPostById, getPostBySlug, updateBlogPost } from '../db/blog';
 import { logAudit } from '../db/audit';
+import { BLOG_PDF_BUCKET, deleteBlogPdf } from './blog-storage';
+import type { SupabaseClient } from '@supabase/supabase-js';
 import type { BlogPost } from '../db/types';
 import { badRequest, forbidden, notFound, type Actor, type ServiceError } from './errors';
 
@@ -47,7 +49,9 @@ export async function createBlogPostService(
   const slug = input.slug.trim();
   if (!slug) return badRequest('Slug is required');
   if (!input.title.trim()) return badRequest('Title is required');
-  if (!input.content.trim()) return badRequest('Content is required');
+  if (!input.content.trim() && !(input.pdfUrl ?? '').trim()) {
+    return badRequest('Content or a PDF is required');
+  }
   const authorName = input.authorName?.trim() || actor.name?.trim() || '';
   if (!authorName) return badRequest('Author name is required');
   if (await getPostBySlug(slug)) return badRequest('A blog post with this slug already exists');
@@ -117,13 +121,41 @@ export async function updateBlogPostService(
 export async function deleteBlogPostService(
   actor: Actor,
   postId: string,
+  storageClient?: SupabaseClient,
 ): Promise<Result<{ success: true }>> {
   const post = await getBlogPostById(postId);
   if (!post) return notFound('Blog post');
   const denied = isAuthorOrAdmin(actor, post);
   if (denied) return denied;
+  // Remove the stored PDF first, when the post still points at the
+  // blog-pdfs bucket. A storage failure must NOT block the row delete:
+  // the post is gone either way, and a leftover file is harmless.
+  const storagePath = blogPdfStoragePath(post.pdfUrl);
+  if (storagePath) {
+    try {
+      await deleteBlogPdf(storagePath, storageClient);
+    } catch (e) {
+      console.error(`Blog PDF cleanup failed for post ${postId} (${storagePath}):`, e);
+    }
+  }
   const removed = await deleteBlogPost(postId);
   if (!removed) return notFound('Blog post');
   await logAudit({ actorId: actor.id, action: 'blog.delete', entity: 'blog', entityId: postId, detail: post.slug });
   return { success: true };
+}
+
+/**
+ * Derive the Supabase Storage path of a blog post's PDF from its stored
+ * URL, e.g. `https://<ref>.supabase.co/storage/v1/object/public/blog-pdfs/blogs/<uuid>.pdf`
+ * → `blogs/<uuid>.pdf`. Returns null when there is no pdfUrl, or when it
+ * does not point at the `blog-pdfs` bucket (external PDF links and bare
+ * paths are left alone — the delete simply skips storage cleanup).
+ */
+export function blogPdfStoragePath(pdfUrl: string | null | undefined): string | null {
+  if (!pdfUrl) return null;
+  const marker = `/${BLOG_PDF_BUCKET}/`;
+  const at = pdfUrl.indexOf(marker);
+  if (at === -1) return null;
+  const path = pdfUrl.slice(at + marker.length).split(/[?#]/, 1)[0];
+  return path ? path : null;
 }
