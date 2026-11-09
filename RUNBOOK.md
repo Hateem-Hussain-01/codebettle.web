@@ -548,3 +548,77 @@ when the bucket is missing.
   the quiz API routes (role check allows admin), but the
   `/instructor/quizzes` pages redirect non-instructors to login — same
   as every other instructor page.
+
+---
+
+## 6. Phase 6 — Selective neon + subtle 3D (10 Nov 2026)
+
+### 6.1. What Phase 6 adds (no behaviour, data, API, route, or schema change)
+
+- **Neon, exactly five buttons** — a thin gold arc travelling around
+  the border (conic-gradient ring, 3.5s loop) plus a soft gold glow,
+  via the opt-in `neon` prop on the shared `Button` component
+  (`components/ui/Button.tsx`, `.neon-btn` in `app/globals.css`):
+  1. Homepage hero — "Explore Courses"
+  2. Course page — "Enroll Now" / "Enroll for Free"
+  3. Student quiz start — "Start quiz"
+  4. Instructor quiz review — "Publish quiz"
+  5. Quiz attempt — "Submit quiz"
+  Every other button is unchanged. A test
+  (`tests/phase6-design.test.ts`) fails if a sixth neon button is
+  added — adding neon is a deliberate design decision, not a drive-by.
+  Disabled neon buttons show a dim static arc, no motion; keyboard
+  focus gets a visible gold outline.
+- **Subtle 3D** — elevation tokens (`--shadow-elev-1/2/3`) in
+  `app/globals.css`; hoverable `Card`s and `CourseCard`s lift 2px with
+  a layered shadow on hover and settle back on press; modals use the
+  deep `elev-3` shadow. Dark + gold identity is untouched.
+- **Reduced motion** — `@media (prefers-reduced-motion: reduce)` in
+  `globals.css` collapses all animations/transitions and turns off
+  smooth scrolling (the neon arc stays as a static gold arc);
+  framer-motion is wrapped in `<MotionConfig reducedMotion="user">`
+  in `app/layout.tsx` so entrance/floating animations also stop when
+  the user prefers it.
+
+### 6.2. Live verification (do this once, on the live site)
+
+1. Open the homepage — the "Explore Courses" button shows the gold
+   arc travelling around its border. The neighbouring "How It Works"
+   button has no arc.
+2. Open a course page — "Enroll Now" has the arc. Hover any course
+   card on `/courses` — it lifts slightly with a soft shadow.
+3. As a student, open a quiz start page — "Start quiz" has the arc;
+   submit an attempt — "Submit quiz" has the arc.
+4. As an instructor, open a draft quiz review — "Publish quiz" has
+   the arc (only while publish is enabled; a disabled Publish shows
+   a dim static arc).
+5. Turn on reduced motion in the OS/browser and reload — all arcs
+   are static, floating hero icons stop moving, and no hover lift
+   animates.
+
+### 6.3. Known gaps and honest limitations (Phase 6)
+
+- **No pixel screenshots were possible from the VM.** The system
+  Chromium refuses CLI startup (Hatch WebGL domain policy), the
+  Playwright browser download is blocked by the same egress proxy
+  that blocks Postgres, and the homepage returns 500 here without a
+  database — so the hero CTA could not be rendered on this machine
+  at all. What WAS verified here: the production-built CSS contains
+  every Phase 6 rule intact (keyframes, conic ring, mask, reduced-
+  motion block — extracted and inspected from `.next/static/chunks`);
+  the components render the exact classes (`renderToStaticMarkup`:
+  7/7 checks — neon present only when the prop is set, disabled
+  state kept, `card-lift` on hover Cards, `elev-3` on modals); the
+  production server renders the login page 200 with the new CSS;
+  `npx tsc --noEmit` clean, `npm test` **219/219 pass** (208 in
+  Phase 5 + 11 new), `npm run build` exit 0. The travelling motion
+  itself and the final look on a real screen are unverified until
+  someone opens the live site — do the §6.2 checks there, and treat
+  a user screenshot as the result if it disagrees with this report.
+- **The typewriter in the hero still types under reduced motion.**
+  It changes text content on a timer (pre-existing behaviour), not
+  a CSS/framer animation, so the reduced-motion rules do not touch
+  it. Freezing it is a small follow-up if wanted — it was left
+  alone deliberately to avoid a behaviour change in a polish pass.
+- **No schema, migration, or seed change in Phase 6.** Migrations
+  2–5 and the seed are still the user's steps from §§1–5 above.
