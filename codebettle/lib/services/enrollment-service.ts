@@ -118,3 +118,38 @@ export async function deleteEnrollmentService(
   await logAudit({ actorId: actor.id, action: 'enrollment.delete', entity: 'enrollment', entityId: enrollmentId });
   return { success: true };
 }
+
+/**
+ * Instructor-scoped certificate eligibility (Phase 3 integration).
+ * An instructor may set eligibility ONLY for enrolments in courses they
+ * teach (RBAC markCompletion, ownership-scoped). Admins use the admin
+ * enrolment PATCH instead. There is no instructor review storage — the
+ * contract deliberately has no instructor-review columns — so reviews
+ * are not collected here.
+ */
+export async function setCertificateEligibility(
+  actor: Actor,
+  enrollmentId: string,
+  eligible: boolean,
+): Promise<Result<{ enrollment: Enrollment }>> {
+  if (actor.role !== 'instructor') {
+    return forbidden('Only the course instructor can set certificate eligibility');
+  }
+  const existing = await getEnrollmentById(enrollmentId);
+  if (!existing) return notFound('Enrollment');
+  const course = await getCourseById(existing.courseId);
+  if (!course) return notFound('Course');
+  if (course.instructorId !== actor.id) {
+    return forbidden('You can only set eligibility for students in your own courses');
+  }
+  const updated = await updateEnrollment(enrollmentId, { certificateEligible: eligible });
+  if (!updated) return notFound('Enrollment');
+  await logAudit({
+    actorId: actor.id,
+    action: 'enrollment.eligibility',
+    entity: 'enrollment',
+    entityId: enrollmentId,
+    detail: eligible ? 'eligible' : 'not eligible',
+  });
+  return { enrollment: updated };
+}

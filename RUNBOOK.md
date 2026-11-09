@@ -165,3 +165,126 @@ by hand in the database, never with an invented password).
   (the purge report `~/workspace/your_files/codebettle-purge-report.txt`
   lists the commits). The app will not run from it without reverting
   the Phase 2 page conversions.
+
+---
+
+# Phase 3 — Live-Database & Storage Runbook
+
+Same rule as above: everything here needs a machine whose network can
+reach Postgres (Eman's laptop, the Vultr VM, or CI). This VM cannot run
+any of it (egress proxy resets Postgres-protocol connections). All
+commands run from the `codebettle/` folder of the
+`feature/complete-management-system-upgrade` branch, with `DATABASE_URL`
+already in the gitignored `.env.local`.
+
+## 3.1. Apply migration 3 (`20261109T2032_add_application_message`)
+
+Phase 3 adds one schema change: a nullable `message` column on
+`InstructorApplication` (the become-instructor form's "Why do you want
+to teach?" answer). Migration 3 is exactly one operation:
+
+```sql
+ALTER TABLE "public"."InstructorApplication" ADD COLUMN "message" text;
+```
+
+Apply migrations 2 and 3 together on a machine with DB access (after
+marking migration 1 applied, §1 above):
+
+```bash
+cd codebettle
+npx prisma migrate deploy
+```
+
+SQL Editor fallback (run by hand, then record both migrations applied —
+see §1 for the `migrate resolve` note):
+
+```sql
+ALTER TABLE "public"."Lesson" ADD COLUMN "date" timestamptz(3);
+ALTER TABLE "public"."InstructorApplication" ADD COLUMN "message" text;
+```
+
+Then verify the column exists:
+
+```sql
+SELECT column_name FROM information_schema.columns
+WHERE table_schema = 'public' AND table_name = 'InstructorApplication' AND column_name = 'message';
+-- expected: 1 row
+```
+
+Existing applications (if any) get `message = NULL` — no data migration
+is needed.
+
+## 3.2. Create the `blog-pdfs` bucket (private)
+
+In the Supabase dashboard: **Storage → New bucket → name `blog-pdfs`
+→ Private** (leave "Public bucket" off). Uploads and deletes go through
+the server-side service-role key, so a private bucket is correct — the
+upload route returns a public URL for each file, and readers open that
+URL directly. Do NOT make the bucket public: the URLs are per-file and
+unguessable (UUID paths), and a public bucket would list nothing extra
+but invites misuse.
+
+Verify in the dashboard that the bucket exists and is private before
+testing uploads — a missing bucket surfaces as a 500 ("Blog PDF upload
+failed") from `/api/admin/blog/upload`.
+
+## 3.3. Set SUPABASE_SERVICE_ROLE_KEY
+
+Supabase dashboard → **Project Settings → API → `service_role` key**
+(the `service_role` secret, NOT the publishable/anon key). Add it to:
+
+- `.env.local` (local dev / live-DB runs): `SUPABASE_SERVICE_ROLE_KEY=<key>`
+- Vercel project → Settings → Environment Variables (Production +
+  Preview): same name and value. Redeploy after adding it.
+
+Never commit the key, never paste it in chat, never put it in a
+`NEXT_PUBLIC_` variable — it bypasses storage policies and must stay
+server-side. Without it, PDF uploads return **503** with a plain
+message ("Blog PDF uploads are not configured yet"); everything else
+in the app keeps working.
+
+## 3.4. Verify (live machine only)
+
+1. Sign in as an admin (first-run setup, §4 above).
+2. Open the admin blog page, create an article: fill in the rich-text
+   editor, then upload a small PDF via the "Upload PDF" button →
+   expect the upload to return **200** and the stored file link to
+   open the PDF in a new tab. Save the article, then open it on the
+   public `/blog/<slug>` page: the PDF button and the in-page preview
+   must both show.
+3. Edit the same article (change the title), save, and confirm the
+   change on the public page.
+4. Unpublish it from the admin list (eye icon) → it must disappear
+   from `/blog`; publish it again → it returns.
+5. Delete it → the article disappears and its stored PDF is removed
+   from the `blog-pdfs` bucket (check Storage → `blog-pdfs` → `blogs/`
+   in the dashboard; the file should be gone).
+6. End-to-end write flows (other Phase 3 workers' areas — verify them
+   together): create/edit/publish a course, enrol a student, mark a
+   lesson complete, issue a certificate. Each step must persist after a
+   page reload (no more local-only saves).
+
+## 3.5. Known gaps (not done in Phase 3 — do not mistake them for bugs)
+
+- **Certificate numbers are count-based.** Two simultaneous
+  certificate issues can compute the same number; the second fails
+  with 400. In practice this is rare (an admin issues one at a time),
+  but a true fix needs a database sequence or a unique-constraint
+  retry loop.
+- **Password-reset email is still not configured** (Resend + Eman's
+  domain pending — see §6). Tokens are created and expire unused.
+- **Rate limiting is still in-memory** (`lib/rate-limit.ts`): works for
+  one server instance, resets on restart. Upstash Redis is the planned
+  swap; no credentials yet.
+- **A post delete only removes the stored PDF when its `pdfUrl` still
+  points at the `blog-pdfs` bucket.** An external PDF link (or a URL
+  edited by hand) is left alone, and a storage failure is logged but
+  never blocks the delete — a leftover file in that case must be
+  removed by hand from Storage → `blog-pdfs`.
+- **No live-DB verification was possible from the VM.** Migrations,
+  seed, bucket creation, uploads and the §3.4 smoke test are all
+  unverified until run on a machine with open network. The offline
+  evidence is: `npx tsc --noEmit` clean, `npm test` all passing
+  (including `tests/blog-pdf-delete.test.ts`, which covers the storage
+  path derivation and the delete-then-cleanup flow with a mocked
+  storage client).

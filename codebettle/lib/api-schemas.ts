@@ -21,6 +21,15 @@ export const courseCategories = [
 export const courseLevels = ['beginner', 'intermediate', 'advanced'] as const;
 export const courseStatuses = ['draft', 'published', 'archived'] as const;
 
+export const scheduleSchema = z.object({
+  classTime: z.string().min(1),
+  classDuration: z.string(),
+  scheduleType: z.enum(['weekdays', 'weekends', 'whole-week', 'custom']),
+  customDays: z.array(z.string()).optional(),
+  startDate: z.string().min(1),
+  notes: z.string().optional(),
+});
+
 export const courseCreateSchema = z.object({
   slug: z.string().min(1),
   title: z.string().min(1),
@@ -33,6 +42,7 @@ export const courseCreateSchema = z.object({
   isFree: z.boolean().optional(),
   instructorId: z.string().min(1).optional(),
   zoomLink: z.string().optional(),
+  schedule: scheduleSchema.optional(),
   requirements: z.array(z.string()).optional(),
   whatYouLearn: z.array(z.string()).optional(),
   tags: z.array(z.string()).optional(),
@@ -49,6 +59,7 @@ export const courseUpdateSchema = z.object({
   isFree: z.boolean().optional(),
   instructorId: z.string().min(1).optional(),
   zoomLink: z.string().nullable().optional(),
+  schedule: scheduleSchema.nullable().optional(),
   status: z.enum(courseStatuses).optional(),
   isFeatured: z.boolean().optional(),
   isCompleted: z.boolean().optional(),
@@ -113,6 +124,7 @@ export const applicationCreateSchema = z.object({
   phone: z.string().optional(),
   expertise: z.string().optional(),
   experience: z.string().optional(),
+  message: z.string().optional(),
 });
 
 export const applicationReviewSchema = z.object({
@@ -126,26 +138,30 @@ export const certificateCreateSchema = z.object({
   certificateNumber: z.string().min(1).optional(),
 });
 
-export const blogCreateSchema = z.object({
-  slug: z.string().min(1),
-  title: z.string().min(1),
-  excerpt: z.string().min(1),
-  content: z.string().min(1),
-  pdfUrl: z.string().optional(),
-  thumbnail: z.string().min(1),
-  category: z.string().min(1),
-  authorName: z.string().optional(),
-  publishedAt: z.string().optional(),
-  isPublished: z.boolean().optional(),
-  readTime: z.string().min(1),
-  tags: z.array(z.string()).optional(),
-});
+export const blogCreateSchema = z
+  .object({
+    slug: z.string().min(1),
+    title: z.string().min(1),
+    excerpt: z.string().min(1),
+    content: z.string(),
+    pdfUrl: z.string().optional(),
+    thumbnail: z.string().min(1),
+    category: z.string().min(1),
+    authorName: z.string().optional(),
+    publishedAt: z.string().optional(),
+    isPublished: z.boolean().optional(),
+    readTime: z.string().min(1),
+    tags: z.array(z.string()).optional(),
+  })
+  .refine((d) => d.content.trim() !== '' || (d.pdfUrl ?? '').trim() !== '', {
+    message: 'Add article content or upload a PDF',
+  });
 
 export const blogUpdateSchema = z.object({
   slug: z.string().min(1).optional(),
   title: z.string().min(1).optional(),
   excerpt: z.string().optional(),
-  content: z.string().min(1).optional(),
+  content: z.string().optional(),
   pdfUrl: z.string().nullable().optional(),
   thumbnail: z.string().optional(),
   category: z.string().optional(),

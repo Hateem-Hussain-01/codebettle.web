@@ -11,7 +11,7 @@
 import { getDb } from './client';
 import { categoryToStorage, mapCourseRow, mapLessonRow, mapModuleRow, stringToDate, stripUndefined } from './mappers';
 import { parsePageParams, toPage, type Page } from './pagination';
-import type { Course, CourseCategory, CourseLevel, CourseStatus, Lesson, Module } from './types';
+import type { Course, CourseCategory, CourseLevel, CourseSchedule, CourseStatus, Lesson, Module } from './types';
 
 export async function getCourseById(id: string): Promise<Course | null> {
   const row = await getDb()
@@ -152,6 +152,7 @@ export interface CreateCourseInput {
   isFree: boolean;
   instructorId: string;
   zoomLink?: string;
+  schedule?: CourseSchedule | null;
   requirements?: string[];
   whatYouLearn?: string[];
   tags?: string[];
@@ -171,6 +172,7 @@ export async function createCourse(input: CreateCourseInput): Promise<Course> {
     isFree: input.isFree,
     instructorId: input.instructorId,
     zoomLink: input.zoomLink ?? null,
+    schedule: input.schedule ?? null,
     status: 'draft',
     requirements: input.requirements ?? [],
     whatYouLearn: input.whatYouLearn ?? [],
@@ -190,6 +192,7 @@ export interface UpdateCourseInput {
   isFree?: boolean;
   instructorId?: string;
   zoomLink?: string | null;
+  schedule?: CourseSchedule | null;
   status?: CourseStatus;
   isFeatured?: boolean;
   isCompleted?: boolean;

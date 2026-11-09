@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { invalidBody, readJson, requireAdmin } from '@/lib/api-helpers';
 import { applicationCreateSchema } from '@/lib/api-schemas';
 import { listApplications } from '@/lib/db/applications';
+import { getUserById } from '@/lib/db/users';
 import { submitApplication } from '@/lib/services/application-service';
 import type { ApplicationStatus } from '@/lib/db/types';
 
@@ -27,8 +28,18 @@ export async function GET(request: NextRequest) {
     page: params.get('page') ?? undefined,
     limit: params.get('limit') ?? undefined,
   });
+  // Resolve reviewer ids to names (one lookup per distinct reviewer).
+  const reviewerIds = [...new Set(page.items.map((a) => a.reviewedBy).filter((x): x is string => !!x))];
+  const reviewerNames = new Map<string, string>();
+  for (const id of reviewerIds) {
+    const user = await getUserById(id);
+    if (user) reviewerNames.set(id, user.name);
+  }
   return NextResponse.json({
-    applications: page.items,
+    applications: page.items.map((a) => ({
+      ...a,
+      reviewedByName: a.reviewedBy ? (reviewerNames.get(a.reviewedBy) ?? null) : null,
+    })),
     page: page.page,
     totalPages: page.totalPages,
     total: page.total,

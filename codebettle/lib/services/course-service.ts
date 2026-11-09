@@ -26,7 +26,7 @@ import {
 import { getUserById } from '../db/users';
 import { logAudit } from '../db/audit';
 import { can } from '../rbac';
-import type { Course, CourseCategory, CourseLevel, CourseStatus, Lesson, Module } from '../db/types';
+import type { Course, CourseCategory, CourseLevel, CourseSchedule, CourseStatus, Lesson, Module } from '../db/types';
 import { badRequest, forbidden, notFound, type Actor, type ServiceError } from './errors';
 
 type Result<T> = T | ServiceError;
@@ -66,6 +66,7 @@ export interface CreateCourseServiceInput {
   isFree?: boolean;
   instructorId?: string;
   zoomLink?: string;
+  schedule?: CourseSchedule | null;
   requirements?: string[];
   whatYouLearn?: string[];
   tags?: string[];
@@ -103,6 +104,7 @@ export async function createCourseService(
     isFree: input.isFree ?? input.price === 0,
     instructorId,
     zoomLink: input.zoomLink,
+    schedule: input.schedule ?? null,
     requirements: input.requirements,
     whatYouLearn: input.whatYouLearn,
     tags: input.tags,
@@ -122,6 +124,7 @@ export interface UpdateCourseServiceInput {
   isFree?: boolean;
   instructorId?: string;
   zoomLink?: string | null;
+  schedule?: CourseSchedule | null;
   status?: CourseStatus;
   isFeatured?: boolean;
   isCompleted?: boolean;
@@ -161,6 +164,7 @@ export async function updateCourseService(
     isFree: input.isFree,
     instructorId: input.instructorId,
     zoomLink: input.zoomLink,
+    schedule: input.schedule,
     status: input.status,
     isFeatured: input.isFeatured,
     isCompleted: input.isCompleted,
