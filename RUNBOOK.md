@@ -413,13 +413,14 @@ In the Supabase dashboard → Storage → `blog-pdfs`, download the
   SDK, no domain). Wire the real Resend send into that one file when
   the domain arrives — no other code changes. Until then, users who
   turn email notifications on in preferences get in-app only.
-- **Announcement notifications are not wired yet.** There is no
-  server-side announcement-creation path today (the admin
-  announcements page keeps state locally and `createAnnouncement`
-  has no callers), so `onAnnouncementPublished` has nothing to hook
-  into. When a server-side announcement API is built, add one line
-  after `createAnnouncement` returns:
-  `await onAnnouncementPublished(announcement);`
+- **Announcement notifications are wired (closed in Phase 5).**
+  `POST /api/admin/announcements` (admin only) creates the announcement
+  and calls `onAnnouncementPublished` right after it (course
+  announcements -> enrolled students, site-wide -> every user). The
+  hook is best-effort — a notification failure never blocks the
+  announcement. The admin announcements page itself still keeps state
+  locally (pre-existing); wiring its create button to the new API is a
+  small fetch swap, not done yet.
 - **Two integrity summaries exist** (`lib/services/reporting-service.ts`
   `getDataIntegritySummary` for the reports page, and
   `lib/services/data-integrity-service.ts` `getIntegritySummary` for
@@ -438,3 +439,112 @@ In the Supabase dashboard → Storage → `blog-pdfs`, download the
   new: 12 reporting, 13 notifications, 27 automation/data, 5 Phase 4
   integration), `npm run build` exit 0, `npx prisma migration check`
   passes (4 migrations, 5 contracts).
+
+---
+
+## 5. Phase 5 — PDF quiz workflow (10 Nov 2026)
+
+### 5.1. What Phase 5 adds
+
+- **Quiz models** (migration 5, `20261109T2113_add_quiz_models`, 28 ops):
+  `Quiz`, `QuizQuestion`, `QuizOption`, `QuizAttempt`, `QuizAnswer`.
+  No quiz seed data — quizzes are teacher-created content, never invented.
+- **Sample template:** `GET /api/quizzes/sample` downloads a generated
+  PDF (`codebettle-sample-quiz.pdf`, 11 questions: MCQ x3, fill-blank x2,
+  checkbox x2, Choose Two x2, Choose Three x2) that shows the exact
+  format the parser expects. It is generated in code
+  (`lib/services/quiz-sample-pdf.ts`), so the format and the parser
+  always agree.
+- **Teacher flow:** create a draft quiz for your own course
+  (`/instructor/quizzes`), upload an externally-AI-generated PDF
+  (any AI tool — the app never calls an AI provider), review and edit
+  every parsed question, then publish. Publish is blocked until every
+  question is reviewed and has a valid answer key.
+- **Student flow:** `/student/quizzes` lists published quizzes for
+  enrolled courses; attempt UI has a server-enforced timer, question
+  navigation, and exact-selection enforcement (Choose Two needs exactly
+  two). Auto-submit on timeout. Grading is automatic (exact and partial
+  policies); results follow the quiz's show/hide settings.
+- **Answer-key security:** students only ever receive the public quiz
+  shape (no `isCorrect`, `correctText`, `acceptedAnswers`). Verified by
+  route tests that fetch the start-attempt and resume payloads as a
+  student and assert the key is absent.
+- **Announcements API (Phase 4 gap, closed):** `POST /api/admin/announcements`
+  + hook wired (see §4.4).
+
+### 5.2. Apply migration 5
+
+On a machine with DB access (same place as §1–§4):
+
+```bash
+cd codebettle
+npx prisma migrate deploy
+```
+
+Then verify the five tables exist:
+
+```sql
+SELECT table_name FROM information_schema.tables
+WHERE table_schema = 'public'
+  AND table_name IN ('Quiz', 'QuizQuestion', 'QuizOption', 'QuizAttempt', 'QuizAnswer');
+-- expected: 5 rows
+```
+
+Record migration 5 applied the same way as migrations 2–4 (§1).
+Migration 5 is a TypeScript Prisma migration (no plain-SQL file to paste
+into the SQL Editor); if `migrate deploy` cannot run, generate the SQL
+with `npx prisma migrate diff --from-migrations --to-migrations` on a
+machine with the repo and apply that output by hand.
+
+### 5.3. Create the `quiz-pdfs` bucket (private)
+
+Same as §3.2, but bucket name **`quiz-pdfs`**, Private. Uploaded quiz
+PDFs live at `quizzes/<uuid>.pdf`. The `SUPABASE_SERVICE_ROLE_KEY`
+from §3.3 is shared with `blog-pdfs` — no new key. A missing bucket
+surfaces as 503 ("Quiz PDF uploads are not configured yet") from the
+upload route when the key is missing, or 500 ("Quiz PDF import failed")
+when the bucket is missing.
+
+### 5.4. Live verification (do this once, on the live site)
+
+1. Log in as an instructor, open **Quizzes**, download the sample PDF,
+   create a draft quiz, upload the sample PDF. Expect: 11 questions,
+   0 warnings, all marked reviewed.
+2. Publish it. Then log in as an enrolled student, open **Quizzes**,
+   start the quiz, answer all 11 questions (the key is in the sample
+   PDF's Answer Key section), submit. Expect: score 11/11 (or the
+   sample's total points), result shown.
+3. Open the instructor **Analytics** for the quiz. Expect: 1 submitted
+   attempt, per-question accuracy 100% for answered questions.
+4. As a student, open the browser devtools Network tab while starting
+   a quiz and confirm the attempt response contains no `isCorrect`,
+   `correctText`, or `acceptedAnswers` fields.
+5. Upload a scanned/image PDF (no text) to a draft quiz. Expect: a
+   clear "no readable text" message and 0 questions — the teacher adds
+   questions manually.
+
+### 5.5. Known gaps and honest limitations (Phase 5)
+
+- **No live-DB / live-Storage verification was possible from the VM.**
+  Migration 5, the `quiz-pdfs` bucket, PDF upload to real Storage, and
+  the §5.4 live flow are all unverified until run on a machine with
+  open network. The offline evidence is: `npx tsc --noEmit` clean,
+  `npm test` **208/208 pass** (165 in Phase 4 + 43 new: 14 parser,
+  7 grading, 16 service, 6 API), `npm run build` exit 0,
+  `npx prisma migration check` passes (5 migrations). PDF parsing of a
+  *real teacher file* is also unverified — only the generated sample
+  PDF round-trips in tests; a teacher PDF in a different layout will
+  produce parse warnings (by design) and needs manual review.
+- **No OCR.** Scanned/image PDFs have no extractable text, so the
+  parser reports them as scanned and imports nothing. The teacher adds
+  questions manually in the review editor. Do not claim OCR exists.
+- **The admin announcements page still keeps state locally** (see §4.4)
+  — the new API exists, the page is not wired to it yet.
+- **Attempt answers are only saved at submit time.** A student who
+  closes the browser mid-attempt keeps the in-progress attempt and can
+  resume it, but answers typed before closing are not persisted until
+  submit. (Per-question autosave is a Phase 7 hardening item if wanted.)
+- **The instructor portal layout is instructor-only.** Admins can use
+  the quiz API routes (role check allows admin), but the
+  `/instructor/quizzes` pages redirect non-instructors to login — same
+  as every other instructor page.
