@@ -607,6 +607,20 @@ export interface QuizAttempt {
   answers?: QuizAnswer[];
 }
 
+/** An answer as a student may see it: their own selections only, no grading fields. */
+export interface StudentQuizAnswer {
+  id: string;
+  attemptId: string;
+  questionId: string;
+  selectedOptionIds: string[];
+  textAnswer?: string;
+}
+
+/** An attempt as a student may see it: selections without grading fields. */
+export interface StudentQuizAttempt extends Omit<QuizAttempt, 'answers'> {
+  answers?: StudentQuizAnswer[];
+}
+
 /** A question as a student may see it: options without correctness, no key text. */
 export interface PublicQuizOption {
   id: string;

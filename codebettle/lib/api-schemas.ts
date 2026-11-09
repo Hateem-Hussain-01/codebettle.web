@@ -190,3 +190,74 @@ export const userUpdateSchema = z.object({
     .optional(),
   role: z.enum(['student', 'instructor']).optional(),
 });
+
+// ---------------------------------------------------------------------------
+// Quiz (Phase 5)
+// ---------------------------------------------------------------------------
+
+export const quizQuestionTypes = ['mcq', 'fill_blank', 'checkbox', 'choose_two', 'choose_three'] as const;
+export const quizStatuses = ['draft', 'published', 'archived'] as const;
+
+export const quizCreateSchema = z.object({
+  courseId: z.string().min(1),
+  title: z.string().min(1),
+  description: z.string().optional(),
+  topics: z.array(z.string()).optional(),
+  difficulty: z.enum(courseLevels).optional(),
+  timeLimitMin: z.number().int().positive().optional(),
+  attemptsAllowed: z.number().int().min(1).optional(),
+  passMark: z.number().int().min(0).max(100).optional(),
+  scoringPolicy: z.enum(['exact', 'partial']).optional(),
+  showResultsToStudents: z.boolean().optional(),
+  showCorrectAnswers: z.boolean().optional(),
+  availableFrom: z.string().nullable().optional(),
+  availableUntil: z.string().nullable().optional(),
+  instructions: z.string().optional(),
+});
+
+export const quizUpdateSchema = z.object({
+  title: z.string().min(1).optional(),
+  description: z.string().nullable().optional(),
+  topics: z.array(z.string()).optional(),
+  difficulty: z.enum(courseLevels).nullable().optional(),
+  timeLimitMin: z.number().int().positive().nullable().optional(),
+  attemptsAllowed: z.number().int().min(1).optional(),
+  passMark: z.number().int().min(0).max(100).nullable().optional(),
+  scoringPolicy: z.enum(['exact', 'partial']).optional(),
+  showResultsToStudents: z.boolean().optional(),
+  showCorrectAnswers: z.boolean().optional(),
+  availableFrom: z.string().nullable().optional(),
+  availableUntil: z.string().nullable().optional(),
+  instructions: z.string().nullable().optional(),
+  action: z.enum(['publish', 'unpublish', 'archive']).optional(),
+});
+
+export const quizReviewQuestionSchema = z.object({
+  type: z.enum(quizQuestionTypes),
+  prompt: z.string().min(1),
+  points: z.number().int().min(1),
+  topic: z.string().optional(),
+  difficulty: z.enum(courseLevels).optional(),
+  correctText: z.string().optional(),
+  acceptedAnswers: z.array(z.string()).optional(),
+  needsReview: z.boolean().optional(),
+  reviewNote: z.string().optional(),
+  options: z
+    .array(z.object({ text: z.string().min(1), isCorrect: z.boolean().optional() }))
+    .optional()
+    .default([]),
+});
+
+export const quizReviewSchema = z.object({
+  questions: z.array(quizReviewQuestionSchema),
+});
+
+export const quizSubmitSchema = z.object({
+  answers: z.array(
+    z.object({
+      questionId: z.string().min(1),
+      selectedOptionIds: z.array(z.string()).optional().default([]),
+      textAnswer: z.string().optional(),
+    }),
+  ),
+});

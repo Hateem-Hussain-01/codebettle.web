@@ -34,20 +34,21 @@ import {
   updateAttempt,
   updateQuiz,
   type QuizQuestionInput,
+  type UpdateQuizInput,
 } from '../db/quizzes';
 import { getUserById } from '../db/users';
 import { toPublicQuiz } from '../db/mappers';
 import type {
-  Actor,
   Quiz,
   QuizAnswer,
   QuizAttempt,
   QuizQuestion,
   QuizQuestionType,
   QuizScoringPolicy,
+  StudentQuizAttempt,
 } from '../db/types';
 import { requiredSelectionCount, QUIZ_QUESTION_TYPES } from '../db/types';
-import { badRequest, forbidden, notFound, type ServiceError } from './errors';
+import { badRequest, forbidden, notFound, type Actor, type ServiceError } from './errors';
 import { gradeAttempt } from './quiz-grading';
 import { parseQuizPdf, MAX_QUIZ_PDF_BYTES, type ParsedQuestion } from './quiz-parser';
 import { uploadQuizPdf, type QuizPdfFile } from './quiz-storage';
@@ -313,6 +314,29 @@ export async function publishQuiz(actor: Actor, quizId: string): Promise<Result<
   return { quiz: updated };
 }
 
+export async function updateQuizForTeacher(
+  actor: Actor,
+  quizId: string,
+  input: Omit<UpdateQuizInput, 'status' | 'pdfUrl' | 'pdfStoragePath' | 'parseWarnings'>,
+): Promise<Result<{ quiz: Quiz }>> {
+  const loaded = await loadQuizForManagement(actor, quizId);
+  if ('error' in loaded) return loaded;
+  if (loaded.quiz.status === 'archived') return badRequest('An archived quiz cannot be edited');
+  if (input.timeLimitMin !== undefined && input.timeLimitMin !== null && input.timeLimitMin <= 0) {
+    return badRequest('Time limit must be a positive number of minutes');
+  }
+  if (input.attemptsAllowed !== undefined && input.attemptsAllowed < 1) {
+    return badRequest('Attempts allowed must be at least 1');
+  }
+  if (input.passMark !== undefined && input.passMark !== null && (input.passMark < 0 || input.passMark > 100)) {
+    return badRequest('Pass mark must be between 0 and 100');
+  }
+  const updated = await updateQuiz(quizId, input);
+  if (!updated) return notFound('Quiz');
+  await audit(actor.id, 'quiz.update', quizId, updated.title);
+  return { quiz: updated };
+}
+
 export async function setQuizStatus(
   actor: Actor,
   quizId: string,
@@ -352,6 +376,20 @@ export interface AvailableQuiz {
   hasSubmitted: boolean;
 }
 
+/** Student-safe attempt: the student's own selections, no grading fields on answers. */
+function toStudentAttempt(attempt: QuizAttempt): StudentQuizAttempt {
+  return {
+    ...attempt,
+    answers: (attempt.answers ?? []).map((a) => ({
+      id: a.id,
+      attemptId: a.attemptId,
+      questionId: a.questionId,
+      selectedOptionIds: a.selectedOptionIds,
+      textAnswer: a.textAnswer,
+    })),
+  };
+}
+
 export async function listAvailableQuizzes(actor: Actor): Promise<Result<{ quizzes: AvailableQuiz[] }>> {
   if (actor.role !== 'student') return forbidden('Only students can list available quizzes');
   const enrollments = await getEnrollmentsByStudent(actor.id);
@@ -384,7 +422,7 @@ export async function startAttempt(
   actor: Actor,
   quizId: string,
   now: Date = new Date(),
-): Promise<Result<{ attempt: QuizAttempt; quiz: ReturnType<typeof toPublicQuiz>; serverNow: string }>> {
+): Promise<Result<{ attempt: StudentQuizAttempt; quiz: ReturnType<typeof toPublicQuiz>; serverNow: string }>> {
   if (actor.role !== 'student') return forbidden('Only students can start a quiz');
   const quiz = await getQuizById(quizId);
   if (!quiz) return notFound('Quiz');
@@ -396,7 +434,7 @@ export async function startAttempt(
   }
   const existing = await getInProgressAttempt(quizId, actor.id);
   if (existing) {
-    return { attempt: existing, quiz: toPublicQuiz(quiz), serverNow: now.toISOString() };
+    return { attempt: toStudentAttempt(existing), quiz: toPublicQuiz(quiz), serverNow: now.toISOString() };
   }
   const submitted = await countSubmittedAttempts(quizId, actor.id);
   if (submitted >= quiz.attemptsAllowed) {
@@ -404,21 +442,21 @@ export async function startAttempt(
   }
   const dueAt = quiz.timeLimitMin ? new Date(now.getTime() + quiz.timeLimitMin * 60_000) : null;
   const attempt = await createAttempt({ quizId, studentId: actor.id, dueAt, startedAt: now });
-  return { attempt, quiz: toPublicQuiz(quiz), serverNow: now.toISOString() };
+  return { attempt: toStudentAttempt(attempt), quiz: toPublicQuiz(quiz), serverNow: now.toISOString() };
 }
 
 export async function getAttemptForStudent(
   actor: Actor,
   attemptId: string,
   now: Date = new Date(),
-): Promise<Result<{ attempt: QuizAttempt; quiz: ReturnType<typeof toPublicQuiz>; serverNow: string }>> {
+): Promise<Result<{ attempt: StudentQuizAttempt; quiz: ReturnType<typeof toPublicQuiz>; serverNow: string }>> {
   if (actor.role !== 'student') return forbidden('Only students can view attempts');
   const attempt = await getAttemptById(attemptId);
   if (!attempt) return notFound('Attempt');
   if (attempt.studentId !== actor.id) return forbidden('This attempt belongs to another student');
   const quiz = await getQuizById(attempt.quizId);
   if (!quiz) return notFound('Quiz');
-  return { attempt, quiz: toPublicQuiz(quiz), serverNow: now.toISOString() };
+  return { attempt: toStudentAttempt(attempt), quiz: toPublicQuiz(quiz), serverNow: now.toISOString() };
 }
 
 export interface SubmitAnswerInput {
@@ -428,7 +466,7 @@ export interface SubmitAnswerInput {
 }
 
 export interface SubmitResult {
-  attempt: QuizAttempt;
+  attempt: StudentQuizAttempt;
   /** Null when the teacher hid results from students. */
   score: number | null;
   totalPoints: number | null;
@@ -519,7 +557,7 @@ export async function submitAttempt(
   await audit(actor.id, 'quiz.submit', quiz.id, `${quiz.title}: ${graded.score}/${graded.totalPoints}${submittedLate ? ' (late)' : ''}`);
 
   const result: SubmitResult = {
-    attempt: updated,
+    attempt: toStudentAttempt(updated),
     score: null,
     totalPoints: null,
     passed: null,
@@ -547,12 +585,12 @@ export async function submitAttempt(
 export async function listMyAttempts(
   actor: Actor,
   quizId: string,
-): Promise<Result<{ attempts: QuizAttempt[]; quiz: ReturnType<typeof toPublicQuiz> }>> {
+): Promise<Result<{ attempts: StudentQuizAttempt[]; quiz: ReturnType<typeof toPublicQuiz> }>> {
   if (actor.role !== 'student') return forbidden('Only students can list attempts');
   const quiz = await getQuizById(quizId);
   if (!quiz) return notFound('Quiz');
   const attempts = await listAttemptsByStudent(quizId, actor.id);
-  return { attempts, quiz: toPublicQuiz(quiz) };
+  return { attempts: attempts.map(toStudentAttempt), quiz: toPublicQuiz(quiz) };
 }
 
 // ---------------------------------------------------------------------------
