@@ -20,6 +20,7 @@ export function mapApplicationRow(row: ApplicationRow): InstructorApplication {
     phone: row.phone ?? undefined,
     expertise: row.expertise ?? undefined,
     experience: row.experience ?? undefined,
+    message: row.message ?? undefined,
     status: row.status,
     reviewedBy: row.reviewedBy ?? undefined,
     createdAt: dateToString(row.createdAt),
@@ -56,6 +57,7 @@ export interface CreateApplicationInput {
   phone?: string;
   expertise?: string;
   experience?: string;
+  message?: string;
 }
 
 /** Create a pending application. No auth — the public form calls this. */
@@ -66,6 +68,7 @@ export async function createApplication(input: CreateApplicationInput): Promise<
     phone: input.phone ?? null,
     expertise: input.expertise ?? null,
     experience: input.experience ?? null,
+    message: input.message ?? null,
     status: 'pending',
   });
   return mapApplicationRow(row);

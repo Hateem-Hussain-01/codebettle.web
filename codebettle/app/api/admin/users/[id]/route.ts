@@ -3,8 +3,15 @@ import { z } from 'zod';
 import { requireAdmin } from '@/lib/api-helpers';
 import { deleteManagedUser, setUserStatus, updateManagedUser } from '@/lib/admin-users';
 import { userUpdateSchema } from '@/lib/api-schemas';
+import { getCertificatesByStudent } from '@/lib/db/certificates';
+import { getCourseById } from '@/lib/db/courses';
+import { getEnrollmentsByStudent } from '@/lib/db/enrollments';
+import { getUserById } from '@/lib/db/users';
 
 /**
+ * GET /api/admin/users/[id] — one user plus their enrolments and
+ * certificates (admin only). Enrolments and certificates carry a
+ * courseTitle so the admin detail view needs no extra lookups.
  * PUT /api/admin/users/[id] — edit a user's details (admin only).
  * Role changes are student <-> instructor only (never to admin, never
  * your own role); see lib/services/admin-service.ts updateManagedUser.
@@ -18,6 +25,33 @@ import { userUpdateSchema } from '@/lib/api-schemas';
  * comes from lib/api-helpers so route tests can set a session without a
  * Next request scope (see __setTestSession there).
  */
+
+export async function GET(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const auth = await requireAdmin();
+  if ('error' in auth) return auth.error;
+  const { id } = await params;
+
+  const user = await getUserById(id);
+  if (!user) return NextResponse.json({ error: 'User not found' }, { status: 404 });
+  const [enrollments, certificates] = await Promise.all([
+    getEnrollmentsByStudent(id),
+    getCertificatesByStudent(id),
+  ]);
+  // One course-title lookup per distinct course (enrolments + certificates).
+  const courseIds = [...new Set([...enrollments.map((e) => e.courseId), ...certificates.map((c) => c.courseId)])];
+  const titles = new Map<string, string>();
+  await Promise.all(
+    courseIds.map(async (courseId) => {
+      const course = await getCourseById(courseId);
+      if (course) titles.set(courseId, course.title);
+    }),
+  );
+  return NextResponse.json({
+    user,
+    enrollments: enrollments.map((e) => ({ ...e, courseTitle: titles.get(e.courseId) ?? 'Unknown course' })),
+    certificates: certificates.map((c) => ({ ...c, courseTitle: titles.get(c.courseId) ?? 'Unknown course' })),
+  });
+}
 
 export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const auth = await requireAdmin();

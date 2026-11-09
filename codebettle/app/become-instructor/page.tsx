@@ -18,14 +18,33 @@ export default function BecomeInstructorPage() {
   const [form, setForm] = useState({ name: '', email: '', expertise: '', experience: '', message: '' });
   const [loading, setLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [submitError, setSubmitError] = useState('');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    await new Promise(r => setTimeout(r, 1000));
-    setSubmitted(true);
-    toast.success('Application submitted! We will review and contact you within 3-5 business days.');
-    setLoading(false);
+    setSubmitError('');
+    try {
+      const res = await fetch('/api/admin/applications', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: form.name.trim(),
+          email: form.email.trim(),
+          expertise: form.expertise.trim(),
+          experience: form.experience.trim(),
+          message: form.message.trim(),
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) { setSubmitError(data.error || 'Could not submit your application. Please try again.'); return; }
+      setSubmitted(true);
+      toast.success('Application submitted! We will review and contact you within 3-5 business days.');
+    } catch {
+      setSubmitError('Could not submit your application. Please check your connection and try again.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -72,6 +91,9 @@ export default function BecomeInstructorPage() {
                   <Input label="Area of Expertise" placeholder="e.g., React, Python, UI/UX Design" value={form.expertise} onChange={e => setForm(f => ({ ...f, expertise: e.target.value }))} required />
                   <Input label="Years of Experience" placeholder="e.g., 5 years as a full-stack developer" value={form.experience} onChange={e => setForm(f => ({ ...f, experience: e.target.value }))} required />
                   <Textarea label="Why do you want to teach?" placeholder="Tell us about yourself and your teaching goals..." value={form.message} onChange={e => setForm(f => ({ ...f, message: e.target.value }))} rows={4} required />
+                  {submitError && (
+                    <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-3 text-sm text-red-400">{submitError}</div>
+                  )}
                   <Button type="submit" size="lg" loading={loading} fullWidth><Send className="w-4 h-4" />Submit Application</Button>
                 </form>
               </div>

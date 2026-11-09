@@ -1,11 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { getSession } from '@/lib/auth';
-import { getStudents } from '@/lib/db/users';
+import { listUsers } from '@/lib/db/users';
 import { createManagedUser } from '@/lib/admin-users';
 
 /**
  * GET /api/admin/users — list students (safe fields only, never the password hash).
+ * Query params: page, limit, search (name match). Returns
+ * { users, page, totalPages, total }.
  * POST /api/admin/users — create a student or instructor (admin only).
  * Passwords are hashed server-side with bcrypt; the caller can never set a role of admin.
  * Business logic lives in lib/admin-users.ts so it is unit-testable;
@@ -21,11 +23,22 @@ async function requireAdmin() {
   return { session };
 }
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   const auth = await requireAdmin();
   if ('error' in auth) return auth.error;
-  const students = await getStudents();
-  return NextResponse.json({ users: students });
+  const params = request.nextUrl.searchParams;
+  const page = await listUsers({
+    role: 'student',
+    search: params.get('search') ?? undefined,
+    page: params.get('page') ?? undefined,
+    limit: params.get('limit') ?? undefined,
+  });
+  return NextResponse.json({
+    users: page.items,
+    page: page.page,
+    totalPages: page.totalPages,
+    total: page.total,
+  });
 }
 
 const createSchema = z.object({

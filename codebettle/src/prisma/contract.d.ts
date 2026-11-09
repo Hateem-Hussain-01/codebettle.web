@@ -23,7 +23,7 @@ import type {
 } from '@prisma/orm-postgres/contract/types';
 
 export type StorageHash =
-  StorageHashBase<'f5df89a7795d8de36a95a09cf54389d41b8d95fadb3e71fa80691ae53eb879c6'>;
+  StorageHashBase<'5981cbb700a4b6fd8e00afcc9e53948466c5c83fc644f0148074d7408f9d6afe'>;
 export type ExecutionHash =
   ExecutionHashBase<'ed225674692a0ad9d13dc048e5c52a023284b1dfdede1ce48dd2eb427f80b8cd'>;
 export type ProfileHash =
@@ -604,6 +604,7 @@ export namespace Models {
     experience: FieldOutputTypes['public']['InstructorApplication']['experience'];
     expertise: FieldOutputTypes['public']['InstructorApplication']['expertise'];
     id: FieldOutputTypes['public']['InstructorApplication']['id'];
+    message: FieldOutputTypes['public']['InstructorApplication']['message'];
     name: FieldOutputTypes['public']['InstructorApplication']['name'];
     phone: FieldOutputTypes['public']['InstructorApplication']['phone'];
     reviewedBy: FieldOutputTypes['public']['InstructorApplication']['reviewedBy'];
@@ -1829,6 +1830,12 @@ type ContractBase = Omit<
                   readonly dataType: 'pg/text';
                   readonly codecId: 'pg/text@1';
                   readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly message: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
                   readonly many: false;
                 };
                 readonly name: {
@@ -3808,6 +3815,10 @@ type ContractBase = Omit<
                 readonly nullable: false;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
               };
+              readonly message: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
               readonly name: {
                 readonly nullable: false;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
@@ -3845,6 +3856,7 @@ type ContractBase = Omit<
                 readonly experience: { readonly column: 'experience' };
                 readonly expertise: { readonly column: 'expertise' };
                 readonly id: { readonly column: 'id' };
+                readonly message: { readonly column: 'message' };
                 readonly name: { readonly column: 'name' };
                 readonly phone: { readonly column: 'phone' };
                 readonly reviewedBy: { readonly column: 'reviewedBy' };

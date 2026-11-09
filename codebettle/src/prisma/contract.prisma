@@ -316,6 +316,7 @@ model InstructorApplication {
   phone      String?
   expertise  String?
   experience String?
+  message    String?
   status     ApplicationStatus @default(pending)
   reviewedBy String?
   reviewer   User?             @relation("ApplicationReviewer", fields: [reviewedBy], references: [id])

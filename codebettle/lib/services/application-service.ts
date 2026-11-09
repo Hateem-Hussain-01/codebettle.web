@@ -19,6 +19,7 @@ export interface SubmitApplicationInput {
   phone?: string;
   expertise?: string;
   experience?: string;
+  message?: string;
 }
 
 export async function submitApplication(
@@ -34,6 +35,7 @@ export async function submitApplication(
     phone: input.phone?.trim() || undefined,
     expertise: input.expertise?.trim() || undefined,
     experience: input.experience?.trim() || undefined,
+    message: input.message?.trim() || undefined,
   });
   await logAudit({
     actorId: null,

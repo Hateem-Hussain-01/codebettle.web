@@ -1,0 +1,62 @@
+[
+  {
+    "id": "column.public.InstructorApplication.message",
+    "label": "Add column \"message\" to \"InstructorApplication\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "message",
+        "table": "InstructorApplication"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"message\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "InstructorApplication",
+          "message"
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "column \"message\" on \"InstructorApplication\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"message\"",
+        "sql": "ALTER TABLE \"public\".\"InstructorApplication\" ADD COLUMN \"message\" text"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"message\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "InstructorApplication",
+          "message"
+        ],
+        "expectation": {
+          "expects": "present",
+          "object": "column \"message\" on \"InstructorApplication\""
+        }
+      },
+      {
+        "description": "verify column \"message\" has type \"text\"",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_attribute\" AS \"a\" INNER JOIN \"pg_class\" AS \"c\" ON \"c\".\"oid\" = \"a\".\"attrelid\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"relnamespace\" WHERE (\"n\".\"nspname\" = $1 AND \"c\".\"relname\" = $2 AND \"a\".\"attname\" = $3 AND (format_type(\"a\".\"atttypid\", \"a\".\"atttypmod\")) = $4 AND NOT (\"a\".\"attisdropped\"))) AS \"result\"",
+        "params": [
+          "public",
+          "InstructorApplication",
+          "message",
+          "text"
+        ]
+      }
+    ]
+  }
+]

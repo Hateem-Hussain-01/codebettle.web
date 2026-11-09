@@ -58,14 +58,20 @@ export interface User {
 /** A user with the password hash removed — the only shape pages and API responses may carry. */
 export type SafeUser = Omit<User, 'passwordHash'>;
 
-export interface CourseSchedule {
+/**
+ * A course schedule. Declared as a `type` (not an `interface`) on purpose:
+ * Prisma's JsonValue requires an index signature, which interfaces do not
+ * carry implicitly — as a type alias this shape is assignable to JsonValue,
+ * so repositories can store it in the Course.schedule Json column.
+ */
+export type CourseSchedule = {
   classTime: string;
   classDuration: string;
   scheduleType: ScheduleType;
   customDays?: string[];
   startDate: string;
   notes?: string;
-}
+};
 
 export interface InstructorReview {
   rating: number;
@@ -207,7 +213,7 @@ export interface BlogPost {
   tags: string[];
 }
 
-/** An instructor application from the become-instructor form. No message field exists in the contract — the form's free-text message has nowhere to be stored (see Phase 3 report). */
+/** An instructor application from the become-instructor form. */
 export interface InstructorApplication {
   id: string;
   name: string;
@@ -215,6 +221,8 @@ export interface InstructorApplication {
   phone?: string;
   expertise?: string;
   experience?: string;
+  /** Free-text answer to "Why do you want to teach?" (nullable column, Phase 3). */
+  message?: string;
   status: ApplicationStatus;
   reviewedBy?: string;
   createdAt: string;
@@ -397,7 +405,7 @@ export type BlogPostRow = Pick<
 
 export type ApplicationRow = Pick<
   Models.public_InstructorApplication,
-  'id' | 'name' | 'email' | 'phone' | 'expertise' | 'experience' | 'status' | 'reviewedBy' | 'createdAt'
+  'id' | 'name' | 'email' | 'phone' | 'expertise' | 'experience' | 'message' | 'status' | 'reviewedBy' | 'createdAt'
 >;
 
 export type SessionRow = Pick<
