@@ -102,3 +102,29 @@ test('reset validates the new password', async () => {
   assert.ok('error' in result);
   assert.ok(await login(email, 'OldPass123'));
 });
+
+// --- Route rate limiting (Phase 7, SEC-05) ---
+
+test('POST /api/auth/reset request: 6th rapid request for one email is 429, another email is unaffected', async () => {
+  const { POST } = await import('../app/api/auth/reset/route');
+  const { __clearRateLimits } = await import('../lib/rate-limit');
+  const { NextRequest } = await import('next/server');
+  __clearRateLimits();
+  const email = await makeUser('ratelimit');
+  const req = (body: unknown, ip: string) =>
+    new NextRequest('http://localhost/api/auth/reset', {
+      method: 'POST',
+      body: JSON.stringify(body),
+      headers: { 'Content-Type': 'application/json', 'x-forwarded-for': ip },
+    });
+  for (let i = 0; i < 5; i++) {
+    const res = await POST(req({ action: 'request', email }, '10.9.9.9'));
+    assert.equal(res.status, 200, `attempt ${i + 1}`);
+  }
+  const blocked = await POST(req({ action: 'request', email }, '10.9.9.9'));
+  assert.equal(blocked.status, 429);
+  // A different email from the same IP has its own window.
+  const other = await POST(req({ action: 'request', email: 'someone-else@example.com' }, '10.9.9.9'));
+  assert.equal(other.status, 200);
+  __clearRateLimits();
+});

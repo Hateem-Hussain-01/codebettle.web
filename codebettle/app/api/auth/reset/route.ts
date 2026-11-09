@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
+import { checkRateLimit, resetRateLimitKey } from '@/lib/rate-limit';
 import { requestPasswordReset, resetPassword } from '@/lib/services/password-reset-service';
 
 /**
@@ -32,6 +33,11 @@ const resetSchema = z.object({
   confirmPassword: z.string().optional(),
 });
 
+function clientIp(request: NextRequest): string {
+  const forwarded = request.headers.get('x-forwarded-for');
+  return forwarded ? forwarded.split(',')[0].trim() : 'unknown';
+}
+
 export async function POST(request: NextRequest) {
   let body: unknown;
   try {
@@ -46,6 +52,21 @@ export async function POST(request: NextRequest) {
     const parsed = requestSchema.safeParse(body);
     if (!parsed.success) {
       return NextResponse.json({ error: 'Email is required' }, { status: 400 });
+    }
+    // Rate-limited like login (Phase 7, SEC-05): without this, anyone
+    // could request resets endlessly for any email — minting tokens
+    // forever and, once Resend is wired, mail-bombing the victim.
+    // The 429 still returns the generic message shape (no oracle).
+    const limit = checkRateLimit(
+      resetRateLimitKey(clientIp(request), parsed.data.email),
+      5,
+      15 * 60 * 1000,
+    );
+    if (!limit.allowed) {
+      return NextResponse.json(
+        { error: 'Too many reset requests. Please try again later.' },
+        { status: 429 },
+      );
     }
     // No deliver callback yet — email is not configured (see header).
     // The token is created and stored (hashed); it expires in 60 min.

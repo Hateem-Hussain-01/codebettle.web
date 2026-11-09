@@ -48,6 +48,11 @@ export function loginRateLimitKey(ip: string, email: string): string {
   return `login:${ip}:${email.toLowerCase()}`;
 }
 
+/** Password-reset requests: 5 per 15 minutes, keyed by IP + email. */
+export function resetRateLimitKey(ip: string, email: string): string {
+  return `reset:${ip}:${email.toLowerCase()}`;
+}
+
 /** Contact-form submissions: 5 per 15 minutes, keyed by IP (spam guard). */
 export function contactRateLimitKey(ip: string): string {
   return `contact:${ip}`;
