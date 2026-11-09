@@ -1,20 +1,21 @@
 import { cookies } from 'next/headers';
-import { getUserById } from './data/users';
-import { createSessionRecord, revokeSessionToken, validateSessionToken } from './session-store';
-import { toSessionUser } from './auth-core';
+import { getUserById } from './db/users';
+import { createSessionRecord, revokeSessionToken, validateSessionToken } from './db/sessions';
+import { toSessionUser } from './services/auth-service';
 
 // Re-export the testable core for existing import sites (routes, pages).
-export { changePassword, login, registerUser, toSafeUser } from './auth-core';
-export type { RegisterInput, SessionUser } from './auth-core';
+export { changePassword, login, registerUser, toSafeUser } from './services/auth-service';
+export type { RegisterInput, SessionUser } from './services/auth-service';
 
 /**
- * Authentication — cookie/session layer (Phase 1, server-side sessions).
+ * Authentication — cookie/session layer (Phase 2, Prisma-backed sessions).
  *
  * The session cookie holds ONE opaque random token. The role is read from
- * the server-side session store + user record on every request — never
+ * the server-side session record + user record on every request — never
  * from the cookie. Forging a cookie is useless without a store entry.
  * Suspension revokes sessions, so a suspended user is logged out at once.
- * Pure logic (login, register, change password) lives in lib/auth-core.ts.
+ * Pure logic (login, register, change password) lives in
+ * lib/services/auth-service.ts.
  */
 
 export const SESSION_COOKIE = 'cb_session';
@@ -36,17 +37,17 @@ export async function getSession() {
   const token = cookieStore.get(SESSION_COOKIE)?.value;
   if (!token) return null;
 
-  const record = validateSessionToken(token);
+  const record = await validateSessionToken(token);
   if (!record) return null;
 
-  const dbUser = getUserById(record.userId);
+  const dbUser = await getUserById(record.userId);
   if (!dbUser || dbUser.status === 'suspended') return null;
   return toSessionUser(dbUser);
 }
 
 /** Create a server-side session for a user id. Returns the raw opaque token (set it as an httpOnly cookie once). */
-export function createSession(userId: string, meta?: { ip?: string; userAgent?: string }): string {
-  const { token } = createSessionRecord(userId, meta);
+export async function createSession(userId: string, meta?: { ip?: string; userAgent?: string }): Promise<string> {
+  const { token } = await createSessionRecord(userId, meta);
   return token;
 }
 

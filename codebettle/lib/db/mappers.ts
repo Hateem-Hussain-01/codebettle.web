@@ -158,7 +158,7 @@ export function mapUserRow(row: UserRow, enrolledCourseIds?: string[]): User {
     socialLinks: toSocialLinks(row.socialLinks),
     status: row.status,
     joinedAt: dateToString(row.joinedAt),
-    enrolledCourses: enrolledCourseIds,
+    enrolledCourses: enrolledCourseIds ?? [],
     wishlist: [],
   };
 }

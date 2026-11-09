@@ -11,6 +11,16 @@ import {
   sessionCookieOptions,
 } from '@/lib/auth';
 import { checkRateLimit, loginRateLimitKey } from '@/lib/rate-limit';
+import { recordLoginEvent } from '@/lib/db/login-events';
+
+/** Login-event recording is best-effort: it must never block a sign-in. */
+async function safeRecordLoginEvent(input: Parameters<typeof recordLoginEvent>[0]): Promise<void> {
+  try {
+    await recordLoginEvent(input);
+  } catch (e) {
+    console.error('Failed to record login event', e);
+  }
+}
 
 /**
  * POST /api/auth — login / register / logout / change-password.
@@ -20,8 +30,8 @@ import { checkRateLimit, loginRateLimitKey } from '@/lib/rate-limit';
  *   by the caller (registration always creates a student).
  * - Login errors are generic: the same message for unknown email, wrong
  *   password, or suspended account.
- * - Login is rate-limited (5 attempts / 15 min per IP + email, in-memory
- *   for Phase 1; Upstash Redis in Phase 2).
+ * - Login is rate-limited (5 attempts / 15 min per IP + email, in-memory;
+ *   Upstash Redis is still pending — see RUNBOOK.md).
  * - Sessions are opaque tokens validated server-side (see lib/auth.ts).
  */
 
@@ -85,9 +95,22 @@ export async function POST(request: NextRequest) {
     const user = await login(email, password);
     if (!user) {
       // Generic on purpose — never reveal whether the email exists.
+      await safeRecordLoginEvent({
+        email,
+        success: false,
+        ip,
+        userAgent: request.headers.get('user-agent') ?? undefined,
+      });
       return NextResponse.json({ error: 'Invalid email or password' }, { status: 401 });
     }
-    const token = createSession(user.id, {
+    await safeRecordLoginEvent({
+      email,
+      userId: user.id,
+      success: true,
+      ip,
+      userAgent: request.headers.get('user-agent') ?? undefined,
+    });
+    const token = await createSession(user.id, {
       ip,
       userAgent: request.headers.get('user-agent') ?? undefined,
     });
@@ -113,7 +136,7 @@ export async function POST(request: NextRequest) {
     if (!created) {
       return NextResponse.json({ error: 'Account created. Please sign in.' }, { status: 201 });
     }
-    const token = createSession(created.id, {
+    const token = await createSession(created.id, {
       ip: clientIp(request),
       userAgent: request.headers.get('user-agent') ?? undefined,
     });

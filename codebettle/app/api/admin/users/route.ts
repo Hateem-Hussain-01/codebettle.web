@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
-import { getSession, toSafeUser } from '@/lib/auth';
-import { getStudents } from '@/lib/data/users';
+import { getSession } from '@/lib/auth';
+import { getStudents } from '@/lib/db/users';
 import { createManagedUser } from '@/lib/admin-users';
 
 /**
@@ -24,7 +24,7 @@ async function requireAdmin() {
 export async function GET() {
   const auth = await requireAdmin();
   if ('error' in auth) return auth.error;
-  const students = getStudents().map(toSafeUser);
+  const students = await getStudents();
   return NextResponse.json({ users: students });
 }
 

@@ -1,10 +1,20 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { changePassword, login, registerUser } from '../lib/auth-core';
-import { getUserByEmail } from '../lib/data/users';
+import { getUserByEmail } from '../lib/db/users';
+import { __resetDbClient, __setDbClient } from '../lib/db/client';
+import { createFakeDb } from './fake-db';
 
 const suffix = () => `${Date.now()}-${Math.floor(Math.random() * 1e6)}`;
 const testEmail = (tag: string) => `test-${tag}-${suffix()}@example.com`;
+
+test.beforeEach(() => {
+  __setDbClient(createFakeDb().asClient());
+});
+
+test.afterEach(() => {
+  __resetDbClient();
+});
 
 test('register -> login round-trips with a bcrypt hash; wrong password and unknown email fail', async () => {
   const email = testEmail('register');
@@ -17,7 +27,7 @@ test('register -> login round-trips with a bcrypt hash; wrong password and unkno
   assert.equal(created.user.role, 'student');
   assert.equal('passwordHash' in created.user, false);
 
-  const stored = getUserByEmail(email);
+  const stored = await getUserByEmail(email);
   assert.ok(stored);
   assert.match(stored.passwordHash, /^\$2[aby]\$12\$/);
 

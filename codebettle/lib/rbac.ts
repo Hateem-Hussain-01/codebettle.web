@@ -1,4 +1,4 @@
-import type { UserRole } from './data/users';
+import type { UserRole } from './db/types';
 
 /**
  * Role-based access control matrix (transformation plan §4).
