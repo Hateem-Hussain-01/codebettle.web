@@ -42,6 +42,9 @@ const TIMESTAMP_DEFAULTS = new Set([
 const RELATIONS: Record<string, Record<string, { model: string; fk: string }>> = {
   Course: { modules: { model: 'Module', fk: 'courseId' } },
   Module: { lessons: { model: 'Lesson', fk: 'moduleId' } },
+  Quiz: { questions: { model: 'QuizQuestion', fk: 'quizId' } },
+  QuizQuestion: { options: { model: 'QuizOption', fk: 'questionId' } },
+  QuizAttempt: { answers: { model: 'QuizAnswer', fk: 'attemptId' } },
 };
 
 /** Nullable columns per model. The real database stores NULL for an
@@ -59,6 +62,10 @@ const NULLABLE_FIELDS: Record<string, string[]> = {
   AuditLog: ['entityId', 'detail', 'ip'],
   LoginEvent: ['userId', 'ip', 'userAgent'],
   PasswordReset: ['usedAt'],
+  Quiz: ['description', 'difficulty', 'timeLimitMin', 'passMark', 'availableFrom', 'availableUntil', 'instructions', 'pdfUrl', 'pdfStoragePath', 'parseWarnings', 'deletedAt'],
+  QuizQuestion: ['topic', 'difficulty', 'correctText', 'reviewNote'],
+  QuizAttempt: ['dueAt', 'submittedAt', 'score', 'totalPoints', 'timeSpentSec'],
+  QuizAnswer: ['textAnswer', 'isCorrect'],
 };
 
 let idCounter = 0;

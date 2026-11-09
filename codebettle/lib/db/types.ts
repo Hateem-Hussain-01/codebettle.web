@@ -486,3 +486,231 @@ export type NotificationRow = Pick<
   Models.public_Notification,
   'id' | 'userId' | 'type' | 'title' | 'body' | 'readAt' | 'createdAt'
 >;
+
+// ---------------------------------------------------------------------------
+// Quiz (Phase 5) — domain types and row shapes.
+// ---------------------------------------------------------------------------
+export type QuizStatus = 'draft' | 'published' | 'archived';
+export type QuizQuestionType = 'mcq' | 'fill_blank' | 'checkbox' | 'choose_two' | 'choose_three';
+export type QuizAttemptStatus = 'in_progress' | 'submitted';
+export type QuizScoringPolicy = 'exact' | 'partial';
+
+export const QUIZ_QUESTION_TYPES: readonly QuizQuestionType[] = [
+  'mcq',
+  'fill_blank',
+  'checkbox',
+  'choose_two',
+  'choose_three',
+] as const;
+
+/**
+ * Exact selection count a question type requires, or null when any
+ * non-empty selection is allowed (checkbox) / no options apply
+ * (fill-in-the-blank). Enforced server-side on submit and in the UI.
+ */
+export function requiredSelectionCount(type: QuizQuestionType): number | null {
+  switch (type) {
+    case 'mcq':
+      return 1;
+    case 'choose_two':
+      return 2;
+    case 'choose_three':
+      return 3;
+    default:
+      return null;
+  }
+}
+
+/** A parse problem the parser flagged (never silently guessed). Stored as Json on Quiz.parseWarnings. Declared as a `type` (not an interface) so it stays assignable to Prisma's JsonValue. */
+export type ParseWarning = {
+  questionNumber?: number;
+  message: string;
+  severity: 'error' | 'warning';
+};
+
+export interface QuizOption {
+  id: string;
+  questionId: string;
+  text: string;
+  position: number;
+  /** SERVER-SIDE ONLY. Never send to a student. */
+  isCorrect: boolean;
+}
+
+export interface QuizQuestion {
+  id: string;
+  quizId: string;
+  type: QuizQuestionType;
+  position: number;
+  prompt: string;
+  points: number;
+  topic?: string;
+  difficulty?: CourseLevel;
+  /** SERVER-SIDE ONLY (fill-in-the-blank key). Never send to a student. */
+  correctText?: string;
+  /** SERVER-SIDE ONLY (fill-in-the-blank alternates). Never send to a student. */
+  acceptedAnswers: string[];
+  needsReview: boolean;
+  reviewNote?: string;
+  options: QuizOption[];
+}
+
+export interface Quiz {
+  id: string;
+  courseId: string;
+  title: string;
+  description?: string;
+  topics: string[];
+  difficulty?: CourseLevel;
+  timeLimitMin?: number;
+  attemptsAllowed: number;
+  passMark?: number;
+  scoringPolicy: QuizScoringPolicy;
+  showResultsToStudents: boolean;
+  showCorrectAnswers: boolean;
+  availableFrom?: string;
+  availableUntil?: string;
+  instructions?: string;
+  status: QuizStatus;
+  createdById: string;
+  pdfUrl?: string;
+  pdfStoragePath?: string;
+  parseWarnings?: ParseWarning[];
+  createdAt: string;
+  updatedAt: string;
+  questions?: QuizQuestion[];
+}
+
+export interface QuizAnswer {
+  id: string;
+  attemptId: string;
+  questionId: string;
+  selectedOptionIds: string[];
+  textAnswer?: string;
+  isCorrect?: boolean;
+  pointsAwarded: number;
+  needsManualReview: boolean;
+}
+
+export interface QuizAttempt {
+  id: string;
+  quizId: string;
+  studentId: string;
+  status: QuizAttemptStatus;
+  startedAt: string;
+  dueAt?: string;
+  submittedAt?: string;
+  score?: number;
+  totalPoints?: number;
+  timeSpentSec?: number;
+  submittedLate: boolean;
+  answers?: QuizAnswer[];
+}
+
+/** A question as a student may see it: options without correctness, no key text. */
+export interface PublicQuizOption {
+  id: string;
+  text: string;
+  position: number;
+}
+
+export interface PublicQuizQuestion {
+  id: string;
+  type: QuizQuestionType;
+  position: number;
+  prompt: string;
+  points: number;
+  topic?: string;
+  options: PublicQuizOption[];
+}
+
+export interface PublicQuiz {
+  id: string;
+  courseId: string;
+  title: string;
+  description?: string;
+  topics: string[];
+  difficulty?: CourseLevel;
+  timeLimitMin?: number;
+  attemptsAllowed: number;
+  passMark?: number;
+  instructions?: string;
+  availableFrom?: string;
+  availableUntil?: string;
+  questions: PublicQuizQuestion[];
+}
+
+export type QuizRow = Pick<
+  Models.public_Quiz,
+  | 'id'
+  | 'courseId'
+  | 'title'
+  | 'description'
+  | 'topics'
+  | 'difficulty'
+  | 'timeLimitMin'
+  | 'attemptsAllowed'
+  | 'passMark'
+  | 'scoringPolicy'
+  | 'showResultsToStudents'
+  | 'showCorrectAnswers'
+  | 'availableFrom'
+  | 'availableUntil'
+  | 'instructions'
+  | 'status'
+  | 'createdById'
+  | 'pdfUrl'
+  | 'pdfStoragePath'
+  | 'parseWarnings'
+  | 'deletedAt'
+  | 'createdAt'
+  | 'updatedAt'
+>;
+
+export type QuizQuestionRow = Pick<
+  Models.public_QuizQuestion,
+  | 'id'
+  | 'quizId'
+  | 'type'
+  | 'position'
+  | 'prompt'
+  | 'points'
+  | 'topic'
+  | 'difficulty'
+  | 'correctText'
+  | 'acceptedAnswers'
+  | 'needsReview'
+  | 'reviewNote'
+>;
+
+export type QuizOptionRow = Pick<
+  Models.public_QuizOption,
+  'id' | 'questionId' | 'text' | 'position' | 'isCorrect'
+>;
+
+export type QuizAttemptRow = Pick<
+  Models.public_QuizAttempt,
+  | 'id'
+  | 'quizId'
+  | 'studentId'
+  | 'status'
+  | 'startedAt'
+  | 'dueAt'
+  | 'submittedAt'
+  | 'score'
+  | 'totalPoints'
+  | 'timeSpentSec'
+  | 'submittedLate'
+>;
+
+export type QuizAnswerRow = Pick<
+  Models.public_QuizAnswer,
+  | 'id'
+  | 'attemptId'
+  | 'questionId'
+  | 'selectedOptionIds'
+  | 'textAnswer'
+  | 'isCorrect'
+  | 'pointsAwarded'
+  | 'needsManualReview'
+>;

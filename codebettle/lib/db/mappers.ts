@@ -34,6 +34,18 @@ import type {
   NotificationEventKey,
   NotificationPrefs,
   NotificationRow,
+  ParseWarning,
+  PublicQuiz,
+  Quiz,
+  QuizAnswer,
+  QuizAnswerRow,
+  QuizAttempt,
+  QuizAttemptRow,
+  QuizOption,
+  QuizOptionRow,
+  QuizQuestion,
+  QuizQuestionRow,
+  QuizRow,
   Review,
   ReviewRow,
   SocialLinks,
@@ -383,5 +395,148 @@ export function mapBlogPostRow(row: BlogPostRow): BlogPost {
     isPublished: row.isPublished,
     readTime: row.readTime,
     tags: [...(row.tags ?? [])],
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Quiz (Phase 5).
+// ---------------------------------------------------------------------------
+
+/** Safely read the Quiz.parseWarnings Json column (null/invalid -> undefined). */
+export function readParseWarnings(value: unknown): ParseWarning[] | undefined {
+  if (!Array.isArray(value)) return undefined;
+  const out: ParseWarning[] = [];
+  for (const item of value) {
+    if (item && typeof item === 'object' && typeof (item as Record<string, unknown>).message === 'string') {
+      const rec = item as Record<string, unknown>;
+      out.push({
+        ...(typeof rec.questionNumber === 'number' ? { questionNumber: rec.questionNumber } : {}),
+        message: rec.message as string,
+        severity: rec.severity === 'error' ? 'error' : 'warning',
+      });
+    }
+  }
+  return out.length > 0 ? out : undefined;
+}
+
+export function mapQuizOptionRow(row: QuizOptionRow): QuizOption {
+  return {
+    id: row.id,
+    questionId: row.questionId,
+    text: row.text,
+    position: row.position,
+    isCorrect: row.isCorrect,
+  };
+}
+
+export function mapQuizQuestionRow(row: QuizQuestionRow, options: QuizOptionRow[]): QuizQuestion {
+  return {
+    id: row.id,
+    quizId: row.quizId,
+    type: row.type,
+    position: row.position,
+    prompt: row.prompt,
+    points: row.points,
+    topic: row.topic ?? undefined,
+    difficulty: row.difficulty ?? undefined,
+    correctText: row.correctText ?? undefined,
+    acceptedAnswers: [...(row.acceptedAnswers ?? [])],
+    needsReview: row.needsReview,
+    reviewNote: row.reviewNote ?? undefined,
+    options: options.map(mapQuizOptionRow),
+  };
+}
+
+export function mapQuizRow(
+  row: QuizRow,
+  questions: Array<{ question: QuizQuestionRow; options: QuizOptionRow[] }>,
+): Quiz {
+  return {
+    id: row.id,
+    courseId: row.courseId,
+    title: row.title,
+    description: row.description ?? undefined,
+    topics: [...(row.topics ?? [])],
+    difficulty: row.difficulty ?? undefined,
+    timeLimitMin: row.timeLimitMin ?? undefined,
+    attemptsAllowed: row.attemptsAllowed,
+    passMark: row.passMark ?? undefined,
+    scoringPolicy: row.scoringPolicy,
+    showResultsToStudents: row.showResultsToStudents,
+    showCorrectAnswers: row.showCorrectAnswers,
+    availableFrom: row.availableFrom ? row.availableFrom.toISOString() : undefined,
+    availableUntil: row.availableUntil ? row.availableUntil.toISOString() : undefined,
+    instructions: row.instructions ?? undefined,
+    status: row.status,
+    createdById: row.createdById,
+    pdfUrl: row.pdfUrl ?? undefined,
+    pdfStoragePath: row.pdfStoragePath ?? undefined,
+    parseWarnings: readParseWarnings(row.parseWarnings),
+    createdAt: row.createdAt.toISOString(),
+    updatedAt: row.updatedAt.toISOString(),
+    questions: questions.map(({ question, options }) => mapQuizQuestionRow(question, options)),
+  };
+}
+
+export function mapQuizAnswerRow(row: QuizAnswerRow): QuizAnswer {
+  return {
+    id: row.id,
+    attemptId: row.attemptId,
+    questionId: row.questionId,
+    selectedOptionIds: [...(row.selectedOptionIds ?? [])],
+    textAnswer: row.textAnswer ?? undefined,
+    isCorrect: row.isCorrect ?? undefined,
+    pointsAwarded: row.pointsAwarded,
+    needsManualReview: row.needsManualReview,
+  };
+}
+
+export function mapQuizAttemptRow(row: QuizAttemptRow, answers: QuizAnswerRow[]): QuizAttempt {
+  return {
+    id: row.id,
+    quizId: row.quizId,
+    studentId: row.studentId,
+    status: row.status,
+    startedAt: row.startedAt.toISOString(),
+    dueAt: row.dueAt ? row.dueAt.toISOString() : undefined,
+    submittedAt: row.submittedAt ? row.submittedAt.toISOString() : undefined,
+    score: row.score ?? undefined,
+    totalPoints: row.totalPoints ?? undefined,
+    timeSpentSec: row.timeSpentSec ?? undefined,
+    submittedLate: row.submittedLate,
+    answers: answers.map(mapQuizAnswerRow),
+  };
+}
+
+/**
+ * Strip the answer key from a quiz for student delivery. This is the ONLY
+ * shape students ever receive: option correctness, fill-in-the-blank
+ * key text and accepted alternates are all dropped here, and the service
+ * layer never returns the full Quiz to a student. Covered by
+ * tests/quiz-api.test.ts (asserts no key material anywhere in the payload).
+ */
+export function toPublicQuiz(quiz: Quiz): PublicQuiz {
+  return {
+    id: quiz.id,
+    courseId: quiz.courseId,
+    title: quiz.title,
+    description: quiz.description,
+    topics: [...quiz.topics],
+    difficulty: quiz.difficulty,
+    timeLimitMin: quiz.timeLimitMin,
+    attemptsAllowed: quiz.attemptsAllowed,
+    passMark: quiz.passMark,
+    instructions: quiz.instructions,
+    availableFrom: quiz.availableFrom,
+    availableUntil: quiz.availableUntil,
+    questions: (quiz.questions ?? []).map((q) => ({
+      id: q.id,
+      type: q.type,
+      position: q.position,
+      prompt: q.prompt,
+      points: q.points,
+      topic: q.topic,
+      options: q.options.map((o) => ({ id: o.id, text: o.text, position: o.position })),
+    })),
   };
 }
