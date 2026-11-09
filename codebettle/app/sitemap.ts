@@ -9,7 +9,13 @@ import { getPublishedPosts } from '@/lib/db/blog';
  * (/admin, /student, /instructor), auth pages and /verify are
  * deliberately absent — they are private or useless to index (robots
  * also disallows them). The canonical host is the live Vercel URL.
+ *
+ * force-dynamic: the sitemap reads the database, so it must be
+ * generated per request, not prerendered at build time (there is no
+ * database at build time).
  */
+export const dynamic = 'force-dynamic';
+
 const SITE_URL = 'https://codebettle-web.vercel.app';
 
 const STATIC_PAGES: { path: string; priority: number; changeFrequency: 'weekly' | 'monthly' }[] = [
