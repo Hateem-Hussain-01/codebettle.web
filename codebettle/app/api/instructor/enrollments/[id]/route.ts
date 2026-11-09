@@ -28,5 +28,5 @@ export async function PATCH(
   const { id } = await params;
   const result = await setCertificateEligibility(auth.session, id, parsed.data.certificateEligible);
   if ('error' in result) return serviceError(result);
-  return NextResponse.json({ enrollment: result.enrollment });
+  return NextResponse.json({ enrollment: result.enrollment, certificate: result.certificate });
 }

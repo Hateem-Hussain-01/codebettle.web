@@ -288,3 +288,153 @@ in the app keeps working.
   (including `tests/blog-pdf-delete.test.ts`, which covers the storage
   path derivation and the delete-then-cleanup flow with a mocked
   storage client).
+
+---
+
+# Phase 4 — Live-Database Runbook
+
+Same rule as above: everything here needs a machine whose network can
+reach Postgres (Eman's laptop, the Vultr VM, or CI). This VM cannot run
+any of it (egress proxy resets Postgres-protocol connections). All
+commands run from the `codebettle/` folder of the
+`feature/complete-management-system-upgrade` branch, with `DATABASE_URL`
+already in the gitignored `.env.local`.
+
+## 4.1. Apply migration 4 (`20261109T2055_add_user_notification_prefs`)
+
+Phase 4 adds one schema change: a nullable `notificationPrefs` JSON
+column on `User` (in-app/email toggles + per-event toggles; NULL means
+"all defaults": in-app on, email off, every event on). Migration 4 is
+exactly one operation:
+
+```sql
+ALTER TABLE "public"."User" ADD COLUMN "notificationPrefs" json;
+```
+
+Apply migrations 2–4 together on a machine with DB access (after
+marking migration 1 applied, §1 above):
+
+```bash
+cd codebettle
+npx prisma migrate deploy
+```
+
+SQL Editor fallback (run by hand, then record the migrations applied):
+
+```sql
+ALTER TABLE "public"."Lesson" ADD COLUMN "date" timestamptz(3);
+ALTER TABLE "public"."InstructorApplication" ADD COLUMN "message" text;
+ALTER TABLE "public"."User" ADD COLUMN "notificationPrefs" json;
+```
+
+Verify:
+
+```sql
+SELECT column_name FROM information_schema.columns
+WHERE table_schema = 'public' AND table_name = 'User' AND column_name = 'notificationPrefs';
+-- expected: 1 row
+```
+
+Existing users get `notificationPrefs = NULL` — no data migration is
+needed; the app treats NULL as defaults.
+
+## 4.2. Backup and restore
+
+**Backup (run on a machine with DB access, or in the Supabase
+dashboard → Database → Backups):**
+
+```bash
+# Full logical backup (schema + data) — keep the file somewhere safe, never in the repo:
+pg_dump "$DATABASE_URL" -F c -f codebettle-backup-$(date +%Y%m%d).dump
+
+# Or plain SQL (readable, restorable in the SQL Editor):
+pg_dump "$DATABASE_URL" -f codebettle-backup-$(date +%Y%m%d).sql
+```
+
+**Restore:**
+
+```bash
+pg_restore -d "$DATABASE_URL" codebettle-backup-YYYYMMDD.dump
+# or for the plain-SQL file:
+psql "$DATABASE_URL" -f codebettle-backup-YYYYMMDD.sql
+```
+
+**Data-only restore reference:** `codebettle/prisma/seed.sql` re-creates
+the original 161 demo rows (27 users / 8 courses / 15 enrolments / 6
+certificates, amountPaid PKR 57,489). It is NOT a backup — it only
+restores the seed data, never real users or enrolments created since.
+Re-running it on a database that already has those rows fails on
+duplicate keys (by design); to start over, truncate the seeded tables
+first (see the header comment in seed.sql).
+
+**Storage backup:** the `blog-pdfs` bucket is not covered by `pg_dump`.
+In the Supabase dashboard → Storage → `blog-pdfs`, download the
+`blogs/` folder periodically, or use the Supabase CLI
+(`supabase storage` commands) from a machine with the project ref.
+
+## 4.3. Verify (live machine only)
+
+1. Sign in as an admin (first-run setup, §4 above). Migrations 2–4
+   applied and the seed run (§2) must already be done.
+2. **Reports:** open `/admin/reports` — overview cards show real
+   totals (revenue = SUM(amountPaid), completion rate, certificates).
+   Pick a date range that excludes all enrolments → totals drop to 0
+   (proves the filter works, not fabricated numbers). Open one course
+   report and one student report; export each list as CSV and open the
+   file — it must contain every row in range, not just the first 100.
+3. **Notifications:** enrol a student (admin) → the student sees an
+   "You're enrolled" notification on `/student/notifications`. Mark a
+   course complete + eligible → the student gets a completion
+   notification AND a certificate notification (certificate number in
+   the body). Review an instructor application → every admin sees an
+   application notification. Mark all read, delete one — both must
+   persist after reload.
+4. **Auto-issue:** with a complete + eligible enrolment, the
+   certificate appears in `/admin/certificates` without anyone issuing
+   it by hand. Issue two certificates at the same time (two browser
+   tabs, same second) — both must succeed with different numbers
+   (CB-YYYY-NNN); the old count-collision failure is fixed.
+5. **CSV import:** `/admin/students/import` — paste a CSV with one
+   good row and one bad row (bad email): preview shows 1 valid + 1
+   invalid with the reason; Confirm imports only the good row. The
+   imported student cannot sign in (unusable password, same as the
+   seed) until a password is set via reset/setup.
+6. **Integrity:** `GET /api/admin/integrity` (admin session) returns
+   zero counts on a healthy database. The admin reports page also
+   shows the integrity card.
+
+## 4.4. Known gaps (not done in Phase 4 — do not mistake them for bugs)
+
+- **Email notifications are still not configured.** The in-app
+  notifications work; the email hook
+  (`lib/services/email-notifications.ts`) is deliberately inert:
+  without `RESEND_API_KEY` it logs once and returns
+  `email-not-configured`; even with a key it does not send (no Resend
+  SDK, no domain). Wire the real Resend send into that one file when
+  the domain arrives — no other code changes. Until then, users who
+  turn email notifications on in preferences get in-app only.
+- **Announcement notifications are not wired yet.** There is no
+  server-side announcement-creation path today (the admin
+  announcements page keeps state locally and `createAnnouncement`
+  has no callers), so `onAnnouncementPublished` has nothing to hook
+  into. When a server-side announcement API is built, add one line
+  after `createAnnouncement` returns:
+  `await onAnnouncementPublished(announcement);`
+- **Two integrity summaries exist** (`lib/services/reporting-service.ts`
+  `getDataIntegritySummary` for the reports page, and
+  `lib/services/data-integrity-service.ts` `getIntegritySummary` for
+  `/api/admin/integrity`). They check the same four things; check (d)
+  differs slightly (reviews with no enrolment vs reviews with missing
+  student/course). Harmless duplication; consolidate only if one of
+  them changes.
+- **Rate limiting is still in-memory** (`lib/rate-limit.ts`); Upstash
+  Redis is the planned swap; no credentials yet.
+- **Password-reset email is still not configured** (Resend + Eman's
+  domain pending — see §6).
+- **No live-DB verification was possible from the VM.** Migration 4,
+  backup/restore, and the §4.3 smoke test are all unverified until run
+  on a machine with open network. The offline evidence is: `npx tsc
+  --noEmit` clean, `npm test` **165/165 pass** (108 in Phase 3 + 57
+  new: 12 reporting, 13 notifications, 27 automation/data, 5 Phase 4
+  integration), `npm run build` exit 0, `npx prisma migration check`
+  passes (4 migrations, 5 contracts).

@@ -24,7 +24,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
   }
   const result = await updateEnrollmentService(auth.session, id, parsed.data);
   if ('error' in result) return serviceError(result);
-  return NextResponse.json({ enrollment: result.enrollment });
+  return NextResponse.json({ enrollment: result.enrollment, certificate: result.certificate });
 }
 
 export async function DELETE(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {

@@ -7,6 +7,7 @@
  */
 import { createApplication, getApplicationById, reviewApplication } from '../db/applications';
 import { logAudit } from '../db/audit';
+import { onApplicationReviewed } from './notification-service';
 import { normalizeEmail } from '../security';
 import type { InstructorApplication } from '../db/types';
 import { badRequest, forbidden, notFound, type Actor, type ServiceError } from './errors';
@@ -64,5 +65,7 @@ export async function reviewApplicationService(
     entityId: applicationId,
     detail: `${status} ${existing.email}`,
   });
+  // Notify the admins (Phase 4 hook — best-effort, never throws).
+  await onApplicationReviewed(reviewed, status);
   return { application: reviewed };
 }
