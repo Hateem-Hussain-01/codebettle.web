@@ -126,12 +126,6 @@ export type CourseSchedule = {
   notes?: string;
 };
 
-export interface InstructorReview {
-  rating: number;
-  comment: string;
-  submittedAt: string;
-}
-
 export interface Lesson {
   id: string;
   title: string;
@@ -167,10 +161,6 @@ export interface Course {
   isFeatured: boolean;
   isCompleted: boolean;
   completedAt?: string;
-  /** Not stored in the Phase 2 contract (no seed data carries them). Always undefined. */
-  instructorPrivateReview?: InstructorReview;
-  /** Not stored in the Phase 2 contract (no seed data carries them). Always undefined. */
-  instructorClassReview?: InstructorReview;
   modules: Module[];
   requirements: string[];
   whatYouLearn: string[];
@@ -181,6 +171,16 @@ export interface Course {
   createdAt: string;
   updatedAt: string;
 }
+
+/**
+ * The public course shape: everything a visitor may see, minus the Zoom
+ * link. Zoom links are for enrolled students only (see the student course
+ * page) — the public catalogue API, the public course pages and every
+ * client component they feed must use this shape, never the full Course.
+ * Admin and instructor surfaces keep the full shape (they are behind
+ * auth and need the link to run the class).
+ */
+export type PublicCourse = Omit<Course, 'zoomLink'>;
 
 export interface Enrollment {
   id: string;

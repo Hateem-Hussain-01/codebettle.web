@@ -87,39 +87,6 @@ export default async function AdminCourseDetailPage({ params }: PageProps<'/admi
         </Card>
       )}
 
-      {/* ── PRIVATE Instructor Review (admin only) ── */}
-      {course.instructorPrivateReview && (
-        <Card className="border-yellow-500/20">
-          <div className="flex items-center gap-2 mb-3">
-            <Lock className="w-4 h-4 text-yellow-400" />
-            <h2 className="text-white font-bold text-sm">Instructor's Private Review</h2>
-            <span className="text-xs px-2 py-0.5 rounded-full bg-yellow-500/10 text-yellow-400 border border-yellow-500/20 ml-auto">Admin Only</span>
-          </div>
-          <div className="flex items-center gap-2 mb-2">
-            <StarRating rating={course.instructorPrivateReview.rating} size="sm" />
-            <span className="text-muted text-xs">{course.instructorPrivateReview.rating}/5</span>
-            <span className="text-muted text-xs ml-auto">{formatDateShort(course.instructorPrivateReview.submittedAt)}</span>
-          </div>
-          <p className="text-muted text-sm leading-relaxed italic">"{course.instructorPrivateReview.comment}"</p>
-        </Card>
-      )}
-
-      {/* ── PUBLIC Instructor Review ── */}
-      {course.instructorClassReview && (
-        <Card className="border-primary/20">
-          <div className="flex items-center gap-2 mb-3">
-            <h2 className="text-white font-bold text-sm">Instructor's Class Review</h2>
-            <span className="text-xs px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20 ml-auto">Visible to students</span>
-          </div>
-          <div className="flex items-center gap-2 mb-2">
-            <StarRating rating={course.instructorClassReview.rating} size="sm" />
-            <span className="text-muted text-xs">{course.instructorClassReview.rating}/5</span>
-            <span className="text-muted text-xs ml-auto">{formatDateShort(course.instructorClassReview.submittedAt)}</span>
-          </div>
-          <p className="text-muted text-sm leading-relaxed italic">"{course.instructorClassReview.comment}"</p>
-        </Card>
-      )}
-
       {/* Schedule */}
       {course.schedule && (
         <Card>

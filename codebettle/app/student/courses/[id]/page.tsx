@@ -92,23 +92,8 @@ export default async function StudentCourseViewPage({ params }: PageProps<'/stud
         </div>
       )}
 
-      {/* ── Instructor Class Review (public) ── */}
-      {course.isCompleted && course.instructorClassReview && (
-        <Card className="border-primary/20">
-          <div className="flex items-start gap-3">
-            <img src={instructor?.avatar || ''} alt={instructor?.name} className="w-10 h-10 rounded-full border border-primary/30 flex-shrink-0" />
-            <div className="flex-1">
-              <div className="flex items-center gap-2 mb-1 flex-wrap">
-                <p className="text-white font-semibold text-sm">{instructor?.name}</p>
-                <span className="text-muted text-xs">· Instructor's Final Review</span>
-                <StarRating rating={course.instructorClassReview.rating} size="sm" />
-              </div>
-              <p className="text-muted text-sm leading-relaxed">"{course.instructorClassReview.comment}"</p>
-              <p className="text-muted text-xs mt-2">{formatDateShort(course.instructorClassReview.submittedAt)}</p>
-            </div>
-          </div>
-        </Card>
-      )}
+      {/* ── (Instructor class review was removed in Phase 7: the field was
+           never populated — no review data exists for it.) ── */}
 
       {/* Zoom link */}
       {course.zoomLink ? (

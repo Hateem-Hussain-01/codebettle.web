@@ -1,5 +1,6 @@
 import { connection } from 'next/server';
 import { getPublishedCourses } from '@/lib/db/courses';
+import { toPublicCourse } from '@/lib/db/mappers';
 import { getUserById } from '@/lib/db/users';
 import CoursesClient from './courses-client';
 
@@ -19,5 +20,5 @@ export default async function CoursesPage() {
     const instructor = await getUserById(id);
     instructorNames[id] = instructor?.name ?? 'Instructor';
   }
-  return <CoursesClient courses={allCourses} instructorNames={instructorNames} />;
+  return <CoursesClient courses={allCourses.map(toPublicCourse)} instructorNames={instructorNames} />;
 }

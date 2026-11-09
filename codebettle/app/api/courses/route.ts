@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { listCourses } from '@/lib/db/courses';
+import { toPublicCourse } from '@/lib/db/mappers';
 import type { CourseCategory, CourseLevel, CourseStatus } from '@/lib/db/types';
 
 /**
@@ -7,6 +8,8 @@ import type { CourseCategory, CourseLevel, CourseStatus } from '@/lib/db/types';
  * Query params: page, limit, search, category, level, status, instructorId.
  * No auth: the catalogue is public (same data the /courses page shows).
  * Unknown enum values are ignored (treated as no filter).
+ * Zoom links are stripped (toPublicCourse) — they are for enrolled
+ * students only; the public catalogue must never carry them.
  */
 const CATEGORIES = ['Web Development', 'Mobile Development', 'Data Science', 'UI/UX Design', 'DevOps', 'Programming'] as const;
 const LEVELS = ['beginner', 'intermediate', 'advanced'] as const;
@@ -28,5 +31,5 @@ export async function GET(request: NextRequest) {
     page: params.get('page') ?? undefined,
     limit: params.get('limit') ?? undefined,
   });
-  return NextResponse.json(page);
+  return NextResponse.json({ ...page, items: page.items.map(toPublicCourse) });
 }

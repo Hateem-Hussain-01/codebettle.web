@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { ArrowRight } from 'lucide-react';
 import CourseCard from '@/components/ui/CourseCard';
 import { getFeaturedCourses } from '@/lib/db/courses';
+import { toPublicCourse } from '@/lib/db/mappers';
 import { getUserById } from '@/lib/db/users';
 
 export default async function FeaturedCourses() {
@@ -32,7 +33,7 @@ export default async function FeaturedCourses() {
           {featured.map((course, i) => (
             <CourseCard
               key={course.id}
-              course={course}
+              course={toPublicCourse(course)}
               instructorName={instructorNames[course.instructorId] ?? 'CodeBettle Instructor'}
               index={i}
             />

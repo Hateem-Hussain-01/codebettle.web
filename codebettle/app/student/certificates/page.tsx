@@ -1,6 +1,7 @@
 import { getSession } from '@/lib/auth';
 import { getCertificatesByStudent } from '@/lib/db/certificates';
 import { getCourseById } from '@/lib/db/courses';
+import { toPublicCourse } from '@/lib/db/mappers';
 import StudentCertificatesClient from './student-certificates-client';
 
 /**
@@ -13,10 +14,10 @@ export default async function StudentCertificatesPage() {
   const session = await getSession();
   const certificates = await getCertificatesByStudent(session!.id);
   const courseIds = [...new Set(certificates.map((c) => c.courseId))];
-  const coursesById: Record<string, NonNullable<Awaited<ReturnType<typeof getCourseById>>>> = {};
+  const coursesById: Record<string, ReturnType<typeof toPublicCourse>> = {};
   for (const id of courseIds) {
     const course = await getCourseById(id);
-    if (course) coursesById[id] = course;
+    if (course) coursesById[id] = toPublicCourse(course);
   }
   return (
     <StudentCertificatesClient

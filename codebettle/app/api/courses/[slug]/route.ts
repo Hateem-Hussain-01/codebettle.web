@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getCourseBySlug } from '@/lib/db/courses';
+import { toPublicCourse } from '@/lib/db/mappers';
 
-/** GET /api/courses/[slug] — one course with its curriculum (public). */
+/** GET /api/courses/[slug] — one course with its curriculum (public). Zoom link stripped: enrolled students only. */
 export async function GET(
   _request: NextRequest,
   { params }: { params: Promise<{ slug: string }> },
@@ -11,5 +12,5 @@ export async function GET(
   if (!course) {
     return NextResponse.json({ error: 'Course not found' }, { status: 404 });
   }
-  return NextResponse.json(course);
+  return NextResponse.json(toPublicCourse(course));
 }

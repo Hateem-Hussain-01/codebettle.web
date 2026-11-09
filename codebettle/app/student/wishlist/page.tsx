@@ -1,4 +1,5 @@
 import { getCourseById } from '@/lib/db/courses';
+import { toPublicCourse } from '@/lib/db/mappers';
 import { getUserById } from '@/lib/db/users';
 import StudentWishlistClient from './student-wishlist-client';
 
@@ -22,5 +23,5 @@ export default async function StudentWishlistPage() {
     const instructor = await getUserById(id);
     instructorNames[id] = instructor?.name ?? 'Instructor';
   }
-  return <StudentWishlistClient courses={courses} instructorNames={instructorNames} />;
+  return <StudentWishlistClient courses={courses.map(toPublicCourse)} instructorNames={instructorNames} />;
 }

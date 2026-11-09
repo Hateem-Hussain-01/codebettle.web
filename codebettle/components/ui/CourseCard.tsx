@@ -5,10 +5,10 @@ import { motion } from 'framer-motion';
 import { Star, Users, BookOpen, Heart } from 'lucide-react';
 import Badge from './Badge';
 import { formatPrice, getLevelColor, getCategoryColor } from '@/lib/utils';
-import type { Course } from '@/lib/db/types';
+import type { PublicCourse } from '@/lib/db/types';
 
 interface CourseCardProps {
-  course: Course;
+  course: PublicCourse;
   instructorName: string;
   isWishlisted?: boolean;
   onWishlist?: (id: string) => void;

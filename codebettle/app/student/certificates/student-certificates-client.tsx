@@ -4,12 +4,12 @@ import { Award, Download } from 'lucide-react';
 import Button from '@/components/ui/Button';
 import Card from '@/components/ui/Card';
 import toast from 'react-hot-toast';
-import type { Certificate, Course } from '@/lib/db/types';
+import type { Certificate, PublicCourse } from '@/lib/db/types';
 import { formatDate } from '@/lib/utils';
 
 interface StudentCertificatesClientProps {
   certificates: Certificate[];
-  coursesById: Record<string, Course>;
+  coursesById: Record<string, PublicCourse>;
   studentName: string;
 }
 

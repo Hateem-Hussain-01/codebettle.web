@@ -35,6 +35,7 @@ import type {
   NotificationPrefs,
   NotificationRow,
   ParseWarning,
+  PublicCourse,
   PublicQuiz,
   Quiz,
   QuizAnswer,
@@ -226,6 +227,19 @@ export function toSafeUser(user: User): Omit<User, 'passwordHash'> {
   const { passwordHash: _passwordHash, ...safe } = user;
   void _passwordHash;
   return safe;
+}
+
+/**
+ * Public course shape: the full course minus the Zoom link. Use this for
+ * every payload that reaches an anonymous visitor or a client component
+ * on a public page (catalogue API, course detail API, /courses pages).
+ * Enrolled students get the link from the student course page instead,
+ * which checks the enrolment first.
+ */
+export function toPublicCourse(course: Course): PublicCourse {
+  const { zoomLink: _zoomLink, ...pub } = course;
+  void _zoomLink;
+  return pub;
 }
 
 export function mapLessonRow(row: LessonRow): Lesson {

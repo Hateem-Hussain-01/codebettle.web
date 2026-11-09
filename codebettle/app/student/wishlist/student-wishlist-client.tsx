@@ -3,13 +3,13 @@ import { useState } from 'react';
 import { Heart, Trash2 } from 'lucide-react';
 import CourseCard from '@/components/ui/CourseCard';
 import Card from '@/components/ui/Card';
-import type { Course } from '@/lib/db/types';
+import type { PublicCourse } from '@/lib/db/types';
 import toast from 'react-hot-toast';
 
 const INITIAL_WISHLIST = ['course-3', 'course-5'];
 
 interface StudentWishlistClientProps {
-  courses: Course[];
+  courses: PublicCourse[];
   instructorNames: Record<string, string>;
 }
 

@@ -7,14 +7,14 @@ import Select from '@/components/ui/Select';
 import Card from '@/components/ui/Card';
 import Modal from '@/components/ui/Modal';
 import StarRating from '@/components/ui/StarRating';
-import type { Course, Review } from '@/lib/db/types';
+import type { PublicCourse, Review } from '@/lib/db/types';
 import { formatDateShort } from '@/lib/utils';
 import toast from 'react-hot-toast';
 
 interface StudentReviewsClientProps {
   initialReviews: Review[];
-  publishedCourses: Course[];
-  coursesById: Record<string, Course>;
+  publishedCourses: PublicCourse[];
+  coursesById: Record<string, PublicCourse>;
   studentId: string;
 }
 

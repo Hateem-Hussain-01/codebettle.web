@@ -6,13 +6,13 @@ import CourseCard from '@/components/ui/CourseCard';
 import { Search, SlidersHorizontal } from 'lucide-react';
 import Input from '@/components/ui/Input';
 import Select from '@/components/ui/Select';
-import type { Course } from '@/lib/db/types';
+import type { PublicCourse } from '@/lib/db/types';
 
 const CATEGORIES = ['All', 'Web Development', 'Mobile Development', 'Data Science', 'UI/UX Design', 'DevOps', 'Programming'];
 const LEVELS = ['All', 'beginner', 'intermediate', 'advanced'];
 
 interface CoursesClientProps {
-  courses: Course[];
+  courses: PublicCourse[];
   instructorNames: Record<string, string>;
 }
 

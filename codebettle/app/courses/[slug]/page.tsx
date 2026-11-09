@@ -1,6 +1,7 @@
 import { notFound } from 'next/navigation';
 import { connection } from 'next/server';
 import { getCourseBySlug } from '@/lib/db/courses';
+import { toPublicCourse } from '@/lib/db/mappers';
 import { getUserById } from '@/lib/db/users';
 import { getReviewsByCourse } from '@/lib/db/reviews';
 import CourseDetailClient from './course-detail-client';
@@ -21,5 +22,5 @@ export default async function CourseDetailPage({ params }: PageProps<'/courses/[
 
   const instructor = await getUserById(course.instructorId);
   const reviews = await getReviewsByCourse(course.id);
-  return <CourseDetailClient course={course} instructor={instructor} reviews={reviews} slug={slug} />;
+  return <CourseDetailClient course={toPublicCourse(course)} instructor={instructor} reviews={reviews} slug={slug} />;
 }

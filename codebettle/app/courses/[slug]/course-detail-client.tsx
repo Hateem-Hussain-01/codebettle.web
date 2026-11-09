@@ -6,14 +6,14 @@ import Button from '@/components/ui/Button';
 import Badge from '@/components/ui/Badge';
 import StarRating from '@/components/ui/StarRating';
 import Input from '@/components/ui/Input';
-import type { Course, Review, SafeUser } from '@/lib/db/types';
+import type { PublicCourse, Review, SafeUser } from '@/lib/db/types';
 import { formatPrice, getLevelColor, getCategoryColor, formatDate, getTotalLessonsCount, getCourseDuration } from '@/lib/utils';
 import { ChevronDown, ChevronUp, BookOpen, Clock, Users, Award, CheckCircle, Tag, Play } from 'lucide-react';
 import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
 
 interface CourseDetailClientProps {
-  course: Course;
+  course: PublicCourse;
   instructor: SafeUser | null;
   reviews: Review[];
   slug: string;
