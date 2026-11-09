@@ -6,6 +6,7 @@
  * — unit-testable with the fake db. Every mutation writes an audit entry.
  */
 import { createBlogPost, deleteBlogPost, getBlogPostById, getPostBySlug, updateBlogPost } from '../db/blog';
+import { sanitizeBlogHtml } from '../sanitize';
 import { logAudit } from '../db/audit';
 import { BLOG_PDF_BUCKET, deleteBlogPdf } from './blog-storage';
 import type { SupabaseClient } from '@supabase/supabase-js';
@@ -57,11 +58,14 @@ export async function createBlogPostService(
   if (await getPostBySlug(slug)) return badRequest('A blog post with this slug already exists');
   const isPublished = input.isPublished ?? false;
   const publishedAt = isPublished ? (input.publishedAt ?? new Date().toISOString().slice(0, 10)) : (input.publishedAt ?? null);
+  // Sanitize on save (SEC-08): the editor stores raw HTML and the public
+  // page renders it with dangerouslySetInnerHTML — pasted script tags,
+  // event handlers and iframes must never reach the database.
   const post = await createBlogPost({
     slug,
     title: input.title,
     excerpt: input.excerpt,
-    content: input.content,
+    content: sanitizeBlogHtml(input.content),
     pdfUrl: input.pdfUrl,
     thumbnail: input.thumbnail,
     category: input.category,
@@ -112,7 +116,11 @@ export async function updateBlogPostService(
   if (input.isPublished === true && publishedAt === undefined && !post.publishedAt) {
     publishedAt = new Date().toISOString().slice(0, 10);
   }
-  const updated = await updateBlogPost(postId, { ...input, publishedAt });
+  const updated = await updateBlogPost(postId, {
+    ...input,
+    ...(input.content !== undefined ? { content: sanitizeBlogHtml(input.content) } : {}),
+    publishedAt,
+  });
   if (!updated) return notFound('Blog post');
   await logAudit({ actorId: actor.id, action: 'blog.update', entity: 'blog', entityId: postId });
   return { post: updated };

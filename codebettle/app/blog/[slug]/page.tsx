@@ -4,6 +4,7 @@ import Footer from '@/components/layout/Footer';
 import { getPostBySlug } from '@/lib/db/blog';
 import { getSession } from '@/lib/auth';
 import { formatDate } from '@/lib/utils';
+import { sanitizeBlogHtml } from '@/lib/sanitize';
 import { Clock, Tag, FileText, Download } from 'lucide-react';
 
 /** A post's `content` is HTML when it was written in the admin rich-text
@@ -44,7 +45,7 @@ export default async function BlogPostPage({ params }: PageProps<'/blog/[slug]'>
             {isHtml(post.content) ? (
               <div
                 className="prose prose-invert max-w-none text-muted leading-relaxed [&_h2]:text-white [&_h3]:text-white [&_a]:text-primary [&_a]:underline"
-                dangerouslySetInnerHTML={{ __html: post.content }}
+                dangerouslySetInnerHTML={{ __html: sanitizeBlogHtml(post.content) }}
               />
             ) : (
               <div className="prose prose-invert max-w-none">

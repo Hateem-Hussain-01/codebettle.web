@@ -12,6 +12,7 @@ import {
   Upload, Loader2,
 } from 'lucide-react';
 import { formatDateShort } from '@/lib/utils';
+import { sanitizeBlogHtml } from '@/lib/sanitize';
 import toast from 'react-hot-toast';
 import type { BlogPost } from '@/lib/db/types';
 
@@ -101,7 +102,7 @@ function RichTextEditor({
         ref={ref}
         contentEditable={!disabled}
         suppressContentEditableWarning
-        dangerouslySetInnerHTML={{ __html: initialHtml }}
+        dangerouslySetInnerHTML={{ __html: sanitizeBlogHtml(initialHtml) }}
         onInput={() => { if (ref.current) onChange(ref.current.innerHTML); }}
         className="min-h-[180px] w-full bg-dark-card border border-dark-border rounded-lg px-4 py-2.5 text-sm text-white focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary [&_h2]:text-lg [&_h2]:font-bold [&_h2]:text-white [&_h3]:text-base [&_h3]:font-bold [&_h3]:text-white [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_a]:text-primary [&_a]:underline"
       />
