@@ -1,14 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { getSession, toSafeUser } from '@/lib/auth';
-import { getStudents, getUserByEmail, users, type User } from '@/lib/data/users';
-import { hashPassword, normalizeEmail, validatePassword } from '@/lib/security';
-import { logAudit } from '@/lib/audit';
+import { getStudents } from '@/lib/data/users';
+import { createManagedUser } from '@/lib/admin-users';
 
 /**
  * GET /api/admin/users — list students (safe fields only, never the password hash).
  * POST /api/admin/users — create a student or instructor (admin only).
  * Passwords are hashed server-side with bcrypt; the caller can never set a role of admin.
+ * Business logic lives in lib/admin-users.ts so it is unit-testable;
+ * this route only enforces the admin gate and validates the request shape.
  */
 
 async function requireAdmin() {
@@ -48,36 +49,9 @@ export async function POST(request: NextRequest) {
   if (!parsed.success) {
     return NextResponse.json({ error: 'Name, email and password are required' }, { status: 400 });
   }
-  const { name, role } = parsed.data;
-  const email = normalizeEmail(parsed.data.email);
-  const passwordError = validatePassword(parsed.data.password);
-  if (passwordError) return NextResponse.json({ error: passwordError }, { status: 400 });
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-    return NextResponse.json({ error: 'Valid email required' }, { status: 400 });
+  const result = await createManagedUser(auth.session.id, parsed.data);
+  if ('error' in result) {
+    return NextResponse.json({ error: result.error }, { status: 400 });
   }
-  if (getUserByEmail(email)) {
-    return NextResponse.json({ error: 'An account with this email already exists' }, { status: 400 });
-  }
-
-  const newUser: User = {
-    id: `${role}-${Date.now()}`,
-    name: name.trim(),
-    email,
-    passwordHash: await hashPassword(parsed.data.password),
-    role,
-    avatar: `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(name.trim())}&backgroundColor=1C1C1C&textColor=F5C518`,
-    status: 'active',
-    joinedAt: new Date().toISOString().split('T')[0],
-    enrolledCourses: [],
-    wishlist: [],
-  };
-  users.push(newUser);
-  logAudit({
-    actorId: auth.session.id,
-    action: 'admin.user.create',
-    entity: 'user',
-    entityId: newUser.id,
-    detail: `${role} ${email}`,
-  });
-  return NextResponse.json({ user: toSafeUser(newUser) }, { status: 201 });
+  return NextResponse.json({ user: result.user }, { status: 201 });
 }

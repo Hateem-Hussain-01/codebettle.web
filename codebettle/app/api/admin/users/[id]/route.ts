@@ -1,15 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { getSession } from '@/lib/auth';
-import { getUserById, users } from '@/lib/data/users';
-import { revokeAllSessionsForUser } from '@/lib/session-store';
-import { logAudit } from '@/lib/audit';
+import { deleteManagedUser, setUserStatus } from '@/lib/admin-users';
 
 /**
  * PATCH /api/admin/users/[id] — suspend / activate a user (admin only).
  * Suspending revokes every session immediately, so the user is logged out.
  * DELETE /api/admin/users/[id] — remove a user (admin only).
  * Phase 2 replaces hard delete with a soft delete (deleted_at).
+ * Business logic lives in lib/admin-users.ts; this route only enforces
+ * the admin gate and validates the request shape.
  */
 
 async function requireAdmin() {
@@ -41,23 +41,12 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     return NextResponse.json({ error: 'Status must be active or suspended' }, { status: 400 });
   }
 
-  const user = getUserById(id);
-  if (!user) return NextResponse.json({ error: 'User not found' }, { status: 404 });
-  if (user.id === auth.session.id) {
-    return NextResponse.json({ error: 'You cannot suspend your own account' }, { status: 400 });
+  const result = setUserStatus(auth.session.id, id, parsed.data.status);
+  if ('error' in result) {
+    const status = result.error === 'User not found' ? 404 : 400;
+    return NextResponse.json({ error: result.error }, { status });
   }
-
-  user.status = parsed.data.status;
-  if (parsed.data.status === 'suspended') {
-    revokeAllSessionsForUser(user.id);
-  }
-  logAudit({
-    actorId: auth.session.id,
-    action: `admin.user.${parsed.data.status === 'suspended' ? 'suspend' : 'activate'}`,
-    entity: 'user',
-    entityId: user.id,
-  });
-  return NextResponse.json({ success: true, status: user.status });
+  return NextResponse.json({ success: true, status: result.status });
 }
 
 export async function DELETE(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -65,20 +54,10 @@ export async function DELETE(_request: NextRequest, { params }: { params: Promis
   if ('error' in auth) return auth.error;
   const { id } = await params;
 
-  const index = users.findIndex((u) => u.id === id);
-  if (index === -1) return NextResponse.json({ error: 'User not found' }, { status: 404 });
-  if (users[index].id === auth.session.id) {
-    return NextResponse.json({ error: 'You cannot delete your own account' }, { status: 400 });
+  const result = deleteManagedUser(auth.session.id, id);
+  if ('error' in result) {
+    const status = result.error === 'User not found' ? 404 : 400;
+    return NextResponse.json({ error: result.error }, { status });
   }
-
-  const [removed] = users.splice(index, 1);
-  revokeAllSessionsForUser(removed.id);
-  logAudit({
-    actorId: auth.session.id,
-    action: 'admin.user.delete',
-    entity: 'user',
-    entityId: removed.id,
-    detail: removed.email,
-  });
   return NextResponse.json({ success: true });
 }

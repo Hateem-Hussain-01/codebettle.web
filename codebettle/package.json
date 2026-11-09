@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test": "tsx --test tests/",
+    "test": "tsx --test tests/*.test.ts",
     "contract:emit": "prisma contract emit"
   },
   "dependencies": {

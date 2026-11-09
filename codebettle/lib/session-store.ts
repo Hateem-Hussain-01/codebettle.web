@@ -14,7 +14,14 @@ import { generateSessionToken, hashToken } from './security';
  */
 
 export const SESSION_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 days, matches the old cookie lifetime
-const RENEW_WHEN_LESS_THAN_MS = 3 * 24 * 60 * 60 * 1000; // sliding renewal window
+
+// NOTE on "sliding renewal": the plan asks for it, but with a 7-day absolute
+// cap equal to the 7-day idle window, extending expiry on activity is a
+// no-op (expiry is already creation + 7 days). True sliding sessions need
+// an idle window shorter than the absolute cap AND re-issuing the browser
+// cookie on activity — a Phase 2 decision, not smuggled in here. Until
+// then, sessions live exactly 7 days from creation and validation only
+// refreshes lastSeenAt (activity tracking).
 
 export interface SessionRecord {
   /** SHA-256 hash of the opaque token. The raw token is never stored. */
@@ -60,8 +67,8 @@ export function createSessionRecord(
 
 /**
  * Validate a raw token. Returns the session record, or null when the token
- * is unknown, revoked, or expired. Applies sliding renewal: if fewer than
- * 3 days remain, expiry is extended — never beyond 7 days from creation.
+ * is unknown, revoked, or expired. Refreshes lastSeenAt; expiry is never
+ * extended beyond creation + SESSION_TTL_MS (see the note above).
  */
 export function validateSessionToken(token: string, now: number = Date.now()): SessionRecord | null {
   const record = store.get(hashToken(token));
@@ -70,9 +77,6 @@ export function validateSessionToken(token: string, now: number = Date.now()): S
   if (record.expiresAt <= now) {
     store.delete(record.id);
     return null;
-  }
-  if (record.expiresAt - now < RENEW_WHEN_LESS_THAN_MS) {
-    record.expiresAt = Math.min(record.createdAt + SESSION_TTL_MS, now + SESSION_TTL_MS);
   }
   record.lastSeenAt = now;
   return record;
