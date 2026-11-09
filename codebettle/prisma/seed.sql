@@ -19,9 +19,12 @@
 --   real CEO — the real admins are not in this seed and are created separately.)
 --
 -- DROPPED (no column in the contract): User.enrolledCourses + wishlist (derived from
---   Enrollment; wishlist has no table yet), Course instructor reviews, Lesson.date,
---   Course.schedule (no schedule data in the seed). Course titles are preserved
---   exactly as stored in the seed, including any odd characters.
+--   Enrollment; wishlist has no table yet), Course instructor reviews,
+--   Course.schedule (no schedule data in the seed). Lesson.date IS seeded —
+--   the contract gained a nullable Lesson.date column (migration
+--   20261109T1926_add_lesson_date) because course pages display it.
+--   Course titles are preserved exactly as stored in the seed, including
+--   any odd characters.
 -- Certificate verificationToken values were generated randomly here (32 hex chars each).
 --
 BEGIN;
