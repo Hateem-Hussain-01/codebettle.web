@@ -1,11 +1,12 @@
 'use client';
 import { useEffect, useState } from 'react';
+import Link from 'next/link';
 import Button from '@/components/ui/Button';
 import Badge from '@/components/ui/Badge';
 import Input from '@/components/ui/Input';
 import Textarea from '@/components/ui/Textarea';
 import Modal from '@/components/ui/Modal';
-import { Search, Plus, Trash2, Ban, CheckCircle, Eye, Pencil, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Search, Plus, Upload, Trash2, Ban, CheckCircle, Eye, Pencil, ChevronLeft, ChevronRight } from 'lucide-react';
 import { formatDateShort } from '@/lib/utils';
 import toast from 'react-hot-toast';
 
@@ -214,7 +215,12 @@ export default function AdminStudentsPage() {
           <h1 className="text-2xl font-black text-white">Students</h1>
           <p className="text-muted text-sm mt-1">{total} total • {students.filter(s => s.status === 'active').length} active on this page</p>
         </div>
-        <Button onClick={() => setIsCreateOpen(true)}><Plus className="w-4 h-4" />Create Student</Button>
+        <div className="flex items-center gap-2">
+          <Link href="/admin/students/import">
+            <Button variant="secondary"><Upload className="w-4 h-4" />Import CSV</Button>
+          </Link>
+          <Button onClick={() => setIsCreateOpen(true)}><Plus className="w-4 h-4" />Create Student</Button>
+        </div>
       </div>
 
       <div className="flex items-center gap-3 flex-wrap">
