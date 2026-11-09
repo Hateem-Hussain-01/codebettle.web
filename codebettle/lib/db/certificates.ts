@@ -41,6 +41,17 @@ export async function getCertificateByNumber(
   return mapCertificateRow(row);
 }
 
+/** Look up a certificate by its verification token (public verify page). */
+export async function getCertificateByToken(
+  verificationToken: string,
+): Promise<Certificate | null> {
+  const row = await getDb()
+    .orm.public.Certificate.where({ verificationToken })
+    .first();
+  if (!row) return null;
+  return mapCertificateRow(row);
+}
+
 export interface ListCertificatesOptions {
   studentId?: string;
   courseId?: string;
