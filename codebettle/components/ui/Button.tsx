@@ -7,10 +7,17 @@ interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   size?: 'sm' | 'md' | 'lg';
   loading?: boolean;
   fullWidth?: boolean;
+  /**
+   * Phase 6 — selective neon accent (travelling gold border arc).
+   * Opt-in and reserved for high-value actions only: hero CTA,
+   * Enroll Now, Start quiz, Publish quiz, Submit quiz. Do not set
+   * this on ordinary buttons — restraint is the design rule.
+   */
+  neon?: boolean;
 }
 
 export default function Button({
-  variant = 'primary', size = 'md', loading, fullWidth, className, children, disabled, ...props
+  variant = 'primary', size = 'md', loading, fullWidth, neon, className, children, disabled, ...props
 }: ButtonProps) {
   const base = 'inline-flex items-center justify-center gap-2 font-semibold rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer';
 
@@ -30,7 +37,7 @@ export default function Button({
 
   return (
     <button
-      className={cn(base, variants[variant], sizes[size], fullWidth && 'w-full', className)}
+      className={cn(base, variants[variant], sizes[size], fullWidth && 'w-full', neon && 'neon-btn', className)}
       disabled={disabled || loading}
       {...props}
     >

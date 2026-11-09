@@ -60,3 +60,111 @@ body {
 .glow-sm {
   box-shadow: 0 0 10px rgba(245, 197, 24, 0.2);
 }
+
+/* ------------------------------------------------------------------ */
+/* Phase 6 — selective neon accents + subtle 3D styling                */
+/*                                                                     */
+/* Restraint is the rule: neon is opt-in (Button `neon` prop) and is   */
+/* used on exactly five high-value actions — hero CTA, Enroll Now,     */
+/* Start quiz, Publish quiz, Submit quiz. Nothing else gets it.        */
+/* 3D is a gentle lift + layered shadow on hoverable surfaces.         */
+/* ------------------------------------------------------------------ */
+
+/* Elevation tokens (consistent shadows for cards, modals, panels). */
+:root {
+  --shadow-elev-1: 0 1px 2px rgba(0, 0, 0, 0.4), 0 2px 8px rgba(0, 0, 0, 0.35);
+  --shadow-elev-2: 0 4px 12px rgba(0, 0, 0, 0.45), 0 12px 32px rgba(0, 0, 0, 0.35);
+  --shadow-elev-3: 0 8px 24px rgba(0, 0, 0, 0.5), 0 24px 64px rgba(0, 0, 0, 0.4);
+}
+
+.elev-1 { box-shadow: var(--shadow-elev-1); }
+.elev-2 { box-shadow: var(--shadow-elev-2); }
+.elev-3 { box-shadow: var(--shadow-elev-3); }
+
+/* Subtle 3D: gentle lift + deeper layered shadow on hover. Applied to
+   hoverable Cards and CourseCards. The gold tint keeps the brand glow
+   inside the lift shadow so it reads as one effect, not two. */
+.card-lift {
+  transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+}
+.card-lift:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-elev-2), 0 0 20px rgba(245, 197, 24, 0.12);
+}
+.card-lift:active {
+  transform: translateY(0);
+}
+
+/* Neon button: a thin gold arc travelling around the button border.
+   The ring is a conic-gradient border band (::before, masked to a
+   1.5px ring) whose angle animates via a registered custom property.
+   Browsers without @property still get the static arc (the var()
+   fallback) — that is the static alternative. */
+@property --neon-angle {
+  syntax: '<angle>';
+  initial-value: 0deg;
+  inherits: false;
+}
+
+@keyframes neon-border-spin {
+  to { --neon-angle: 360deg; }
+}
+
+.neon-btn {
+  position: relative;
+  isolation: isolate;
+  box-shadow: 0 0 12px rgba(245, 197, 24, 0.35), 0 0 32px rgba(245, 197, 24, 0.15);
+}
+
+.neon-btn::before {
+  content: '';
+  position: absolute;
+  inset: -1.5px;
+  border-radius: inherit;
+  padding: 1.5px;
+  background: conic-gradient(
+    from var(--neon-angle, 0deg),
+    transparent 0deg,
+    transparent 250deg,
+    #F5C518 310deg,
+    #FDE68A 340deg,
+    transparent 360deg
+  );
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask-composite: exclude;
+  animation: neon-border-spin 3.5s linear infinite;
+  pointer-events: none;
+  z-index: -1;
+}
+
+/* Neon off-state: no travelling arc, no glow — the button reads as a
+   normal primary button (disabled styling comes from Button itself). */
+.neon-btn:disabled::before {
+  animation: none;
+  opacity: 0.3;
+}
+
+.neon-btn:focus-visible {
+  outline: 2px solid #FDE68A;
+  outline-offset: 3px;
+}
+
+/* Reduced motion: every animation/transition collapses to (near-)instant
+   and smooth scrolling is off. The neon ring keeps its static arc —
+   the travelling motion is what disappears, not the accent itself. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  .neon-btn::before {
+    animation: none;
+  }
+}
