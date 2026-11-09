@@ -199,6 +199,9 @@ export interface UpdateCourseInput {
   requirements?: string[];
   whatYouLearn?: string[];
   tags?: string[];
+  /** Rating stats — maintained by the review service (Phase 7), not by editors. */
+  rating?: number;
+  reviewCount?: number;
 }
 
 export async function updateCourse(id: string, input: UpdateCourseInput): Promise<Course | null> {

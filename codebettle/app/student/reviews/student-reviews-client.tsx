@@ -13,27 +13,59 @@ import toast from 'react-hot-toast';
 
 interface StudentReviewsClientProps {
   initialReviews: Review[];
-  publishedCourses: PublicCourse[];
+  /** Courses the student is enrolled in — only these can be reviewed. */
+  enrolledCourses: PublicCourse[];
   coursesById: Record<string, PublicCourse>;
   studentId: string;
 }
 
-export default function StudentReviewsClient({ initialReviews, publishedCourses, coursesById, studentId: STUDENT_ID }: StudentReviewsClientProps) {
+export default function StudentReviewsClient({ initialReviews, enrolledCourses, coursesById, studentId: STUDENT_ID }: StudentReviewsClientProps) {
   const [myReviews, setMyReviews] = useState(initialReviews);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [newRating, setNewRating] = useState(5);
   const [newComment, setNewComment] = useState('');
   const [selectedCourse, setSelectedCourse] = useState('');
 
-  const handleSubmit = () => {
+  // One review per course: courses already reviewed are not offered again.
+  const reviewableCourses = enrolledCourses.filter(c => !myReviews.some(r => r.courseId === c.id));
+
+  const handleSubmit = async () => {
     if (!selectedCourse || !newComment.trim()) { toast.error('Please select a course and write a review'); return; }
-    const review = { id: Date.now().toString(), studentId: STUDENT_ID, courseId: selectedCourse, rating: newRating, comment: newComment, createdAt: new Date().toISOString().split('T')[0] };
-    setMyReviews(r => [review, ...r]);
-    toast.success('Review submitted!');
-    setIsModalOpen(false);
-    setNewComment('');
-    setNewRating(5);
-    setSelectedCourse('');
+    try {
+      const res = await fetch('/api/student/reviews', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ courseId: selectedCourse, rating: newRating, comment: newComment }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        toast.error(data.error || 'Could not submit your review');
+        return;
+      }
+      setMyReviews(r => [data.review, ...r]);
+      toast.success('Review submitted!');
+      setIsModalOpen(false);
+      setNewComment('');
+      setNewRating(5);
+      setSelectedCourse('');
+    } catch {
+      toast.error('Could not submit your review — please try again');
+    }
+  };
+
+  const handleDelete = async (review: Review) => {
+    try {
+      const res = await fetch(`/api/student/reviews/${review.id}`, { method: 'DELETE' });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        toast.error(data.error || 'Could not delete the review');
+        return;
+      }
+      setMyReviews(r => r.filter(r2 => r2.id !== review.id));
+      toast.success('Review deleted');
+    } catch {
+      toast.error('Could not delete the review — please try again');
+    }
   };
 
   return (
@@ -67,7 +99,7 @@ export default function StudentReviewsClient({ initialReviews, publishedCourses,
                     <p className="text-muted text-sm mt-2">{review.comment}</p>
                     <p className="text-muted text-xs mt-2">{formatDateShort(review.createdAt)}</p>
                   </div>
-                  <button onClick={() => { setMyReviews(r => r.filter(r2 => r2.id !== review.id)); toast.success('Review deleted'); }} className="text-muted hover:text-red-400 transition-colors cursor-pointer p-1">
+                  <button onClick={() => handleDelete(review)} className="text-muted hover:text-red-400 transition-colors cursor-pointer p-1">
                     <Trash2 className="w-4 h-4" />
                   </button>
                 </div>
@@ -83,7 +115,7 @@ export default function StudentReviewsClient({ initialReviews, publishedCourses,
             label="Select Course"
             value={selectedCourse}
             onChange={e => setSelectedCourse(e.target.value)}
-            options={[{ value: '', label: 'Choose a course...' }, ...publishedCourses.map(c => ({ value: c.id, label: c.title }))]}
+            options={[{ value: '', label: reviewableCourses.length === 0 ? 'No courses left to review' : 'Choose a course...' }, ...reviewableCourses.map(c => ({ value: c.id, label: c.title }))]}
           />
           <div>
             <label className="text-sm font-medium text-white/80 block mb-2">Your Rating</label>
