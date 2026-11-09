@@ -1,25 +1,48 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
-import { getSession } from '@/lib/auth';
-import { deleteManagedUser, setUserStatus } from '@/lib/admin-users';
+import { requireAdmin } from '@/lib/api-helpers';
+import { deleteManagedUser, setUserStatus, updateManagedUser } from '@/lib/admin-users';
+import { userUpdateSchema } from '@/lib/api-schemas';
 
 /**
+ * PUT /api/admin/users/[id] — edit a user's details (admin only).
+ * Role changes are student <-> instructor only (never to admin, never
+ * your own role); see lib/services/admin-service.ts updateManagedUser.
  * PATCH /api/admin/users/[id] — suspend / activate a user (admin only).
  * Suspending revokes every session immediately, so the user is logged out.
  * DELETE /api/admin/users/[id] — soft-delete a user (admin only).
  * The row stays in the database (deletedAt set) so enrolments,
  * certificates and audit history keep their references.
  * Business logic lives in lib/services/admin-service.ts; this route only
- * enforces the admin gate and validates the request shape.
+ * enforces the admin gate and validates the request shape. The admin gate
+ * comes from lib/api-helpers so route tests can set a session without a
+ * Next request scope (see __setTestSession there).
  */
 
-async function requireAdmin() {
-  const session = await getSession();
-  if (!session) return { error: NextResponse.json({ error: 'Not signed in' }, { status: 401 }) };
-  if (session.role !== 'admin') {
-    return { error: NextResponse.json({ error: 'Admin access required' }, { status: 403 }) };
+export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const auth = await requireAdmin();
+  if ('error' in auth) return auth.error;
+  const { id } = await params;
+
+  let body: unknown;
+  try {
+    body = await request.json();
+  } catch {
+    return NextResponse.json({ error: 'Invalid request body' }, { status: 400 });
   }
-  return { session };
+  const parsed = userUpdateSchema.safeParse(body);
+  if (!parsed.success) {
+    return NextResponse.json({ error: 'Invalid user details' }, { status: 400 });
+  }
+  if (Object.keys(parsed.data).length === 0) {
+    return NextResponse.json({ error: 'Nothing to update' }, { status: 400 });
+  }
+
+  const result = await updateManagedUser(auth.session.id, id, parsed.data);
+  if ('error' in result) {
+    return NextResponse.json({ error: result.error }, { status: result.status });
+  }
+  return NextResponse.json({ user: result.user });
 }
 
 const patchSchema = z.object({
