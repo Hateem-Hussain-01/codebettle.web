@@ -1,0 +1,114 @@
+import { generateSessionToken, hashToken } from './security';
+
+/**
+ * Server-side session store.
+ *
+ * Phase 1: an in-memory Map. Sessions are validated against this store on
+ * every request, so a stolen or forged cookie is useless and suspending a
+ * user (or revoking sessions) logs them out immediately. The store is lost
+ * on server restart — users simply sign in again.
+ *
+ * Phase 2: this module's interface stays the same, but records move to the
+ * Prisma `sessions` table (see prisma/schema.prisma) so sessions survive
+ * restarts and work across instances.
+ */
+
+export const SESSION_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 days, matches the old cookie lifetime
+const RENEW_WHEN_LESS_THAN_MS = 3 * 24 * 60 * 60 * 1000; // sliding renewal window
+
+export interface SessionRecord {
+  /** SHA-256 hash of the opaque token. The raw token is never stored. */
+  id: string;
+  userId: string;
+  createdAt: number;
+  expiresAt: number;
+  lastSeenAt: number;
+  revokedAt: number | null;
+  ip?: string;
+  userAgent?: string;
+}
+
+const store = new Map<string, SessionRecord>();
+
+export interface CreateSessionOptions {
+  now?: number;
+  ttlMs?: number;
+  ip?: string;
+  userAgent?: string;
+}
+
+/** Create a session and return the raw opaque token (give it to the client once, in an httpOnly cookie). */
+export function createSessionRecord(
+  userId: string,
+  opts: CreateSessionOptions = {}
+): { token: string; record: SessionRecord } {
+  const now = opts.now ?? Date.now();
+  const token = generateSessionToken();
+  const record: SessionRecord = {
+    id: hashToken(token),
+    userId,
+    createdAt: now,
+    expiresAt: now + (opts.ttlMs ?? SESSION_TTL_MS),
+    lastSeenAt: now,
+    revokedAt: null,
+    ip: opts.ip,
+    userAgent: opts.userAgent,
+  };
+  store.set(record.id, record);
+  return { token, record };
+}
+
+/**
+ * Validate a raw token. Returns the session record, or null when the token
+ * is unknown, revoked, or expired. Applies sliding renewal: if fewer than
+ * 3 days remain, expiry is extended — never beyond 7 days from creation.
+ */
+export function validateSessionToken(token: string, now: number = Date.now()): SessionRecord | null {
+  const record = store.get(hashToken(token));
+  if (!record) return null;
+  if (record.revokedAt !== null) return null;
+  if (record.expiresAt <= now) {
+    store.delete(record.id);
+    return null;
+  }
+  if (record.expiresAt - now < RENEW_WHEN_LESS_THAN_MS) {
+    record.expiresAt = Math.min(record.createdAt + SESSION_TTL_MS, now + SESSION_TTL_MS);
+  }
+  record.lastSeenAt = now;
+  return record;
+}
+
+/** Revoke one session (logout). Returns true when a session was revoked. */
+export function revokeSessionToken(token: string): boolean {
+  const record = store.get(hashToken(token));
+  if (!record || record.revokedAt !== null) return false;
+  record.revokedAt = Date.now();
+  return true;
+}
+
+/** Revoke every session belonging to a user (suspension, password reset, "revoke all"). */
+export function revokeAllSessionsForUser(userId: string): number {
+  let count = 0;
+  const now = Date.now();
+  for (const record of store.values()) {
+    if (record.userId === userId && record.revokedAt === null) {
+      record.revokedAt = now;
+      count += 1;
+    }
+  }
+  return count;
+}
+
+/** Active (non-revoked, non-expired) session count — for monitoring and tests. */
+export function activeSessionCount(now: number = Date.now()): number {
+  let count = 0;
+  for (const record of store.values()) {
+    if (record.revokedAt === null && record.expiresAt > now) count += 1;
+  }
+  return count;
+}
+
+/** Test helper: clear the store. Never call in production code. */
+export function __clearSessionStore(): void {
+  store.clear();
+}

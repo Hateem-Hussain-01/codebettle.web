@@ -1,11 +1,23 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+/**
+ * Route guard (Next.js 16 `proxy`, formerly middleware).
+ *
+ * This is a COARSE gate only: it redirects to login when no session cookie
+ * is present at all. It deliberately does NOT decode the cookie or trust
+ * any role from it — the old code base64-decoded the cookie here and
+ * trusted the role inside it, which anyone could forge.
+ *
+ * Real authorisation happens server-side in each portal layout via
+ * getSession() (lib/auth.ts), which validates the opaque token against
+ * the server-side session store and reads the role from the user record.
+ */
 export function proxy(request: NextRequest) {
   const session = request.cookies.get('cb_session');
   const { pathname } = request.nextUrl;
 
   const protectedRoutes = ['/student', '/instructor', '/admin'];
-  const isProtected = protectedRoutes.some(r => pathname.startsWith(r));
+  const isProtected = protectedRoutes.some((r) => pathname.startsWith(r));
 
   if (!isProtected) return NextResponse.next();
 
@@ -13,24 +25,7 @@ export function proxy(request: NextRequest) {
     return NextResponse.redirect(new URL('/auth/login', request.url));
   }
 
-  try {
-    const decoded = Buffer.from(session.value, 'base64').toString('utf-8');
-    const user = JSON.parse(decoded);
-
-    if (pathname.startsWith('/student') && user.role !== 'student') {
-      return NextResponse.redirect(new URL(`/${user.role}/dashboard`, request.url));
-    }
-    if (pathname.startsWith('/instructor') && user.role !== 'instructor') {
-      return NextResponse.redirect(new URL(`/${user.role === 'student' ? 'student' : 'admin'}/dashboard`, request.url));
-    }
-    if (pathname.startsWith('/admin') && user.role !== 'admin') {
-      return NextResponse.redirect(new URL(`/${user.role}/dashboard`, request.url));
-    }
-
-    return NextResponse.next();
-  } catch {
-    return NextResponse.redirect(new URL('/auth/login', request.url));
-  }
+  return NextResponse.next();
 }
 
 export const config = {

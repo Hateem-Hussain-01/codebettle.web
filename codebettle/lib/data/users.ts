@@ -4,7 +4,7 @@ export interface User {
   id: string;
   name: string;
   email: string;
-  password: string;
+  passwordHash: string;
   role: UserRole;
   avatar?: string;
   bio?: string;
@@ -23,7 +23,7 @@ export const users: User[] = [
     id: 'admin-1',
     name: 'Ahmad Hassan',
     email: 'admin@codebettle.com',
-    password: '***REMOVED***',
+    passwordHash: '$2b$12$CeiswGnI82IF1zhbhlqEDu.sXnOO5qJk5XAARXORXiGpqzhfMcpb6',
     role: 'admin',
     avatar: 'https://api.dicebear.com/7.x/initials/svg?seed=Ahmad+Hassan&backgroundColor=F5C518&textColor=111111',
     status: 'active',
@@ -33,7 +33,7 @@ export const users: User[] = [
     id: 'admin-2',
     name: 'Sara Khan',
     email: 'sara@codebettle.com',
-    password: '***REMOVED***',
+    passwordHash: '$2b$12$CeiswGnI82IF1zhbhlqEDu.sXnOO5qJk5XAARXORXiGpqzhfMcpb6',
     role: 'admin',
     avatar: 'https://api.dicebear.com/7.x/initials/svg?seed=Sara+Khan&backgroundColor=F5C518&textColor=111111',
     status: 'active',
@@ -44,7 +44,7 @@ export const users: User[] = [
     id: 'inst-1',
     name: 'Usman Ali',
     email: 'usman@codebettle.com',
-    password: '***REMOVED***',
+    passwordHash: '$2b$12$PWgnrUgbriievwTtFYSmL.Lje8MdbLQonjTgVSoCJGiQjFVp2OfsS',
     role: 'instructor',
     avatar: 'https://api.dicebear.com/7.x/initials/svg?seed=Usman+Ali&backgroundColor=1C1C1C&textColor=F5C518',
     bio: 'Full-stack developer with 8+ years of experience in React, Node.js, and cloud technologies.',
@@ -57,7 +57,7 @@ export const users: User[] = [
     id: 'inst-2',
     name: 'Fatima Malik',
     email: 'fatima@codebettle.com',
-    password: '***REMOVED***',
+    passwordHash: '$2b$12$PWgnrUgbriievwTtFYSmL.Lje8MdbLQonjTgVSoCJGiQjFVp2OfsS',
     role: 'instructor',
     avatar: 'https://api.dicebear.com/7.x/initials/svg?seed=Fatima+Malik&backgroundColor=1C1C1C&textColor=F5C518',
     bio: 'Mobile developer specializing in Flutter and React Native. Built 20+ production apps.',
@@ -70,7 +70,7 @@ export const users: User[] = [
     id: 'inst-3',
     name: 'Bilal Ahmed',
     email: 'bilal@codebettle.com',
-    password: '***REMOVED***',
+    passwordHash: '$2b$12$PWgnrUgbriievwTtFYSmL.Lje8MdbLQonjTgVSoCJGiQjFVp2OfsS',
     role: 'instructor',
     avatar: 'https://api.dicebear.com/7.x/initials/svg?seed=Bilal+Ahmed&backgroundColor=1C1C1C&textColor=F5C518',
     bio: 'Data scientist and ML engineer with expertise in Python, TensorFlow, and big data.',
@@ -83,7 +83,7 @@ export const users: User[] = [
     id: 'inst-4',
     name: 'Zainab Raza',
     email: 'zainab@codebettle.com',
-    password: '***REMOVED***',
+    passwordHash: '$2b$12$PWgnrUgbriievwTtFYSmL.Lje8MdbLQonjTgVSoCJGiQjFVp2OfsS',
     role: 'instructor',
     avatar: 'https://api.dicebear.com/7.x/initials/svg?seed=Zainab+Raza&backgroundColor=1C1C1C&textColor=F5C518',
     bio: 'UI/UX designer and frontend developer passionate about creating beautiful experiences.',
@@ -96,7 +96,7 @@ export const users: User[] = [
     id: 'inst-5',
     name: 'Hassan Mirza',
     email: 'hassan.m@codebettle.com',
-    password: '***REMOVED***',
+    passwordHash: '$2b$12$PWgnrUgbriievwTtFYSmL.Lje8MdbLQonjTgVSoCJGiQjFVp2OfsS',
     role: 'instructor',
     avatar: 'https://api.dicebear.com/7.x/initials/svg?seed=Hassan+Mirza&backgroundColor=1C1C1C&textColor=F5C518',
     bio: 'DevOps engineer with expertise in Docker, Kubernetes, and CI/CD pipelines.',
@@ -117,7 +117,7 @@ export const users: User[] = [
       id: `student-${i + 1}`,
       name,
       email: `${name.toLowerCase().replace(' ', '.')}@gmail.com`,
-      password: '***REMOVED***',
+      passwordHash: '$2b$12$Tu75TZnipoukQcyzcZ8k5uvHc/LZ0gTAwvKVnMkS8qSIHl17NEJyK',
       role: 'student' as UserRole,
       avatar: `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(name)}&backgroundColor=1C1C1C&textColor=F5C518`,
       status: i < 18 ? 'active' as const : 'suspended' as const,
