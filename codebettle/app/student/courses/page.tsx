@@ -1,7 +1,7 @@
 import { getSession } from '@/lib/auth';
-import { getEnrollmentsByStudent } from '@/lib/data/enrollments';
-import { getCourseById } from '@/lib/data/courses';
-import { getCertificateByCourseAndStudent } from '@/lib/data/certificates';
+import { getEnrollmentsByStudent } from '@/lib/db/enrollments';
+import { getCourseById } from '@/lib/db/courses';
+import { getCertificateByCourseAndStudent } from '@/lib/db/certificates';
 import { formatDateShort } from '@/lib/utils';
 import Link from 'next/link';
 import Badge from '@/components/ui/Badge';
@@ -10,13 +10,14 @@ import { BookOpen, Award, PlayCircle } from 'lucide-react';
 
 export default async function StudentCoursesPage() {
   const session = await getSession();
-  const enrollments = getEnrollmentsByStudent(session!.id);
+  const enrollments = await getEnrollmentsByStudent(session!.id);
 
-  const items = enrollments.map(e => ({
+  // Course + certificate fetched once per enrolment (was sync calls inside .map).
+  const items = (await Promise.all(enrollments.map(async (e) => ({
     enrollment: e,
-    course: getCourseById(e.courseId),
-    certificate: getCertificateByCourseAndStudent(e.courseId, session!.id),
-  })).filter(i => i.course);
+    course: await getCourseById(e.courseId),
+    certificate: await getCertificateByCourseAndStudent(e.courseId, session!.id),
+  })))).filter(i => i.course);
 
   return (
     <div className="space-y-6">

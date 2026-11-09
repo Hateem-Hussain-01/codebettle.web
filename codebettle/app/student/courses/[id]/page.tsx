@@ -1,9 +1,9 @@
 import { notFound } from 'next/navigation';
 import { getSession } from '@/lib/auth';
-import { getCourseById } from '@/lib/data/courses';
-import { getEnrollmentsByStudent } from '@/lib/data/enrollments';
-import { getCourseAnnouncements } from '@/lib/data/announcements';
-import { getUserById } from '@/lib/data/users';
+import { getCourseById } from '@/lib/db/courses';
+import { getEnrollmentsByStudent } from '@/lib/db/enrollments';
+import { getCourseAnnouncements } from '@/lib/db/announcements';
+import { getUserById } from '@/lib/db/users';
 import { formatDateShort } from '@/lib/utils';
 import { ExternalLink, Download, Bell, BookOpen, Video, Lock, Award, XCircle, Clock, Calendar, Star } from 'lucide-react';
 import Card from '@/components/ui/Card';
@@ -17,15 +17,15 @@ const DAYS = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sun
 export default async function StudentCourseViewPage({ params }: PageProps<'/student/courses/[id]'>) {
   const { id } = await params;
   const session = await getSession();
-  const course = getCourseById(id);
+  const course = await getCourseById(id);
   if (!course) notFound();
 
-  const enrollments = getEnrollmentsByStudent(session!.id);
+  const enrollments = await getEnrollmentsByStudent(session!.id);
   const enrollment = enrollments.find(e => e.courseId === id);
   if (!enrollment) notFound();
 
-  const announcements = getCourseAnnouncements(id);
-  const instructor = getUserById(course.instructorId);
+  const announcements = await getCourseAnnouncements(id);
+  const instructor = await getUserById(course.instructorId);
   const totalSessions = course.modules.reduce((a, m) => a + m.lessons.length, 0);
   const uploadedCount = course.modules.flatMap(m => m.lessons).filter(l => l.driveRecordingUrl).length;
 

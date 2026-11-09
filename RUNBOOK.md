@@ -1,0 +1,167 @@
+# CodeBettle Phase 2 — Live-Database Runbook
+
+Everything in this file needs a machine whose network can reach Postgres
+(Eman's laptop, the Vultr VM, or CI). **This VM cannot run any of it:**
+its egress proxy resets Postgres-protocol connections (`ECONNRESET`
+during the handshake, verified twice). All commands run from the
+`codebettle/` folder of the `feature/complete-management-system-upgrade`
+branch, with `DATABASE_URL` already in the gitignored `.env.local`.
+
+## 0. Prerequisites
+
+- Node 20+ and npm. `git clone` the branch (or pull it once pushed).
+- `.env.local` holds `DATABASE_URL` (Supabase, direct port 5432) plus the
+  Supabase URL + publishable key. Never commit it, never paste it in chat.
+- The Supabase project already has all 21 tables — Eman ran
+  `codebettle-init-tables.sql` in the SQL Editor on 9 Nov 2026. The seed
+  has NOT been run yet.
+
+## 1. Apply migration 2 (Lesson.date)
+
+Migration 1 (`20261109T1830_init`, 89 ops) is already in effect on the
+live database (the tables exist), but Prisma has no record of it. Mark
+it applied without re-running it, then deploy migration 2:
+
+```bash
+cd codebettle
+npx prisma migrate resolve --applied 20261109T1830_init
+npx prisma migrate deploy
+```
+
+Migration 2 (`20261109T1926_add_lesson_date`) is exactly one operation:
+
+```sql
+ALTER TABLE "public"."Lesson" ADD COLUMN "date" timestamptz(3);
+```
+
+Fallback (if `migrate resolve` is unavailable in the installed Prisma
+version): run that single `ALTER TABLE` in the Supabase SQL Editor, and
+record both migrations as applied afterwards. Do NOT re-run the init
+SQL — the tables already exist.
+
+Verify the column exists:
+
+```sql
+SELECT column_name FROM information_schema.columns
+WHERE table_schema = 'public' AND table_name = 'Lesson' AND column_name = 'date';
+-- expected: 1 row
+```
+
+## 2. Run the seed (161 rows, one transaction)
+
+Run `codebettle/prisma/seed.sql` in the Supabase SQL Editor (or with
+`psql "$DATABASE_URL" -f prisma/seed.sql`). It is a single transaction:
+either all 161 rows land or none do. The file is identical to
+`~/workspace/your_files/codebettle-seed-data.sql` (the user-facing copy).
+
+Verify — expected values in brackets:
+
+```sql
+SELECT 'User', COUNT(*) FROM "public"."User";            -- 27
+SELECT 'Course', COUNT(*) FROM "public"."Course";        -- 8
+SELECT 'Module', COUNT(*) FROM "public"."Module";        -- 13
+SELECT 'Lesson', COUNT(*) FROM "public"."Lesson";        -- 25
+SELECT 'Enrollment', COUNT(*) FROM "public"."Enrollment";-- 15
+SELECT 'LessonProgress', COUNT(*) FROM "public"."LessonProgress"; -- 42
+SELECT 'Certificate', COUNT(*) FROM "public"."Certificate";       -- 6
+SELECT 'Coupon', COUNT(*) FROM "public"."Coupon";        -- 4
+SELECT 'Announcement', COUNT(*) FROM "public"."Announcement";    -- 5
+SELECT 'Review', COUNT(*) FROM "public"."Review";        -- 6
+SELECT 'Testimonial', COUNT(*) FROM "public"."Testimonial";      -- 6
+SELECT 'BlogPost', COUNT(*) FROM "public"."BlogPost";    -- 4
+SELECT SUM("amountPaid") FROM "public"."Enrollment";     -- 57489
+SELECT COUNT(*) FROM "public"."Lesson" WHERE "date" IS NULL;    -- 0
+SELECT COUNT(DISTINCT "passwordHash") FROM "public"."User";      -- 1
+```
+
+The single password hash is intentional: every seeded user shares one
+bcrypt hash of a random unknown value, so NO seeded account can be
+signed into (the old demo passwords were public in the repo). Seeded
+accounts are data, not logins.
+
+Offline equivalent (already passing on the VM): `npm test` runs
+`tests/seed-validation.test.ts` against the same file.
+
+## 3. Verify the Prisma client and the app
+
+```bash
+cd codebettle
+DOTENV_CONFIG_PATH=.env.local npx prisma db verify   # read-only connection check
+npm run build                                        # must exit 0
+npm test                                             # 49 tests must pass
+```
+
+Then start the dev server and smoke-test the auth flow against the live DB:
+register a student at `/auth/register`, sign in, sign out, change the
+password (old sessions must die), and run the first-run setup below.
+
+## 4. First-run admin setup (the two official admins)
+
+1. Open `/auth/setup` (locally `http://localhost:3000/auth/setup`, or the
+   deployed URL + `/auth/setup`).
+2. Each admin picks their identity — Muhammad Hateem Hussain (COO,
+   mhateemjutt1412@gmail.com) or Ahmad Hassan (CEO,
+   ahmad.hassan.hnd@gmail.com) — and chooses their own password
+   (min 8 characters). The password is bcrypt-hashed before storage.
+3. Once both accounts exist, `/auth/setup` redirects to `/auth/login`
+   and setup is closed. `GET /api/auth/setup` shows which accounts are
+   claimed (no sensitive data).
+
+Do NOT create admin accounts any other way (never via the seed, never
+by hand in the database, never with an invented password).
+
+## 5. Deploy checklist (Vercel)
+
+- Set `DATABASE_URL` in the Vercel project environment variables
+  (Production + Preview). The app reads it at runtime, never at build
+  time — `next build` must succeed with no database present.
+- Push the branch to GitHub FIRST (the GitHub App `meta-muse-ai` needs
+  write access to `codebettle.web` — see the purge report), then merge
+  only with Eman's approval. Pushing `main` redeploys the live site.
+- After deploy: run the first-run setup on the live URL, then verify
+  sign-in, the course catalogue, and one enrolment flow.
+
+## 6. Known gaps (not done in Phase 2 — do not mistake them for bugs)
+
+- **Password-reset email is not configured.** The token machinery is
+  complete (`POST /api/auth/reset`), but no email is sent: Resend +
+  Eman's domain are pending. Until then a requested reset token is
+  created and expires unused. Plug delivery in at
+  `app/api/auth/reset/route.ts` (pass a `deliver` callback to
+  `requestPasswordReset` in `lib/services/password-reset-service.ts`).
+- **Rate limiting is still in-memory** (`lib/rate-limit.ts`). It works
+  for one server instance and resets on restart. The plan calls for
+  Upstash Redis; there are no Upstash credentials yet and no rate-limit
+  table in the contract. Add Upstash credentials, then swap the store.
+- **Prisma 8 is a release candidate (8.0.0-rc.33).** The stable 7.10.1
+  swap is NOT a drop-in `npm install`: Prisma 7 uses a different
+  generated-client API (`@prisma/client`, no `db.orm.public.*` fluent
+  chains), so switching means re-generating the client and adapting
+  `src/prisma/db.ts` plus every repository. Recommended: stay on the
+  Prisma 8 RC until 8 stable lands, and re-run `prisma contract emit`
+  + `prisma migration check` after any upgrade. Only switch to 7 if a
+  specific RC bug blocks deployment.
+- **Write APIs are intentionally thin.** Phase 2 built read repositories
+  for every aggregate plus the auth/admin write paths. Per-resource
+  write APIs (courses, enrolments, certificates, coupons, …) belong
+  with the Phase 3 features that use them. Admin pages currently keep
+  their local-state edits (fake saves, as before) — Phase 3 wires them
+  to real endpoints.
+- **No live-DB verification was possible from the VM.** Everything
+  above (migrations, seed, `db verify`, live smoke test) is unverified
+  until run on a machine with open network. The offline evidence is:
+  `prisma migration check` passes (2 migrations, 3 contracts),
+  `prisma/seed.sql` validates (counts + FKs + amountPaid 57489, 0 errors),
+  `tsc --noEmit` clean, 49/49 tests pass, `npm run build` exit 0.
+
+## 7. Rollback reference
+
+- Pre-purge backup bundle (original history incl. the leaked password):
+  `~/workspace/codebettle-web-backup/codebettle-web-pre-purge.bundle`.
+  Do NOT delete it until the rewritten history is pushed and verified
+  on GitHub.
+- To restore the old in-memory data layer for reference:
+  `git checkout <old-commit> -- codebettle/lib/data`
+  (the purge report `~/workspace/your_files/codebettle-purge-report.txt`
+  lists the commits). The app will not run from it without reverting
+  the Phase 2 page conversions.

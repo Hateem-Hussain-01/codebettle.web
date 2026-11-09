@@ -1,12 +1,12 @@
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
 import { getSession } from '@/lib/auth';
-import { getInstructors } from '@/lib/data/users';
+import { getInstructors } from '@/lib/db/users';
 import { Target, Eye, Heart, Share2, Globe } from 'lucide-react';
 
 export default async function AboutPage() {
   const session = await getSession();
-  const instructors = getInstructors();
+  const instructors = await getInstructors();
 
   return (
     <>

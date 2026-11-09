@@ -1,14 +1,14 @@
 import { notFound } from 'next/navigation';
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
-import { getPostBySlug } from '@/lib/data/blog';
+import { getPostBySlug } from '@/lib/db/blog';
 import { getSession } from '@/lib/auth';
 import { formatDate } from '@/lib/utils';
 import { Clock, Tag } from 'lucide-react';
 
 export default async function BlogPostPage({ params }: PageProps<'/blog/[slug]'>) {
   const { slug } = await params;
-  const post = getPostBySlug(slug);
+  const post = await getPostBySlug(slug);
   if (!post) notFound();
   const session = await getSession();
 

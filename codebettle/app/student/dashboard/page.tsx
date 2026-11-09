@@ -1,8 +1,8 @@
 import { getSession } from '@/lib/auth';
-import { getEnrollmentsByStudent } from '@/lib/data/enrollments';
-import { getCourseById } from '@/lib/data/courses';
-import { getCertificatesByStudent } from '@/lib/data/certificates';
-import { getSiteWideAnnouncements } from '@/lib/data/announcements';
+import { getEnrollmentsByStudent } from '@/lib/db/enrollments';
+import { getCourseById } from '@/lib/db/courses';
+import { getCertificatesByStudent } from '@/lib/db/certificates';
+import { getSiteWideAnnouncements } from '@/lib/db/announcements';
 import { formatDateShort } from '@/lib/utils';
 import Link from 'next/link';
 import { BookOpen, Award, Bell, ArrowRight, CheckCircle } from 'lucide-react';
@@ -11,14 +11,15 @@ import Badge from '@/components/ui/Badge';
 
 export default async function StudentDashboard() {
   const session = await getSession();
-  const enrollments = getEnrollmentsByStudent(session!.id);
-  const certificates = getCertificatesByStudent(session!.id);
-  const announcements = getSiteWideAnnouncements();
+  const enrollments = await getEnrollmentsByStudent(session!.id);
+  const certificates = await getCertificatesByStudent(session!.id);
+  const announcements = await getSiteWideAnnouncements();
 
-  const enrolledCourses = enrollments.map(e => ({
+  // Course fetched once per enrolment (was a sync call inside .map).
+  const enrolledCourses = (await Promise.all(enrollments.map(async (e) => ({
     enrollment: e,
-    course: getCourseById(e.courseId),
-  })).filter(item => item.course);
+    course: await getCourseById(e.courseId),
+  })))).filter(item => item.course);
 
   const completed = enrollments.filter(e => e.isCompleted).length;
 

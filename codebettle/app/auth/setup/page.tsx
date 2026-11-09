@@ -1,4 +1,5 @@
 import { redirect } from 'next/navigation';
+import { connection } from 'next/server';
 import { getSetupStatus } from '@/lib/services/first-run';
 import SetupForm from './setup-form';
 
@@ -7,8 +8,11 @@ import SetupForm from './setup-form';
  * Server component: checks setup status and redirects to login once
  * both official admins have claimed their accounts. The form itself is
  * a client component with real backend functionality (POST /api/auth/setup).
+ * `await connection()` opts out of build-time prerendering — the status
+ * check reads the database, which must happen at request time.
  */
 export default async function SetupPage() {
+  await connection();
   const status = await getSetupStatus();
   if (status.complete) redirect('/auth/login');
   return (

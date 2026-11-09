@@ -2,14 +2,24 @@ import Link from 'next/link';
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
 import { getSession } from '@/lib/auth';
-import { getInstructors } from '@/lib/data/users';
-import { getCoursesByInstructor, getPublishedCourses } from '@/lib/data/courses';
+import { getInstructors } from '@/lib/db/users';
+import { getCoursesByInstructor, getPublishedCourses } from '@/lib/db/courses';
+import type { Course } from '@/lib/db/types';
 import { BookOpen, Users } from 'lucide-react';
 
 export default async function InstructorsPage() {
   const session = await getSession();
-  const instructors = getInstructors();
-  const published = getPublishedCourses();
+  const instructors = await getInstructors();
+  const published = await getPublishedCourses();
+
+  // Published courses per instructor, fetched once (was a sync call inside JSX per instructor).
+  const taughtByInstructor = new Map<string, Course[]>();
+  await Promise.all(
+    instructors.map(async (inst) => {
+      const taught = (await getCoursesByInstructor(inst.id)).filter((c) => c.status === 'published');
+      taughtByInstructor.set(inst.id, taught);
+    }),
+  );
 
   return (
     <>
@@ -31,7 +41,7 @@ export default async function InstructorsPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             {instructors.map((inst) => {
-              const taught = getCoursesByInstructor(inst.id).filter((c) => c.status === 'published');
+              const taught = taughtByInstructor.get(inst.id) ?? [];
               return (
                 <div
                   key={inst.id}
