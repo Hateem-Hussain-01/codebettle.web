@@ -4,5 +4,5 @@
  * soft deletes). This module re-exports it so existing import sites
  * (routes, tests) keep working unchanged.
  */
-export { createManagedUser, deleteManagedUser, setUserStatus } from './services/admin-service';
-export type { CreateManagedUserInput, ManagedRole, SafeUser } from './services/admin-service';
+export { createManagedUser, deleteManagedUser, setUserStatus, updateManagedUser } from './services/admin-service';
+export type { CreateManagedUserInput, ManagedRole, SafeUser, UpdateManagedUserInput } from './services/admin-service';
