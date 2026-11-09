@@ -15,10 +15,28 @@ export default function ContactPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    await new Promise(r => setTimeout(r, 1000));
-    toast.success('Message sent! We will get back to you within 24 hours.');
-    setForm({ name: '', email: '', subject: '', message: '' });
-    setLoading(false);
+    try {
+      const res = await fetch('/api/contact', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(form),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (res.status === 429) {
+        toast.error('Too many messages — please try again in a few minutes.');
+        return;
+      }
+      if (!res.ok) {
+        toast.error(data.error || 'Could not send your message — please try again.');
+        return;
+      }
+      toast.success('Message sent! We will get back to you within 24 hours.');
+      setForm({ name: '', email: '', subject: '', message: '' });
+    } catch {
+      toast.error('Could not send your message — please try again.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (

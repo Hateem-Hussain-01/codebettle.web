@@ -18,6 +18,8 @@ import type {
   BlogPostRow,
   Certificate,
   CertificateRow,
+  ContactMessage,
+  ContactMessageRow,
   Coupon,
   CouponRow,
   Course,
@@ -355,6 +357,18 @@ export function mapAnnouncementRow(row: AnnouncementRow): Announcement {
     authorId: row.authorId,
     createdAt: dateToString(row.createdAt),
     isActive: row.isActive,
+  };
+}
+
+export function mapContactMessageRow(row: ContactMessageRow): ContactMessage {
+  return {
+    id: row.id,
+    name: row.name,
+    email: row.email,
+    subject: row.subject ?? undefined,
+    message: row.message,
+    isRead: row.isRead,
+    createdAt: dateToString(row.createdAt),
   };
 }
 

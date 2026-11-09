@@ -48,6 +48,11 @@ export function loginRateLimitKey(ip: string, email: string): string {
   return `login:${ip}:${email.toLowerCase()}`;
 }
 
+/** Contact-form submissions: 5 per 15 minutes, keyed by IP (spam guard). */
+export function contactRateLimitKey(ip: string): string {
+  return `contact:${ip}`;
+}
+
 /** Test helper: clear all windows. Never call in production code. */
 export function __clearRateLimits(): void {
   windows.clear();

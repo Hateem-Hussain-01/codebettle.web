@@ -239,6 +239,22 @@ export interface Review {
   createdAt: string;
 }
 
+/**
+ * A message sent through the public contact form (Phase 7). The model
+ * already existed in the Prisma contract (migration 1) but nothing ever
+ * wrote to it — the form faked the send. Messages are admin-only to
+ * read; there is no public listing.
+ */
+export interface ContactMessage {
+  id: string;
+  name: string;
+  email: string;
+  subject?: string;
+  message: string;
+  isRead: boolean;
+  createdAt: string;
+}
+
 export interface Testimonial {
   id: string;
   studentName: string;
@@ -430,6 +446,11 @@ export type AnnouncementRow = Pick<
 export type ReviewRow = Pick<
   Models.public_Review,
   'id' | 'studentId' | 'courseId' | 'rating' | 'comment' | 'createdAt'
+>;
+
+export type ContactMessageRow = Pick<
+  Models.public_ContactMessage,
+  'id' | 'name' | 'email' | 'subject' | 'message' | 'isRead' | 'createdAt'
 >;
 
 export type TestimonialRow = Pick<
