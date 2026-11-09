@@ -170,6 +170,9 @@ model Lesson {
   recordingUrl String?
   materials    Json?
   duration     String?
+  // Date of the live class session. Shown on the student/instructor course
+  // pages; the seed data carries one date per lesson (all 2024-05-10).
+  date         DateTime?
   progress     LessonProgress[]
 
   @@unique([moduleId, position])

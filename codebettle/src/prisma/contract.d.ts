@@ -23,7 +23,7 @@ import type {
 } from '@prisma/orm-postgres/contract/types';
 
 export type StorageHash =
-  StorageHashBase<'be6ba4e537cc12fcafdcd7454411ee13aaaba76da7410212e356d23bd67823cb'>;
+  StorageHashBase<'f5df89a7795d8de36a95a09cf54389d41b8d95fadb3e71fa80691ae53eb879c6'>;
 export type ExecutionHash =
   ExecutionHashBase<'ed225674692a0ad9d13dc048e5c52a023284b1dfdede1ce48dd2eb427f80b8cd'>;
 export type ProfileHash =
@@ -612,6 +612,7 @@ export namespace Models {
     readonly [RelationKeys]?: 'reviewer';
   };
   export type public_Lesson = {
+    date: FieldOutputTypes['public']['Lesson']['date'];
     description: FieldOutputTypes['public']['Lesson']['description'];
     duration: FieldOutputTypes['public']['Lesson']['duration'];
     id: FieldOutputTypes['public']['Lesson']['id'];
@@ -1886,6 +1887,13 @@ type ContractBase = Omit<
             };
             readonly Lesson: {
               columns: {
+                readonly date: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly nullable: true;
+                  readonly typeParams: { readonly precision: 3 };
+                  readonly many: false;
+                };
                 readonly description: {
                   readonly dataType: 'pg/text';
                   readonly codecId: 'pg/text@1';
@@ -3846,6 +3854,14 @@ type ContractBase = Omit<
           };
           readonly Lesson: {
             readonly fields: {
+              readonly date: {
+                readonly nullable: true;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly typeParams: { readonly precision: 3 };
+                };
+              };
               readonly description: {
                 readonly nullable: true;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
@@ -3908,6 +3924,7 @@ type ContractBase = Omit<
               readonly table: 'Lesson';
               readonly namespaceId: 'public';
               readonly fields: {
+                readonly date: { readonly column: 'date' };
                 readonly description: { readonly column: 'description' };
                 readonly duration: { readonly column: 'duration' };
                 readonly id: { readonly column: 'id' };

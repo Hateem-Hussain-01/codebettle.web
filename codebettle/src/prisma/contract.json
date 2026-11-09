@@ -1946,6 +1946,16 @@
           },
           "Lesson": {
             "fields": {
+              "date": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "precision": 3
+                  }
+                }
+              },
               "description": {
                 "nullable": true,
                 "type": {
@@ -2038,6 +2048,9 @@
             },
             "storage": {
               "fields": {
+                "date": {
+                  "column": "date"
+                },
                 "description": {
                   "column": "description"
                 },
@@ -4727,6 +4740,14 @@
             },
             "Lesson": {
               "columns": {
+                "date": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "dataType": "pg/timestamptz",
+                  "nullable": true,
+                  "typeParams": {
+                    "precision": 3
+                  }
+                },
                 "description": {
                   "codecId": "pg/text@1",
                   "dataType": "pg/text",
@@ -5909,7 +5930,7 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "be6ba4e537cc12fcafdcd7454411ee13aaaba76da7410212e356d23bd67823cb"
+    "storageHash": "f5df89a7795d8de36a95a09cf54389d41b8d95fadb3e71fa80691ae53eb879c6"
   },
   "execution": {
     "executionHash": "ed225674692a0ad9d13dc048e5c52a023284b1dfdede1ce48dd2eb427f80b8cd",
