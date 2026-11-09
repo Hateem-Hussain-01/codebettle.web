@@ -26,14 +26,43 @@ export default function InstructorAnnouncementsClient({ courses: myCourses, init
 
   const handlePost = async () => {
     if (!form.title.trim() || !form.content.trim()) { toast.error('Title and content required'); return; }
+    if (!form.courseId) { toast.error('Choose a course for this announcement'); return; }
     setSaving(true);
-    await new Promise(r => setTimeout(r, 500));
-    const ann = { id: Date.now().toString(), ...form, type: 'course' as const, authorId: INSTRUCTOR_ID, createdAt: new Date().toISOString().split('T')[0], isActive: true };
-    setAnnouncements(a => [ann, ...a]);
-    toast.success('Announcement posted!');
-    setIsOpen(false);
-    setForm({ title: '', content: '', courseId: myCourses[0]?.id || '' });
-    setSaving(false);
+    try {
+      const res = await fetch('/api/instructor/announcements', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title: form.title, content: form.content, courseId: form.courseId }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        toast.error(data.error || 'Could not post the announcement');
+        return;
+      }
+      setAnnouncements(a => [data.announcement as Announcement, ...a]);
+      toast.success('Announcement posted!');
+      setIsOpen(false);
+      setForm({ title: '', content: '', courseId: myCourses[0]?.id || '' });
+    } catch {
+      toast.error('Could not post the announcement — please try again');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDelete = async (ann: Announcement) => {
+    try {
+      const res = await fetch(`/api/instructor/announcements/${ann.id}`, { method: 'DELETE' });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        toast.error(data.error || 'Could not delete the announcement');
+        return;
+      }
+      setAnnouncements(a => a.filter(a2 => a2.id !== ann.id));
+      toast.success('Deleted');
+    } catch {
+      toast.error('Could not delete the announcement — please try again');
+    }
   };
 
   return (
@@ -63,7 +92,7 @@ export default function InstructorAnnouncementsClient({ courses: myCourses, init
                 <div className="flex-1">
                   <div className="flex items-center justify-between gap-2">
                     <p className="text-white font-semibold text-sm">{ann.title}</p>
-                    <button onClick={() => { setAnnouncements(a => a.filter(a2 => a2.id !== ann.id)); toast.success('Deleted'); }} className="text-muted hover:text-red-400 cursor-pointer"><Trash2 className="w-4 h-4" /></button>
+                    <button onClick={() => handleDelete(ann)} className="text-muted hover:text-red-400 cursor-pointer"><Trash2 className="w-4 h-4" /></button>
                   </div>
                   {course && <p className="text-primary text-xs mb-1">{course.title}</p>}
                   <p className="text-muted text-sm">{ann.content}</p>

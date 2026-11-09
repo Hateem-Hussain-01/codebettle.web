@@ -20,21 +20,43 @@ interface PortalLayoutProps {
   portalName: string;
 }
 
-export default function PortalLayout({ user, navItems, children, portalName }: PortalLayoutProps) {
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-  const pathname = usePathname();
-
+/**
+ * Sidebar navigation (module-level, Phase 7 fix CB-15).
+ * It used to be defined INSIDE PortalLayout, so React saw a new
+ * component type on every render and remounted the whole sidebar —
+ * losing focus/scroll state on every navigation. Hoisted out with its
+ * data as props, it keeps its identity across renders.
+ */
+function Sidebar({
+  user,
+  navItems,
+  pathname,
+  portalName,
+  mobile = false,
+  onClose,
+}: {
+  user: SessionUser;
+  navItems: NavItem[];
+  pathname: string;
+  portalName: string;
+  mobile?: boolean;
+  onClose: () => void;
+}) {
   const handleLogout = async () => {
     await fetch('/api/auth', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'logout' }) });
     window.location.href = '/';
   };
 
-  const Sidebar = ({ mobile = false }: { mobile?: boolean }) => (
+  return (
     <div className={cn('flex flex-col h-full', mobile ? 'p-4' : '')}>
       {/* Logo */}
       <div className="px-4 py-5 border-b border-dark-border flex items-center justify-between">
         <Link href="/" className="text-xl font-black gradient-text">CodeBettle</Link>
-        {mobile && <button onClick={() => setSidebarOpen(false)} className="text-muted hover:text-white"><X className="w-5 h-5" /></button>}
+        {mobile && (
+          <button onClick={onClose} aria-label="Close menu" className="text-muted hover:text-white">
+            <X className="w-5 h-5" />
+          </button>
+        )}
       </div>
 
       {/* User info */}
@@ -56,7 +78,7 @@ export default function PortalLayout({ user, navItems, children, portalName }: P
             <Link
               key={item.href}
               href={item.href}
-              onClick={() => mobile && setSidebarOpen(false)}
+              onClick={() => mobile && onClose()}
               className={cn(
                 'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all group',
                 isActive ? 'bg-primary/10 text-primary border border-primary/20' : 'text-muted hover:text-white hover:bg-dark-border'
@@ -79,12 +101,17 @@ export default function PortalLayout({ user, navItems, children, portalName }: P
       </div>
     </div>
   );
+}
+
+export default function PortalLayout({ user, navItems, children, portalName }: PortalLayoutProps) {
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const pathname = usePathname();
 
   return (
     <div className="flex h-screen bg-background overflow-hidden">
       {/* Desktop Sidebar */}
       <aside className="hidden lg:flex flex-col w-64 bg-dark-card border-r border-dark-border flex-shrink-0">
-        <Sidebar />
+        <Sidebar user={user} navItems={navItems} pathname={pathname} portalName={portalName} onClose={() => setSidebarOpen(false)} />
       </aside>
 
       {/* Mobile Sidebar Overlay */}
@@ -93,7 +120,7 @@ export default function PortalLayout({ user, navItems, children, portalName }: P
           <>
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 lg:hidden" onClick={() => setSidebarOpen(false)} />
             <motion.aside initial={{ x: -280 }} animate={{ x: 0 }} exit={{ x: -280 }} transition={{ type: 'spring', damping: 30 }} className="fixed left-0 top-0 h-full w-72 bg-dark-card border-r border-dark-border z-50 lg:hidden">
-              <Sidebar mobile />
+              <Sidebar user={user} navItems={navItems} pathname={pathname} portalName={portalName} mobile onClose={() => setSidebarOpen(false)} />
             </motion.aside>
           </>
         )}
@@ -103,15 +130,17 @@ export default function PortalLayout({ user, navItems, children, portalName }: P
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
         {/* Top bar */}
         <header className="h-14 flex items-center justify-between px-4 sm:px-6 border-b border-dark-border bg-dark-card/50 backdrop-blur-sm flex-shrink-0">
-          <button onClick={() => setSidebarOpen(true)} className="lg:hidden text-muted hover:text-white p-1 rounded cursor-pointer">
+          <button onClick={() => setSidebarOpen(true)} aria-label="Open menu" className="lg:hidden text-muted hover:text-white p-1 rounded cursor-pointer">
             <Menu className="w-5 h-5" />
           </button>
           <div className="flex-1 lg:flex-none" />
           <div className="flex items-center gap-3">
-            <button className="relative text-muted hover:text-white transition-colors p-2 rounded-lg hover:bg-dark-border cursor-pointer">
+            {/* The bell used to be a dead button (no action at all). It is
+                now a link to the portal notifications page. */}
+            <Link href={`/${user.role}/notifications`} aria-label="Notifications" className="relative text-muted hover:text-white transition-colors p-2 rounded-lg hover:bg-dark-border cursor-pointer">
               <Bell className="w-5 h-5" />
               <span className="absolute top-1 right-1 w-2 h-2 bg-primary rounded-full" />
-            </button>
+            </Link>
             <Link href={`/${user.role}/profile`}>
               <img src={user.avatar || `https://api.dicebear.com/7.x/initials/svg?seed=${user.name}`} alt={user.name} className="w-8 h-8 rounded-full object-cover border-2 border-primary/40 cursor-pointer hover:border-primary transition-colors" />
             </Link>

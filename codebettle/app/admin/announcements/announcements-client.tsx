@@ -27,13 +27,41 @@ export default function AnnouncementsClient({ announcements: allAnnouncements }:
   const handleCreate = async () => {
     if (!form.title.trim() || !form.content.trim()) { toast.error('Title and content required'); return; }
     setSaving(true);
-    await new Promise(r => setTimeout(r, 400));
-    const ann: Ann = { id: Date.now().toString(), title: form.title, content: form.content, type: 'site-wide', authorId: 'admin-1', createdAt: new Date().toISOString().split('T')[0], isActive: true };
-    setList(l => [ann, ...l]);
-    toast.success('Announcement published!');
-    setIsOpen(false);
-    setForm({ title: '', content: '' });
-    setSaving(false);
+    try {
+      const res = await fetch('/api/admin/announcements', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title: form.title, content: form.content, type: 'site-wide' }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        toast.error(data.error || 'Could not publish the announcement');
+        return;
+      }
+      setList(l => [data.announcement as Ann, ...l]);
+      toast.success('Announcement published!');
+      setIsOpen(false);
+      setForm({ title: '', content: '' });
+    } catch {
+      toast.error('Could not publish the announcement — please try again');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDelete = async (ann: Ann) => {
+    try {
+      const res = await fetch(`/api/admin/announcements/${ann.id}`, { method: 'DELETE' });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        toast.error(data.error || 'Could not delete the announcement');
+        return;
+      }
+      setList(l => l.filter(a => a.id !== ann.id));
+      toast.success('Deleted');
+    } catch {
+      toast.error('Could not delete the announcement — please try again');
+    }
   };
 
   return (
@@ -62,7 +90,7 @@ export default function AnnouncementsClient({ announcements: allAnnouncements }:
                   <p className="text-white font-semibold text-sm">{ann.title}</p>
                   <div className="flex items-center gap-2">
                     <Badge variant={ann.isActive ? 'success' : 'muted'}>{ann.isActive ? 'Active' : 'Inactive'}</Badge>
-                    <button onClick={() => { setList(l => l.filter(a => a.id !== ann.id)); toast.success('Deleted'); }} className="text-muted hover:text-red-400 cursor-pointer"><Trash2 className="w-4 h-4" /></button>
+                    <button onClick={() => handleDelete(ann)} className="text-muted hover:text-red-400 cursor-pointer"><Trash2 className="w-4 h-4" /></button>
                   </div>
                 </div>
                 <p className="text-muted text-sm mt-1">{ann.content}</p>

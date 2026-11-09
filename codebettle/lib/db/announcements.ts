@@ -53,3 +53,16 @@ export async function createAnnouncement(input: CreateAnnouncementInput): Promis
   });
   return mapAnnouncementRow(row);
 }
+
+export async function getAnnouncementById(id: string): Promise<Announcement | null> {
+  const row = await getDb().orm.public.Announcement.where({ id }).first();
+  if (!row) return null;
+  return mapAnnouncementRow(row);
+}
+
+export async function deleteAnnouncement(id: string): Promise<boolean> {
+  const row = await getDb().orm.public.Announcement.where({ id }).first();
+  if (!row) return false;
+  await getDb().orm.public.Announcement.where({ id }).delete();
+  return true;
+}
