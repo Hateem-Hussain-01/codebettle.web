@@ -4,6 +4,9 @@
  * Limitation, stated honestly: state lives in one server process and is
  * lost on restart, and it is not shared across instances. Phase 2 replaces
  * it with Upstash Redis (see .env.example) without changing call sites.
+ * Backed by globalThis (not a plain module-level Map) so the limiter is a
+ * true single-process singleton: Next.js bundles each route separately and
+ * a module-level Map would be per-bundle.
  */
 
 interface Window {
@@ -11,7 +14,10 @@ interface Window {
   resetAt: number;
 }
 
-const windows = new Map<string, Window>();
+const globalForRateLimit = globalThis as unknown as {
+  __cbRateLimitWindows?: Map<string, Window>;
+};
+const windows = (globalForRateLimit.__cbRateLimitWindows ??= new Map<string, Window>());
 
 export interface RateLimitResult {
   allowed: boolean;

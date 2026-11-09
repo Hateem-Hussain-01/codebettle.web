@@ -3,6 +3,9 @@
  * Every privileged action writes an entry here: user management, role
  * changes, suspension, session revocation, certificate actions.
  * Entries are never edited or deleted in place.
+ * Backed by globalThis (not module-level state) so the log is a true
+ * single-process singleton: Next.js bundles each route separately and
+ * module-level state would be per-bundle.
  */
 
 export interface AuditEntry {
@@ -15,14 +18,17 @@ export interface AuditEntry {
   createdAt: string;
 }
 
-const entries: AuditEntry[] = [];
-let counter = 0;
+const globalForAudit = globalThis as unknown as {
+  __cbAudit?: { entries: AuditEntry[]; counter: number };
+};
+const auditState = (globalForAudit.__cbAudit ??= { entries: [], counter: 0 });
+const entries: AuditEntry[] = auditState.entries;
 
 export function logAudit(entry: Omit<AuditEntry, 'id' | 'createdAt'>): AuditEntry {
-  counter += 1;
+  auditState.counter += 1;
   const full: AuditEntry = {
     ...entry,
-    id: `audit-${Date.now()}-${counter}`,
+    id: `audit-${Date.now()}-${auditState.counter}`,
     createdAt: new Date().toISOString(),
   };
   entries.push(full);

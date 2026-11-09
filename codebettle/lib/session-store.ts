@@ -11,6 +11,14 @@ import { generateSessionToken, hashToken } from './security';
  * Phase 2: this module's interface stays the same, but records move to the
  * Prisma `sessions` table (see prisma/schema.prisma) so sessions survive
  * restarts and work across instances.
+ *
+ * Why globalThis: Next.js bundles each route separately, so a plain
+ * module-level Map is NOT shared between API routes (which create sessions)
+ * and pages/layouts (which validate them) — a session created by /api/auth
+ * was invisible to /student/dashboard, which redirected to login. Backing
+ * the store with globalThis makes it a true single-process singleton
+ * (the standard Next.js singleton pattern). It is still lost on restart
+ * and still does not span server instances — Phase 2 fixes that properly.
  */
 
 export const SESSION_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 days, matches the old cookie lifetime
@@ -35,7 +43,10 @@ export interface SessionRecord {
   userAgent?: string;
 }
 
-const store = new Map<string, SessionRecord>();
+const globalForSessions = globalThis as unknown as {
+  __cbSessionStore?: Map<string, SessionRecord>;
+};
+const store = (globalForSessions.__cbSessionStore ??= new Map<string, SessionRecord>());
 
 export interface CreateSessionOptions {
   now?: number;

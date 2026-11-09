@@ -49,9 +49,14 @@ export default function AdminStudentsPage() {
     }
   };
 
+  // Mount-time data fetch for this client page (the standard fetch-on-mount
+  // pattern: loading -> loaded is the intended transition, not a render
+  // cascade). The React 19 use()+Suspense rewrite is a Phase 3 polish.
+  /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
     loadStudents();
   }, []);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   const filtered = students.filter(s => s.name.toLowerCase().includes(search.toLowerCase()) || s.email.toLowerCase().includes(search.toLowerCase()));
 

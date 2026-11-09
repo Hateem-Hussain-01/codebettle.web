@@ -17,7 +17,7 @@ export interface User {
   wishlist?: string[];
 }
 
-export const users: User[] = [
+const seedUsers: User[] = [
   // Admins
   {
     id: 'admin-1',
@@ -127,6 +127,18 @@ export const users: User[] = [
     };
   }),
 ];
+
+/**
+ * Next.js bundles each route separately, so a module-level array is NOT
+ * shared between API routes (register / admin create push here) and pages
+ * (getSession / dashboards read here) — a freshly registered user was
+ * invisible to pages, so getSession() returned null after login. Backing
+ * the array with globalThis makes it a true single-process singleton (the
+ * standard Next.js singleton pattern). Phase 2 replaces this with Prisma;
+ * until then, changes are lost on restart and do not span instances.
+ */
+const globalForUsers = globalThis as unknown as { __cbUsers?: User[] };
+export const users: User[] = (globalForUsers.__cbUsers ??= seedUsers);
 
 export function getUserByEmail(email: string) {
   return users.find(u => u.email === email);

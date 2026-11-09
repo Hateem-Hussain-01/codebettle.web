@@ -32,7 +32,9 @@ export interface SessionUser {
 }
 
 export function toSafeUser(user: User): Omit<User, 'passwordHash'> {
+  // Omit the hash via rest destructuring; `void` marks the binding as used.
   const { passwordHash: _passwordHash, ...safe } = user;
+  void _passwordHash;
   return safe;
 }
 
