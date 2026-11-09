@@ -72,6 +72,26 @@
       "model": "Payment",
       "namespace": "public"
     },
+    "Quiz": {
+      "model": "Quiz",
+      "namespace": "public"
+    },
+    "QuizAnswer": {
+      "model": "QuizAnswer",
+      "namespace": "public"
+    },
+    "QuizAttempt": {
+      "model": "QuizAttempt",
+      "namespace": "public"
+    },
+    "QuizOption": {
+      "model": "QuizOption",
+      "namespace": "public"
+    },
+    "QuizQuestion": {
+      "model": "QuizQuestion",
+      "namespace": "public"
+    },
     "Review": {
       "model": "Review",
       "namespace": "public"
@@ -234,6 +254,74 @@
               {
                 "name": "refunded",
                 "value": "refunded"
+              }
+            ]
+          },
+          "QuizAttemptStatus": {
+            "codecId": "pg/text@1",
+            "members": [
+              {
+                "name": "in_progress",
+                "value": "in_progress"
+              },
+              {
+                "name": "submitted",
+                "value": "submitted"
+              }
+            ]
+          },
+          "QuizQuestionType": {
+            "codecId": "pg/text@1",
+            "members": [
+              {
+                "name": "mcq",
+                "value": "mcq"
+              },
+              {
+                "name": "fill_blank",
+                "value": "fill_blank"
+              },
+              {
+                "name": "checkbox",
+                "value": "checkbox"
+              },
+              {
+                "name": "choose_two",
+                "value": "choose_two"
+              },
+              {
+                "name": "choose_three",
+                "value": "choose_three"
+              }
+            ]
+          },
+          "QuizScoringPolicy": {
+            "codecId": "pg/text@1",
+            "members": [
+              {
+                "name": "exact",
+                "value": "exact"
+              },
+              {
+                "name": "partial",
+                "value": "partial"
+              }
+            ]
+          },
+          "QuizStatus": {
+            "codecId": "pg/text@1",
+            "members": [
+              {
+                "name": "draft",
+                "value": "draft"
+              },
+              {
+                "name": "published",
+                "value": "published"
+              },
+              {
+                "name": "archived",
+                "value": "archived"
               }
             ]
           },
@@ -1475,6 +1563,21 @@
                   "namespace": "public"
                 }
               },
+              "quizzes": {
+                "cardinality": "1:N",
+                "on": {
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "courseId"
+                  ]
+                },
+                "to": {
+                  "model": "Quiz",
+                  "namespace": "public"
+                }
+              },
               "reviews": {
                 "cardinality": "1:N",
                 "on": {
@@ -2685,6 +2788,928 @@
               "table": "Payment"
             }
           },
+          "Quiz": {
+            "fields": {
+              "attemptsAllowed": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
+              "availableFrom": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "precision": 3
+                  }
+                }
+              },
+              "availableUntil": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "precision": 3
+                  }
+                }
+              },
+              "courseId": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "createdAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "precision": 3
+                  }
+                }
+              },
+              "createdById": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "deletedAt": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "precision": 3
+                  }
+                }
+              },
+              "description": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "difficulty": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                },
+                "valueSet": {
+                  "entityKind": "enum",
+                  "entityName": "CourseLevel",
+                  "namespaceId": "public",
+                  "plane": "domain"
+                }
+              },
+              "id": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "instructions": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "parseWarnings": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/json@1",
+                  "kind": "scalar"
+                }
+              },
+              "passMark": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
+              "pdfStoragePath": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "pdfUrl": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "scoringPolicy": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                },
+                "valueSet": {
+                  "entityKind": "enum",
+                  "entityName": "QuizScoringPolicy",
+                  "namespaceId": "public",
+                  "plane": "domain"
+                }
+              },
+              "showCorrectAnswers": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/bool@1",
+                  "kind": "scalar"
+                }
+              },
+              "showResultsToStudents": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/bool@1",
+                  "kind": "scalar"
+                }
+              },
+              "status": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                },
+                "valueSet": {
+                  "entityKind": "enum",
+                  "entityName": "QuizStatus",
+                  "namespaceId": "public",
+                  "plane": "domain"
+                }
+              },
+              "timeLimitMin": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
+              "title": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "topics": {
+                "many": {
+                  "elementNullable": false
+                },
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "updatedAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "precision": 3
+                  }
+                }
+              }
+            },
+            "relations": {
+              "attempts": {
+                "cardinality": "1:N",
+                "on": {
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "quizId"
+                  ]
+                },
+                "to": {
+                  "model": "QuizAttempt",
+                  "namespace": "public"
+                }
+              },
+              "course": {
+                "cardinality": "N:1",
+                "nullable": false,
+                "on": {
+                  "localFields": [
+                    "courseId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "Course",
+                  "namespace": "public"
+                }
+              },
+              "creator": {
+                "cardinality": "N:1",
+                "nullable": false,
+                "on": {
+                  "localFields": [
+                    "createdById"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "User",
+                  "namespace": "public"
+                }
+              },
+              "questions": {
+                "cardinality": "1:N",
+                "on": {
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "quizId"
+                  ]
+                },
+                "to": {
+                  "model": "QuizQuestion",
+                  "namespace": "public"
+                }
+              }
+            },
+            "storage": {
+              "fields": {
+                "attemptsAllowed": {
+                  "column": "attemptsAllowed"
+                },
+                "availableFrom": {
+                  "column": "availableFrom"
+                },
+                "availableUntil": {
+                  "column": "availableUntil"
+                },
+                "courseId": {
+                  "column": "courseId"
+                },
+                "createdAt": {
+                  "column": "createdAt"
+                },
+                "createdById": {
+                  "column": "createdById"
+                },
+                "deletedAt": {
+                  "column": "deletedAt"
+                },
+                "description": {
+                  "column": "description"
+                },
+                "difficulty": {
+                  "column": "difficulty"
+                },
+                "id": {
+                  "column": "id"
+                },
+                "instructions": {
+                  "column": "instructions"
+                },
+                "parseWarnings": {
+                  "column": "parseWarnings"
+                },
+                "passMark": {
+                  "column": "passMark"
+                },
+                "pdfStoragePath": {
+                  "column": "pdfStoragePath"
+                },
+                "pdfUrl": {
+                  "column": "pdfUrl"
+                },
+                "scoringPolicy": {
+                  "column": "scoringPolicy"
+                },
+                "showCorrectAnswers": {
+                  "column": "showCorrectAnswers"
+                },
+                "showResultsToStudents": {
+                  "column": "showResultsToStudents"
+                },
+                "status": {
+                  "column": "status"
+                },
+                "timeLimitMin": {
+                  "column": "timeLimitMin"
+                },
+                "title": {
+                  "column": "title"
+                },
+                "topics": {
+                  "column": "topics"
+                },
+                "updatedAt": {
+                  "column": "updatedAt"
+                }
+              },
+              "namespaceId": "public",
+              "table": "Quiz"
+            }
+          },
+          "QuizAnswer": {
+            "fields": {
+              "attemptId": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "id": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "isCorrect": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/bool@1",
+                  "kind": "scalar"
+                }
+              },
+              "needsManualReview": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/bool@1",
+                  "kind": "scalar"
+                }
+              },
+              "pointsAwarded": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
+              "questionId": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "selectedOptionIds": {
+                "many": {
+                  "elementNullable": false
+                },
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "textAnswer": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              }
+            },
+            "relations": {
+              "attempt": {
+                "cardinality": "N:1",
+                "nullable": false,
+                "on": {
+                  "localFields": [
+                    "attemptId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "QuizAttempt",
+                  "namespace": "public"
+                }
+              },
+              "question": {
+                "cardinality": "N:1",
+                "nullable": false,
+                "on": {
+                  "localFields": [
+                    "questionId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "QuizQuestion",
+                  "namespace": "public"
+                }
+              }
+            },
+            "storage": {
+              "fields": {
+                "attemptId": {
+                  "column": "attemptId"
+                },
+                "id": {
+                  "column": "id"
+                },
+                "isCorrect": {
+                  "column": "isCorrect"
+                },
+                "needsManualReview": {
+                  "column": "needsManualReview"
+                },
+                "pointsAwarded": {
+                  "column": "pointsAwarded"
+                },
+                "questionId": {
+                  "column": "questionId"
+                },
+                "selectedOptionIds": {
+                  "column": "selectedOptionIds"
+                },
+                "textAnswer": {
+                  "column": "textAnswer"
+                }
+              },
+              "namespaceId": "public",
+              "table": "QuizAnswer"
+            }
+          },
+          "QuizAttempt": {
+            "fields": {
+              "dueAt": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "precision": 3
+                  }
+                }
+              },
+              "id": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "quizId": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "score": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
+              "startedAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "precision": 3
+                  }
+                }
+              },
+              "status": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                },
+                "valueSet": {
+                  "entityKind": "enum",
+                  "entityName": "QuizAttemptStatus",
+                  "namespaceId": "public",
+                  "plane": "domain"
+                }
+              },
+              "studentId": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "submittedAt": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "precision": 3
+                  }
+                }
+              },
+              "submittedLate": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/bool@1",
+                  "kind": "scalar"
+                }
+              },
+              "timeSpentSec": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
+              "totalPoints": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              }
+            },
+            "relations": {
+              "answers": {
+                "cardinality": "1:N",
+                "on": {
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "attemptId"
+                  ]
+                },
+                "to": {
+                  "model": "QuizAnswer",
+                  "namespace": "public"
+                }
+              },
+              "quiz": {
+                "cardinality": "N:1",
+                "nullable": false,
+                "on": {
+                  "localFields": [
+                    "quizId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "Quiz",
+                  "namespace": "public"
+                }
+              },
+              "student": {
+                "cardinality": "N:1",
+                "nullable": false,
+                "on": {
+                  "localFields": [
+                    "studentId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "User",
+                  "namespace": "public"
+                }
+              }
+            },
+            "storage": {
+              "fields": {
+                "dueAt": {
+                  "column": "dueAt"
+                },
+                "id": {
+                  "column": "id"
+                },
+                "quizId": {
+                  "column": "quizId"
+                },
+                "score": {
+                  "column": "score"
+                },
+                "startedAt": {
+                  "column": "startedAt"
+                },
+                "status": {
+                  "column": "status"
+                },
+                "studentId": {
+                  "column": "studentId"
+                },
+                "submittedAt": {
+                  "column": "submittedAt"
+                },
+                "submittedLate": {
+                  "column": "submittedLate"
+                },
+                "timeSpentSec": {
+                  "column": "timeSpentSec"
+                },
+                "totalPoints": {
+                  "column": "totalPoints"
+                }
+              },
+              "namespaceId": "public",
+              "table": "QuizAttempt"
+            }
+          },
+          "QuizOption": {
+            "fields": {
+              "id": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "isCorrect": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/bool@1",
+                  "kind": "scalar"
+                }
+              },
+              "position": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
+              "questionId": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "text": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              }
+            },
+            "relations": {
+              "question": {
+                "cardinality": "N:1",
+                "nullable": false,
+                "on": {
+                  "localFields": [
+                    "questionId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "QuizQuestion",
+                  "namespace": "public"
+                }
+              }
+            },
+            "storage": {
+              "fields": {
+                "id": {
+                  "column": "id"
+                },
+                "isCorrect": {
+                  "column": "isCorrect"
+                },
+                "position": {
+                  "column": "position"
+                },
+                "questionId": {
+                  "column": "questionId"
+                },
+                "text": {
+                  "column": "text"
+                }
+              },
+              "namespaceId": "public",
+              "table": "QuizOption"
+            }
+          },
+          "QuizQuestion": {
+            "fields": {
+              "acceptedAnswers": {
+                "many": {
+                  "elementNullable": false
+                },
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "correctText": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "difficulty": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                },
+                "valueSet": {
+                  "entityKind": "enum",
+                  "entityName": "CourseLevel",
+                  "namespaceId": "public",
+                  "plane": "domain"
+                }
+              },
+              "id": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "needsReview": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/bool@1",
+                  "kind": "scalar"
+                }
+              },
+              "points": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
+              "position": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
+              "prompt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "quizId": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "reviewNote": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "topic": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "type": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                },
+                "valueSet": {
+                  "entityKind": "enum",
+                  "entityName": "QuizQuestionType",
+                  "namespaceId": "public",
+                  "plane": "domain"
+                }
+              }
+            },
+            "relations": {
+              "answers": {
+                "cardinality": "1:N",
+                "on": {
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "questionId"
+                  ]
+                },
+                "to": {
+                  "model": "QuizAnswer",
+                  "namespace": "public"
+                }
+              },
+              "options": {
+                "cardinality": "1:N",
+                "on": {
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "questionId"
+                  ]
+                },
+                "to": {
+                  "model": "QuizOption",
+                  "namespace": "public"
+                }
+              },
+              "quiz": {
+                "cardinality": "N:1",
+                "nullable": false,
+                "on": {
+                  "localFields": [
+                    "quizId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "Quiz",
+                  "namespace": "public"
+                }
+              }
+            },
+            "storage": {
+              "fields": {
+                "acceptedAnswers": {
+                  "column": "acceptedAnswers"
+                },
+                "correctText": {
+                  "column": "correctText"
+                },
+                "difficulty": {
+                  "column": "difficulty"
+                },
+                "id": {
+                  "column": "id"
+                },
+                "needsReview": {
+                  "column": "needsReview"
+                },
+                "points": {
+                  "column": "points"
+                },
+                "position": {
+                  "column": "position"
+                },
+                "prompt": {
+                  "column": "prompt"
+                },
+                "quizId": {
+                  "column": "quizId"
+                },
+                "reviewNote": {
+                  "column": "reviewNote"
+                },
+                "topic": {
+                  "column": "topic"
+                },
+                "type": {
+                  "column": "type"
+                }
+              },
+              "namespaceId": "public",
+              "table": "QuizQuestion"
+            }
+          },
           "Review": {
             "fields": {
               "comment": {
@@ -3286,6 +4311,36 @@
                 },
                 "to": {
                   "model": "PasswordReset",
+                  "namespace": "public"
+                }
+              },
+              "quizAttempts": {
+                "cardinality": "1:N",
+                "on": {
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "studentId"
+                  ]
+                },
+                "to": {
+                  "model": "QuizAttempt",
+                  "namespace": "public"
+                }
+              },
+              "quizzesCreated": {
+                "cardinality": "1:N",
+                "on": {
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "createdById"
+                  ]
+                },
+                "to": {
+                  "model": "Quiz",
                   "namespace": "public"
                 }
               },
@@ -5440,6 +6495,807 @@
                 }
               ]
             },
+            "Quiz": {
+              "checks": [
+                {
+                  "expression": "\"difficulty\" IN ('beginner', 'intermediate', 'advanced')",
+                  "name": "Quiz_difficulty_check_160b9fc4",
+                  "prefix": "Quiz_difficulty_check"
+                },
+                {
+                  "expression": "\"scoringPolicy\" IN ('exact', 'partial')",
+                  "name": "Quiz_scoringPolicy_check_7aeb3d4a",
+                  "prefix": "Quiz_scoringPolicy_check"
+                },
+                {
+                  "expression": "\"status\" IN ('draft', 'published', 'archived')",
+                  "name": "Quiz_status_check_6db19c90",
+                  "prefix": "Quiz_status_check"
+                },
+                {
+                  "expression": "array_position(\"topics\", NULL) IS NULL",
+                  "name": "Quiz_topics_elem_not_null_1acb8bbc",
+                  "prefix": "Quiz_topics_elem_not_null"
+                }
+              ],
+              "columns": {
+                "attemptsAllowed": {
+                  "codecId": "pg/int4@1",
+                  "dataType": "pg/int4",
+                  "default": {
+                    "kind": "literal",
+                    "value": 1
+                  },
+                  "nullable": false
+                },
+                "availableFrom": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "dataType": "pg/timestamptz",
+                  "nullable": true,
+                  "typeParams": {
+                    "precision": 3
+                  }
+                },
+                "availableUntil": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "dataType": "pg/timestamptz",
+                  "nullable": true,
+                  "typeParams": {
+                    "precision": 3
+                  }
+                },
+                "courseId": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                },
+                "createdAt": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "dataType": "pg/timestamptz",
+                  "default": {
+                    "expression": "now()",
+                    "kind": "function"
+                  },
+                  "nullable": false,
+                  "typeParams": {
+                    "precision": 3
+                  }
+                },
+                "createdById": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                },
+                "deletedAt": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "dataType": "pg/timestamptz",
+                  "nullable": true,
+                  "typeParams": {
+                    "precision": 3
+                  }
+                },
+                "description": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": true
+                },
+                "difficulty": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": true,
+                  "valueSet": {
+                    "entityKind": "valueSet",
+                    "entityName": "CourseLevel",
+                    "namespaceId": "public",
+                    "plane": "storage"
+                  }
+                },
+                "id": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                },
+                "instructions": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": true
+                },
+                "parseWarnings": {
+                  "codecId": "pg/json@1",
+                  "dataType": "pg/json",
+                  "nullable": true
+                },
+                "passMark": {
+                  "codecId": "pg/int4@1",
+                  "dataType": "pg/int4",
+                  "nullable": true
+                },
+                "pdfStoragePath": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": true
+                },
+                "pdfUrl": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": true
+                },
+                "scoringPolicy": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "default": {
+                    "kind": "literal",
+                    "value": "exact"
+                  },
+                  "nullable": false,
+                  "valueSet": {
+                    "entityKind": "valueSet",
+                    "entityName": "QuizScoringPolicy",
+                    "namespaceId": "public",
+                    "plane": "storage"
+                  }
+                },
+                "showCorrectAnswers": {
+                  "codecId": "pg/bool@1",
+                  "dataType": "pg/bool",
+                  "default": {
+                    "kind": "literal",
+                    "value": false
+                  },
+                  "nullable": false
+                },
+                "showResultsToStudents": {
+                  "codecId": "pg/bool@1",
+                  "dataType": "pg/bool",
+                  "default": {
+                    "kind": "literal",
+                    "value": true
+                  },
+                  "nullable": false
+                },
+                "status": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "default": {
+                    "kind": "literal",
+                    "value": "draft"
+                  },
+                  "nullable": false,
+                  "valueSet": {
+                    "entityKind": "valueSet",
+                    "entityName": "QuizStatus",
+                    "namespaceId": "public",
+                    "plane": "storage"
+                  }
+                },
+                "timeLimitMin": {
+                  "codecId": "pg/int4@1",
+                  "dataType": "pg/int4",
+                  "nullable": true
+                },
+                "title": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                },
+                "topics": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "many": {
+                    "elementNullable": false
+                  },
+                  "nullable": false
+                },
+                "updatedAt": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "dataType": "pg/timestamptz",
+                  "nullable": false,
+                  "typeParams": {
+                    "precision": 3
+                  }
+                }
+              },
+              "foreignKeys": [
+                {
+                  "index": {
+                    "name": "Quiz_courseId_idx_12f72d2a"
+                  },
+                  "source": {
+                    "columns": [
+                      "courseId"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "Quiz"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "Course"
+                  }
+                },
+                {
+                  "index": {
+                    "name": "Quiz_createdById_idx_8bf640ed"
+                  },
+                  "source": {
+                    "columns": [
+                      "createdById"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "Quiz"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "User"
+                  }
+                }
+              ],
+              "indexes": [
+                {
+                  "columns": [
+                    "courseId"
+                  ],
+                  "name": "Quiz_courseId_idx_12f72d2a",
+                  "prefix": "Quiz_courseId_idx",
+                  "unique": false
+                },
+                {
+                  "columns": [
+                    "courseId",
+                    "status"
+                  ],
+                  "name": "Quiz_courseId_status_idx_7c6c2bd8",
+                  "prefix": "Quiz_courseId_status_idx",
+                  "unique": false
+                },
+                {
+                  "columns": [
+                    "createdById"
+                  ],
+                  "name": "Quiz_createdById_idx_8bf640ed",
+                  "prefix": "Quiz_createdById_idx",
+                  "unique": false
+                }
+              ],
+              "primaryKey": {
+                "columns": [
+                  "id"
+                ]
+              },
+              "uniques": []
+            },
+            "QuizAnswer": {
+              "checks": [
+                {
+                  "expression": "array_position(\"selectedOptionIds\", NULL) IS NULL",
+                  "name": "QuizAnswer_selectedOptionIds_elem_not_null_be6c2108",
+                  "prefix": "QuizAnswer_selectedOptionIds_elem_not_null"
+                }
+              ],
+              "columns": {
+                "attemptId": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                },
+                "id": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                },
+                "isCorrect": {
+                  "codecId": "pg/bool@1",
+                  "dataType": "pg/bool",
+                  "nullable": true
+                },
+                "needsManualReview": {
+                  "codecId": "pg/bool@1",
+                  "dataType": "pg/bool",
+                  "default": {
+                    "kind": "literal",
+                    "value": false
+                  },
+                  "nullable": false
+                },
+                "pointsAwarded": {
+                  "codecId": "pg/int4@1",
+                  "dataType": "pg/int4",
+                  "default": {
+                    "kind": "literal",
+                    "value": 0
+                  },
+                  "nullable": false
+                },
+                "questionId": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                },
+                "selectedOptionIds": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "many": {
+                    "elementNullable": false
+                  },
+                  "nullable": false
+                },
+                "textAnswer": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": true
+                }
+              },
+              "foreignKeys": [
+                {
+                  "index": {
+                    "name": "QuizAnswer_attemptId_idx_94f50eb9"
+                  },
+                  "onDelete": "cascade",
+                  "source": {
+                    "columns": [
+                      "attemptId"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "QuizAnswer"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "QuizAttempt"
+                  }
+                },
+                {
+                  "index": {
+                    "name": "QuizAnswer_questionId_idx_fdb42076"
+                  },
+                  "source": {
+                    "columns": [
+                      "questionId"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "QuizAnswer"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "QuizQuestion"
+                  }
+                }
+              ],
+              "indexes": [
+                {
+                  "columns": [
+                    "attemptId"
+                  ],
+                  "name": "QuizAnswer_attemptId_idx_94f50eb9",
+                  "prefix": "QuizAnswer_attemptId_idx",
+                  "unique": false
+                },
+                {
+                  "columns": [
+                    "questionId"
+                  ],
+                  "name": "QuizAnswer_questionId_idx_fdb42076",
+                  "prefix": "QuizAnswer_questionId_idx",
+                  "unique": false
+                }
+              ],
+              "primaryKey": {
+                "columns": [
+                  "id"
+                ]
+              },
+              "uniques": [
+                {
+                  "columns": [
+                    "attemptId",
+                    "questionId"
+                  ]
+                }
+              ]
+            },
+            "QuizAttempt": {
+              "checks": [
+                {
+                  "expression": "\"status\" IN ('in_progress', 'submitted')",
+                  "name": "QuizAttempt_status_check_a49ec839",
+                  "prefix": "QuizAttempt_status_check"
+                }
+              ],
+              "columns": {
+                "dueAt": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "dataType": "pg/timestamptz",
+                  "nullable": true,
+                  "typeParams": {
+                    "precision": 3
+                  }
+                },
+                "id": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                },
+                "quizId": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                },
+                "score": {
+                  "codecId": "pg/int4@1",
+                  "dataType": "pg/int4",
+                  "nullable": true
+                },
+                "startedAt": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "dataType": "pg/timestamptz",
+                  "default": {
+                    "expression": "now()",
+                    "kind": "function"
+                  },
+                  "nullable": false,
+                  "typeParams": {
+                    "precision": 3
+                  }
+                },
+                "status": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "default": {
+                    "kind": "literal",
+                    "value": "in_progress"
+                  },
+                  "nullable": false,
+                  "valueSet": {
+                    "entityKind": "valueSet",
+                    "entityName": "QuizAttemptStatus",
+                    "namespaceId": "public",
+                    "plane": "storage"
+                  }
+                },
+                "studentId": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                },
+                "submittedAt": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "dataType": "pg/timestamptz",
+                  "nullable": true,
+                  "typeParams": {
+                    "precision": 3
+                  }
+                },
+                "submittedLate": {
+                  "codecId": "pg/bool@1",
+                  "dataType": "pg/bool",
+                  "default": {
+                    "kind": "literal",
+                    "value": false
+                  },
+                  "nullable": false
+                },
+                "timeSpentSec": {
+                  "codecId": "pg/int4@1",
+                  "dataType": "pg/int4",
+                  "nullable": true
+                },
+                "totalPoints": {
+                  "codecId": "pg/int4@1",
+                  "dataType": "pg/int4",
+                  "nullable": true
+                }
+              },
+              "foreignKeys": [
+                {
+                  "index": {
+                    "name": "QuizAttempt_quizId_idx_c721979c"
+                  },
+                  "source": {
+                    "columns": [
+                      "quizId"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "QuizAttempt"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "Quiz"
+                  }
+                },
+                {
+                  "index": {
+                    "name": "QuizAttempt_studentId_idx_bf255322"
+                  },
+                  "source": {
+                    "columns": [
+                      "studentId"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "QuizAttempt"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "User"
+                  }
+                }
+              ],
+              "indexes": [
+                {
+                  "columns": [
+                    "quizId"
+                  ],
+                  "name": "QuizAttempt_quizId_idx_c721979c",
+                  "prefix": "QuizAttempt_quizId_idx",
+                  "unique": false
+                },
+                {
+                  "columns": [
+                    "quizId",
+                    "studentId"
+                  ],
+                  "name": "QuizAttempt_quizId_studentId_idx_30a37c38",
+                  "prefix": "QuizAttempt_quizId_studentId_idx",
+                  "unique": false
+                },
+                {
+                  "columns": [
+                    "studentId"
+                  ],
+                  "name": "QuizAttempt_studentId_idx_bf255322",
+                  "prefix": "QuizAttempt_studentId_idx",
+                  "unique": false
+                }
+              ],
+              "primaryKey": {
+                "columns": [
+                  "id"
+                ]
+              },
+              "uniques": []
+            },
+            "QuizOption": {
+              "columns": {
+                "id": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                },
+                "isCorrect": {
+                  "codecId": "pg/bool@1",
+                  "dataType": "pg/bool",
+                  "default": {
+                    "kind": "literal",
+                    "value": false
+                  },
+                  "nullable": false
+                },
+                "position": {
+                  "codecId": "pg/int4@1",
+                  "dataType": "pg/int4",
+                  "nullable": false
+                },
+                "questionId": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                },
+                "text": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                }
+              },
+              "foreignKeys": [
+                {
+                  "index": {
+                    "name": "QuizOption_questionId_idx_fdb42076"
+                  },
+                  "onDelete": "cascade",
+                  "source": {
+                    "columns": [
+                      "questionId"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "QuizOption"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "QuizQuestion"
+                  }
+                }
+              ],
+              "indexes": [
+                {
+                  "columns": [
+                    "questionId"
+                  ],
+                  "name": "QuizOption_questionId_idx_fdb42076",
+                  "prefix": "QuizOption_questionId_idx",
+                  "unique": false
+                }
+              ],
+              "primaryKey": {
+                "columns": [
+                  "id"
+                ]
+              },
+              "uniques": [
+                {
+                  "columns": [
+                    "questionId",
+                    "position"
+                  ]
+                }
+              ]
+            },
+            "QuizQuestion": {
+              "checks": [
+                {
+                  "expression": "array_position(\"acceptedAnswers\", NULL) IS NULL",
+                  "name": "QuizQuestion_acceptedAnswers_elem_not_null_17328033",
+                  "prefix": "QuizQuestion_acceptedAnswers_elem_not_null"
+                },
+                {
+                  "expression": "\"difficulty\" IN ('beginner', 'intermediate', 'advanced')",
+                  "name": "QuizQuestion_difficulty_check_160b9fc4",
+                  "prefix": "QuizQuestion_difficulty_check"
+                },
+                {
+                  "expression": "\"type\" IN ('mcq', 'fill_blank', 'checkbox', 'choose_two', 'choose_three')",
+                  "name": "QuizQuestion_type_check_eb39468a",
+                  "prefix": "QuizQuestion_type_check"
+                }
+              ],
+              "columns": {
+                "acceptedAnswers": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "many": {
+                    "elementNullable": false
+                  },
+                  "nullable": false
+                },
+                "correctText": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": true
+                },
+                "difficulty": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": true,
+                  "valueSet": {
+                    "entityKind": "valueSet",
+                    "entityName": "CourseLevel",
+                    "namespaceId": "public",
+                    "plane": "storage"
+                  }
+                },
+                "id": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                },
+                "needsReview": {
+                  "codecId": "pg/bool@1",
+                  "dataType": "pg/bool",
+                  "default": {
+                    "kind": "literal",
+                    "value": false
+                  },
+                  "nullable": false
+                },
+                "points": {
+                  "codecId": "pg/int4@1",
+                  "dataType": "pg/int4",
+                  "default": {
+                    "kind": "literal",
+                    "value": 1
+                  },
+                  "nullable": false
+                },
+                "position": {
+                  "codecId": "pg/int4@1",
+                  "dataType": "pg/int4",
+                  "nullable": false
+                },
+                "prompt": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                },
+                "quizId": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                },
+                "reviewNote": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": true
+                },
+                "topic": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": true
+                },
+                "type": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false,
+                  "valueSet": {
+                    "entityKind": "valueSet",
+                    "entityName": "QuizQuestionType",
+                    "namespaceId": "public",
+                    "plane": "storage"
+                  }
+                }
+              },
+              "foreignKeys": [
+                {
+                  "index": {
+                    "name": "QuizQuestion_quizId_idx_c721979c"
+                  },
+                  "onDelete": "cascade",
+                  "source": {
+                    "columns": [
+                      "quizId"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "QuizQuestion"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "Quiz"
+                  }
+                }
+              ],
+              "indexes": [
+                {
+                  "columns": [
+                    "quizId"
+                  ],
+                  "name": "QuizQuestion_quizId_idx_c721979c",
+                  "prefix": "QuizQuestion_quizId_idx",
+                  "unique": false
+                }
+              ],
+              "primaryKey": {
+                "columns": [
+                  "id"
+                ]
+              },
+              "uniques": [
+                {
+                  "columns": [
+                    "quizId",
+                    "position"
+                  ]
+                }
+              ]
+            },
             "Review": {
               "columns": {
                 "comment": {
@@ -5939,6 +7795,38 @@
                 "refunded"
               ]
             },
+            "QuizAttemptStatus": {
+              "kind": "valueSet",
+              "values": [
+                "in_progress",
+                "submitted"
+              ]
+            },
+            "QuizQuestionType": {
+              "kind": "valueSet",
+              "values": [
+                "mcq",
+                "fill_blank",
+                "checkbox",
+                "choose_two",
+                "choose_three"
+              ]
+            },
+            "QuizScoringPolicy": {
+              "kind": "valueSet",
+              "values": [
+                "exact",
+                "partial"
+              ]
+            },
+            "QuizStatus": {
+              "kind": "valueSet",
+              "values": [
+                "draft",
+                "published",
+                "archived"
+              ]
+            },
             "Role": {
               "kind": "valueSet",
               "values": [
@@ -5960,10 +7848,10 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "238127c695653ffee40c8b8f5654167f9edcc86f3df77f4cc55473e4770feda0"
+    "storageHash": "03d06814342d1cecd507e77850eb512320ef50a694e9ab6a7934b890a125caa8"
   },
   "execution": {
-    "executionHash": "ed225674692a0ad9d13dc048e5c52a023284b1dfdede1ce48dd2eb427f80b8cd",
+    "executionHash": "f6b3319a5f09a26a48f61dae30e0d310074e2d6a8794da5606c9cf6a33c74815",
     "mutations": {
       "defaults": [
         {
@@ -6369,6 +8257,96 @@
           },
           "ref": {
             "entry": "Payment",
+            "field": "id",
+            "namespace": "public"
+          }
+        },
+        {
+          "onCreate": {
+            "id": "timestampNow",
+            "kind": "generator",
+            "params": {
+              "precision": 3
+            }
+          },
+          "ref": {
+            "entry": "Quiz",
+            "field": "createdAt",
+            "namespace": "public"
+          }
+        },
+        {
+          "onCreate": {
+            "id": "cuid2",
+            "kind": "generator"
+          },
+          "ref": {
+            "entry": "Quiz",
+            "field": "id",
+            "namespace": "public"
+          }
+        },
+        {
+          "onCreate": {
+            "id": "timestampNow",
+            "kind": "generator",
+            "params": {
+              "precision": 3
+            }
+          },
+          "onUpdate": {
+            "id": "timestampNow",
+            "kind": "generator",
+            "params": {
+              "precision": 3
+            }
+          },
+          "ref": {
+            "entry": "Quiz",
+            "field": "updatedAt",
+            "namespace": "public"
+          }
+        },
+        {
+          "onCreate": {
+            "id": "cuid2",
+            "kind": "generator"
+          },
+          "ref": {
+            "entry": "QuizAnswer",
+            "field": "id",
+            "namespace": "public"
+          }
+        },
+        {
+          "onCreate": {
+            "id": "cuid2",
+            "kind": "generator"
+          },
+          "ref": {
+            "entry": "QuizAttempt",
+            "field": "id",
+            "namespace": "public"
+          }
+        },
+        {
+          "onCreate": {
+            "id": "cuid2",
+            "kind": "generator"
+          },
+          "ref": {
+            "entry": "QuizOption",
+            "field": "id",
+            "namespace": "public"
+          }
+        },
+        {
+          "onCreate": {
+            "id": "cuid2",
+            "kind": "generator"
+          },
+          "ref": {
+            "entry": "QuizQuestion",
             "field": "id",
             "namespace": "public"
           }

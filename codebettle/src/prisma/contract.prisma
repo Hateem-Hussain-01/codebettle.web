@@ -17,7 +17,9 @@
 //   stored as identifiers (Web_Development, site_wide); map them to the
 //   display strings ("Web Development", "site-wide") at the code boundary
 //   in Phase 2.
-// - Quiz models arrive in Phase 5 as a separate contract change.
+// - Quiz models (Phase 5): Quiz, QuizQuestion, QuizOption, QuizAttempt,
+//   QuizAnswer — see the models below. No quiz seed data: quizzes are
+//   teacher-created content, never invented seed content.
 // - Seed-import validation counts (Phase 2): 27 users (2 admin, 5 instructor,
 //   20 student), 8 courses (6 paid, 2 free), 15 enrolments (11 paid, 4 free;
 //   6 completed), 6 certificates, seed amountPaid total PKR 57,489.
@@ -82,6 +84,30 @@ enum ApplicationStatus {
   rejected
 }
 
+enum QuizStatus {
+  draft
+  published
+  archived
+}
+
+enum QuizQuestionType {
+  mcq
+  fill_blank
+  checkbox
+  choose_two
+  choose_three
+}
+
+enum QuizAttemptStatus {
+  in_progress
+  submitted
+}
+
+enum QuizScoringPolicy {
+  exact
+  partial
+}
+
 model User {
   id                 String                  @id @onCreate(cuid(2))
   name               String
@@ -112,6 +138,8 @@ model User {
   passwordResets     PasswordReset[]
   sessions           Session[]
   blogPosts          BlogPost[]
+  quizzesCreated     Quiz[]             @relation("QuizCreator")
+  quizAttempts       QuizAttempt[]      @relation("QuizAttempts")
 }
 
 model Course {
@@ -148,6 +176,7 @@ model Course {
   reviews         Review[]
   certificates    Certificate[]
   announcements   Announcement[]
+  quizzes         Quiz[]
 }
 
 model Module {
@@ -269,6 +298,111 @@ model Certificate {
   certificateNumber String     @unique
   verificationToken String     @unique
   issuedAt          DateTime   @default(now())
+}
+
+// Quiz models (Phase 5): a teacher creates a quiz for their own course,
+// uploads an externally-AI-generated PDF, the app parses it into
+// questions, the teacher reviews and publishes, students attempt it.
+// The answer key lives server-side only (QuizOption.isCorrect /
+// QuizQuestion.correctText) — attempt payloads must never include it.
+model Quiz {
+  id                    String            @id @onCreate(cuid(2))
+  courseId              String
+  course                Course            @relation(fields: [courseId], references: [id])
+  title                 String
+  description           String?
+  topics                String[]
+  difficulty            CourseLevel?
+  timeLimitMin          Int?
+  attemptsAllowed       Int               @default(1)
+  passMark              Int?
+  scoringPolicy         QuizScoringPolicy @default(exact)
+  showResultsToStudents Boolean           @default(true)
+  showCorrectAnswers    Boolean           @default(false)
+  availableFrom         DateTime?
+  availableUntil        DateTime?
+  instructions          String?
+  status                QuizStatus        @default(draft)
+  createdById           String
+  creator               User              @relation("QuizCreator", fields: [createdById], references: [id])
+  pdfUrl                String?
+  pdfStoragePath        String?
+  parseWarnings         Json?
+  deletedAt             DateTime?
+  createdAt             DateTime          @default(now()) @onCreate(now())
+  updatedAt             temporal.UpdatedAt
+
+  questions             QuizQuestion[]
+  attempts              QuizAttempt[]
+
+  @@index([courseId, status])
+}
+
+model QuizQuestion {
+  id              String           @id @onCreate(cuid(2))
+  quizId          String
+  quiz            Quiz             @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  type            QuizQuestionType
+  position        Int
+  prompt          String
+  points          Int              @default(1)
+  topic           String?
+  difficulty      CourseLevel?
+  correctText     String?
+  acceptedAnswers String[]
+  needsReview     Boolean          @default(false)
+  reviewNote      String?
+
+  options         QuizOption[]
+  answers         QuizAnswer[]
+
+  @@unique([quizId, position])
+}
+
+model QuizOption {
+  id         String       @id @onCreate(cuid(2))
+  questionId String
+  question   QuizQuestion @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  text       String
+  position   Int
+  isCorrect  Boolean      @default(false)
+
+  @@unique([questionId, position])
+}
+
+model QuizAttempt {
+  id            String           @id @onCreate(cuid(2))
+  quizId        String
+  quiz          Quiz             @relation(fields: [quizId], references: [id])
+  studentId     String
+  student       User             @relation("QuizAttempts", fields: [studentId], references: [id])
+  status        QuizAttemptStatus @default(in_progress)
+  startedAt     DateTime         @default(now())
+  dueAt         DateTime?
+  submittedAt   DateTime?
+  score         Int?
+  totalPoints   Int?
+  timeSpentSec  Int?
+  submittedLate Boolean          @default(false)
+
+  answers       QuizAnswer[]
+
+  @@index([quizId, studentId])
+}
+
+model QuizAnswer {
+  id                String       @id @onCreate(cuid(2))
+  attemptId         String
+  attempt           QuizAttempt  @relation(fields: [attemptId], references: [id], onDelete: Cascade)
+  questionId        String
+  question          QuizQuestion @relation(fields: [questionId], references: [id])
+  selectedOptionIds String[]
+  textAnswer        String?
+  isCorrect         Boolean?
+  pointsAwarded     Int          @default(0)
+  needsManualReview Boolean      @default(false)
+
+  @@unique([attemptId, questionId])
 }
 
 model Review {
