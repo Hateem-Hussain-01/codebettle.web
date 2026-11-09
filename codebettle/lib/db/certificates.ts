@@ -31,6 +31,25 @@ export async function getCertificateByCourseAndStudent(
   return mapCertificateRow(row);
 }
 
+/**
+ * Fetch one student's certificates for several courses in ONE query
+ * (Phase 7 perf — the student courses page used to ask once per
+ * enrolment). Unknown / missing courses are simply absent.
+ */
+export async function getCertificatesByStudentAndCourses(
+  studentId: string,
+  courseIds: string[],
+): Promise<Certificate[]> {
+  const unique = [...new Set(courseIds)];
+  if (unique.length === 0) return [];
+  const rows = await getDb()
+    .orm.public.Certificate.where({ studentId })
+    .where((c) => c.courseId.in(unique))
+    .orderBy((c) => c.issuedAt.desc())
+    .all();
+  return rows.map(mapCertificateRow);
+}
+
 export async function getCertificateByNumber(
   certificateNumber: string,
 ): Promise<Certificate | null> {

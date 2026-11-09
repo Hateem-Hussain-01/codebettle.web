@@ -1,6 +1,6 @@
 import { getSession } from '@/lib/auth';
 import { getReviewsByStudent } from '@/lib/db/reviews';
-import { getCourseById } from '@/lib/db/courses';
+import { getCoursesByIds } from '@/lib/db/courses';
 import { getEnrollmentsByStudent } from '@/lib/db/enrollments';
 import { toPublicCourse } from '@/lib/db/mappers';
 import StudentReviewsClient from './student-reviews-client';
@@ -17,17 +17,14 @@ export default async function StudentReviewsPage() {
   const session = await getSession();
   const myReviews = await getReviewsByStudent(session!.id);
   const enrollments = await getEnrollmentsByStudent(session!.id);
-  const enrolledCourses: ReturnType<typeof toPublicCourse>[] = [];
-  for (const e of enrollments) {
-    const course = await getCourseById(e.courseId);
-    if (course) enrolledCourses.push(toPublicCourse(course));
-  }
-  const courseIds = [...new Set(myReviews.map((r) => r.courseId))];
+  // Enrolled + reviewed courses in ONE query (Phase 7 perf — was two
+  // sequential getCourseById loops).
+  const allCourseIds = [...new Set([...enrollments.map((e) => e.courseId), ...myReviews.map((r) => r.courseId)])];
   const coursesById: Record<string, ReturnType<typeof toPublicCourse>> = {};
-  for (const id of courseIds) {
-    const course = await getCourseById(id);
-    if (course) coursesById[id] = toPublicCourse(course);
-  }
+  for (const course of await getCoursesByIds(allCourseIds)) coursesById[course.id] = toPublicCourse(course);
+  const enrolledCourses = enrollments
+    .map((e) => coursesById[e.courseId])
+    .filter((c): c is NonNullable<typeof c> => c !== undefined);
   return (
     <StudentReviewsClient
       initialReviews={myReviews}

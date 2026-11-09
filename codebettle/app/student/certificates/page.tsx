@@ -1,6 +1,6 @@
 import { getSession } from '@/lib/auth';
 import { getCertificatesByStudent } from '@/lib/db/certificates';
-import { getCourseById } from '@/lib/db/courses';
+import { getCoursesByIds } from '@/lib/db/courses';
 import { toPublicCourse } from '@/lib/db/mappers';
 import StudentCertificatesClient from './student-certificates-client';
 
@@ -15,10 +15,8 @@ export default async function StudentCertificatesPage() {
   const certificates = await getCertificatesByStudent(session!.id);
   const courseIds = [...new Set(certificates.map((c) => c.courseId))];
   const coursesById: Record<string, ReturnType<typeof toPublicCourse>> = {};
-  for (const id of courseIds) {
-    const course = await getCourseById(id);
-    if (course) coursesById[id] = toPublicCourse(course);
-  }
+  // One query for all certificate courses (Phase 7 perf — was a loop of getCourseById).
+  for (const course of await getCoursesByIds(courseIds)) coursesById[course.id] = toPublicCourse(course);
   return (
     <StudentCertificatesClient
       certificates={certificates}

@@ -1,4 +1,4 @@
-import { getCourseById } from '@/lib/db/courses';
+import { getCoursesByIds } from '@/lib/db/courses';
 import { toPublicCourse } from '@/lib/db/mappers';
 import { getUserById } from '@/lib/db/users';
 import StudentWishlistClient from './student-wishlist-client';
@@ -14,9 +14,8 @@ import StudentWishlistClient from './student-wishlist-client';
 const INITIAL_WISHLIST = ['course-3', 'course-5'];
 
 export default async function StudentWishlistPage() {
-  const courses = (
-    await Promise.all(INITIAL_WISHLIST.map((id) => getCourseById(id)))
-  ).filter((c): c is NonNullable<typeof c> => c !== null);
+  // One query for the whole wishlist (Phase 7 perf — was one query per id).
+  const courses = await getCoursesByIds(INITIAL_WISHLIST);
   const instructorIds = [...new Set(courses.map((c) => c.instructorId))];
   const instructorNames: Record<string, string> = {};
   for (const id of instructorIds) {

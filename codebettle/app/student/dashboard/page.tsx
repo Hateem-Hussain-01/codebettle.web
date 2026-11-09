@@ -1,6 +1,6 @@
 import { getSession } from '@/lib/auth';
 import { getEnrollmentsByStudent } from '@/lib/db/enrollments';
-import { getCourseById } from '@/lib/db/courses';
+import { getCoursesByIds } from '@/lib/db/courses';
 import { getCertificatesByStudent } from '@/lib/db/certificates';
 import { getSiteWideAnnouncements } from '@/lib/db/announcements';
 import { formatDateShort } from '@/lib/utils';
@@ -15,11 +15,12 @@ export default async function StudentDashboard() {
   const certificates = await getCertificatesByStudent(session!.id);
   const announcements = await getSiteWideAnnouncements();
 
-  // Course fetched once per enrolment (was a sync call inside .map).
-  const enrolledCourses = (await Promise.all(enrollments.map(async (e) => ({
-    enrollment: e,
-    course: await getCourseById(e.courseId),
-  })))).filter(item => item.course);
+  // Courses fetched in ONE query (Phase 7 perf — was one getCourseById
+  // per enrolment).
+  const coursesById = new Map((await getCoursesByIds(enrollments.map((e) => e.courseId))).map((c) => [c.id, c]));
+  const enrolledCourses = enrollments
+    .map((e) => ({ enrollment: e, course: coursesById.get(e.courseId) }))
+    .filter((item): item is { enrollment: (typeof enrollments)[number]; course: NonNullable<ReturnType<typeof coursesById.get>> } => item.course !== undefined);
 
   const completed = enrollments.filter(e => e.isCompleted).length;
 

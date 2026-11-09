@@ -14,6 +14,21 @@ export async function getReviewsByCourse(courseId: string): Promise<Review[]> {
   return rows.map(mapReviewRow);
 }
 
+/**
+ * Fetch reviews for several courses in ONE query (Phase 7 perf —
+ * replaces the per-course getReviewsByCourse loops in the instructor
+ * dashboard / reviews pages).
+ */
+export async function getReviewsByCourseIds(courseIds: string[]): Promise<Review[]> {
+  const unique = [...new Set(courseIds)];
+  if (unique.length === 0) return [];
+  const rows = await getDb()
+    .orm.public.Review.where((r) => r.courseId.in(unique))
+    .orderBy((r) => r.createdAt.desc())
+    .all();
+  return rows.map(mapReviewRow);
+}
+
 export async function getReviewsByStudent(studentId: string): Promise<Review[]> {
   const rows = await getDb()
     .orm.public.Review.where({ studentId })

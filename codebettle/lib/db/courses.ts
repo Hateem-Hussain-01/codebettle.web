@@ -27,6 +27,27 @@ export async function getCourseById(id: string): Promise<Course | null> {
   return mapCourseRow(row, row.modules);
 }
 
+/**
+ * Fetch several courses in ONE query (Phase 7 perf — replaces the
+ * per-enrolment / per-id getCourseById loops in the student pages).
+ * Returns them in input order; unknown ids are skipped; [] for [].
+ */
+export async function getCoursesByIds(ids: string[]): Promise<Course[]> {
+  const unique = [...new Set(ids)];
+  if (unique.length === 0) return [];
+  const rows = await getDb()
+    .orm.public.Course.where((c) => c.id.in(unique))
+    .where((c) => c.deletedAt.isNull())
+    .include('modules', (m) =>
+      m
+        .orderBy((mod) => mod.position.asc())
+        .include('lessons', (l) => l.orderBy((les) => les.position.asc())),
+    )
+    .all();
+  const byId = new Map(rows.map((r) => [r.id, mapCourseRow(r, r.modules)]));
+  return unique.map((id) => byId.get(id)).filter((c): c is Course => c !== undefined);
+}
+
 export async function getCourseBySlug(slug: string): Promise<Course | null> {
   const row = await getDb()
     .orm.public.Course.where({ slug })

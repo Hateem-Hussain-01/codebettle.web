@@ -1,7 +1,7 @@
 import { getSession } from '@/lib/auth';
 import { getEnrollmentsByStudent } from '@/lib/db/enrollments';
-import { getCourseById } from '@/lib/db/courses';
-import { getCertificateByCourseAndStudent } from '@/lib/db/certificates';
+import { getCoursesByIds } from '@/lib/db/courses';
+import { getCertificatesByStudentAndCourses } from '@/lib/db/certificates';
 import { formatDateShort } from '@/lib/utils';
 import Link from 'next/link';
 import Badge from '@/components/ui/Badge';
@@ -12,12 +12,16 @@ export default async function StudentCoursesPage() {
   const session = await getSession();
   const enrollments = await getEnrollmentsByStudent(session!.id);
 
-  // Course + certificate fetched once per enrolment (was sync calls inside .map).
-  const items = (await Promise.all(enrollments.map(async (e) => ({
-    enrollment: e,
-    course: await getCourseById(e.courseId),
-    certificate: await getCertificateByCourseAndStudent(e.courseId, session!.id),
-  })))).filter(i => i.course);
+  // Courses + certificates fetched in TWO queries total (Phase 7 perf —
+  // was one getCourseById + one certificate lookup per enrolment).
+  const courseIds = enrollments.map((e) => e.courseId);
+  const coursesById = new Map((await getCoursesByIds(courseIds)).map((c) => [c.id, c]));
+  const certsByCourse = new Map(
+    (await getCertificatesByStudentAndCourses(session!.id, courseIds)).map((c) => [c.courseId, c]),
+  );
+  const items = enrollments
+    .map((e) => ({ enrollment: e, course: coursesById.get(e.courseId), certificate: certsByCourse.get(e.courseId) ?? null }))
+    .filter((i): i is typeof i & { course: NonNullable<typeof i.course> } => i.course !== undefined);
 
   return (
     <div className="space-y-6">

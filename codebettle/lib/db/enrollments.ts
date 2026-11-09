@@ -39,6 +39,24 @@ export async function getEnrollmentsByCourse(courseId: string): Promise<Enrollme
   return rows.map((r) => mapEnrollmentRow(r, progress));
 }
 
+/**
+ * Fetch enrolments for several courses in ONE query (Phase 7 perf —
+ * replaces the per-course getEnrollmentsByCourse loops in the
+ * instructor dashboard / students pages). Progress is loaded in one
+ * query too, as in getEnrollmentsByCourse.
+ */
+export async function getEnrollmentsByCourseIds(courseIds: string[]): Promise<Enrollment[]> {
+  const unique = [...new Set(courseIds)];
+  if (unique.length === 0) return [];
+  const rows = await getDb()
+    .orm.public.Enrollment.where((e) => e.courseId.in(unique))
+    .where((e) => e.deletedAt.isNull())
+    .orderBy((e) => e.enrolledAt.desc())
+    .all();
+  const progress = await progressFor(rows.map((r) => r.id));
+  return rows.map((r) => mapEnrollmentRow(r, progress));
+}
+
 export async function getCompletedEnrollments(studentId: string): Promise<Enrollment[]> {
   const all = await getEnrollmentsByStudent(studentId);
   return all.filter((e) => e.isCompleted);

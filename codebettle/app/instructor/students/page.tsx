@@ -1,6 +1,6 @@
 import { getSession } from '@/lib/auth';
 import { getCoursesByInstructor } from '@/lib/db/courses';
-import { getEnrollmentsByCourse } from '@/lib/db/enrollments';
+import { getEnrollmentsByCourseIds } from '@/lib/db/enrollments';
 import { getUserById } from '@/lib/db/users';
 import type { SafeUser } from '@/lib/db/types';
 import Card from '@/components/ui/Card';
@@ -12,8 +12,9 @@ export default async function InstructorStudentsPage() {
   const session = await getSession();
   const myCourses = await getCoursesByInstructor(session!.id);
   const courseIds = myCourses.map(c => c.id);
-  // Raw `enrollments` array no longer exists: fetch per course.
-  const myEnrollments = (await Promise.all(courseIds.map(id => getEnrollmentsByCourse(id)))).flat();
+  // Enrolments for all my courses in ONE query (Phase 7 perf — was one
+  // query per course).
+  const myEnrollments = await getEnrollmentsByCourseIds(courseIds);
 
   const uniqueStudentIds = [...new Set(myEnrollments.map(e => e.studentId))];
 

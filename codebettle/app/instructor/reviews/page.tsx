@@ -1,6 +1,6 @@
 import { getSession } from '@/lib/auth';
 import { getCoursesByInstructor } from '@/lib/db/courses';
-import { getReviewsByCourse } from '@/lib/db/reviews';
+import { getReviewsByCourseIds } from '@/lib/db/reviews';
 import { getUserById } from '@/lib/db/users';
 import type { SafeUser } from '@/lib/db/types';
 import StarRating from '@/components/ui/StarRating';
@@ -12,13 +12,13 @@ export default async function InstructorReviewsPage() {
   const session = await getSession();
   const myCourses = await getCoursesByInstructor(session!.id);
 
-  // Reviews fetched once per course (was a sync call inside flatMap).
-  const reviewsByCourse = await Promise.all(
-    myCourses.map(async (course) => ({
-      course,
-      reviews: await getReviewsByCourse(course.id),
-    })),
-  );
+  // Reviews for all my courses in ONE query (Phase 7 perf — was one
+  // query per course).
+  const allCourseReviews = await getReviewsByCourseIds(myCourses.map((c) => c.id));
+  const reviewsByCourse = myCourses.map((course) => ({
+    course,
+    reviews: allCourseReviews.filter((r) => r.courseId === course.id),
+  }));
   const allReviews = reviewsByCourse.flatMap(({ course, reviews }) =>
     reviews.map(r => ({ ...r, course }))
   );
