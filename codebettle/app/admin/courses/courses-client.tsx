@@ -5,7 +5,7 @@ import Badge from '@/components/ui/Badge';
 import Input from '@/components/ui/Input';
 import Select from '@/components/ui/Select';
 import Modal from '@/components/ui/Modal';
-import { Search, Plus, Edit, Trash2, Eye, EyeOff, Star, Video } from 'lucide-react';
+import { Search, Plus, Edit, Trash2, Eye, EyeOff, Star, Video, Archive } from 'lucide-react';
 import { formatPrice } from '@/lib/utils';
 import Link from 'next/link';
 import toast from 'react-hot-toast';
@@ -14,6 +14,18 @@ import type { Course } from '@/lib/db/types';
 interface CoursesClientProps {
   courses: Course[];
   instructorNames: Record<string, string>;
+}
+
+/** PATCH one course field via the admin API; returns the updated course or null. */
+async function patchCourse(id: string, body: Record<string, unknown>): Promise<Course | null> {
+  const res = await fetch(`/api/admin/courses/${id}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  const data = await res.json();
+  if (!res.ok) { toast.error(data.error || 'Could not update course'); return null; }
+  return data.course as Course;
 }
 
 export default function CoursesClient({ courses: allCourses, instructorNames }: CoursesClientProps) {
@@ -28,17 +40,37 @@ export default function CoursesClient({ courses: allCourses, instructorNames }: 
     return matchSearch && matchStatus;
   });
 
-  const toggleStatus = (id: string) => {
-    setCourseList(cs => cs.map(c => c.id === id ? { ...c, status: c.status === 'published' ? 'draft' : 'published' as any } : c));
-    toast.success('Course status updated');
+  const toggleStatus = async (id: string) => {
+    const course = courseList.find(c => c.id === id);
+    if (!course) return;
+    // Publish <-> draft. An archived course publishes again from here.
+    const nextStatus = course.status === 'published' ? 'draft' : 'published';
+    const updated = await patchCourse(id, { status: nextStatus });
+    if (!updated) return;
+    setCourseList(cs => cs.map(c => c.id === id ? updated : c));
+    toast.success(nextStatus === 'published' ? 'Course published' : 'Course moved to draft');
   };
 
-  const toggleFeatured = (id: string) => {
-    setCourseList(cs => cs.map(c => c.id === id ? { ...c, isFeatured: !c.isFeatured } : c));
-    toast.success('Featured status updated');
+  const archiveCourse = async (id: string) => {
+    const updated = await patchCourse(id, { status: 'archived' });
+    if (!updated) return;
+    setCourseList(cs => cs.map(c => c.id === id ? updated : c));
+    toast.success('Course archived');
   };
 
-  const deleteCourse = (id: string) => {
+  const toggleFeatured = async (id: string) => {
+    const course = courseList.find(c => c.id === id);
+    if (!course) return;
+    const updated = await patchCourse(id, { isFeatured: !course.isFeatured });
+    if (!updated) return;
+    setCourseList(cs => cs.map(c => c.id === id ? updated : c));
+    toast.success(updated.isFeatured ? 'Course featured' : 'Course unfeatured');
+  };
+
+  const deleteCourse = async (id: string) => {
+    const res = await fetch(`/api/admin/courses/${id}`, { method: 'DELETE' });
+    const data = await res.json();
+    if (!res.ok) { toast.error(data.error || 'Could not delete course'); return; }
     setCourseList(cs => cs.filter(c => c.id !== id));
     setDeleteTarget(null);
     toast.success('Course deleted');
@@ -103,6 +135,11 @@ export default function CoursesClient({ courses: allCourses, instructorNames }: 
                         <button onClick={() => toggleFeatured(course.id)} title="Toggle Featured" className={`p-1 cursor-pointer transition-colors ${course.isFeatured ? 'text-primary' : 'text-muted hover:text-primary'}`}>
                           <Star className="w-4 h-4" />
                         </button>
+                        {course.status !== 'archived' && (
+                          <button onClick={() => archiveCourse(course.id)} title="Archive" className="text-muted hover:text-yellow-400 transition-colors p-1 cursor-pointer">
+                            <Archive className="w-4 h-4" />
+                          </button>
+                        )}
                         <button onClick={() => setDeleteTarget(course.id)} className="text-muted hover:text-red-400 transition-colors p-1 cursor-pointer">
                           <Trash2 className="w-4 h-4" />
                         </button>

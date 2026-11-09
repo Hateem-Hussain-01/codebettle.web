@@ -12,6 +12,7 @@ import { Award, XCircle, Lock, Users, Calendar, Clock, BookOpen, Video } from 'l
 import { formatDate, formatDateShort, formatPrice } from '@/lib/utils';
 import Link from 'next/link';
 import Button from '@/components/ui/Button';
+import CourseCurriculumClient from './course-curriculum-client';
 
 const DAYS = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
 
@@ -202,6 +203,9 @@ export default async function AdminCourseDetailPage({ params }: PageProps<'/admi
           </div>
         )}
       </Card>
+
+      {/* Curriculum management (Phase 3 — wired to the module/lesson write APIs) */}
+      <CourseCurriculumClient courseId={course.id} modules={course.modules} />
     </div>
   );
 }

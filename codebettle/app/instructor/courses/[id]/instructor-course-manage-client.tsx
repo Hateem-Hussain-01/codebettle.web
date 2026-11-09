@@ -1,13 +1,12 @@
 'use client';
-import { useState } from 'react';
-import type { Course, Enrollment, SafeUser } from '@/lib/db/types';
+import { useRef, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import type { Course, Enrollment, Lesson, Module, SafeUser } from '@/lib/db/types';
 import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
-import Textarea from '@/components/ui/Textarea';
 import Badge from '@/components/ui/Badge';
 import Modal from '@/components/ui/Modal';
-import StarRating from '@/components/ui/StarRating';
 import {
   Video, ExternalLink, Save, Download, ChevronDown, ChevronUp,
   Users, BookOpen, Plus, Trash2, ArrowLeft, X, CheckCircle,
@@ -30,10 +29,12 @@ interface InstructorCourseManageClientProps {
 }
 
 export default function InstructorCourseManageClient({ course, enrolledStudents }: InstructorCourseManageClientProps) {
+  const router = useRouter();
 
   /* ── State ── */
   const [activeTab, setActiveTab] = useState<'recordings' | 'curriculum' | 'schedule'>('recordings');
   const [zoomLink, setZoomLink] = useState(course.zoomLink || '');
+  const [completed, setCompleted] = useState(course.isCompleted);
   const [openModules, setOpenModules] = useState<Record<string, boolean>>({ [course.modules[0]?.id]: true });
   const [recordings, setRecordings] = useState<Record<string, string>>(
     Object.fromEntries(course.modules.flatMap(m => m.lessons.map(l => [l.id, l.driveRecordingUrl || ''])))
@@ -44,12 +45,16 @@ export default function InstructorCourseManageClient({ course, enrolledStudents 
     ...m,
     lessons: m.lessons.map(l => ({ ...l })),
   })));
+  // Last server-confirmed curriculum — the save diffs local state against this.
+  const savedModulesRef = useRef<Module[]>(course.modules.map(m => ({
+    ...m,
+    lessons: m.lessons.map(l => ({ ...l })),
+  })));
   const [curriculumSaved, setCurriculumSaved] = useState(course.modules.length > 0);
+  const [savingCurriculum, setSavingCurriculum] = useState(false);
 
   // Mark complete modal
   const [completeModal, setCompleteModal] = useState(false);
-  const [privateReview, setPrivateReview] = useState({ rating: 5, comment: '' });
-  const [classReview, setClassReview] = useState({ rating: 5, comment: '' });
   const [eligibleStudents, setEligibleStudents] = useState<Record<string, boolean>>(
     Object.fromEntries(enrolledStudents.map(s => [s.enrollment.id, true]))
   );
@@ -58,20 +63,45 @@ export default function InstructorCourseManageClient({ course, enrolledStudents 
   const totalSessions = modules.reduce((a, m) => a + m.lessons.length, 0);
   const uploadedCount = Object.values(recordings).filter(Boolean).length;
 
+  const apiBase = `/api/instructor/courses/${course.id}`;
+
+  async function api(path: string, method: string, body?: Record<string, unknown>): Promise<{ ok: boolean; data: any }> {
+    const res = await fetch(path, {
+      method,
+      headers: { 'Content-Type': 'application/json' },
+      body: body === undefined ? undefined : JSON.stringify(body),
+    });
+    const data = await res.json().catch(() => ({}));
+    return { ok: res.ok, data };
+  }
+
   /* ── Zoom ── */
-  const handleSaveZoom = () => {
+  const handleSaveZoom = async () => {
     if (!zoomLink.trim()) { toast.error('Zoom link cannot be empty'); return; }
-    (course as any).zoomLink = zoomLink;
+    const { ok, data } = await api(apiBase, 'PATCH', { zoomLink });
+    if (!ok) { toast.error(data.error || 'Could not update Zoom link'); return; }
     toast.success('Zoom link updated!');
   };
 
   /* ── Recording ── */
-  const handleSaveRecording = (sessionId: string, title: string) => {
+  const handleSaveRecording = async (sessionId: string, title: string) => {
     const url = recordings[sessionId];
     if (!url.trim()) { toast.error('Please enter a Google Drive link'); return; }
-    course.modules.forEach(m => m.lessons.forEach(l => { if (l.id === sessionId) l.driveRecordingUrl = url; }));
+    const moduleId = modules.find(m => m.lessons.some(l => l.id === sessionId))?.id;
+    if (!moduleId) { toast.error('Could not find the lesson'); return; }
+    const { ok, data } = await api(`${apiBase}/modules/${moduleId}/lessons/${sessionId}`, 'PATCH', { recordingUrl: url });
+    if (!ok) { toast.error(data.error || 'Could not save recording'); return; }
+    // Keep the saved snapshot in sync so a later curriculum save skips it.
+    savedRefSyncLesson(moduleId, sessionId, { driveRecordingUrl: url });
     toast.success(`Recording saved for "${title}"!`);
   };
+
+  /** Patch one saved lesson's fields inside savedModulesRef (no re-render). */
+  function savedRefSyncLesson(moduleId: string, lessonId: string, patch: Partial<Lesson>) {
+    savedModulesRef.current = savedModulesRef.current.map(m => m.id === moduleId
+      ? { ...m, lessons: m.lessons.map(l => l.id === lessonId ? { ...l, ...patch } : l) }
+      : m);
+  }
 
   /* ── Curriculum builder ── */
   const addModule = () => {
@@ -92,40 +122,143 @@ export default function InstructorCourseManageClient({ course, enrolledStudents 
   const updateSession = (mid: string, sid: string, field: string, val: string) =>
     setModules(ms => ms.map(m => m.id === mid ? { ...m, lessons: m.lessons.map(l => l.id === sid ? { ...l, [field]: val } : l) } : m));
 
-  const handleSaveCurriculum = () => {
+  /**
+   * Save the curriculum through the instructor module/lesson APIs.
+   * Local add/remove/edit stays staged until this runs; the save diffs
+   * the builder state against the last server-confirmed snapshot:
+   * new modules/lessons are POSTed, renamed/edited ones PATCHed, and
+   * removed ones DELETEd. Ids returned by the server replace the
+   * temporary `m-…` / `s-…` ids so later saves diff correctly.
+   */
+  const handleSaveCurriculum = async () => {
     if (modules.length === 0) { toast.error('Add at least one module'); return; }
-    // Sync to course
-    (course as any).modules = modules;
-    // Also sync recording state
-    const newRec: Record<string, string> = {};
-    modules.forEach(m => m.lessons.forEach(l => { newRec[l.id] = recordings[l.id] || l.driveRecordingUrl || ''; }));
-    setRecordings(newRec);
-    setCurriculumSaved(true);
-    toast.success('Curriculum saved! Admin can now publish the course.');
+    setSavingCurriculum(true);
+    try {
+      const saved = savedModulesRef.current;
+      const errors: string[] = [];
+      let nextModules: Module[] = [];
+      const nextRecordings = { ...recordings };
+
+      for (const mod of modules) {
+        const savedMod = saved.find(m => m.id === mod.id);
+        let realModuleId = mod.id;
+        let realLessons: Lesson[] = [];
+        if (!savedMod) {
+          // New module (temporary `m-…` id): create it, then its lessons.
+          const { ok, data } = await api(`${apiBase}/modules`, 'POST', { title: mod.title });
+          if (!ok) { errors.push(data.error || `Could not create module "${mod.title}"`); continue; }
+          realModuleId = (data.module as Module).id;
+          for (const lesson of mod.lessons) {
+            const created = await createLesson(realModuleId, lesson, errors);
+            if (created) {
+              realLessons.push(created);
+              if (nextRecordings[lesson.id]) {
+                nextRecordings[created.id] = nextRecordings[lesson.id];
+                delete nextRecordings[lesson.id];
+              }
+            }
+          }
+          nextModules.push({ id: realModuleId, title: mod.title, lessons: realLessons });
+          continue;
+        }
+        // Existing module: rename if changed.
+        if (mod.title !== savedMod.title) {
+          const { ok, data } = await api(`${apiBase}/modules/${mod.id}`, 'PATCH', { title: mod.title });
+          if (!ok) errors.push(data.error || `Could not rename module "${mod.title}"`);
+        }
+        for (const lesson of mod.lessons) {
+          const savedLesson = savedMod.lessons.find(l => l.id === lesson.id);
+          if (!savedLesson) {
+            const created = await createLesson(mod.id, lesson, errors);
+            if (created) {
+              realLessons.push(created);
+              if (nextRecordings[lesson.id]) {
+                nextRecordings[created.id] = nextRecordings[lesson.id];
+                delete nextRecordings[lesson.id];
+              }
+            }
+            continue;
+          }
+          const patch: Record<string, unknown> = {};
+          if (lesson.title !== savedLesson.title) patch.title = lesson.title;
+          if (lesson.description !== savedLesson.description) patch.description = lesson.description;
+          if (lesson.driveRecordingUrl !== savedLesson.driveRecordingUrl) patch.recordingUrl = lesson.driveRecordingUrl || null;
+          if (lesson.duration !== savedLesson.duration) patch.duration = lesson.duration || null;
+          if (lesson.date !== savedLesson.date) patch.date = lesson.date || null;
+          if (Object.keys(patch).length > 0) {
+            const { ok, data } = await api(`${apiBase}/modules/${mod.id}/lessons/${lesson.id}`, 'PATCH', patch);
+            if (!ok) { errors.push(data.error || `Could not save lesson "${lesson.title}"`); realLessons.push(lesson); }
+            else realLessons.push(data.lesson as Lesson);
+          } else {
+            realLessons.push(lesson);
+          }
+        }
+        // Lessons removed from this module: delete them.
+        for (const savedLesson of savedMod.lessons) {
+          if (!mod.lessons.some(l => l.id === savedLesson.id)) {
+            const { ok, data } = await api(`${apiBase}/modules/${mod.id}/lessons/${savedLesson.id}`, 'DELETE');
+            if (!ok) errors.push(data.error || `Could not delete lesson "${savedLesson.title}"`);
+          }
+        }
+        nextModules.push({ id: mod.id, title: mod.title, lessons: realLessons });
+      }
+      // Modules removed entirely: delete them.
+      for (const savedMod of saved) {
+        if (!modules.some(m => m.id === savedMod.id)) {
+          const { ok, data } = await api(`${apiBase}/modules/${savedMod.id}`, 'DELETE');
+          if (!ok) errors.push(data.error || `Could not delete module "${savedMod.title}"`);
+        }
+      }
+
+      if (errors.length > 0) { toast.error(errors[0]); return; }
+      // Swap temporary ids for real ones in the builder + recordings state.
+      setModules(nextModules.map(m => ({ ...m, lessons: m.lessons.map(l => ({ ...l })) })));
+      savedModulesRef.current = nextModules.map(m => ({ ...m, lessons: m.lessons.map(l => ({ ...l })) }));
+      setRecordings(nextRecordings);
+      setCurriculumSaved(true);
+      toast.success('Curriculum saved! Admin can now publish the course.');
+    } finally {
+      setSavingCurriculum(false);
+    }
   };
+
+  /** POST one lesson under a module; returns the saved lesson or null. */
+  async function createLesson(moduleId: string, lesson: Lesson, errors: string[]): Promise<Lesson | null> {
+    const { ok, data } = await api(`${apiBase}/modules/${moduleId}/lessons`, 'POST', {
+      title: lesson.title,
+      description: lesson.description || undefined,
+      recordingUrl: lesson.driveRecordingUrl || undefined,
+      duration: lesson.duration || undefined,
+      date: lesson.date || undefined,
+    });
+    if (!ok) { errors.push(data.error || `Could not create lesson "${lesson.title}"`); return null; }
+    return data.lesson as Lesson;
+  }
 
   /* ── Mark Complete ── */
   const handleMarkComplete = async () => {
-    if (!classReview.comment.trim()) { toast.error('Class review is required'); return; }
     setCompleting(true);
-    await new Promise(r => setTimeout(r, 800));
-
-    // Save reviews
-    (course as any).isCompleted = true;
-    (course as any).completedAt = new Date().toISOString().split('T')[0];
-    (course as any).instructorPrivateReview = { ...privateReview, submittedAt: new Date().toISOString().split('T')[0] };
-    (course as any).instructorClassReview = { ...classReview, submittedAt: new Date().toISOString().split('T')[0] };
-
-    // Set certificate eligibility
-    enrolledStudents.forEach(({ enrollment }) => {
-      (enrollment as any).certificateEligible = eligibleStudents[enrollment.id] ?? false;
-      (enrollment as any).isCompleted = true;
-    });
-
-    toast.success('Course marked as complete!');
-    setCompleteModal(false);
-    setCompleting(false);
-    window.location.reload();
+    try {
+      const { ok, data } = await api(apiBase, 'PATCH', { isCompleted: true });
+      if (!ok) { toast.error(data.error || 'Could not mark course as complete'); return; }
+      // Save the certificate eligibility choices through the instructor
+      // enrolment endpoint (own courses only, server-enforced).
+      const failures: string[] = [];
+      for (const [enrollmentId, eligible] of Object.entries(eligibleStudents)) {
+        const res = await api(`/api/instructor/enrollments/${enrollmentId}`, 'PATCH', { certificateEligible: eligible });
+        if (!res.ok) failures.push(res.data.error || 'Could not save eligibility');
+      }
+      setCompleted(true);
+      if (failures.length > 0) {
+        toast.error(`Course marked complete, but ${failures.length} eligibility choice(s) could not be saved`);
+      } else {
+        toast.success('Course marked as complete!');
+      }
+      setCompleteModal(false);
+      router.refresh();
+    } finally {
+      setCompleting(false);
+    }
   };
 
   const scheduleLabel = () => {
@@ -151,18 +284,18 @@ export default function InstructorCourseManageClient({ course, enrolledStudents 
             <h1 className="text-xl font-black text-white leading-snug">{course.title}</h1>
             <div className="flex items-center gap-3 mt-1 flex-wrap">
               <Badge variant={course.status === 'published' ? 'success' : 'warning'}>{course.status}</Badge>
-              {course.isCompleted && <Badge variant="info">Completed</Badge>}
+              {completed && <Badge variant="info">Completed</Badge>}
               <span className="text-muted text-xs">{enrolledStudents.length} students enrolled</span>
               <span className="text-muted text-xs">{uploadedCount}/{totalSessions} recordings</span>
             </div>
           </div>
         </div>
-        {!course.isCompleted && (
+        {!completed && (
           <Button variant="secondary" onClick={() => setCompleteModal(true)} className="border-green-500/40 text-green-400 hover:bg-green-500/10">
             <CheckCircle className="w-4 h-4" />Mark as Complete
           </Button>
         )}
-        {course.isCompleted && (
+        {completed && (
           <div className="flex items-center gap-2 text-green-400 text-sm bg-green-500/10 border border-green-500/20 rounded-lg px-4 py-2">
             <CheckCircle className="w-4 h-4" />Course Completed
           </div>
@@ -254,7 +387,7 @@ export default function InstructorCourseManageClient({ course, enrolledStudents 
             </div>
             <div className="flex gap-2">
               <Button size="sm" variant="secondary" onClick={addModule}><Plus className="w-3.5 h-3.5" />Add Module</Button>
-              <Button size="sm" onClick={handleSaveCurriculum}><Save className="w-3.5 h-3.5" />Save Curriculum</Button>
+              <Button size="sm" onClick={handleSaveCurriculum} loading={savingCurriculum}><Save className="w-3.5 h-3.5" />Save Curriculum</Button>
             </div>
           </div>
 
@@ -300,7 +433,7 @@ export default function InstructorCourseManageClient({ course, enrolledStudents 
               ))}
               <div className="flex justify-between items-center">
                 <button onClick={addModule} className="text-primary text-sm hover:underline cursor-pointer flex items-center gap-1"><Plus className="w-3.5 h-3.5" />Add Module</button>
-                <Button onClick={handleSaveCurriculum}><Save className="w-4 h-4" />Save Curriculum</Button>
+                <Button onClick={handleSaveCurriculum} loading={savingCurriculum}><Save className="w-4 h-4" />Save Curriculum</Button>
               </div>
             </div>
           )}
@@ -394,33 +527,7 @@ export default function InstructorCourseManageClient({ course, enrolledStudents 
           {/* Warning */}
           <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-xl p-3 flex items-start gap-3">
             <AlertCircle className="w-4 h-4 text-yellow-400 flex-shrink-0 mt-0.5" />
-            <p className="text-muted text-xs">This will mark the course as complete for all enrolled students. Please review student eligibility and submit your reviews before confirming.</p>
-          </div>
-
-          {/* Private review — admin only */}
-          <div className="border border-dark-border rounded-xl p-4">
-            <div className="flex items-center justify-between mb-3">
-              <div>
-                <p className="text-white font-semibold text-sm">Private Review <span className="text-xs text-muted font-normal">(admin only)</span></p>
-              </div>
-              <span className="text-xs px-2 py-0.5 rounded-full bg-dark-border text-muted">Admin only</span>
-            </div>
-            <div className="space-y-2">
-              <StarRating rating={privateReview.rating} interactive onChange={r => setPrivateReview(p => ({ ...p, rating: r }))} size="md" />
-              <Textarea value={privateReview.comment} onChange={e => setPrivateReview(p => ({ ...p, comment: e.target.value }))} placeholder="How did the course go overall? Suggestions?" rows={2} />
-            </div>
-          </div>
-
-          {/* Class review — admin + students */}
-          <div className="border border-primary/20 rounded-xl p-4">
-            <div className="flex items-center justify-between mb-3">
-              <p className="text-white font-semibold text-sm">Class Review * <span className="text-xs text-muted font-normal">(visible to students)</span></p>
-              <span className="text-xs px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20">Public</span>
-            </div>
-            <div className="space-y-2">
-              <StarRating rating={classReview.rating} interactive onChange={r => setClassReview(p => ({ ...p, rating: r }))} size="md" />
-              <Textarea value={classReview.comment} onChange={e => setClassReview(p => ({ ...p, comment: e.target.value }))} placeholder="A message to your students — highlights, achievements, final thoughts..." rows={2} />
-            </div>
+            <p className="text-muted text-xs">This will mark the course as complete for all enrolled students and save the certificate eligibility choices below. Only students marked eligible can be issued a certificate by the admin.</p>
           </div>
 
           {/* Student certificate eligibility */}

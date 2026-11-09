@@ -1,31 +1,36 @@
 import { connection } from 'next/server';
 import { getAllUsers } from '@/lib/db/users';
-import { getCourseById } from '@/lib/db/courses';
-import { getCertificatesByStudent } from '@/lib/db/certificates';
+import { getAllCourses } from '@/lib/db/courses';
+import { listEnrollments } from '@/lib/db/enrollments';
+import { listCertificates } from '@/lib/db/certificates';
 import CertificatesClient from './certificates-client';
-import type { Course, SafeUser } from '@/lib/db/types';
 
 /**
- * Admin certificates — server wrapper (Phase 2).
- * There is no listCertificates repository function, so certificates are
- * collected per student via getCertificatesByStudent and flattened
- * (sorted by issued date, matching the old seed-array order).
- * Student/course lookups become maps passed as props.
+ * Admin certificates — server wrapper (Phase 3).
+ * The certificate list is fetched client-side from
+ * GET /api/admin/certificates with real pagination (replacing the
+ * per-student-fetch workaround). The wrapper only passes the
+ * student/course maps and the completed, certificate-free enrolments
+ * the issue-certificate form offers.
  */
 export default async function AdminCertificatesPage() {
   await connection();
-  const users = await getAllUsers();
-  const certificates = (await Promise.all(users.map((u) => getCertificatesByStudent(u.id)))).flat();
-  certificates.sort((a, b) => a.issuedAt.localeCompare(b.issuedAt));
+  const students = await getAllUsers();
+  const courses = await getAllCourses();
 
-  const students: Record<string, SafeUser> = {};
-  for (const u of users) students[u.id] = u;
+  // Completed enrolments that do not have a certificate yet.
+  const { items: enrollments } = await listEnrollments({ limit: '100' });
+  const { items: certificates } = await listCertificates({ limit: '100' });
+  const certifiedEnrollmentIds = new Set(certificates.map((c) => c.enrollmentId));
+  const eligibleEnrollments = enrollments.filter(
+    (e) => e.isCompleted && !certifiedEnrollmentIds.has(e.id),
+  );
 
-  const courses: Record<string, Course> = {};
-  for (const id of [...new Set(certificates.map((c) => c.courseId))]) {
-    const course = await getCourseById(id);
-    if (course) courses[id] = course;
-  }
-
-  return <CertificatesClient certificates={certificates} students={students} courses={courses} />;
+  return (
+    <CertificatesClient
+      students={students}
+      courses={courses}
+      eligibleEnrollments={eligibleEnrollments}
+    />
+  );
 }

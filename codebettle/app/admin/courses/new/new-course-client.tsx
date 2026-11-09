@@ -91,40 +91,90 @@ export default function NewCourseClient({ instructors: allInstructors }: NewCour
     if (!form.instructorId) { toast.error('Please assign an instructor'); return; }
     if (!form.zoomLink.trim()) { toast.error('Zoom link is required'); return; }
     setSaving(true);
-    await new Promise(r => setTimeout(r, 700));
+    try {
+      // The create API requires description, longDescription and thumbnail,
+      // so the form's optional fields fall back to the title / default image.
+      const slug = form.title.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+      const res = await fetch('/api/admin/courses', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          slug,
+          title: form.title,
+          description: form.description.trim() || form.title,
+          longDescription: form.longDescription.trim() || form.description.trim() || form.title,
+          thumbnail: form.thumbnail.trim() || 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=800&q=80',
+          category: form.category,
+          level: form.level,
+          price: form.isFree ? 0 : Math.floor(Number(form.price) || 0),
+          isFree: form.isFree,
+          instructorId: form.instructorId,
+          zoomLink: form.zoomLink,
+          // Schedule is saved only when class time + start date are set;
+          // otherwise the course simply has no schedule yet.
+          ...(schedule.classTime && schedule.startDate
+            ? {
+                schedule: {
+                  classTime: schedule.classTime,
+                  classDuration: schedule.classDuration || '',
+                  scheduleType: schedule.scheduleType,
+                  customDays: schedule.scheduleType === 'custom' ? schedule.customDays : undefined,
+                  startDate: schedule.startDate,
+                  notes: schedule.notes || undefined,
+                },
+              }
+            : {}),
+          requirements: form.requirements.filter(Boolean),
+          whatYouLearn: form.whatYouLearn.filter(Boolean),
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) { toast.error(data.error || 'Could not create course'); return; }
+      const courseId = (data.course as { id: string }).id;
 
-    const fullModules = modules.map(m => ({
-      ...m,
-      lessons: m.lessons.map(l => ({ ...l, driveRecordingUrl: '', materials: [] })),
-    }));
+      // Persist any curriculum the admin built, via the module/lesson APIs.
+      let curriculumFailed = false;
+      for (const mod of modules) {
+        const modRes = await fetch(`/api/admin/courses/${courseId}/modules`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ title: mod.title }),
+        });
+        const modData = await modRes.json();
+        if (!modRes.ok) { curriculumFailed = true; continue; }
+        for (const lesson of mod.lessons) {
+          const lessonRes = await fetch(`/api/admin/courses/${courseId}/modules/${modData.module.id}/lessons`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              title: lesson.title,
+              description: lesson.description || undefined,
+              duration: lesson.duration || undefined,
+              date: lesson.date || undefined,
+            }),
+          });
+          if (!lessonRes.ok) curriculumFailed = true;
+        }
+      }
 
-    const activeDays = getActiveDays();
-    const newCourse = {
-      id: `course-${Date.now()}`,
-      slug: form.title.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, ''),
-      title: form.title, description: form.description, longDescription: form.longDescription,
-      thumbnail: form.thumbnail || 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=800&q=80',
-      category: form.category as any, level: form.level as any,
-      price: form.isFree ? 0 : parseFloat(form.price) || 0, isFree: form.isFree,
-      instructorId: form.instructorId, zoomLink: form.zoomLink,
-      schedule: schedule.classTime ? { classTime: schedule.classTime, classDuration: schedule.classDuration, scheduleType: schedule.scheduleType as any, customDays: activeDays, startDate: schedule.startDate, notes: schedule.notes } : undefined,
-      status: (publish ? 'published' : 'draft') as any,
-      isFeatured: false, isCompleted: false,
-      modules: fullModules,
-      requirements: form.requirements.filter(Boolean),
-      whatYouLearn: form.whatYouLearn.filter(Boolean),
-      tags: [], enrolledCount: 0, rating: 0, reviewCount: 0,
-      createdAt: new Date().toISOString().split('T')[0],
-      updatedAt: new Date().toISOString().split('T')[0],
-    };
-    // Phase 2 note: the old code pushed newCourse into the shared in-memory
-    // `courses` array, so it would show up on /admin/courses in the same
-    // process. There is no DB-backed equivalent yet — Phase 3 persists it
-    // via the course write API, so the save stays local-only for now.
-    void newCourse;
-    toast.success(publish ? 'Course published!' : 'Course saved as draft — instructor can now add curriculum!');
-    router.push('/admin/courses');
-    setSaving(false);
+      if (publish) {
+        const pubRes = await fetch(`/api/admin/courses/${courseId}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ status: 'published' }),
+        });
+        const pubData = await pubRes.json();
+        if (!pubRes.ok) { toast.error(pubData.error || 'Course created but could not be published'); return; }
+      }
+
+      toast.success(publish
+        ? 'Course published!'
+        : 'Course saved as draft — instructor can now add curriculum!');
+      if (curriculumFailed) toast.error('Course saved, but some curriculum items could not be saved');
+      router.push(`/admin/courses/${courseId}`);
+    } finally {
+      setSaving(false);
+    }
   };
 
   const activeDays = getActiveDays();
