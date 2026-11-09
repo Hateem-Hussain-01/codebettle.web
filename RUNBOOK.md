@@ -622,3 +622,135 @@ when the bucket is missing.
   alone deliberately to avoid a behaviour change in a polish pass.
 - **No schema, migration, or seed change in Phase 6.** Migrations
   2–5 and the seed are still the user's steps from §§1–5 above.
+
+## 7. Phase 7 — Testing, security/performance re-check, docs, deployment prep (10 Nov 2026)
+
+Phase 7 is the last phase of the master prompt. No new feature was
+added except where an audit finding required one (certificate
+verification, real contact/reviews/enrolment/announcement APIs).
+Everything below was done on the branch
+`feature/complete-management-system-upgrade`, tip `5c349c0` →
+`ab1b725` (Commits 1–12), plus the docs commit that closes Phase 7.
+
+### 7.1. What changed (commit by commit)
+
+| Commit | Change |
+| --- | --- |
+| `8f83d83` | Public course DTO: Zoom links stripped from every public course payload (CB-06/CB-18, SEC-07). Dead `instructorPrivateReview` fields removed. |
+| `d4564a2` | Student self-enrolment is real: `POST /api/student/enrollments` (student-only, published-only, duplicate → 409, coupon re-validated server-side; free = instant, paid = pending). Pending enrolments hide the Zoom link, recordings and materials. |
+| `9be2bb8` | Contact form persists messages (`ContactMessage` model already existed) + admin inbox at `/admin/messages` (read/unread/delete). Rate-limited 5/15 min per IP. |
+| `ca05d76` | Real student review API (`POST/DELETE /api/student/reviews`): enrolled-only, one review per course, course rating recomputed as the mean of stored reviews (CB-12 rating drift fixed). |
+| `6a37584` | Public certificate verification: `GET /api/certificates/verify?token=…` returns only studentName, courseTitle, certificateNumber, issuedAt; `/verify` pages (CB-13). |
+| `0fff77c` | Blog HTML sanitized on save and at render (`sanitize-html`, narrow allowlist) — stored-XSS hole closed (SEC-08). |
+| `19f4c06` | Nonce Content-Security-Policy on every page (SEC-09). One fresh nonce per request via `proxy.ts`; five prerendered pages made dynamic so their scripts get a nonce. Live smoke-tested: HTML nonce == CSP header nonce, different per request. |
+| `c3b92db` | Batched lookups replace per-course/per-enrolment queries (N+1) in the student and instructor portals: `getCoursesByIds`, `getEnrollmentsByCourseIds`, `getReviewsByCourseIds`, `getCertificatesByStudentAndCourses`. |
+| `d4fe0fe` | Password-reset requests rate-limited (5/15 min per IP+email, SEC-05). The reset action itself is intentionally unlimited (single-use 60-minute token). |
+| `5c349c0` | PortalLayout Sidebar hoisted to module level (CB-15 remount fixed); menu/close/bell labelled (CB-21); bell is now a link to the portal notifications page. Real announcement APIs: admin create/delete, instructor create/delete with course-ownership checks (CB-09). |
+| `6fe4037` | SEO (CB-16): `app/sitemap.ts` (dynamic — it reads the DB), `app/robots.ts`, `metadataBase` on the root layout, `generateMetadata` for course detail + blog post pages. |
+| `ab1b725` | Removed 5 unused dependencies (CB-19): next-auth, react-hook-form, @hookform/resolvers, html2canvas, react-circular-progressbar (zero imports anywhere). |
+
+Docs commit (this phase): README rewrite, new `DEPLOYMENT.md`,
+`.env.example` cleanup (SESSION_SECRET / DIRECT_URL / Upstash /
+Sentry / R2 removed; SUPABASE_SERVICE_ROLE_KEY added; RESEND_API_KEY
+kept, marked not-wired), `INITIAL_CREDENTIALS.txt` touch-up
+("Phase 2" → "Phases 1–7 complete"), this RUNBOOK section,
+`.github/workflows/ci.yml` (see §7.4).
+
+### 7.2. Verification evidence (this VM, offline fakes — no live DB)
+
+- **Tests: 275/275 pass** (`npm test`, `tsx --test tests/*.test.ts`).
+  Baseline at Phase 6 was 219; Phase 7 added 56: public-course DTO 5,
+  student enrolment 9, contact messages 8, student reviews 7,
+  certificate verify 3, blog sanitize 5, CSP 7, batched lookups 4,
+  password-reset rate-limit 1, announcements API 4, SEO 3.
+- **Type check:** `npx tsc --noEmit` clean.
+- **Build:** `npm run build` exit 0. Routes: `/robots.txt` static,
+  `/sitemap.xml` dynamic (ƒ). (One build failure was found and fixed
+  in Phase 7: Next tried to prerender `/sitemap.xml` at build time;
+  it now has `export const dynamic = 'force-dynamic'`.)
+- **Live smoke tests (production server, current build):** the five
+  formerly-prerendered pages (`/auth/login`, `/auth/register`,
+  `/become-instructor`, `/contact`, `/verify`) return 200 with the
+  HTML nonce exactly matching the CSP header nonce in a single
+  request; two requests get different nonces; `/privacy` (already
+  dynamic) also matches; the 404 page returns 404 with a stamped
+  nonce.
+- **Secret scan:** the whole branch diff was scanned (including the
+  seed and `INITIAL_CREDENTIALS.txt`) — no real password, API key or
+  hash of a known password anywhere. The seed's single bcrypt hash is
+  of a random unknown value (see §2). `.env.local` is gitignored and
+  was never committed.
+
+### 7.3. Audit re-check (original audit findings vs the branch)
+
+Fixed with evidence: SEC-01/CB-01 plaintext passwords (lib/data
+deleted, seed hash unusable, local history purged — remote GitHub
+still has old history until the push in DEPLOYMENT.md §3);
+SEC-02/CB-02 forgeable sessions (opaque server-side tokens, role
+read from the user record); SEC-03 users array shipped to browsers
+(SafeUser pattern); SEC-04/CB-05 demo credentials (gone from the
+login page); SEC-06 validation (zod on write routes);
+CB-03 persistence (Prisma/Postgres, modulo live DB unrun);
+CB-07 missing pages (`/instructors`, `/privacy`, `/terms` exist);
+CB-11 two sources of truth (enrolledCourses computed from
+Enrollments); CB-14 lesson progress (LessonProgress table);
+CB-04 become-instructor posts to the API; CB-13 certificate numbers
+(CB-YYYY-NNN + verify route/page); CB-12 rating drift (recomputed
+on review create/delete); CB-06/CB-18 + SEC-07 Zoom links (public
+DTO); CB-09 simulated saves (enrolment, contact, reviews,
+announcements now real — admin content manager and instructor
+resources remain local-only, see §7.5); SEC-08 XSS (sanitize-html);
+SEC-09 headers/CSP (nonce CSP + security headers); SEC-05/CB-08
+rate limiting (login, setup, password-reset; in-memory until
+Upstash); CB-15 sidebar remount; CB-16 SEO; CB-19 unused deps;
+CB-21 aria-labels (PortalLayout controls labelled — the rest of the
+app still has few aria-labels; see §7.5).
+
+Still open: SEC-10 hot-linked assets (DiceBear avatars + Unsplash
+thumbnails still in seed data); CB-10 tests/CI (275 tests exist;
+CI workflow added in §7.4, but it has never run on a runner yet);
+CB-17 password reset (token machinery complete, email inert without
+Resend); CB-20 template assets (`public/*.svg` defaults still
+there — cosmetic only).
+
+### 7.4. CI
+
+`.github/workflows/ci.yml` runs on every push and pull request:
+`npm ci`, `npx tsc --noEmit`, `npm test`, `npm run build`,
+`prisma migration check`. No secrets are needed (tests use the
+in-memory fake DB; the build does not need a database). It has
+never run on GitHub yet — the first run happens on the first push.
+
+### 7.5. Known gaps and honest limitations (Phase 7)
+
+- **Live-DB steps unrun here.** This VM cannot reach Postgres
+  (egress proxy resets the connection, ECONNRESET). Migrations 2–5,
+  the seed, the buckets and the live smoke tests are the owner's
+  steps (RUNBOOK §§1–5, DEPLOYMENT.md).
+- **No pixel screenshots of Phase 6** (Chromium CLI blocked,
+  Playwright download blocked, homepage 500 without a DB). Wiring
+  verified only — check the live site visually (DEPLOYMENT.md §5).
+- **No OCR for scanned quiz PDFs** (scanned PDFs are detected and
+  import nothing).
+- **Password-reset + notification emails inert without Resend.**
+- **Rate limiting in-memory without Upstash** (single process, lost
+  on restart, not shared across instances).
+- **Prisma 8 RC** (`8.0.0-rc.33`, not stable 7.10.1 — the
+  coordinator advises against the 7.10.1 swap, it is not a drop-in).
+- **Deliberately left as documented gaps:** admin content manager
+  (hero text hardcoded, save is local-only — needs a content/settings
+  table); instructor resources page (hardcoded `INITIAL_RESOURCES`,
+  no model in contract); wishlist (hardcoded `INITIAL_WISHLIST` ids,
+  no Wishlist table); the `.all().length` totals pattern in 5 repos
+  (established codebase pattern; Prisma 8 aggregate `count` exists
+  in the contract but no repository uses it and the fake-db does not
+  implement it); announcement notifications' two integrity summaries
+  differ slightly; email-off/in-app-off channel independence.
+- **`enrolledCount` on Course is never updated** by any enrolment
+  flow (admin or self) — seed-only, drifts from real enrolments.
+- **Unbounded list functions (no pagination):** `listAnnouncements`,
+  `listBlogPosts`, `listCoupons`, `listReviews`, `listTestimonials`.
+- **Browser-level hydration cannot be verified from this VM** —
+  only curl-level checks were done.
+- **Aria-labels:** only the PortalLayout controls were labelled in
+  Phase 7; the rest of the app still has few aria-labels.
