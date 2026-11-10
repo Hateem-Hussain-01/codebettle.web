@@ -12,6 +12,7 @@ import toast from 'react-hot-toast';
 function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const [role, setRole] = useState<'student' | 'instructor'>('student');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -45,6 +46,27 @@ function LoginForm() {
         <p className="text-muted text-sm mt-1">Sign in to continue your learning journey</p>
       </div>
 
+      <div role="tablist" aria-label="Sign in as" className="grid grid-cols-2 gap-1 rounded-lg bg-background border border-dark-border p-1 mb-6">
+        <button
+          type="button"
+          role="tab"
+          aria-selected={role === 'student'}
+          onClick={() => setRole('student')}
+          className={`rounded-md px-3 py-2 text-sm font-semibold transition-colors cursor-pointer ${role === 'student' ? 'bg-primary text-dark' : 'text-muted hover:text-white'}`}
+        >
+          Student
+        </button>
+        <button
+          type="button"
+          role="tab"
+          aria-selected={role === 'instructor'}
+          onClick={() => setRole('instructor')}
+          className={`rounded-md px-3 py-2 text-sm font-semibold transition-colors cursor-pointer ${role === 'instructor' ? 'bg-primary text-dark' : 'text-muted hover:text-white'}`}
+        >
+          Instructor
+        </button>
+      </div>
+
       <form onSubmit={handleLogin} className="space-y-4">
         <Input
           label="Email Address"
@@ -73,6 +95,13 @@ function LoginForm() {
         </div>
         <Button type="submit" fullWidth size="lg" loading={loading}>Sign In</Button>
       </form>
+
+      {role === 'instructor' && (
+        <p className="text-center text-sm text-muted mt-6">
+          Want to teach?{' '}
+          <Link href="/become-instructor" className="text-primary hover:underline font-medium">Become an Instructor</Link>
+        </p>
+      )}
 
       <p className="flex items-center justify-center gap-1.5 text-center text-xs text-muted mt-6">
         <ShieldCheck className="w-3.5 h-3.5 text-primary" />
