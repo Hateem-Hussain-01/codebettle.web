@@ -23,9 +23,9 @@ import type {
 } from '@prisma/orm-postgres/contract/types';
 
 export type StorageHash =
-  StorageHashBase<'03d06814342d1cecd507e77850eb512320ef50a694e9ab6a7934b890a125caa8'>;
+  StorageHashBase<'11b127ec7577bb2f74443a7d5db27ee578e80d0839fb00a624a2b3093934d65f'>;
 export type ExecutionHash =
-  ExecutionHashBase<'f6b3319a5f09a26a48f61dae30e0d310074e2d6a8794da5606c9cf6a33c74815'>;
+  ExecutionHashBase<'724cb5805679e422d27371e55faf7662b11f26ef5bc01a2bbe6f9f9678d62a75'>;
 export type ProfileHash =
   ProfileHashBase<'3916f444a8a17ad749191acf9e08dad97d1a327b88c2f1d45d12f240296aa8b2'>;
 
@@ -644,6 +644,16 @@ export namespace Models {
       | 'quizzes'
       | 'reviews';
   };
+  export type public_EmailVerification = {
+    createdAt: FieldOutputTypes['public']['EmailVerification']['createdAt'];
+    expiresAt: FieldOutputTypes['public']['EmailVerification']['expiresAt'];
+    id: FieldOutputTypes['public']['EmailVerification']['id'];
+    tokenHash: FieldOutputTypes['public']['EmailVerification']['tokenHash'];
+    usedAt: FieldOutputTypes['public']['EmailVerification']['usedAt'];
+    userId: FieldOutputTypes['public']['EmailVerification']['userId'];
+    user: public_User;
+    readonly [RelationKeys]?: 'user';
+  };
   export type public_Enrollment = {
     amountPaid: FieldOutputTypes['public']['Enrollment']['amountPaid'];
     certificateEligible: FieldOutputTypes['public']['Enrollment']['certificateEligible'];
@@ -881,6 +891,7 @@ export namespace Models {
     createdAt: FieldOutputTypes['public']['User']['createdAt'];
     deletedAt: FieldOutputTypes['public']['User']['deletedAt'];
     email: FieldOutputTypes['public']['User']['email'];
+    emailVerifiedAt: FieldOutputTypes['public']['User']['emailVerifiedAt'];
     expertise: FieldOutputTypes['public']['User']['expertise'];
     id: FieldOutputTypes['public']['User']['id'];
     joinedAt: FieldOutputTypes['public']['User']['joinedAt'];
@@ -898,6 +909,7 @@ export namespace Models {
     blogPosts: public_BlogPost[];
     certificates: public_Certificate[];
     coursesTaught: public_Course[];
+    emailVerifications: public_EmailVerification[];
     enrollments: public_Enrollment[];
     loginEvents: public_LoginEvent[];
     notifications: public_Notification[];
@@ -913,6 +925,7 @@ export namespace Models {
       | 'blogPosts'
       | 'certificates'
       | 'coursesTaught'
+      | 'emailVerifications'
       | 'enrollments'
       | 'loginEvents'
       | 'notifications'
@@ -934,6 +947,7 @@ export declare const models: {
     Coupon: Models.public_Coupon;
     CouponRedemption: Models.public_CouponRedemption;
     Course: Models.public_Course;
+    EmailVerification: Models.public_EmailVerification;
     Enrollment: Models.public_Enrollment;
     InstructorApplication: Models.public_InstructorApplication;
     Lesson: Models.public_Lesson;
@@ -1810,6 +1824,74 @@ type ContractBase = Omit<
                     readonly namespaceId: 'public' & NamespaceId;
                     readonly tableName: 'Course';
                     readonly columns: readonly ['instructorId'];
+                  };
+                  readonly target: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'User';
+                    readonly columns: readonly ['id'];
+                  };
+                },
+              ];
+            };
+            readonly EmailVerification: {
+              columns: {
+                readonly createdAt: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly nullable: false;
+                  readonly default: { readonly kind: 'function'; readonly expression: 'now()' };
+                  readonly typeParams: { readonly precision: 3 };
+                  readonly many: false;
+                };
+                readonly expiresAt: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly nullable: false;
+                  readonly typeParams: { readonly precision: 3 };
+                  readonly many: false;
+                };
+                readonly id: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly tokenHash: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly usedAt: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly nullable: true;
+                  readonly typeParams: { readonly precision: 3 };
+                  readonly many: false;
+                };
+                readonly userId: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+              };
+              primaryKey: { readonly columns: readonly ['id'] };
+              uniques: readonly [{ readonly columns: readonly ['tokenHash'] }];
+              indexes: readonly [
+                {
+                  readonly name: 'EmailVerification_userId_idx_a489d58a';
+                  readonly prefix: 'EmailVerification_userId_idx';
+                  readonly columns: readonly ['userId'];
+                  readonly unique: false;
+                },
+              ];
+              foreignKeys: readonly [
+                {
+                  readonly source: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'EmailVerification';
+                    readonly columns: readonly ['userId'];
                   };
                   readonly target: {
                     readonly namespaceId: 'public' & NamespaceId;
@@ -3459,6 +3541,13 @@ type ContractBase = Omit<
                   readonly nullable: false;
                   readonly many: false;
                 };
+                readonly emailVerifiedAt: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly nullable: true;
+                  readonly typeParams: { readonly precision: 3 };
+                  readonly many: false;
+                };
                 readonly expertise: {
                   readonly dataType: 'pg/text';
                   readonly codecId: 'pg/text@1';
@@ -3640,6 +3729,10 @@ type ContractBase = Omit<
       readonly model: 'CouponRedemption';
     };
     readonly Course: { readonly namespace: 'public' & NamespaceId; readonly model: 'Course' };
+    readonly EmailVerification: {
+      readonly namespace: 'public' & NamespaceId;
+      readonly model: 'EmailVerification';
+    };
     readonly Enrollment: {
       readonly namespace: 'public' & NamespaceId;
       readonly model: 'Enrollment';
@@ -4469,6 +4562,69 @@ type ContractBase = Omit<
                 readonly updatedAt: { readonly column: 'updatedAt' };
                 readonly whatYouLearn: { readonly column: 'whatYouLearn' };
                 readonly zoomLink: { readonly column: 'zoomLink' };
+              };
+            };
+          };
+          readonly EmailVerification: {
+            readonly fields: {
+              readonly createdAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly typeParams: { readonly precision: 3 };
+                };
+              };
+              readonly expiresAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly typeParams: { readonly precision: 3 };
+                };
+              };
+              readonly id: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly tokenHash: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly usedAt: {
+                readonly nullable: true;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly typeParams: { readonly precision: 3 };
+                };
+              };
+              readonly userId: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+            };
+            readonly relations: {
+              readonly user: {
+                readonly to: { readonly namespace: 'public' & NamespaceId; readonly model: 'User' };
+                readonly cardinality: 'N:1';
+                readonly nullable: false;
+                readonly on: {
+                  readonly localFields: readonly ['userId'];
+                  readonly targetFields: readonly ['id'];
+                };
+              };
+            };
+            readonly storage: {
+              readonly table: 'EmailVerification';
+              readonly namespaceId: 'public';
+              readonly fields: {
+                readonly createdAt: { readonly column: 'createdAt' };
+                readonly expiresAt: { readonly column: 'expiresAt' };
+                readonly id: { readonly column: 'id' };
+                readonly tokenHash: { readonly column: 'tokenHash' };
+                readonly usedAt: { readonly column: 'usedAt' };
+                readonly userId: { readonly column: 'userId' };
               };
             };
           };
@@ -5913,6 +6069,14 @@ type ContractBase = Omit<
                 readonly nullable: false;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
               };
+              readonly emailVerifiedAt: {
+                readonly nullable: true;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly typeParams: { readonly precision: 3 };
+                };
+              };
               readonly expertise: {
                 readonly nullable: false;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
@@ -6034,6 +6198,17 @@ type ContractBase = Omit<
                   readonly targetFields: readonly ['instructorId'];
                 };
               };
+              readonly emailVerifications: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'EmailVerification';
+                };
+                readonly cardinality: '1:N';
+                readonly on: {
+                  readonly localFields: readonly ['id'];
+                  readonly targetFields: readonly ['userId'];
+                };
+              };
               readonly enrollments: {
                 readonly to: {
                   readonly namespace: 'public' & NamespaceId;
@@ -6129,6 +6304,7 @@ type ContractBase = Omit<
                 readonly createdAt: { readonly column: 'createdAt' };
                 readonly deletedAt: { readonly column: 'deletedAt' };
                 readonly email: { readonly column: 'email' };
+                readonly emailVerifiedAt: { readonly column: 'emailVerifiedAt' };
                 readonly expertise: { readonly column: 'expertise' };
                 readonly id: { readonly column: 'id' };
                 readonly joinedAt: { readonly column: 'joinedAt' };
@@ -6535,6 +6711,26 @@ type ContractBase = Omit<
           readonly ref: {
             readonly entry: 'Course';
             readonly field: 'updatedAt';
+            readonly namespace: 'public';
+          };
+        },
+        {
+          readonly onCreate: {
+            readonly id: 'timestampNow';
+            readonly kind: 'generator';
+            readonly params: { readonly precision: 3 };
+          };
+          readonly ref: {
+            readonly entry: 'EmailVerification';
+            readonly field: 'createdAt';
+            readonly namespace: 'public';
+          };
+        },
+        {
+          readonly onCreate: { readonly id: 'cuid2'; readonly kind: 'generator' };
+          readonly ref: {
+            readonly entry: 'EmailVerification';
+            readonly field: 'id';
             readonly namespace: 'public';
           };
         },

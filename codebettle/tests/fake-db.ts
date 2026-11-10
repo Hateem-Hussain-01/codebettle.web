@@ -51,7 +51,7 @@ const RELATIONS: Record<string, Record<string, { model: string; fk: string }>> =
  * omitted nullable field; the fake must do the same, or code that
  * checks `row.x !== null` would see `undefined` and misbehave. */
 const NULLABLE_FIELDS: Record<string, string[]> = {
-  User: ['avatar', 'bio', 'phone', 'notificationPrefs', 'deletedAt'],
+  User: ['avatar', 'bio', 'phone', 'notificationPrefs', 'deletedAt', 'emailVerifiedAt'],
   Course: ['longDescription', 'thumbnail', 'zoomLink', 'schedule', 'completedAt'],
   Lesson: ['videoUrl', 'content', 'date'],
   Enrollment: ['completedAt', 'couponUsed', 'deletedAt'],
@@ -63,6 +63,7 @@ const NULLABLE_FIELDS: Record<string, string[]> = {
   AuditLog: ['entityId', 'detail', 'ip'],
   LoginEvent: ['userId', 'ip', 'userAgent'],
   PasswordReset: ['usedAt'],
+  EmailVerification: ['usedAt'],
   Quiz: ['description', 'difficulty', 'timeLimitMin', 'passMark', 'availableFrom', 'availableUntil', 'instructions', 'pdfUrl', 'pdfStoragePath', 'parseWarnings', 'deletedAt'],
   QuizQuestion: ['topic', 'difficulty', 'correctText', 'reviewNote'],
   QuizAttempt: ['dueAt', 'submittedAt', 'score', 'totalPoints', 'timeSpentSec'],

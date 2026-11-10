@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { checkRateLimit, resetRateLimitKey } from '@/lib/rate-limit';
 import { requestPasswordReset, resetPassword } from '@/lib/services/password-reset-service';
+import { sendPasswordResetEmail } from '@/lib/email/resend';
+import { getUserByEmail } from '@/lib/db/users';
 
 /**
  * POST /api/auth/reset — password reset (Phase 2).
@@ -13,12 +15,13 @@ import { requestPasswordReset, resetPassword } from '@/lib/services/password-res
  * are single-use and expire after 60 minutes; a successful reset
  * revokes every session.
  *
- * KNOWN GAP — email delivery is NOT configured yet (Resend + Eman's
- * domain are pending; see RUNBOOK.md). The 'request' action therefore
- * creates a token but cannot send it to the user, so the reset cannot
- * complete from the UI today. The token is never returned in a response.
+ * KNOWN GAP — no forgot-password UI page exists yet
+ * (app/auth/reset/page.tsx). The reset link in the email points to
+ * /auth/reset?token=..., which 404s until that page is built; the API
+ * and the email delivery are complete. The token is never returned in
+ * a response.
  * The machinery (token hashing, expiry, single-use, session revocation)
- * is complete and unit-tested; only the delivery step is missing.
+ * is complete and unit-tested; only the reset page is missing.
  */
 
 const requestSchema = z.object({
@@ -68,9 +71,23 @@ export async function POST(request: NextRequest) {
         { status: 429 },
       );
     }
-    // No deliver callback yet — email is not configured (see header).
-    // The token is created and stored (hashed); it expires in 60 min.
-    await requestPasswordReset(parsed.data.email);
+    // The deliver callback sends the reset link via Resend. When the
+    // key is not configured the send is skipped gracefully (the token
+    // is still created and expires in 60 min) and the response stays
+    // the same generic success — no enumeration oracle.
+    await requestPasswordReset(parsed.data.email, {
+      deliver: async (email, token) => {
+        // Best-effort: a name lookup failure must never break the
+        // generic response (the email still goes out, without a name).
+        let name = '';
+        try {
+          name = (await getUserByEmail(email))?.name ?? '';
+        } catch {
+          name = '';
+        }
+        await sendPasswordResetEmail(email, name, token, request.nextUrl.origin);
+      },
+    });
     return NextResponse.json({
       success: true,
       message: 'If an account exists for this email, a reset link has been sent.',
