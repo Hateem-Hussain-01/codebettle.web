@@ -9,6 +9,7 @@ import { ExternalLink, Download, Bell, BookOpen, Video, Lock, Award, XCircle, Cl
 import Card from '@/components/ui/Card';
 import Badge from '@/components/ui/Badge';
 import Button from '@/components/ui/Button';
+import FadeIn from '@/components/ui/FadeIn';
 import StarRating from '@/components/ui/StarRating';
 import Link from 'next/link';
 
@@ -45,7 +46,7 @@ export default async function StudentCourseViewPage({ params }: PageProps<'/stud
   return (
     <div className="space-y-5">
       {/* Course header */}
-      <div>
+      <FadeIn>
         <h1 className="text-2xl font-black text-white">{course.title}</h1>
         <div className="flex items-center gap-3 mt-1 text-sm text-muted flex-wrap">
           {instructor && <span>Instructor: <span className="text-primary">{instructor.name}</span></span>}
@@ -54,7 +55,7 @@ export default async function StudentCourseViewPage({ params }: PageProps<'/stud
           <span>·</span>
           <span>{uploadedCount} recording{uploadedCount !== 1 ? 's' : ''} available</span>
         </div>
-      </div>
+      </FadeIn>
 
       {/* ── Course Completion Banner ── */}
       {course.isCompleted && (
@@ -133,7 +134,7 @@ export default async function StudentCourseViewPage({ params }: PageProps<'/stud
 
       <div className="grid lg:grid-cols-3 gap-5">
         {/* Sessions & Recordings */}
-        <div className="lg:col-span-2 space-y-4">
+        <FadeIn delay={0.05} className="lg:col-span-2 space-y-4">
           {/* Schedule info strip */}
           {course.schedule && (
             <div className="bg-dark-card border border-dark-border rounded-xl p-4">
@@ -225,10 +226,10 @@ export default async function StudentCourseViewPage({ params }: PageProps<'/stud
               </div>
             </Card>
           ))}
-        </div>
+        </FadeIn>
 
         {/* Sidebar */}
-        <div className="space-y-4">
+        <FadeIn delay={0.1} className="space-y-4">
           <Card>
             <img src={course.thumbnail} alt={course.title} className="w-full h-28 object-cover rounded-lg mb-3" />
             <div className="space-y-1.5 text-xs text-muted">
@@ -265,7 +266,7 @@ export default async function StudentCourseViewPage({ params }: PageProps<'/stud
               </div>
             </Card>
           )}
-        </div>
+        </FadeIn>
       </div>
     </div>
   );

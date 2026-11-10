@@ -3,6 +3,7 @@ import { useState } from 'react';
 import Button from '@/components/ui/Button';
 import Card from '@/components/ui/Card';
 import Badge from '@/components/ui/Badge';
+import FadeIn from '@/components/ui/FadeIn';
 import { Mail, MailOpen, Trash2 } from 'lucide-react';
 import { formatDateShort } from '@/lib/utils';
 import toast from 'react-hot-toast';
@@ -42,7 +43,7 @@ export default function MessagesClient({ initialMessages, total }: MessagesClien
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between flex-wrap gap-3">
+      <FadeIn className="flex items-center justify-between flex-wrap gap-3">
         <div>
           <h1 className="text-2xl font-black text-white">Messages</h1>
           <p className="text-muted text-sm mt-1">
@@ -52,7 +53,7 @@ export default function MessagesClient({ initialMessages, total }: MessagesClien
         <Button variant={unreadOnly ? 'primary' : 'outline'} onClick={() => setUnreadOnly(v => !v)}>
           {unreadOnly ? 'Showing unread only' : 'Show unread only'}
         </Button>
-      </div>
+      </FadeIn>
 
       {shown.length === 0 ? (
         <Card className="py-16 text-center">
@@ -62,10 +63,11 @@ export default function MessagesClient({ initialMessages, total }: MessagesClien
         </Card>
       ) : (
         <div className="space-y-3">
-          {shown.map(msg => {
+          {shown.map((msg, i) => {
             const expanded = expandedId === msg.id;
             return (
-              <Card key={msg.id} className={msg.isRead ? '' : 'border-primary/30'}>
+              <FadeIn key={msg.id} delay={Math.min(i, 4) * 0.05}>
+              <Card className={msg.isRead ? '' : 'border-primary/30'}>
                 <button
                   type="button"
                   onClick={() => setExpandedId(expanded ? null : msg.id)}
@@ -95,6 +97,7 @@ export default function MessagesClient({ initialMessages, total }: MessagesClien
                   </Button>
                 </div>
               </Card>
+              </FadeIn>
             );
           })}
         </div>

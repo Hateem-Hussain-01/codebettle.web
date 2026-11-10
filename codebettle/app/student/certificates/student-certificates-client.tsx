@@ -3,6 +3,7 @@ import { useState, useRef } from 'react';
 import { Award, Download } from 'lucide-react';
 import Button from '@/components/ui/Button';
 import Card from '@/components/ui/Card';
+import FadeIn from '@/components/ui/FadeIn';
 import toast from 'react-hot-toast';
 import type { Certificate, PublicCourse } from '@/lib/db/types';
 import { formatDate } from '@/lib/utils';
@@ -42,10 +43,10 @@ export default function StudentCertificatesClient({ certificates, coursesById, s
 
   return (
     <div className="space-y-6">
-      <div>
+      <FadeIn>
         <h1 className="text-2xl font-black text-white">My Certificates</h1>
         <p className="text-muted text-sm mt-1">{items.length} certificate{items.length !== 1 ? 's' : ''} earned</p>
-      </div>
+      </FadeIn>
 
       {items.length === 0 ? (
         <Card className="py-16 text-center">
@@ -55,8 +56,8 @@ export default function StudentCertificatesClient({ certificates, coursesById, s
         </Card>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {items.map(({ cert, course }) => (
-            <div key={cert.id} className="bg-gradient-to-br from-dark-card to-surface border border-primary/30 rounded-xl p-6 hover:border-primary/60 transition-all hover:shadow-[0_0_20px_rgba(245,197,24,0.1)]">
+          {items.map(({ cert, course }, i) => (
+            <FadeIn key={cert.id} delay={Math.min(i % 3, 2) * 0.07} className="bg-gradient-to-br from-dark-card to-surface border border-primary/30 rounded-xl p-6 hover:border-primary/60 transition-all hover:shadow-[0_0_20px_rgba(245,197,24,0.1)]">
               <div className="text-center mb-4">
                 <Award className="w-12 h-12 text-primary mx-auto mb-3" />
                 <p className="text-xs font-bold text-primary uppercase tracking-wider mb-1">Certificate of Completion</p>
@@ -75,7 +76,7 @@ export default function StudentCertificatesClient({ certificates, coursesById, s
               >
                 <Download className="w-3.5 h-3.5" /> Download
               </Button>
-            </div>
+            </FadeIn>
           ))}
         </div>
       )}

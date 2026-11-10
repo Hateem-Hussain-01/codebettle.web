@@ -2,6 +2,7 @@
 import { useRef, useState } from 'react';
 import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
+import FadeIn from '@/components/ui/FadeIn';
 import Input from '@/components/ui/Input';
 import Modal from '@/components/ui/Modal';
 import { BookOpen, Plus, Trash2, ChevronUp, ChevronDown, Save } from 'lucide-react';
@@ -193,6 +194,7 @@ export default function CourseCurriculumClient({ courseId, modules: initialModul
   };
 
   return (
+    <FadeIn>
     <Card>
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-white font-bold text-sm flex items-center gap-2"><BookOpen className="w-4 h-4 text-primary" />Manage Curriculum</h2>
@@ -275,5 +277,6 @@ export default function CourseCurriculumClient({ courseId, modules: initialModul
         </div>
       </Modal>
     </Card>
+    </FadeIn>
   );
 }

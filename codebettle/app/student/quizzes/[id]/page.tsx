@@ -4,6 +4,7 @@ import { getSession } from '@/lib/auth';
 import { listMyAttempts, listAvailableQuizzes } from '@/lib/services/quiz-service';
 import Card from '@/components/ui/Card';
 import Badge from '@/components/ui/Badge';
+import FadeIn from '@/components/ui/FadeIn';
 import StudentQuizStartClient from './student-quiz-start-client';
 
 export default async function StudentQuizDetailPage({ params }: { params: Promise<{ id: string }> }) {
@@ -24,7 +25,7 @@ export default async function StudentQuizDetailPage({ params }: { params: Promis
 
   return (
     <div className="space-y-6">
-      <div>
+      <FadeIn>
         <h1 className="text-2xl font-black text-white">{quiz.title}</h1>
         <p className="text-muted text-sm mt-1">
           {quiz.questions.length} question{quiz.questions.length !== 1 ? 's' : ''}
@@ -38,7 +39,7 @@ export default async function StudentQuizDetailPage({ params }: { params: Promis
             <p className="text-muted text-sm whitespace-pre-wrap">{quiz.instructions}</p>
           </Card>
         )}
-      </div>
+      </FadeIn>
 
       <StudentQuizStartClient
         quizId={quiz.id}
@@ -47,6 +48,7 @@ export default async function StudentQuizDetailPage({ params }: { params: Promis
       />
 
       {attemptsResult.attempts.length > 0 && (
+        <FadeIn delay={0.1}>
         <Card className="p-5">
           <h2 className="text-white font-bold mb-4">My attempts</h2>
           <div className="space-y-3">
@@ -68,6 +70,7 @@ export default async function StudentQuizDetailPage({ params }: { params: Promis
             ))}
           </div>
         </Card>
+        </FadeIn>
       )}
     </div>
   );

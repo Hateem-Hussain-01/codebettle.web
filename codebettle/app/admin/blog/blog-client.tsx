@@ -6,6 +6,7 @@ import Input from '@/components/ui/Input';
 import Textarea from '@/components/ui/Textarea';
 import Modal from '@/components/ui/Modal';
 import Badge from '@/components/ui/Badge';
+import FadeIn from '@/components/ui/FadeIn';
 import {
   Plus, Trash2, Eye, EyeOff, Pencil, FileText, X,
   Bold, Italic, Underline, Heading2, Heading3, List, ListOrdered, Link2, Eraser,
@@ -280,15 +281,15 @@ export default function BlogClient({ initialPosts }: BlogClientProps) {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <FadeIn className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-black text-white">Blog / Articles</h1>
           <p className="text-muted text-sm mt-1">{posts.length} article{posts.length !== 1 ? 's' : ''}</p>
         </div>
         <Button onClick={openCreate}><Plus className="w-4 h-4" />New Article</Button>
-      </div>
+      </FadeIn>
 
-      <div className="bg-dark-card border border-dark-border rounded-xl overflow-hidden">
+      <FadeIn delay={0.08} className="bg-dark-card border border-dark-border rounded-xl overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
@@ -330,7 +331,7 @@ export default function BlogClient({ initialPosts }: BlogClientProps) {
             </tbody>
           </table>
         </div>
-      </div>
+      </FadeIn>
 
       <Modal isOpen={isOpen} onClose={() => setIsOpen(false)} title={editingPost ? 'Edit Article' : 'New Article'} size="xl">
         <div className="space-y-4">

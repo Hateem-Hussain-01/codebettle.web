@@ -6,6 +6,7 @@ import Textarea from '@/components/ui/Textarea';
 import Modal from '@/components/ui/Modal';
 import Card from '@/components/ui/Card';
 import Badge from '@/components/ui/Badge';
+import FadeIn from '@/components/ui/FadeIn';
 import { Bell, Plus, Trash2 } from 'lucide-react';
 import { formatDateShort } from '@/lib/utils';
 import toast from 'react-hot-toast';
@@ -66,13 +67,13 @@ export default function AnnouncementsClient({ announcements: allAnnouncements }:
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <FadeIn className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-black text-white">Announcements</h1>
           <p className="text-muted text-sm mt-1">Site-wide announcements visible to all users</p>
         </div>
         <Button onClick={() => setIsOpen(true)}><Plus className="w-4 h-4" />New Announcement</Button>
-      </div>
+      </FadeIn>
 
       {list.length === 0 ? (
         <Card className="py-16 text-center">
@@ -82,8 +83,9 @@ export default function AnnouncementsClient({ announcements: allAnnouncements }:
         </Card>
       ) : (
         <div className="space-y-3">
-          {list.map(ann => (
-            <Card key={ann.id} hover className="flex items-start gap-4">
+          {list.map((ann, i) => (
+            <FadeIn key={ann.id} delay={Math.min(i, 4) * 0.05}>
+            <Card hover className="flex items-start gap-4">
               <div className="w-10 h-10 rounded-lg bg-primary/10 text-primary flex items-center justify-center flex-shrink-0"><Bell className="w-5 h-5" /></div>
               <div className="flex-1">
                 <div className="flex items-center justify-between gap-2">
@@ -97,6 +99,7 @@ export default function AnnouncementsClient({ announcements: allAnnouncements }:
                 <p className="text-muted text-xs mt-2">{formatDateShort(ann.createdAt)}</p>
               </div>
             </Card>
+            </FadeIn>
           ))}
         </div>
       )}

@@ -1,5 +1,6 @@
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
+import FadeIn from '@/components/ui/FadeIn';
 import Link from 'next/link';
 import { getPublishedPosts } from '@/lib/db/blog';
 import { getSession } from '@/lib/auth';
@@ -14,17 +15,18 @@ export default async function BlogPage() {
       <Navbar session={session} />
       <main className="min-h-screen bg-background pt-16">
         <div className="py-16 bg-dark-card border-b border-dark-border text-center">
-          <div className="max-w-xl mx-auto px-4">
+          <FadeIn className="max-w-xl mx-auto px-4">
             <span className="text-primary text-sm font-semibold uppercase tracking-wider">Blog</span>
             <h1 className="text-4xl font-black text-white mt-2 mb-3">Tech <span className="gradient-text">Insights</span></h1>
             <p className="text-muted">Articles, tutorials, and tips from our expert instructors.</p>
-          </div>
+          </FadeIn>
         </div>
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {posts.map(post => (
+            {posts.map((post, i) => (
               <Link key={post.id} href={`/blog/${post.slug}`}>
+                <FadeIn delay={Math.min(i % 3, 2) * 0.08} className="h-full">
                 <div className="group bg-dark-card border border-dark-border rounded-xl overflow-hidden hover:border-primary/30 transition-all duration-300 h-full flex flex-col">
                   <div className="h-48 overflow-hidden">
                     <img src={post.thumbnail} alt={post.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
@@ -49,6 +51,7 @@ export default async function BlogPage() {
                     </div>
                   </div>
                 </div>
+                </FadeIn>
               </Link>
             ))}
           </div>

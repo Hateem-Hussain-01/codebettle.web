@@ -5,6 +5,7 @@ import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
 import Select from '@/components/ui/Select';
 import Modal from '@/components/ui/Modal';
+import FadeIn from '@/components/ui/FadeIn';
 import { Award, Plus } from 'lucide-react';
 import { formatDate, formatDateShort } from '@/lib/utils';
 import toast from 'react-hot-toast';
@@ -103,13 +104,13 @@ export default function CertificatesClient({ students, courses, eligibleEnrollme
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <FadeIn className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-black text-white">Certificates</h1>
           <p className="text-muted text-sm mt-1">{total} certificates issued</p>
         </div>
         <Button onClick={() => setIsIssueOpen(true)}><Plus className="w-4 h-4" />Issue Certificate</Button>
-      </div>
+      </FadeIn>
 
       {loading && <p className="text-muted text-sm">Loading certificates…</p>}
       {loadError && (
@@ -120,7 +121,7 @@ export default function CertificatesClient({ students, courses, eligibleEnrollme
 
       {!loading && !loadError && (
         <>
-          <div className="bg-dark-card border border-dark-border rounded-xl overflow-hidden">
+          <FadeIn delay={0.08} className="bg-dark-card border border-dark-border rounded-xl overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
@@ -160,7 +161,7 @@ export default function CertificatesClient({ students, courses, eligibleEnrollme
                 </tbody>
               </table>
             </div>
-          </div>
+          </FadeIn>
 
           {/* Pagination */}
           <div className="flex items-center justify-between flex-wrap gap-3">

@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
+import FadeIn from '@/components/ui/FadeIn';
 import { getSession } from '@/lib/auth';
 import { getInstructors } from '@/lib/db/users';
 import { getCoursesByInstructor, getPublishedCourses } from '@/lib/db/courses';
@@ -26,7 +27,7 @@ export default async function InstructorsPage() {
       <Navbar session={session} />
       <main className="min-h-screen bg-background pt-16">
         <div className="py-20 bg-dark-card border-b border-dark-border text-center">
-          <div className="max-w-3xl mx-auto px-4">
+          <FadeIn className="max-w-3xl mx-auto px-4">
             <span className="text-primary text-sm font-semibold uppercase tracking-wider">Meet Our Team</span>
             <h1 className="text-4xl sm:text-5xl font-black text-white mt-2 mb-4">
               Learn From <span className="gradient-text">Industry Experts</span>
@@ -35,16 +36,17 @@ export default async function InstructorsPage() {
               Our instructors are working software engineers and designers who teach
               what they practise every day.
             </p>
-          </div>
+          </FadeIn>
         </div>
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            {instructors.map((inst) => {
+            {instructors.map((inst, i) => {
               const taught = taughtByInstructor.get(inst.id) ?? [];
               return (
-                <div
+                <FadeIn
                   key={inst.id}
+                  delay={Math.min(i % 2, 1) * 0.08}
                   className="bg-dark-card border border-dark-border rounded-2xl p-6 hover:border-primary/30 transition-all"
                 >
                   <div className="flex items-start gap-4">
@@ -86,12 +88,12 @@ export default async function InstructorsPage() {
                       ))}
                     </div>
                   )}
-                </div>
+                </FadeIn>
               );
             })}
           </div>
 
-          <div className="text-center mt-16 bg-dark-card border border-dark-border rounded-2xl p-8">
+          <FadeIn delay={0.1} className="text-center mt-16 bg-dark-card border border-dark-border rounded-2xl p-8">
             <Users className="w-8 h-8 text-primary mx-auto mb-3" />
             <h2 className="text-2xl font-black text-white">Want to teach with us?</h2>
             <p className="text-muted text-sm mt-2 mb-5">
@@ -103,7 +105,7 @@ export default async function InstructorsPage() {
             >
               Become an Instructor
             </Link>
-          </div>
+          </FadeIn>
         </div>
       </main>
       <Footer />

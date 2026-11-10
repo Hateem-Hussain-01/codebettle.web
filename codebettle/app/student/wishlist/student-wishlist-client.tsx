@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { Heart, Trash2 } from 'lucide-react';
 import CourseCard from '@/components/ui/CourseCard';
 import Card from '@/components/ui/Card';
+import FadeIn from '@/components/ui/FadeIn';
 import type { PublicCourse } from '@/lib/db/types';
 import toast from 'react-hot-toast';
 
@@ -25,10 +26,10 @@ export default function StudentWishlistClient({ courses, instructorNames }: Stud
 
   return (
     <div className="space-y-6">
-      <div>
+      <FadeIn>
         <h1 className="text-2xl font-black text-white">My Wishlist</h1>
         <p className="text-muted text-sm mt-1">{wishlisted.length} saved course{wishlisted.length !== 1 ? 's' : ''}</p>
-      </div>
+      </FadeIn>
 
       {wishlisted.length === 0 ? (
         <Card className="py-16 text-center">

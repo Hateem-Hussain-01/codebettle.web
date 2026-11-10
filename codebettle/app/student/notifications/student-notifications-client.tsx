@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { Bell, CheckCheck, ChevronLeft, ChevronRight, Settings, Trash2 } from 'lucide-react';
 import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
+import FadeIn from '@/components/ui/FadeIn';
 import { formatDateShort } from '@/lib/utils';
 import type { Notification, NotificationEventKey, NotificationPrefs } from '@/lib/db/types';
 import toast from 'react-hot-toast';
@@ -120,7 +121,7 @@ export default function NotificationsClient({
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <FadeIn className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-black text-white">Notifications</h1>
           <p className="text-muted text-sm mt-1">{unread} unread notification{unread !== 1 ? 's' : ''}</p>
@@ -131,7 +132,7 @@ export default function NotificationsClient({
           </Button>
           {unread > 0 && <Button variant="secondary" size="sm" onClick={markAllRead}><CheckCheck className="w-4 h-4" />Mark All Read</Button>}
         </div>
-      </div>
+      </FadeIn>
 
       {showPrefs && (
         <Card className="p-4 space-y-3">
@@ -180,11 +181,11 @@ export default function NotificationsClient({
         </Card>
       ) : (
         <div className="space-y-3">
-          {notifications.map((notif) => {
+          {notifications.map((notif, i) => {
             const isRead = Boolean(notif.readAt);
             return (
+              <FadeIn key={notif.id} delay={Math.min(i, 4) * 0.05}>
               <div
-                key={notif.id}
                 onClick={() => markRead(notif.id)}
                 className={`bg-dark-card border rounded-xl p-4 flex items-start gap-4 transition-all cursor-pointer ${isRead ? 'border-dark-border opacity-60' : 'border-primary/20'}`}
               >
@@ -209,6 +210,7 @@ export default function NotificationsClient({
                 </div>
                 {!isRead && <span className="w-2 h-2 bg-primary rounded-full flex-shrink-0 mt-2" />}
               </div>
+              </FadeIn>
             );
           })}
         </div>

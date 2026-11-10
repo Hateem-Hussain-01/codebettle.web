@@ -8,6 +8,7 @@ import Link from 'next/link';
 import { BookOpen, Award, Bell, ArrowRight, CheckCircle } from 'lucide-react';
 import Card from '@/components/ui/Card';
 import Badge from '@/components/ui/Badge';
+import FadeIn from '@/components/ui/FadeIn';
 
 export default async function StudentDashboard() {
   const session = await getSession();
@@ -27,10 +28,10 @@ export default async function StudentDashboard() {
   return (
     <div className="space-y-8">
       {/* Welcome */}
-      <div className="bg-gradient-to-r from-primary/10 to-transparent border border-primary/20 rounded-xl p-6">
+      <FadeIn className="bg-gradient-to-r from-primary/10 to-transparent border border-primary/20 rounded-xl p-6">
         <h1 className="text-2xl font-black text-white mb-1">Welcome back, {session!.name.split(' ')[0]}! 👋</h1>
         <p className="text-muted">Ready to continue your learning journey?</p>
-      </div>
+      </FadeIn>
 
       {/* Stats */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -38,8 +39,9 @@ export default async function StudentDashboard() {
           { label: 'Enrolled Courses', value: enrollments.length, icon: <BookOpen className="w-5 h-5" />, color: 'text-blue-400 bg-blue-400/10' },
           { label: 'Completed', value: completed, icon: <CheckCircle className="w-5 h-5" />, color: 'text-green-400 bg-green-400/10' },
           { label: 'Certificates', value: certificates.length, icon: <Award className="w-5 h-5" />, color: 'text-primary bg-primary/10' },
-        ].map(stat => (
-          <Card key={stat.label} hover>
+        ].map((stat, i) => (
+          <FadeIn key={stat.label} delay={0.05 + i * 0.06}>
+          <Card hover>
             <div className="flex items-center gap-4">
               <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${stat.color}`}>{stat.icon}</div>
               <div>
@@ -48,12 +50,13 @@ export default async function StudentDashboard() {
               </div>
             </div>
           </Card>
+          </FadeIn>
         ))}
       </div>
 
       <div className="grid lg:grid-cols-3 gap-6">
         {/* My Courses */}
-        <div className="lg:col-span-2">
+        <FadeIn delay={0.1} className="lg:col-span-2">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg font-bold text-white">My Courses</h2>
             <Link href="/student/courses" className="text-primary text-sm hover:underline flex items-center gap-1">View All <ArrowRight className="w-3.5 h-3.5" /></Link>
@@ -83,10 +86,10 @@ export default async function StudentDashboard() {
               ))}
             </div>
           )}
-        </div>
+        </FadeIn>
 
         {/* Announcements */}
-        <div>
+        <FadeIn delay={0.15}>
           <div className="flex items-center gap-2 mb-4">
             <Bell className="w-4 h-4 text-primary" />
             <h2 className="text-lg font-bold text-white">Announcements</h2>
@@ -100,7 +103,7 @@ export default async function StudentDashboard() {
               </Card>
             ))}
           </div>
-        </div>
+        </FadeIn>
       </div>
     </div>
   );

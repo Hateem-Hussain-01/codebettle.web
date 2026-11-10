@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
 import Badge from '@/components/ui/Badge';
+import FadeIn from '@/components/ui/FadeIn';
 import { UserCheck, Check, X, ChevronLeft, ChevronRight } from 'lucide-react';
 import { formatDateShort } from '@/lib/utils';
 import toast from 'react-hot-toast';
@@ -96,12 +97,12 @@ export default function AdminApplicationsPage() {
 
   return (
     <div className="space-y-6">
-      <div>
+      <FadeIn>
         <h1 className="text-2xl font-black text-white">Instructor Applications</h1>
         <p className="text-muted text-sm mt-1">{total} total · {apps.filter(a => a.status === 'approved').length} approved on this page</p>
-      </div>
+      </FadeIn>
 
-      <div className="flex gap-1 bg-dark-card border border-dark-border rounded-lg p-1 w-fit">
+      <FadeIn delay={0.05} className="flex gap-1 bg-dark-card border border-dark-border rounded-lg p-1 w-fit">
         {(['all', 'pending', 'approved', 'rejected'] as StatusFilter[]).map(f => (
           <button
             key={f}
@@ -111,7 +112,7 @@ export default function AdminApplicationsPage() {
             {f}
           </button>
         ))}
-      </div>
+      </FadeIn>
 
       {loading && <p className="text-muted text-sm">Loading applications…</p>}
       {loadError && (
@@ -125,11 +126,13 @@ export default function AdminApplicationsPage() {
       )}
 
       {!loading && !loadError && pending.length > 0 && (
+        <FadeIn delay={0.08}>
         <div>
           <h2 className="text-white font-semibold mb-3 flex items-center gap-2"><UserCheck className="w-4 h-4 text-primary" />Pending Review ({pending.length})</h2>
           <div className="space-y-4">
-            {pending.map(app => (
-              <Card key={app.id} hover>
+            {pending.map((app, i) => (
+              <FadeIn key={app.id} delay={Math.min(i, 3) * 0.05}>
+              <Card hover>
                 <div className="flex items-start justify-between gap-4 flex-wrap">
                   <div className="flex-1">
                     <div className="flex items-center gap-3 mb-2">
@@ -150,17 +153,21 @@ export default function AdminApplicationsPage() {
                   </div>
                 </div>
               </Card>
+              </FadeIn>
             ))}
           </div>
         </div>
+        </FadeIn>
       )}
 
       {!loading && !loadError && reviewed.length > 0 && (
+        <FadeIn delay={0.1}>
         <div>
           <h2 className="text-white font-semibold mb-3">Reviewed ({reviewed.length})</h2>
           <div className="space-y-3">
-            {reviewed.map(app => (
-              <Card key={app.id} className="flex items-center gap-4">
+            {reviewed.map((app, i) => (
+              <FadeIn key={app.id} delay={Math.min(i, 3) * 0.05}>
+              <Card className="flex items-center gap-4">
                 <div className="w-9 h-9 rounded-full bg-dark-border text-muted flex items-center justify-center font-bold text-sm">{app.name.charAt(0)}</div>
                 <div className="flex-1">
                   <p className="text-white text-sm font-medium">{app.name}</p>
@@ -169,9 +176,11 @@ export default function AdminApplicationsPage() {
                 </div>
                 <Badge variant={app.status === 'approved' ? 'success' : 'danger'}>{app.status}</Badge>
               </Card>
+              </FadeIn>
             ))}
           </div>
         </div>
+        </FadeIn>
       )}
 
       {!loading && !loadError && totalPages > 1 && (

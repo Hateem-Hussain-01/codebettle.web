@@ -6,6 +6,7 @@ import Input from '@/components/ui/Input';
 import Select from '@/components/ui/Select';
 import Card from '@/components/ui/Card';
 import Modal from '@/components/ui/Modal';
+import FadeIn from '@/components/ui/FadeIn';
 import type { Course } from '@/lib/db/types';
 import toast from 'react-hot-toast';
 
@@ -36,13 +37,13 @@ export default function InstructorResourcesClient({ courses: myCourses }: Instru
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <FadeIn className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-black text-white">Resource Library</h1>
           <p className="text-muted text-sm mt-1">{resources.length} file{resources.length !== 1 ? 's' : ''}</p>
         </div>
         <Button onClick={() => setIsOpen(true)}><Plus className="w-4 h-4" />Add Resource</Button>
-      </div>
+      </FadeIn>
 
       {resources.length === 0 ? (
         <Card className="py-16 text-center">
@@ -53,10 +54,11 @@ export default function InstructorResourcesClient({ courses: myCourses }: Instru
         </Card>
       ) : (
         <div className="space-y-3">
-          {resources.map(res => {
+          {resources.map((res, i) => {
             const course = myCourses.find(c => c.id === res.courseId);
             return (
-              <Card key={res.id} hover className="flex items-center gap-4">
+              <FadeIn key={res.id} delay={Math.min(i, 4) * 0.05}>
+              <Card hover className="flex items-center gap-4">
                 <div className="w-10 h-10 rounded-lg bg-blue-400/10 text-blue-400 flex items-center justify-center flex-shrink-0"><FileText className="w-5 h-5" /></div>
                 <div className="flex-1 min-w-0">
                   <p className="text-white font-medium text-sm truncate">{res.name}</p>
@@ -67,6 +69,7 @@ export default function InstructorResourcesClient({ courses: myCourses }: Instru
                   <button onClick={() => { setResources(r => r.filter(r2 => r2.id !== res.id)); toast.success('Deleted'); }} className="text-muted hover:text-red-400 cursor-pointer"><Trash2 className="w-4 h-4" /></button>
                 </div>
               </Card>
+              </FadeIn>
             );
           })}
         </div>

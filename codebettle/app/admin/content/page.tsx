@@ -4,6 +4,7 @@ import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
 import Textarea from '@/components/ui/Textarea';
 import Card from '@/components/ui/Card';
+import FadeIn from '@/components/ui/FadeIn';
 import { Save, FileText } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -20,11 +21,12 @@ export default function AdminContentPage() {
 
   return (
     <div className="space-y-6 max-w-2xl">
-      <div>
+      <FadeIn>
         <h1 className="text-2xl font-black text-white">Content Manager</h1>
         <p className="text-muted text-sm mt-1">Edit homepage and site-wide content</p>
-      </div>
+      </FadeIn>
 
+      <FadeIn delay={0.05}>
       <Card>
         <h2 className="text-white font-bold mb-4 flex items-center gap-2"><FileText className="w-4 h-4 text-primary" />Hero Section</h2>
         <div className="space-y-4">
@@ -32,7 +34,9 @@ export default function AdminContentPage() {
           <Textarea label="Subtext / Description" value={hero.subtext} onChange={e => setHero(h => ({ ...h, subtext: e.target.value }))} rows={3} />
         </div>
       </Card>
+      </FadeIn>
 
+      <FadeIn delay={0.1}>
       <Card>
         <h2 className="text-white font-bold mb-4">Typewriter Words</h2>
         <p className="text-muted text-sm mb-4">These rotate in the hero headline. Edit in <code className="text-primary text-xs bg-dark-border px-1.5 py-0.5 rounded">components/sections/HeroSection.tsx</code>.</p>
@@ -45,6 +49,7 @@ export default function AdminContentPage() {
           ))}
         </div>
       </Card>
+      </FadeIn>
 
       <Button onClick={handleSave} loading={saving} size="lg"><Save className="w-4 h-4" />Save Content</Button>
     </div>

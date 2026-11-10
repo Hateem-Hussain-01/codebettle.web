@@ -6,6 +6,7 @@ import Badge from '@/components/ui/Badge';
 import Input from '@/components/ui/Input';
 import Textarea from '@/components/ui/Textarea';
 import Modal from '@/components/ui/Modal';
+import FadeIn from '@/components/ui/FadeIn';
 import { Search, Plus, Upload, Trash2, Ban, CheckCircle, Eye, Pencil, ChevronLeft, ChevronRight } from 'lucide-react';
 import { formatDateShort } from '@/lib/utils';
 import toast from 'react-hot-toast';
@@ -210,7 +211,7 @@ export default function AdminStudentsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <FadeIn className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-black text-white">Students</h1>
           <p className="text-muted text-sm mt-1">{total} total • {students.filter(s => s.status === 'active').length} active on this page</p>
@@ -221,9 +222,9 @@ export default function AdminStudentsPage() {
           </Link>
           <Button onClick={() => setIsCreateOpen(true)}><Plus className="w-4 h-4" />Create Student</Button>
         </div>
-      </div>
+      </FadeIn>
 
-      <div className="flex items-center gap-3 flex-wrap">
+      <FadeIn delay={0.05} className="flex items-center gap-3 flex-wrap">
         <Input placeholder="Search students..." value={search} onChange={e => setSearch(e.target.value)} icon={<Search className="w-4 h-4" />} className="max-w-sm" />
         <div className="flex gap-1 bg-dark-card border border-dark-border rounded-lg p-1">
           {(['all', 'active', 'suspended'] as StatusFilter[]).map(f => (
@@ -236,7 +237,7 @@ export default function AdminStudentsPage() {
             </button>
           ))}
         </div>
-      </div>
+      </FadeIn>
 
       {loading && <p className="text-muted text-sm">Loading students…</p>}
       {loadError && (
@@ -247,7 +248,7 @@ export default function AdminStudentsPage() {
 
       {!loading && !loadError && (
         <>
-          <div className="bg-dark-card border border-dark-border rounded-xl overflow-hidden">
+          <FadeIn delay={0.08} className="bg-dark-card border border-dark-border rounded-xl overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
@@ -290,7 +291,7 @@ export default function AdminStudentsPage() {
                 </tbody>
               </table>
             </div>
-          </div>
+          </FadeIn>
 
           <div className="flex items-center justify-between gap-3 flex-wrap">
             <div className="flex items-center gap-2 text-muted text-xs">

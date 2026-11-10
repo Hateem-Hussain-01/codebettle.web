@@ -2,6 +2,7 @@ import { connection } from 'next/server';
 import Link from 'next/link';
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
+import FadeIn from '@/components/ui/FadeIn';
 import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
 import { Award, BadgeCheck, XCircle } from 'lucide-react';
@@ -30,12 +31,13 @@ export default async function VerifyCertificatePage({ params }: { params: Promis
       <Navbar />
       <main className="min-h-screen bg-background pt-16">
         <div className="max-w-xl mx-auto px-4 sm:px-6 py-16">
-          <div className="text-center mb-8">
+          <FadeIn className="text-center mb-8">
             <Award className="w-12 h-12 text-primary mx-auto mb-3" />
             <h1 className="text-3xl font-black text-white">Verify Certificate</h1>
             <p className="text-muted mt-2 text-sm">Check that a CodeBettle certificate is genuine.</p>
-          </div>
+          </FadeIn>
 
+          <FadeIn delay={0.08}>
           {certificate ? (
             <Card className="border-primary/30">
               <div className="flex items-center gap-2 mb-5">
@@ -79,6 +81,7 @@ export default async function VerifyCertificatePage({ params }: { params: Promis
               </div>
             </Card>
           )}
+          </FadeIn>
         </div>
       </main>
       <Footer />

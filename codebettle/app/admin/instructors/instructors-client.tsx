@@ -5,6 +5,7 @@ import Badge from '@/components/ui/Badge';
 import Input from '@/components/ui/Input';
 import Textarea from '@/components/ui/Textarea';
 import Modal from '@/components/ui/Modal';
+import FadeIn from '@/components/ui/FadeIn';
 import { Search, Eye, Ban, CheckCircle, Trash2, Plus, Pencil } from 'lucide-react';
 import { formatDateShort } from '@/lib/utils';
 import toast from 'react-hot-toast';
@@ -120,23 +121,23 @@ export default function InstructorsClient({ instructors: allInstructors, courseC
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <FadeIn className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-black text-white">Instructors</h1>
           <p className="text-muted text-sm mt-1">{instructors.length} instructor{instructors.length !== 1 ? 's' : ''}</p>
         </div>
         <Button onClick={() => setIsCreateOpen(true)}><Plus className="w-4 h-4" />Add Instructor</Button>
-      </div>
+      </FadeIn>
 
       <Input placeholder="Search instructors..." value={search} onChange={e => setSearch(e.target.value)} icon={<Search className="w-4 h-4" />} className="max-w-sm" />
 
       {filtered.length === 0 && <p className="text-muted text-sm">No instructors found.</p>}
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {filtered.map(inst => {
+        {filtered.map((inst, i) => {
           const courseCount = courseCounts[inst.id] ?? 0;
           return (
-            <div key={inst.id} className="bg-dark-card border border-dark-border rounded-xl p-5 hover:border-primary/30 transition-all">
+            <FadeIn key={inst.id} delay={Math.min(i % 3, 2) * 0.07} className="bg-dark-card border border-dark-border rounded-xl p-5 hover:border-primary/30 transition-all">
               <div className="flex items-start gap-3 mb-3">
                 <img src={inst.avatar || ''} alt={inst.name} className="w-12 h-12 rounded-full border-2 border-primary/20" />
                 <div className="flex-1 min-w-0">
@@ -163,7 +164,7 @@ export default function InstructorsClient({ instructors: allInstructors, courseC
                   <Trash2 className="w-4 h-4" />
                 </button>
               </div>
-            </div>
+            </FadeIn>
           );
         })}
       </div>

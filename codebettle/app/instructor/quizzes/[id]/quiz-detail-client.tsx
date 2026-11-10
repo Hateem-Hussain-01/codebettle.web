@@ -9,6 +9,7 @@ import Textarea from '@/components/ui/Textarea';
 import Select from '@/components/ui/Select';
 import Card from '@/components/ui/Card';
 import Badge from '@/components/ui/Badge';
+import FadeIn from '@/components/ui/FadeIn';
 import type { Quiz, QuizQuestion, QuizQuestionType } from '@/lib/db/types';
 import toast from 'react-hot-toast';
 
@@ -207,7 +208,7 @@ export default function QuizDetailClient({ quiz: initial }: { quiz: Quiz }) {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-start justify-between gap-3">
+      <FadeIn className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h1 className="text-2xl font-black text-white">{quiz.title}</h1>
           <p className="text-muted text-sm mt-1">
@@ -227,9 +228,10 @@ export default function QuizDetailClient({ quiz: initial }: { quiz: Quiz }) {
             </Link>
           )}
         </div>
-      </div>
+      </FadeIn>
 
       {/* Settings */}
+      <FadeIn delay={0.05}>
       <Card className="p-5">
         <h2 className="text-white font-bold mb-4">Settings</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -295,9 +297,11 @@ export default function QuizDetailClient({ quiz: initial }: { quiz: Quiz }) {
           </Button>
         </div>
       </Card>
+      </FadeIn>
 
       {/* PDF import */}
       {isDraft && (
+        <FadeIn delay={0.08}>
         <Card className="p-5">
           <h2 className="text-white font-bold mb-2">Import from PDF</h2>
           <p className="text-muted text-sm mb-4">
@@ -331,9 +335,11 @@ export default function QuizDetailClient({ quiz: initial }: { quiz: Quiz }) {
             </div>
           )}
         </Card>
+        </FadeIn>
       )}
 
       {/* Review editor */}
+      <FadeIn delay={0.1}>
       <Card className="p-5">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-white font-bold">Questions — review before publish</h2>
@@ -493,6 +499,7 @@ export default function QuizDetailClient({ quiz: initial }: { quiz: Quiz }) {
           </div>
         )}
       </Card>
+      </FadeIn>
 
       {/* Publish controls */}
       <div className="flex flex-wrap gap-2">

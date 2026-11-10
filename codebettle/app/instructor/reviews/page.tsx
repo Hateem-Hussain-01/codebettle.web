@@ -5,6 +5,7 @@ import { getUserById } from '@/lib/db/users';
 import type { SafeUser } from '@/lib/db/types';
 import StarRating from '@/components/ui/StarRating';
 import Card from '@/components/ui/Card';
+import FadeIn from '@/components/ui/FadeIn';
 import { Star } from 'lucide-react';
 import { formatDateShort } from '@/lib/utils';
 
@@ -36,12 +37,12 @@ export default async function InstructorReviewsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <FadeIn className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-black text-white">Reviews</h1>
           <p className="text-muted text-sm mt-1">{allReviews.length} review{allReviews.length !== 1 ? 's' : ''} • Avg: {avgRating} ⭐</p>
         </div>
-      </div>
+      </FadeIn>
 
       {allReviews.length === 0 ? (
         <Card className="py-16 text-center">
@@ -51,10 +52,11 @@ export default async function InstructorReviewsPage() {
         </Card>
       ) : (
         <div className="space-y-4">
-          {allReviews.map(review => {
+          {allReviews.map((review, i) => {
             const student = studentMap.get(review.studentId);
             return (
-              <Card key={review.id} hover>
+              <FadeIn key={review.id} delay={Math.min(i, 3) * 0.06}>
+              <Card hover>
                 <div className="flex items-start gap-4">
                   <img src={student?.avatar || ''} alt={student?.name} className="w-10 h-10 rounded-full border border-primary/20 flex-shrink-0" />
                   <div className="flex-1">
@@ -72,6 +74,7 @@ export default async function InstructorReviewsPage() {
                   </div>
                 </div>
               </Card>
+              </FadeIn>
             );
           })}
         </div>

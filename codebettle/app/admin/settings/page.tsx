@@ -3,6 +3,7 @@ import { useState } from 'react';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
 import Card from '@/components/ui/Card';
+import FadeIn from '@/components/ui/FadeIn';
 import { Save, Globe, Mail, Phone, AlertTriangle } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -30,11 +31,12 @@ export default function AdminSettingsPage() {
 
   return (
     <div className="space-y-6 max-w-2xl">
-      <div>
+      <FadeIn>
         <h1 className="text-2xl font-black text-white">Site Settings</h1>
         <p className="text-muted text-sm mt-1">Configure platform-wide settings</p>
-      </div>
+      </FadeIn>
 
+      <FadeIn delay={0.05}>
       <Card>
         <h2 className="text-white font-bold mb-4 flex items-center gap-2"><Globe className="w-4 h-4 text-primary" />General</h2>
         <div className="space-y-4">
@@ -42,7 +44,9 @@ export default function AdminSettingsPage() {
           <Input label="Site Description" value={settings.siteDescription} onChange={e => setSettings(s => ({ ...s, siteDescription: e.target.value }))} />
         </div>
       </Card>
+      </FadeIn>
 
+      <FadeIn delay={0.1}>
       <Card>
         <h2 className="text-white font-bold mb-4 flex items-center gap-2"><Mail className="w-4 h-4 text-primary" />Contact</h2>
         <div className="space-y-4">
@@ -51,7 +55,9 @@ export default function AdminSettingsPage() {
           <Input label="Address" value={settings.address} onChange={e => setSettings(s => ({ ...s, address: e.target.value }))} />
         </div>
       </Card>
+      </FadeIn>
 
+      <FadeIn delay={0.15}>
       <Card>
         <h2 className="text-white font-bold mb-4">Social Links</h2>
         <div className="grid sm:grid-cols-2 gap-4">
@@ -61,7 +67,9 @@ export default function AdminSettingsPage() {
           <Input label="Instagram" placeholder="https://instagram.com/..." value={settings.instagram} onChange={e => setSettings(s => ({ ...s, instagram: e.target.value }))} />
         </div>
       </Card>
+      </FadeIn>
 
+      <FadeIn delay={0.2}>
       <Card className="border-yellow-500/30">
         <div className="flex items-start gap-4">
           <AlertTriangle className="w-6 h-6 text-yellow-400 flex-shrink-0" />
@@ -80,6 +88,7 @@ export default function AdminSettingsPage() {
           </div>
         </div>
       </Card>
+      </FadeIn>
 
       <Button onClick={handleSave} loading={saving} size="lg"><Save className="w-4 h-4" />Save Settings</Button>
     </div>
