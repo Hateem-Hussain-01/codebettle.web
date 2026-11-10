@@ -9,7 +9,7 @@ import Input from '@/components/ui/Input';
 import type { PublicCourse, Review, SafeUser } from '@/lib/db/types';
 import { formatPrice, getLevelColor, getCategoryColor, formatDate, getTotalLessonsCount, getCourseDuration } from '@/lib/utils';
 import { ChevronDown, ChevronUp, BookOpen, Clock, Users, Award, CheckCircle, Tag, Play } from 'lucide-react';
-import { motion } from 'framer-motion';
+import FadeIn from '@/components/ui/FadeIn';
 import toast from 'react-hot-toast';
 
 interface CourseDetailClientProps {
@@ -116,7 +116,7 @@ export default function CourseDetailClient({ course, instructor, reviews, slug, 
         <div className="bg-dark-card border-b border-dark-border">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
             <div className="grid lg:grid-cols-3 gap-10">
-              <div className="lg:col-span-2">
+              <FadeIn className="lg:col-span-2">
                 <span className={`text-xs font-medium px-2.5 py-0.5 rounded-full ${getCategoryColor(course.category)}`}>{course.category}</span>
                 <h1 className="text-3xl sm:text-4xl font-black text-white mt-3 mb-4">{course.title}</h1>
                 <p className="text-muted text-lg mb-6">{course.description}</p>
@@ -141,7 +141,7 @@ export default function CourseDetailClient({ course, instructor, reviews, slug, 
                     {course.level.charAt(0).toUpperCase() + course.level.slice(1)}
                   </Badge>
                 </div>
-              </div>
+              </FadeIn>
 
               {/* Enrollment card */}
               <div className="lg:col-span-1">
@@ -182,6 +182,7 @@ export default function CourseDetailClient({ course, instructor, reviews, slug, 
           <div className="grid lg:grid-cols-3 gap-10">
             <div className="lg:col-span-2 space-y-10">
               {/* What you'll learn */}
+              <FadeIn>
               <section>
                 <h2 className="text-xl font-bold text-white mb-4">What You'll Learn</h2>
                 <div className="bg-dark-card border border-dark-border rounded-xl p-5 grid sm:grid-cols-2 gap-3">
@@ -192,8 +193,10 @@ export default function CourseDetailClient({ course, instructor, reviews, slug, 
                   ))}
                 </div>
               </section>
+              </FadeIn>
 
               {/* Curriculum */}
+              <FadeIn delay={0.05}>
               <section>
                 <h2 className="text-xl font-bold text-white mb-4">Course Curriculum</h2>
                 <div className="space-y-3">
@@ -228,9 +231,11 @@ export default function CourseDetailClient({ course, instructor, reviews, slug, 
                   ))}
                 </div>
               </section>
+              </FadeIn>
 
               {/* Reviews */}
               {reviews.length > 0 && (
+                <FadeIn delay={0.05}>
                 <section>
                   <h2 className="text-xl font-bold text-white mb-4">Student Reviews</h2>
                   <div className="space-y-4">
@@ -248,6 +253,7 @@ export default function CourseDetailClient({ course, instructor, reviews, slug, 
                     ))}
                   </div>
                 </section>
+                </FadeIn>
               )}
             </div>
 

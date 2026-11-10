@@ -5,6 +5,7 @@ import Badge from '@/components/ui/Badge';
 import Input from '@/components/ui/Input';
 import Select from '@/components/ui/Select';
 import Modal from '@/components/ui/Modal';
+import FadeIn from '@/components/ui/FadeIn';
 import { Search, Plus, Edit, Trash2, Eye, EyeOff, Star, Video, Archive } from 'lucide-react';
 import { formatPrice } from '@/lib/utils';
 import Link from 'next/link';
@@ -78,21 +79,21 @@ export default function CoursesClient({ courses: allCourses, instructorNames }: 
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <FadeIn className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-black text-white">Courses</h1>
           <p className="text-muted text-sm mt-1">{filtered.length} course{filtered.length !== 1 ? 's' : ''}</p>
         </div>
         <Link href="/admin/courses/new"><Button><Plus className="w-4 h-4" />Create Course</Button></Link>
-      </div>
+      </FadeIn>
 
       {/* Filters */}
-      <div className="flex flex-wrap gap-3">
+      <FadeIn delay={0.05} className="flex flex-wrap gap-3">
         <Input placeholder="Search courses..." value={search} onChange={e => setSearch(e.target.value)} icon={<Search className="w-4 h-4" />} className="max-w-xs" />
         <Select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} options={[{ value: 'all', label: 'All Status' }, { value: 'published', label: 'Published' }, { value: 'draft', label: 'Draft' }, { value: 'archived', label: 'Archived' }]} />
-      </div>
+      </FadeIn>
 
-      <div className="bg-dark-card border border-dark-border rounded-xl overflow-hidden">
+      <FadeIn delay={0.1} className="bg-dark-card border border-dark-border rounded-xl overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
@@ -151,7 +152,7 @@ export default function CoursesClient({ courses: allCourses, instructorNames }: 
             </tbody>
           </table>
         </div>
-      </div>
+      </FadeIn>
 
       <Modal isOpen={!!deleteTarget} onClose={() => setDeleteTarget(null)} title="Delete Course" size="sm">
         <p className="text-muted text-sm mb-6">Are you sure you want to delete this course? This action cannot be undone.</p>

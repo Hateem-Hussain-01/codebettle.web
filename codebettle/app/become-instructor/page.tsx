@@ -1,6 +1,7 @@
 'use client';
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
+import FadeIn from '@/components/ui/FadeIn';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
 import Textarea from '@/components/ui/Textarea';
@@ -54,26 +55,28 @@ export default function BecomeInstructorPage() {
         <div className="py-20 bg-dark-card border-b border-dark-border text-center relative overflow-hidden">
           <div className="absolute inset-0 bg-gradient-to-r from-primary/5 via-transparent to-primary/5" />
           <div className="relative max-w-2xl mx-auto px-4">
+            <FadeIn>
             <span className="text-primary text-sm font-semibold uppercase tracking-wider">Become an Instructor</span>
             <h1 className="text-4xl sm:text-5xl font-black text-white mt-2 mb-4">
               Share Your <span className="gradient-text">Expertise</span>
             </h1>
             <p className="text-muted text-lg">Join our team of expert instructors and impact thousands of students' careers across Pakistan.</p>
+            </FadeIn>
           </div>
         </div>
 
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-16">
-            {perks.map(perk => (
-              <div key={perk.title} className="bg-dark-card border border-dark-border rounded-xl p-6 text-center">
+            {perks.map((perk, i) => (
+              <FadeIn key={perk.title} delay={i * 0.08} className="bg-dark-card border border-dark-border rounded-xl p-6 text-center">
                 <div className="inline-flex items-center justify-center w-14 h-14 rounded-xl bg-primary/10 text-primary mb-4">{perk.icon}</div>
                 <h3 className="text-white font-bold mb-2">{perk.title}</h3>
                 <p className="text-muted text-sm">{perk.desc}</p>
-              </div>
+              </FadeIn>
             ))}
           </div>
 
-          <div className="max-w-2xl mx-auto">
+          <FadeIn delay={0.1} className="max-w-2xl mx-auto">
             {submitted ? (
               <div className="bg-dark-card border border-green-500/30 rounded-xl p-10 text-center">
                 <CheckCircle className="w-16 h-16 text-green-400 mx-auto mb-4" />
@@ -98,7 +101,7 @@ export default function BecomeInstructorPage() {
                 </form>
               </div>
             )}
-          </div>
+          </FadeIn>
         </div>
       </main>
       <Footer />

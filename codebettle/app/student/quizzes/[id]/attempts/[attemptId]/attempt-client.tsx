@@ -5,6 +5,7 @@ import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
 import Card from '@/components/ui/Card';
 import Badge from '@/components/ui/Badge';
+import FadeIn from '@/components/ui/FadeIn';
 import type { StudentQuizAttempt, QuizQuestionType } from '@/lib/db/types';
 import type { toPublicQuiz } from '@/lib/db/mappers';
 import { requiredSelectionCount } from '@/lib/db/types';
@@ -135,6 +136,7 @@ export default function AttemptClient({
   if (result) {
     return (
       <div className="space-y-6 max-w-2xl mx-auto">
+        <FadeIn>
         <Card className="p-6 text-center">
           <CheckCircle2 className="w-12 h-12 text-green-400 mx-auto mb-3" />
           <h1 className="text-2xl font-black text-white">Quiz submitted</h1>
@@ -157,7 +159,9 @@ export default function AttemptClient({
             </>
           )}
         </Card>
+        </FadeIn>
         {result.perQuestion && (
+          <FadeIn delay={0.08}>
           <Card className="p-5">
             <h2 className="text-white font-bold mb-3">Your answers</h2>
             <div className="space-y-3">
@@ -196,6 +200,7 @@ export default function AttemptClient({
               })}
             </div>
           </Card>
+          </FadeIn>
         )}
       </div>
     );

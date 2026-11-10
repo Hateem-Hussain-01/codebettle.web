@@ -4,6 +4,7 @@ import Link from 'next/link';
 import Button from '@/components/ui/Button';
 import Textarea from '@/components/ui/Textarea';
 import Badge from '@/components/ui/Badge';
+import FadeIn from '@/components/ui/FadeIn';
 import { ArrowLeft, Upload, CheckCircle, XCircle } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -107,7 +108,7 @@ export default function StudentsImportClient() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-3">
+      <FadeIn className="flex items-center gap-3">
         <Link href="/admin/students" className="text-muted hover:text-primary transition-colors">
           <ArrowLeft className="w-5 h-5" />
         </Link>
@@ -117,9 +118,9 @@ export default function StudentsImportClient() {
             Columns: name, email, role, phone (phone optional). Role must be student or instructor — admin accounts are never importable.
           </p>
         </div>
-      </div>
+      </FadeIn>
 
-      <div className="bg-dark-card border border-dark-border rounded-xl p-4 space-y-4">
+      <FadeIn delay={0.08} className="bg-dark-card border border-dark-border rounded-xl p-4 space-y-4">
         <Textarea
           label="CSV text"
           placeholder={SAMPLE_CSV}
@@ -144,7 +145,7 @@ export default function StudentsImportClient() {
         <p className="text-muted text-xs">
           Imported users cannot sign in until an admin sets a password for them (existing reset/setup flow). No password column is accepted in the CSV.
         </p>
-      </div>
+      </FadeIn>
 
       {error && (
         <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-4 text-sm text-red-400">{error}</div>

@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation';
 import { getSession } from '@/lib/auth';
 import { getInstructorReport } from '@/lib/services/reporting-service';
 import Card from '@/components/ui/Card';
+import FadeIn from '@/components/ui/FadeIn';
 import { Users, BookOpen, DollarSign, BarChart2, Star } from 'lucide-react';
 
 /**
@@ -41,10 +42,10 @@ export default async function InstructorReportsPage({
 
   return (
     <div className="space-y-6">
-      <div>
+      <FadeIn>
         <h1 className="text-2xl font-black text-white">Reports</h1>
         <p className="text-muted text-sm mt-1">Your courses at a glance · {rangeLabel}</p>
-      </div>
+      </FadeIn>
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {[
@@ -52,8 +53,9 @@ export default async function InstructorReportsPage({
           { label: 'Total Enrollments', value: report.enrollments, icon: <Users className="w-6 h-6" />, color: 'text-blue-400 bg-blue-400/10' },
           { label: 'Completion Rate', value: `${report.completionRate}%`, icon: <BarChart2 className="w-6 h-6" />, color: 'text-green-400 bg-green-400/10' },
           { label: 'Total Revenue', value: `PKR ${report.revenue.toLocaleString()}`, icon: <DollarSign className="w-6 h-6" />, color: 'text-purple-400 bg-purple-400/10' },
-        ].map(s => (
-          <Card key={s.label} hover>
+        ].map((s, i) => (
+          <FadeIn key={s.label} delay={0.05 + i * 0.06}>
+          <Card hover>
             <div className="flex items-center gap-3">
               <div className={`w-11 h-11 rounded-xl flex items-center justify-center ${s.color}`}>{s.icon}</div>
               <div>
@@ -62,9 +64,11 @@ export default async function InstructorReportsPage({
               </div>
             </div>
           </Card>
+          </FadeIn>
         ))}
       </div>
 
+      <FadeIn delay={0.1}>
       <Card>
         <h2 className="text-white font-bold mb-4">Per-course breakdown</h2>
         {report.courses.length === 0 ? (
@@ -106,6 +110,7 @@ export default async function InstructorReportsPage({
           </div>
         )}
       </Card>
+      </FadeIn>
     </div>
   );
 }

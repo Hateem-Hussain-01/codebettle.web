@@ -8,12 +8,13 @@
  * reset revokes every session, so a stolen session dies with the old
  * password.
  *
- * KNOWN GAP — email delivery is NOT configured yet (Resend + Eman's
- * domain are pending; see RUNBOOK.md). The service takes an injected
- * `deliver` callback so tests can capture the token; the API route
- * currently passes no deliver function, so a requested token is created
- * but never reaches the user. Do NOT surface the token in an HTTP
- * response — that would let anyone reset anyone's password.
+ * Email delivery is wired: the reset API route passes a `deliver`
+ * callback that sends the reset link via Resend (see
+ * lib/email/resend.ts). When RESEND_API_KEY is not set, the send is
+ * skipped gracefully and the token simply expires unused — the
+ * request still returns the generic success response. Do NOT surface
+ * the token in an HTTP response — that would let anyone reset
+ * anyone's password.
  */
 import { randomBytes, createHash } from 'node:crypto';
 import { hashPassword, normalizeEmail, validatePassword } from '../security';

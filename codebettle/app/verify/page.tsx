@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
+import FadeIn from '@/components/ui/FadeIn';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
 import Card from '@/components/ui/Card';
@@ -27,11 +28,12 @@ export default function VerifyLookupPage() {
       <Navbar />
       <main className="min-h-screen bg-background pt-16">
         <div className="max-w-xl mx-auto px-4 sm:px-6 py-16">
-          <div className="text-center mb-8">
+          <FadeIn className="text-center mb-8">
             <Award className="w-12 h-12 text-primary mx-auto mb-3" />
             <h1 className="text-3xl font-black text-white">Verify Certificate</h1>
             <p className="text-muted mt-2 text-sm">Enter the verification token printed on a CodeBettle certificate.</p>
-          </div>
+          </FadeIn>
+          <FadeIn delay={0.08}>
           <Card>
             <form onSubmit={handleSubmit} className="space-y-4">
               <Input
@@ -44,6 +46,7 @@ export default function VerifyLookupPage() {
               <Button fullWidth type="submit">Verify certificate</Button>
             </form>
           </Card>
+          </FadeIn>
         </div>
       </main>
       <Footer />

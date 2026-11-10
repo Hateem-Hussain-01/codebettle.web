@@ -7,6 +7,7 @@ import Textarea from '@/components/ui/Textarea';
 import Select from '@/components/ui/Select';
 import Card from '@/components/ui/Card';
 import Modal from '@/components/ui/Modal';
+import FadeIn from '@/components/ui/FadeIn';
 import type { Announcement, Course } from '@/lib/db/types';
 import { formatDateShort } from '@/lib/utils';
 import toast from 'react-hot-toast';
@@ -67,13 +68,13 @@ export default function InstructorAnnouncementsClient({ courses: myCourses, init
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <FadeIn className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-black text-white">Announcements</h1>
           <p className="text-muted text-sm mt-1">Post updates to your enrolled students</p>
         </div>
         <Button onClick={() => setIsOpen(true)}><Plus className="w-4 h-4" />New Announcement</Button>
-      </div>
+      </FadeIn>
 
       {announcements.length === 0 ? (
         <Card className="py-16 text-center">
@@ -84,10 +85,11 @@ export default function InstructorAnnouncementsClient({ courses: myCourses, init
         </Card>
       ) : (
         <div className="space-y-3">
-          {announcements.map(ann => {
+          {announcements.map((ann, i) => {
             const course = myCourses.find(c => c.id === ann.courseId);
             return (
-              <Card key={ann.id} hover className="flex items-start gap-4">
+              <FadeIn key={ann.id} delay={Math.min(i, 4) * 0.05}>
+              <Card hover className="flex items-start gap-4">
                 <div className="w-10 h-10 rounded-lg bg-primary/10 text-primary flex items-center justify-center flex-shrink-0"><Bell className="w-5 h-5" /></div>
                 <div className="flex-1">
                   <div className="flex items-center justify-between gap-2">
@@ -99,6 +101,7 @@ export default function InstructorAnnouncementsClient({ courses: myCourses, init
                   <p className="text-muted text-xs mt-2">{formatDateShort(ann.createdAt)}</p>
                 </div>
               </Card>
+              </FadeIn>
             );
           })}
         </div>

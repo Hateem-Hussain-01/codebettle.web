@@ -6,6 +6,7 @@ import { getUserById } from '@/lib/db/users';
 import type { SafeUser } from '@/lib/db/types';
 import StatCard from '@/components/ui/StatCard';
 import Card from '@/components/ui/Card';
+import FadeIn from '@/components/ui/FadeIn';
 import StarRating from '@/components/ui/StarRating';
 import { Users, BookOpen, Star, TrendingUp } from 'lucide-react';
 import { formatDateShort } from '@/lib/utils';
@@ -32,10 +33,10 @@ export default async function InstructorDashboard() {
 
   return (
     <div className="space-y-8">
-      <div>
+      <FadeIn>
         <h1 className="text-2xl font-black text-white">Welcome back, {session!.name.split(' ')[0]}!</h1>
         <p className="text-muted text-sm mt-1">Here's your teaching overview</p>
-      </div>
+      </FadeIn>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard title="Total Students" value={myEnrollments.length} icon={<Users className="w-6 h-6" />} color="blue" />
@@ -46,6 +47,7 @@ export default async function InstructorDashboard() {
 
       <div className="grid lg:grid-cols-2 gap-6">
         {/* Recent Enrollments */}
+        <FadeIn delay={0.1}>
         <Card>
           <h2 className="text-white font-bold mb-4">Recent Enrollments</h2>
           {myEnrollments.length === 0 ? (
@@ -69,8 +71,10 @@ export default async function InstructorDashboard() {
             </div>
           )}
         </Card>
+        </FadeIn>
 
         {/* Recent Reviews */}
+        <FadeIn delay={0.15}>
         <Card>
           <h2 className="text-white font-bold mb-4">Recent Reviews</h2>
           {myReviews.length === 0 ? (
@@ -92,6 +96,7 @@ export default async function InstructorDashboard() {
             </div>
           )}
         </Card>
+        </FadeIn>
       </div>
     </div>
   );

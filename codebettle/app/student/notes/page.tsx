@@ -6,6 +6,7 @@ import Input from '@/components/ui/Input';
 import Textarea from '@/components/ui/Textarea';
 import Card from '@/components/ui/Card';
 import Modal from '@/components/ui/Modal';
+import FadeIn from '@/components/ui/FadeIn';
 import { formatDateShort } from '@/lib/utils';
 import toast from 'react-hot-toast';
 
@@ -51,13 +52,13 @@ export default function StudentNotesPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <FadeIn className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-black text-white">My Notes</h1>
           <p className="text-muted text-sm mt-1">{notes.length} note{notes.length !== 1 ? 's' : ''}</p>
         </div>
         <Button onClick={openCreate}><Plus className="w-4 h-4" />New Note</Button>
-      </div>
+      </FadeIn>
 
       {notes.length === 0 ? (
         <Card className="py-16 text-center">
@@ -68,8 +69,9 @@ export default function StudentNotesPage() {
         </Card>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {notes.map(note => (
-            <Card key={note.id} hover className="flex flex-col">
+          {notes.map((note, i) => (
+            <FadeIn key={note.id} delay={Math.min(i % 3, 2) * 0.07}>
+            <Card hover className="flex flex-col h-full">
               <div className="flex items-start justify-between mb-2">
                 <h3 className="text-white font-semibold text-sm">{note.title}</h3>
                 <div className="flex items-center gap-1 ml-2 flex-shrink-0">
@@ -81,6 +83,7 @@ export default function StudentNotesPage() {
               <p className="text-muted text-xs leading-relaxed flex-1 whitespace-pre-wrap line-clamp-4">{note.content}</p>
               <p className="text-muted text-xs mt-3">{formatDateShort(note.createdAt)}</p>
             </Card>
+            </FadeIn>
           ))}
         </div>
       )}

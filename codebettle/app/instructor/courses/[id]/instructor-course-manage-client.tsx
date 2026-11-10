@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation';
 import type { Course, Enrollment, Lesson, Module, SafeUser } from '@/lib/db/types';
 import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
+import FadeIn from '@/components/ui/FadeIn';
 import Input from '@/components/ui/Input';
 import Badge from '@/components/ui/Badge';
 import Modal from '@/components/ui/Modal';
@@ -277,7 +278,7 @@ export default function InstructorCourseManageClient({ course, enrolledStudents 
   return (
     <div className="space-y-6 max-w-4xl">
       {/* Header */}
-      <div className="flex items-start justify-between gap-4 flex-wrap">
+      <FadeIn className="flex items-start justify-between gap-4 flex-wrap">
         <div className="flex items-start gap-3">
           <Link href="/instructor/courses"><Button variant="ghost" size="sm"><ArrowLeft className="w-4 h-4" /></Button></Link>
           <div>
@@ -300,9 +301,10 @@ export default function InstructorCourseManageClient({ course, enrolledStudents 
             <CheckCircle className="w-4 h-4" />Course Completed
           </div>
         )}
-      </div>
+      </FadeIn>
 
       {/* Zoom link */}
+      <FadeIn delay={0.05}>
       <Card className="border-blue-500/20 p-4">
         <div className="flex items-center gap-3 flex-wrap">
           <Video className="w-4 h-4 text-blue-400 flex-shrink-0" />
@@ -311,6 +313,7 @@ export default function InstructorCourseManageClient({ course, enrolledStudents 
           <Button size="sm" onClick={handleSaveZoom}><Save className="w-3.5 h-3.5" />Update</Button>
         </div>
       </Card>
+      </FadeIn>
 
       {/* Tabs */}
       <div className="flex gap-1 bg-dark-card border border-dark-border rounded-xl p-1">
@@ -328,7 +331,7 @@ export default function InstructorCourseManageClient({ course, enrolledStudents 
 
       {/* ── TAB: Recordings ── */}
       {activeTab === 'recordings' && (
-        <div className="space-y-4">
+        <FadeIn className="space-y-4">
           <p className="text-muted text-sm">After each live class, paste the Google Drive recording link below.</p>
           {modules.length === 0 ? (
             <Card className="py-10 text-center">
@@ -374,12 +377,12 @@ export default function InstructorCourseManageClient({ course, enrolledStudents 
               )}
             </Card>
           ))}
-        </div>
+        </FadeIn>
       )}
 
       {/* ── TAB: Curriculum ── */}
       {activeTab === 'curriculum' && (
-        <div className="space-y-4">
+        <FadeIn className="space-y-4">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-muted text-sm">Design the course curriculum. Once saved, the admin will be able to publish the course.</p>
@@ -437,12 +440,12 @@ export default function InstructorCourseManageClient({ course, enrolledStudents 
               </div>
             </div>
           )}
-        </div>
+        </FadeIn>
       )}
 
       {/* ── TAB: Schedule ── */}
       {activeTab === 'schedule' && (
-        <div className="space-y-4">
+        <FadeIn className="space-y-4">
           {course.schedule ? (
             <Card>
               <h2 className="text-white font-bold mb-4 flex items-center gap-2"><Calendar className="w-5 h-5 text-green-400" />Class Schedule</h2>
@@ -518,7 +521,7 @@ export default function InstructorCourseManageClient({ course, enrolledStudents 
               </div>
             )}
           </Card>
-        </div>
+      </FadeIn>
       )}
 
       {/* ── Mark Complete Modal ── */}

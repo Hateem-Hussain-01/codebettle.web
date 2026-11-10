@@ -5,6 +5,7 @@ import Badge from '@/components/ui/Badge';
 import Input from '@/components/ui/Input';
 import Select from '@/components/ui/Select';
 import Modal from '@/components/ui/Modal';
+import FadeIn from '@/components/ui/FadeIn';
 import { Plus, Trash2, Tag } from 'lucide-react';
 import { formatDateShort } from '@/lib/utils';
 import toast from 'react-hot-toast';
@@ -50,15 +51,15 @@ export default function CouponsClient({ initialCoupons }: CouponsClientProps) {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <FadeIn className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-black text-white">Coupon Codes</h1>
           <p className="text-muted text-sm mt-1">{couponList.length} coupon{couponList.length !== 1 ? 's' : ''}</p>
         </div>
         <Button onClick={() => setIsOpen(true)}><Plus className="w-4 h-4" />Create Coupon</Button>
-      </div>
+      </FadeIn>
 
-      <div className="bg-dark-card border border-dark-border rounded-xl overflow-hidden">
+      <FadeIn delay={0.08} className="bg-dark-card border border-dark-border rounded-xl overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
@@ -98,7 +99,7 @@ export default function CouponsClient({ initialCoupons }: CouponsClientProps) {
             </tbody>
           </table>
         </div>
-      </div>
+      </FadeIn>
 
       <Modal isOpen={isOpen} onClose={() => setIsOpen(false)} title="Create Coupon Code">
         <div className="space-y-4">

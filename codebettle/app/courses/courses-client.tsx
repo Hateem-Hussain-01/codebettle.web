@@ -3,6 +3,7 @@ import { useState, useMemo } from 'react';
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
 import CourseCard from '@/components/ui/CourseCard';
+import FadeIn from '@/components/ui/FadeIn';
 import { Search, SlidersHorizontal } from 'lucide-react';
 import Input from '@/components/ui/Input';
 import Select from '@/components/ui/Select';
@@ -45,17 +46,17 @@ export default function CoursesClient({ courses: allCourses, instructorNames }: 
       <main className="min-h-screen bg-background pt-16">
         {/* Header */}
         <div className="bg-dark-card border-b border-dark-border py-12">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <FadeIn className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <h1 className="text-3xl sm:text-4xl font-black text-white mb-2">
               All <span className="gradient-text">Courses</span>
             </h1>
             <p className="text-muted">Explore {allCourses.length} expert-led courses across {CATEGORIES.length - 1} categories</p>
-          </div>
+          </FadeIn>
         </div>
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
           {/* Filters */}
-          <div className="bg-dark-card border border-dark-border rounded-xl p-4 mb-8 flex flex-col lg:flex-row gap-4">
+          <FadeIn delay={0.05} className="bg-dark-card border border-dark-border rounded-xl p-4 mb-8 flex flex-col lg:flex-row gap-4">
             <div className="flex-1">
               <Input
                 placeholder="Search courses..."
@@ -96,7 +97,7 @@ export default function CoursesClient({ courses: allCourses, instructorNames }: 
                 className="min-w-[170px]"
               />
             </div>
-          </div>
+          </FadeIn>
 
           {/* Results */}
           <p className="text-muted text-sm mb-6">{filtered.length} course{filtered.length !== 1 ? 's' : ''} found</p>

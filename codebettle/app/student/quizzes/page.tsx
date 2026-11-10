@@ -6,6 +6,7 @@ import { listAvailableQuizzes } from '@/lib/services/quiz-service';
 import Card from '@/components/ui/Card';
 import Badge from '@/components/ui/Badge';
 import Button from '@/components/ui/Button';
+import FadeIn from '@/components/ui/FadeIn';
 import { FileQuestion } from 'lucide-react';
 
 export default async function StudentQuizzesPage() {
@@ -25,10 +26,10 @@ export default async function StudentQuizzesPage() {
 
   return (
     <div className="space-y-6">
-      <div>
+      <FadeIn>
         <h1 className="text-2xl font-black text-white">Quizzes</h1>
         <p className="text-muted text-sm mt-1">Published quizzes for the courses you are enrolled in.</p>
-      </div>
+      </FadeIn>
       {quizzes.length === 0 ? (
         <Card className="py-16 text-center">
           <FileQuestion className="w-12 h-12 text-muted mx-auto mb-4" />
@@ -37,8 +38,9 @@ export default async function StudentQuizzesPage() {
         </Card>
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-          {quizzes.map(({ quiz, attemptsUsed, attemptsLeft, inProgressAttemptId, hasSubmitted }) => (
-            <Card key={quiz.id} className="p-5">
+          {quizzes.map(({ quiz, attemptsUsed, attemptsLeft, inProgressAttemptId, hasSubmitted }, i) => (
+            <FadeIn key={quiz.id} delay={Math.min(i % 2, 1) * 0.07}>
+            <Card className="p-5 h-full">
               <div className="flex items-start justify-between gap-3">
                 <div>
                   <h2 className="text-white font-bold">{quiz.title}</h2>
@@ -69,6 +71,7 @@ export default async function StudentQuizzesPage() {
                 </Link>
               </div>
             </Card>
+            </FadeIn>
           ))}
         </div>
       )}

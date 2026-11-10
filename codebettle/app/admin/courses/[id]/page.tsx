@@ -7,6 +7,7 @@ import { getSession } from '@/lib/auth';
 import { redirect } from 'next/navigation';
 import Card from '@/components/ui/Card';
 import Badge from '@/components/ui/Badge';
+import FadeIn from '@/components/ui/FadeIn';
 import StarRating from '@/components/ui/StarRating';
 import { Award, XCircle, Lock, Users, Calendar, Clock, BookOpen, Video } from 'lucide-react';
 import { formatDate, formatDateShort, formatPrice } from '@/lib/utils';
@@ -45,7 +46,7 @@ export default async function AdminCourseDetailPage({ params }: PageProps<'/admi
 
   return (
     <div className="space-y-6 max-w-4xl">
-      <div className="flex items-center justify-between flex-wrap gap-3">
+      <FadeIn className="flex items-center justify-between flex-wrap gap-3">
         <div className="flex items-start gap-3">
           <Link href="/admin/courses"><Button variant="ghost" size="sm">← Back</Button></Link>
           <div>
@@ -58,10 +59,11 @@ export default async function AdminCourseDetailPage({ params }: PageProps<'/admi
             </div>
           </div>
         </div>
-      </div>
+      </FadeIn>
 
       {/* Instructor info */}
       {instructor && (
+        <FadeIn delay={0.05}>
         <Card>
           <h2 className="text-white font-bold mb-3 text-sm">Assigned Instructor</h2>
           <div className="flex items-center gap-3">
@@ -85,10 +87,12 @@ export default async function AdminCourseDetailPage({ params }: PageProps<'/admi
             </div>
           )}
         </Card>
+        </FadeIn>
       )}
 
       {/* Schedule */}
       {course.schedule && (
+        <FadeIn delay={0.1}>
         <Card>
           <h2 className="text-white font-bold mb-4 text-sm flex items-center gap-2"><Calendar className="w-4 h-4 text-green-400" />Class Schedule</h2>
           <div className="grid sm:grid-cols-3 gap-3 text-xs mb-3">
@@ -110,9 +114,11 @@ export default async function AdminCourseDetailPage({ params }: PageProps<'/admi
           </div>
           {course.schedule.notes && <p className="text-muted text-xs mt-2 italic">{course.schedule.notes}</p>}
         </Card>
+        </FadeIn>
       )}
 
       {/* Students & Certificate Eligibility */}
+      <FadeIn delay={0.15}>
       <Card>
         <h2 className="text-white font-bold mb-4 text-sm flex items-center gap-2"><Users className="w-4 h-4 text-primary" />Enrolled Students & Certificate Status</h2>
         {enrollments.length === 0 ? (
@@ -147,8 +153,10 @@ export default async function AdminCourseDetailPage({ params }: PageProps<'/admi
           </div>
         )}
       </Card>
+      </FadeIn>
 
       {/* Curriculum overview */}
+      <FadeIn delay={0.2}>
       <Card>
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-white font-bold text-sm flex items-center gap-2"><BookOpen className="w-4 h-4 text-primary" />Curriculum</h2>
@@ -170,6 +178,7 @@ export default async function AdminCourseDetailPage({ params }: PageProps<'/admi
           </div>
         )}
       </Card>
+      </FadeIn>
 
       {/* Curriculum management (Phase 3 — wired to the module/lesson write APIs) */}
       <CourseCurriculumClient courseId={course.id} modules={course.modules} />

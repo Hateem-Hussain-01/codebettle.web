@@ -6,6 +6,7 @@ import { formatDateShort } from '@/lib/utils';
 import Link from 'next/link';
 import Badge from '@/components/ui/Badge';
 import Card from '@/components/ui/Card';
+import FadeIn from '@/components/ui/FadeIn';
 import { BookOpen, Award, PlayCircle } from 'lucide-react';
 
 export default async function StudentCoursesPage() {
@@ -25,10 +26,10 @@ export default async function StudentCoursesPage() {
 
   return (
     <div className="space-y-6">
-      <div>
+      <FadeIn>
         <h1 className="text-2xl font-black text-white">My Courses</h1>
         <p className="text-muted text-sm mt-1">{items.length} enrolled course{items.length !== 1 ? 's' : ''}</p>
-      </div>
+      </FadeIn>
 
       {items.length === 0 ? (
         <Card className="py-16 text-center">
@@ -39,8 +40,8 @@ export default async function StudentCoursesPage() {
         </Card>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-          {items.map(({ enrollment, course, certificate }) => (
-            <div key={enrollment.id} className="bg-dark-card border border-dark-border rounded-xl overflow-hidden hover:border-primary/30 transition-all group">
+          {items.map(({ enrollment, course, certificate }, i) => (
+            <FadeIn key={enrollment.id} delay={Math.min(i % 3, 2) * 0.07} className="bg-dark-card border border-dark-border rounded-xl overflow-hidden hover:border-primary/30 transition-all group">
               <div className="relative h-40">
                 <img src={course!.thumbnail} alt={course!.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
                 <div className="absolute inset-0 bg-gradient-to-t from-dark/80 to-transparent" />
@@ -71,7 +72,7 @@ export default async function StudentCoursesPage() {
                   )}
                 </div>
               </div>
-            </div>
+            </FadeIn>
           ))}
         </div>
       )}

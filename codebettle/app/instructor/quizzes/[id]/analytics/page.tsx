@@ -6,6 +6,7 @@ import { getQuizAnalytics, getQuizForTeacher } from '@/lib/services/quiz-service
 import Card from '@/components/ui/Card';
 import StatCard from '@/components/ui/StatCard';
 import Button from '@/components/ui/Button';
+import FadeIn from '@/components/ui/FadeIn';
 import { FileCheck, Target, TrendingUp, Users } from 'lucide-react';
 
 export default async function QuizAnalyticsPage({ params }: { params: Promise<{ id: string }> }) {
@@ -24,7 +25,7 @@ export default async function QuizAnalyticsPage({ params }: { params: Promise<{ 
 
   return (
     <div className="space-y-6">
-      <div className="flex items-start justify-between gap-3">
+      <FadeIn className="flex items-start justify-between gap-3">
         <div>
           <h1 className="text-2xl font-black text-white">Analytics — {quiz.title}</h1>
           <p className="text-muted text-sm mt-1">
@@ -39,7 +40,7 @@ export default async function QuizAnalyticsPage({ params }: { params: Promise<{ 
             Back to quiz
           </Button>
         </Link>
-      </div>
+      </FadeIn>
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard title="Submitted" value={String(a.submittedAttempts)} icon={<FileCheck className="w-5 h-5" />} />
@@ -48,6 +49,7 @@ export default async function QuizAnalyticsPage({ params }: { params: Promise<{ 
         <StatCard title="Pass rate" value={a.passRate === null ? '—' : `${a.passRate.toFixed(0)}%`} icon={<Target className="w-5 h-5" />} />
       </div>
 
+      <FadeIn delay={0.1}>
       <Card className="p-5">
         <h2 className="text-white font-bold mb-4">Per-question accuracy</h2>
         {a.perQuestion.length === 0 ? (
@@ -79,7 +81,9 @@ export default async function QuizAnalyticsPage({ params }: { params: Promise<{ 
           </div>
         )}
       </Card>
+      </FadeIn>
 
+      <FadeIn delay={0.15}>
       <Card className="p-5">
         <h2 className="text-white font-bold mb-4">Per-student results</h2>
         {a.perStudent.length === 0 ? (
@@ -109,8 +113,10 @@ export default async function QuizAnalyticsPage({ params }: { params: Promise<{ 
           </div>
         )}
       </Card>
+      </FadeIn>
 
       {a.byTopic.length > 0 && (
+        <FadeIn delay={0.2}>
         <Card className="p-5">
           <h2 className="text-white font-bold mb-4">By topic</h2>
           <div className="space-y-2">
@@ -124,6 +130,7 @@ export default async function QuizAnalyticsPage({ params }: { params: Promise<{ 
             ))}
           </div>
         </Card>
+        </FadeIn>
       )}
     </div>
   );

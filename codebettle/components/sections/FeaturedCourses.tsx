@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { ArrowRight } from 'lucide-react';
 import CourseCard from '@/components/ui/CourseCard';
+import FadeIn from '@/components/ui/FadeIn';
 import { getFeaturedCourses } from '@/lib/db/courses';
 import { toPublicCourse } from '@/lib/db/mappers';
 import { getUserById } from '@/lib/db/users';
@@ -16,7 +17,7 @@ export default async function FeaturedCourses() {
   return (
     <section className="py-24 bg-background">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-end justify-between mb-12">
+        <FadeIn className="flex items-end justify-between mb-12">
           <div>
             <span className="text-primary text-sm font-semibold uppercase tracking-wider">Featured Courses</span>
             <h2 className="text-3xl sm:text-4xl font-black text-white mt-2">
@@ -27,7 +28,7 @@ export default async function FeaturedCourses() {
           <Link href="/courses" className="hidden sm:flex items-center gap-2 text-primary text-sm font-medium hover:gap-3 transition-all">
             View All <ArrowRight className="w-4 h-4" />
           </Link>
-        </div>
+        </FadeIn>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           {featured.map((course, i) => (

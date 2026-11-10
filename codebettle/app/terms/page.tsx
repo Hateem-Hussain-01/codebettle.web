@@ -1,5 +1,6 @@
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
+import FadeIn from '@/components/ui/FadeIn';
 import { getSession } from '@/lib/auth';
 
 const SECTIONS: { title: string; body: string[] }[] = [
@@ -78,7 +79,7 @@ export default async function TermsPage() {
       <Navbar session={session} />
       <main className="min-h-screen bg-background pt-16">
         <div className="py-16 bg-dark-card border-b border-dark-border">
-          <div className="max-w-3xl mx-auto px-4">
+          <FadeIn className="max-w-3xl mx-auto px-4">
             <h1 className="text-4xl font-black text-white">Terms of Service</h1>
             <p className="text-muted text-sm mt-2">Last updated: 9 November 2026</p>
             <p className="text-muted leading-relaxed mt-4">
@@ -86,11 +87,12 @@ export default async function TermsPage() {
               agree with them, please do not create an account or enrol in a course.
               Questions: info@codebettle.com.
             </p>
-          </div>
+          </FadeIn>
         </div>
         <div className="max-w-3xl mx-auto px-4 py-12 space-y-10">
-          {SECTIONS.map((section) => (
-            <section key={section.title}>
+          {SECTIONS.map((section, i) => (
+            <FadeIn key={section.title} delay={Math.min(i, 3) * 0.05}>
+            <section>
               <h2 className="text-xl font-bold text-white mb-3">{section.title}</h2>
               {section.body.map((paragraph) => (
                 <p key={paragraph.slice(0, 32)} className="text-muted leading-relaxed mb-3">
@@ -98,6 +100,7 @@ export default async function TermsPage() {
                 </p>
               ))}
             </section>
+            </FadeIn>
           ))}
         </div>
       </main>

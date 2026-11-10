@@ -12,6 +12,7 @@ import {
 } from '@/lib/auth';
 import { checkRateLimit, loginRateLimitKey } from '@/lib/rate-limit';
 import { recordLoginEvent } from '@/lib/db/login-events';
+import { requestEmailVerification } from '@/lib/services/email-verification-service';
 
 /** Login-event recording is best-effort: it must never block a sign-in. */
 async function safeRecordLoginEvent(input: Parameters<typeof recordLoginEvent>[0]): Promise<void> {
@@ -132,15 +133,33 @@ export async function POST(request: NextRequest) {
     if ('error' in result) {
       return NextResponse.json({ error: result.error }, { status: 400 });
     }
+    // Signup verification email (best-effort, never blocks signup):
+    // create the token and send the email via Resend. When the key is
+    // not configured the send is skipped and the flag is false; the
+    // register page reads the flag to show the verification message.
+    const verificationEmailSent = (
+      await requestEmailVerification(
+        result.user.id,
+        result.user.email,
+        result.user.name,
+        request.nextUrl.origin,
+      )
+    ).sent;
     const created = await login(email, password);
     if (!created) {
-      return NextResponse.json({ error: 'Account created. Please sign in.' }, { status: 201 });
+      return NextResponse.json(
+        { error: 'Account created. Please sign in.', verificationEmailSent },
+        { status: 201 },
+      );
     }
     const token = await createSession(created.id, {
       ip: clientIp(request),
       userAgent: request.headers.get('user-agent') ?? undefined,
     });
-    const response = NextResponse.json({ user: created, success: true }, { status: 201 });
+    const response = NextResponse.json(
+      { user: created, success: true, verificationEmailSent },
+      { status: 201 },
+    );
     response.cookies.set(SESSION_COOKIE, token, sessionCookieOptions());
     return response;
   }

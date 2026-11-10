@@ -6,6 +6,7 @@ import Input from '@/components/ui/Input';
 import Textarea from '@/components/ui/Textarea';
 import Select from '@/components/ui/Select';
 import Card from '@/components/ui/Card';
+import FadeIn from '@/components/ui/FadeIn';
 import { Save, ArrowLeft, Video, Plus, Trash2, ChevronDown, ChevronUp, X, Calendar, Clock, Info } from 'lucide-react';
 import Link from 'next/link';
 import toast from 'react-hot-toast';
@@ -181,7 +182,7 @@ export default function NewCourseClient({ instructors: allInstructors }: NewCour
 
   return (
     <div className="space-y-6 max-w-4xl">
-      <div className="flex items-center justify-between">
+      <FadeIn className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <Link href="/admin/courses"><Button variant="ghost" size="sm"><ArrowLeft className="w-4 h-4" /></Button></Link>
           <div>
@@ -193,18 +194,19 @@ export default function NewCourseClient({ instructors: allInstructors }: NewCour
           <Button variant="secondary" onClick={() => handleSave(false)} loading={saving}><Save className="w-4 h-4" />Save Draft</Button>
           <Button onClick={() => handleSave(true)} loading={saving}>Publish Course</Button>
         </div>
-      </div>
+      </FadeIn>
 
       {/* Draft flow info */}
-      <div className="bg-primary/5 border border-primary/20 rounded-xl p-4 flex items-start gap-3">
+      <FadeIn delay={0.05} className="bg-primary/5 border border-primary/20 rounded-xl p-4 flex items-start gap-3">
         <Info className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
         <div className="text-sm">
           <p className="text-white font-medium">Recommended Workflow</p>
           <p className="text-muted mt-0.5">Save as <span className="text-primary">Draft</span> → Instructor adds curriculum → You <span className="text-primary">Publish</span>. You can also publish without curriculum — instructor can add it anytime later.</p>
         </div>
-      </div>
+      </FadeIn>
 
       {/* Basic Info */}
+      <FadeIn delay={0.08}>
       <Card>
         <h2 className="text-white font-bold mb-4">Course Details</h2>
         <div className="space-y-4">
@@ -225,8 +227,10 @@ export default function NewCourseClient({ instructors: allInstructors }: NewCour
           </div>
         </div>
       </Card>
+      </FadeIn>
 
       {/* Instructor & Zoom */}
+      <FadeIn delay={0.12}>
       <Card className="border-blue-500/20">
         <h2 className="text-white font-bold mb-4 flex items-center gap-2"><Video className="w-5 h-5 text-blue-400" />Instructor & Zoom</h2>
         <div className="grid sm:grid-cols-2 gap-4">
@@ -248,8 +252,10 @@ export default function NewCourseClient({ instructors: allInstructors }: NewCour
           </div>
         </div>
       </Card>
+      </FadeIn>
 
       {/* Schedule */}
+      <FadeIn delay={0.16}>
       <Card className="border-green-500/20">
         <h2 className="text-white font-bold mb-4 flex items-center gap-2"><Calendar className="w-5 h-5 text-green-400" />Class Schedule</h2>
         <div className="space-y-4">
@@ -295,8 +301,10 @@ export default function NewCourseClient({ instructors: allInstructors }: NewCour
           <Input label="Additional Notes" placeholder="e.g. Public holidays excluded, extra sessions on request..." value={schedule.notes} onChange={setScheduleField('notes')} />
         </div>
       </Card>
+      </FadeIn>
 
       {/* Requirements & Outcomes */}
+      <FadeIn delay={0.2}>
       <Card>
         <h2 className="text-white font-bold mb-4">Requirements & Outcomes</h2>
         <div className="grid sm:grid-cols-2 gap-6">
@@ -322,8 +330,10 @@ export default function NewCourseClient({ instructors: allInstructors }: NewCour
           </div>
         </div>
       </Card>
+      </FadeIn>
 
       {/* Curriculum — optional */}
+      <FadeIn delay={0.24}>
       <Card>
         <div className="flex items-center justify-between mb-2">
           <div>
@@ -373,6 +383,7 @@ export default function NewCourseClient({ instructors: allInstructors }: NewCour
           </div>
         )}
       </Card>
+      </FadeIn>
 
       <div className="flex justify-end gap-3 pb-8">
         <Link href="/admin/courses"><Button variant="secondary">Cancel</Button></Link>

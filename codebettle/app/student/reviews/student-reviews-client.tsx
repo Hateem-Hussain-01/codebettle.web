@@ -6,6 +6,7 @@ import Textarea from '@/components/ui/Textarea';
 import Select from '@/components/ui/Select';
 import Card from '@/components/ui/Card';
 import Modal from '@/components/ui/Modal';
+import FadeIn from '@/components/ui/FadeIn';
 import StarRating from '@/components/ui/StarRating';
 import type { PublicCourse, Review } from '@/lib/db/types';
 import { formatDateShort } from '@/lib/utils';
@@ -70,13 +71,13 @@ export default function StudentReviewsClient({ initialReviews, enrolledCourses, 
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <FadeIn className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-black text-white">My Reviews</h1>
           <p className="text-muted text-sm mt-1">{myReviews.length} review{myReviews.length !== 1 ? 's' : ''} written</p>
         </div>
         <Button onClick={() => setIsModalOpen(true)}><Plus className="w-4 h-4" />Write Review</Button>
-      </div>
+      </FadeIn>
 
       {myReviews.length === 0 ? (
         <Card className="py-16 text-center">
@@ -87,10 +88,11 @@ export default function StudentReviewsClient({ initialReviews, enrolledCourses, 
         </Card>
       ) : (
         <div className="space-y-4">
-          {myReviews.map(review => {
+          {myReviews.map((review, i) => {
             const course = coursesById[review.courseId];
             return (
-              <Card key={review.id} hover>
+              <FadeIn key={review.id} delay={Math.min(i, 3) * 0.06}>
+              <Card hover>
                 <div className="flex items-start gap-4">
                   {course && <img src={course.thumbnail} alt={course.title} className="w-16 h-16 rounded-lg object-cover flex-shrink-0" />}
                   <div className="flex-1">
@@ -104,6 +106,7 @@ export default function StudentReviewsClient({ initialReviews, enrolledCourses, 
                   </button>
                 </div>
               </Card>
+              </FadeIn>
             );
           })}
         </div>

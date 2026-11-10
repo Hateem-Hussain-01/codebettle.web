@@ -121,6 +121,7 @@ model User {
   socialLinks        Json?
   notificationPrefs  Json?
   status             UserStatus              @default(active)
+  emailVerifiedAt    DateTime?
   joinedAt           DateTime                @default(now())
   deletedAt          DateTime?
   createdAt          DateTime                @default(now()) @onCreate(now())
@@ -136,6 +137,7 @@ model User {
   auditLogs          AuditLog[]
   loginEvents        LoginEvent[]
   passwordResets     PasswordReset[]
+  emailVerifications EmailVerification[]
   sessions           Session[]
   blogPosts          BlogPost[]
   quizzesCreated     Quiz[]             @relation("QuizCreator")
@@ -524,6 +526,22 @@ model LoginEvent {
 }
 
 model PasswordReset {
+  id        String    @id @onCreate(cuid(2))
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now()) @onCreate(now())
+}
+
+// Email-verification tokens (auth UX upgrade). Same pattern as
+// PasswordReset: only the SHA-256 hash of the token is stored, a token
+// is single-use (usedAt) and expires after 24 hours. Requesting a new
+// verification invalidates earlier unused tokens for the same user.
+// When a token is consumed, User.emailVerifiedAt is set. Login is NOT
+// blocked for unverified users.
+model EmailVerification {
   id        String    @id @onCreate(cuid(2))
   userId    String
   user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)

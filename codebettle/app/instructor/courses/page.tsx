@@ -5,6 +5,7 @@ import Link from 'next/link';
 import Badge from '@/components/ui/Badge';
 import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
+import FadeIn from '@/components/ui/FadeIn';
 import { Settings, Users, Star, BookOpen, Video } from 'lucide-react';
 
 export default async function InstructorCoursesPage() {
@@ -27,12 +28,12 @@ export default async function InstructorCoursesPage() {
 
   return (
     <div className="space-y-6">
-      <div>
+      <FadeIn>
         <h1 className="text-2xl font-black text-white">My Assigned Courses</h1>
         <p className="text-muted text-sm mt-1">
           {myCourses.length} course{myCourses.length !== 1 ? 's' : ''} assigned to you by admin. You can add class recordings and manage content.
         </p>
-      </div>
+      </FadeIn>
 
       {myCourses.length === 0 ? (
         <Card className="py-16 text-center">
@@ -42,8 +43,8 @@ export default async function InstructorCoursesPage() {
         </Card>
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-          {coursesWithStats.map(course => (
-            <div key={course.id} className="bg-dark-card border border-dark-border rounded-xl overflow-hidden hover:border-primary/30 transition-all">
+          {coursesWithStats.map((course, i) => (
+            <FadeIn key={course.id} delay={Math.min(i % 2, 1) * 0.07} className="bg-dark-card border border-dark-border rounded-xl overflow-hidden hover:border-primary/30 transition-all">
               <div className="relative h-40">
                 <img src={course.thumbnail} alt={course.title} className="w-full h-full object-cover" />
                 <div className="absolute inset-0 bg-gradient-to-t from-dark/90 to-transparent" />
@@ -84,7 +85,7 @@ export default async function InstructorCoursesPage() {
                   </Button>
                 </Link>
               </div>
-            </div>
+            </FadeIn>
           ))}
         </div>
       )}

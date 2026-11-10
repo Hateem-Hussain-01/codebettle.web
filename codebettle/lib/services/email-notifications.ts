@@ -1,20 +1,22 @@
 /**
- * Email notification hook (Phase 4) — NOT a provider integration.
+ * Email notification hook (Phase 4) — now wired to Resend.
  *
- * There is no email provider configured yet (no Resend SDK installed,
- * no sending domain — see RUNBOOK §6). This module is the single place
- * the notification service asks for an email to be sent, so wiring the
- * real provider later means changing this file only.
+ * This module is the single place the notification service asks for an
+ * email to be sent. Sending goes through lib/email/resend.ts, which
+ * fails gracefully when RESEND_API_KEY is not set (Eman adds it in
+ * Vercel and verifies the sending domain in Resend — see RUNBOOK §6).
  *
- * Behaviour today:
+ * Behaviour:
  * - RESEND_API_KEY absent  -> log once, return { delivered: false,
  *   reason: 'email-not-configured' }.
- * - RESEND_API_KEY present -> STILL does not send (no SDK, no domain),
- *   return { delivered: false, reason: 'email-provider-not-connected' }.
+ * - Send succeeds          -> return { delivered: true, reason: 'sent' }.
+ * - Send fails              -> return { delivered: false,
+ *   reason: 'email-send-failed' }.
  *
  * It never throws, and a failed/unsent email never blocks the in-app
  * notification — the caller treats the result as informational.
  */
+import { sendNotificationEmail } from '../email/resend';
 
 export interface EmailNotificationInput {
   /** Recipient address. */
@@ -49,15 +51,10 @@ export async function deliverEmailNotification(
       }
       return { delivered: false, reason: 'email-not-configured' };
     }
-    // A key is set, but no Resend SDK is installed and no sending domain
-    // is configured (RUNBOOK §6) — do NOT attempt a send. When the
-    // provider is connected, replace this branch with the real send and
-    // return { delivered: true, reason: 'sent' } on success.
-    console.warn(
-      '[email-notifications] RESEND_API_KEY is set but no email provider is connected yet; ' +
-        `skipping email to ${input.to} for ${input.event} notification (see RUNBOOK §6).`,
-    );
-    return { delivered: false, reason: 'email-provider-not-connected' };
+    const result = await sendNotificationEmail(input.to, input.subject, input.body);
+    return result.sent
+      ? { delivered: true, reason: 'sent' }
+      : { delivered: false, reason: result.reason };
   } catch (error) {
     console.error('[email-notifications] Email hook failed:', error);
     return { delivered: false, reason: 'email-hook-error' };

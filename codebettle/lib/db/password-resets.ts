@@ -6,9 +6,10 @@
  * reset invalidates earlier unused tokens for the same user. Resetting
  * revokes every session (handled by the password-reset service).
  *
- * Email delivery is NOT configured yet (Resend + domain pending — see
- * RUNBOOK.md), so a requested token cannot reach the user today. The
- * token machinery is complete and tested; the email step is the gap.
+ * Email delivery is wired: the reset API route passes a `deliver`
+ * callback that sends the reset link via Resend (see
+ * lib/email/resend.ts). Until RESEND_API_KEY is set, the send is
+ * skipped gracefully and a requested token expires unused.
  */
 import { getDb } from './client';
 import type { PasswordResetRecord } from './types';

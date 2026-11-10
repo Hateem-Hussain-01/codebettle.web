@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import Button from '@/components/ui/Button';
 import Card from '@/components/ui/Card';
+import FadeIn from '@/components/ui/FadeIn';
 import { Download, BarChart2, Users, DollarSign, BookOpen, Award, Star, AlertTriangle, Calendar } from 'lucide-react';
 import toast from 'react-hot-toast';
 import type { Course, SafeUser } from '@/lib/db/types';
@@ -120,12 +121,13 @@ export default function ReportsClient({
 
   return (
     <div className="space-y-6">
-      <div>
+      <FadeIn>
         <h1 className="text-2xl font-black text-white">Reports</h1>
         <p className="text-muted text-sm mt-1">Platform analytics and CSV exports · {rangeLabel}</p>
-      </div>
+      </FadeIn>
 
       {/* Date range filter */}
+      <FadeIn delay={0.05}>
       <Card>
         <div className="flex flex-wrap items-end gap-3">
           <div>
@@ -162,6 +164,7 @@ export default function ReportsClient({
           )}
         </div>
       </Card>
+      </FadeIn>
 
       {/* Summary Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
@@ -174,8 +177,9 @@ export default function ReportsClient({
           { label: 'Published Courses', value: overview.coursesPublished, icon: <BookOpen className="w-6 h-6" />, color: 'text-cyan-400 bg-cyan-400/10' },
           { label: 'Avg. Course Rating', value: overview.averageRating === null ? '—' : `${overview.averageRating} / 5`, icon: <Star className="w-6 h-6" />, color: 'text-orange-400 bg-orange-400/10' },
           { label: 'Completions', value: overview.completedEnrollments, icon: <BarChart2 className="w-6 h-6" />, color: 'text-green-400 bg-green-400/10' },
-        ].map(s => (
-          <Card key={s.label} hover>
+        ].map((s, i) => (
+          <FadeIn key={s.label} delay={0.05 + Math.min(i, 3) * 0.05}>
+          <Card hover>
             <div className="flex items-center gap-3">
               <div className={`w-11 h-11 rounded-xl flex items-center justify-center ${s.color}`}>{s.icon}</div>
               <div>
@@ -184,11 +188,13 @@ export default function ReportsClient({
               </div>
             </div>
           </Card>
+          </FadeIn>
         ))}
       </div>
 
       {/* Per-course / per-student reports */}
       <div className="grid lg:grid-cols-2 gap-4">
+        <FadeIn delay={0.1}>
         <Card>
           <h3 className="text-white font-bold mb-1">Course report</h3>
           <p className="text-muted text-xs mb-4">Enrolments, completions, revenue and ratings for one course.</p>
@@ -220,7 +226,9 @@ export default function ReportsClient({
             </div>
           )}
         </Card>
+        </FadeIn>
 
+        <FadeIn delay={0.15}>
         <Card>
           <h3 className="text-white font-bold mb-1">Student report</h3>
           <p className="text-muted text-xs mb-4">Enrolments, progress and certificates for one student.</p>
@@ -259,6 +267,7 @@ export default function ReportsClient({
             </div>
           )}
         </Card>
+        </FadeIn>
       </div>
 
       {/* Export Options */}
@@ -268,8 +277,9 @@ export default function ReportsClient({
           { title: 'Enrollment Report', desc: 'All enrollments in range with student, course, date, and payment info', type: 'enrollments' as const, color: 'text-primary' },
           { title: 'Course Report', desc: 'Every course with enrollments, completions and revenue', type: 'courses' as const, color: 'text-purple-400' },
           { title: 'Revenue Summary', desc: 'Revenue breakdown per course with enrollment counts', type: 'revenue' as const, color: 'text-green-400' },
-        ].map(report => (
-          <Card key={report.title} hover>
+        ].map((report, i) => (
+          <FadeIn key={report.title} delay={0.05 + Math.min(i, 3) * 0.05}>
+          <Card hover>
             <BarChart2 className={`w-8 h-8 ${report.color} mb-3`} />
             <h3 className="text-white font-bold mb-1">{report.title}</h3>
             <p className="text-muted text-xs mb-4 leading-relaxed">{report.desc}</p>
@@ -277,10 +287,12 @@ export default function ReportsClient({
               <Download className="w-3.5 h-3.5" />Export CSV
             </Button>
           </Card>
+          </FadeIn>
         ))}
       </div>
 
       {/* Data integrity (read-only diagnostics) */}
+      <FadeIn delay={0.1}>
       <Card>
         <div className="flex items-center gap-2 mb-3">
           <AlertTriangle className="w-5 h-5 text-yellow-400" />
@@ -300,6 +312,7 @@ export default function ReportsClient({
           ))}
         </div>
       </Card>
+      </FadeIn>
     </div>
   );
 }

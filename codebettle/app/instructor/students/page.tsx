@@ -5,6 +5,7 @@ import { getUserById } from '@/lib/db/users';
 import type { SafeUser } from '@/lib/db/types';
 import Card from '@/components/ui/Card';
 import Badge from '@/components/ui/Badge';
+import FadeIn from '@/components/ui/FadeIn';
 import { Users, Award } from 'lucide-react';
 import { formatDateShort } from '@/lib/utils';
 
@@ -29,16 +30,17 @@ export default async function InstructorStudentsPage() {
 
   return (
     <div className="space-y-6">
-      <div>
+      <FadeIn>
         <h1 className="text-2xl font-black text-white">Students</h1>
         <p className="text-muted text-sm mt-1">{uniqueStudentIds.length} unique student{uniqueStudentIds.length !== 1 ? 's' : ''} across {myCourses.length} course{myCourses.length !== 1 ? 's' : ''}</p>
-      </div>
+      </FadeIn>
 
-      {myCourses.map(course => {
+      {myCourses.map((course, i) => {
         const courseEnrollments = myEnrollments.filter(e => e.courseId === course.id);
         if (courseEnrollments.length === 0) return null;
         return (
-          <Card key={course.id}>
+          <FadeIn key={course.id} delay={Math.min(i, 3) * 0.06}>
+          <Card>
             <div className="flex items-center gap-3 mb-4">
               <img src={course.thumbnail} alt={course.title} className="w-12 h-12 rounded-lg object-cover" />
               <div>
@@ -82,6 +84,7 @@ export default async function InstructorStudentsPage() {
               </table>
             </div>
           </Card>
+          </FadeIn>
         );
       })}
     </div>

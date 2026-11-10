@@ -1,6 +1,7 @@
 'use client';
 import StatCard from '@/components/ui/StatCard';
 import Card from '@/components/ui/Card';
+import FadeIn from '@/components/ui/FadeIn';
 import { Users, BookOpen, GraduationCap, DollarSign, TrendingUp, Clock } from 'lucide-react';
 import { formatDateShort } from '@/lib/utils';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
@@ -38,10 +39,10 @@ export default function DashboardClient({ users, students, instructors, courses,
 
   return (
     <div className="space-y-8">
-      <div>
+      <FadeIn>
         <h1 className="text-2xl font-black text-white">Admin Dashboard</h1>
         <p className="text-muted text-sm mt-1">Platform overview and analytics</p>
-      </div>
+      </FadeIn>
 
       {/* Stats */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -53,7 +54,8 @@ export default function DashboardClient({ users, students, instructors, courses,
 
       {/* Charts */}
       <div className="grid lg:grid-cols-3 gap-6">
-        <Card className="lg:col-span-2">
+        <FadeIn delay={0.08} className="lg:col-span-2">
+        <Card>
           <h3 className="text-white font-bold mb-4 flex items-center gap-2"><TrendingUp className="w-4 h-4 text-primary" />Enrollments (2024)</h3>
           <ResponsiveContainer width="100%" height={220}>
             <BarChart data={MONTH_DATA}>
@@ -64,7 +66,9 @@ export default function DashboardClient({ users, students, instructors, courses,
             </BarChart>
           </ResponsiveContainer>
         </Card>
+        </FadeIn>
 
+        <FadeIn delay={0.12}>
         <Card>
           <h3 className="text-white font-bold mb-4">Course Categories</h3>
           <ResponsiveContainer width="100%" height={180}>
@@ -84,9 +88,11 @@ export default function DashboardClient({ users, students, instructors, courses,
             ))}
           </div>
         </Card>
+        </FadeIn>
       </div>
 
       {/* Recent Activity */}
+      <FadeIn delay={0.15}>
       <Card>
         <h3 className="text-white font-bold mb-4 flex items-center gap-2"><Clock className="w-4 h-4 text-primary" />Recent Enrollments</h3>
         <div className="overflow-x-auto">
@@ -116,6 +122,7 @@ export default function DashboardClient({ users, students, instructors, courses,
           </table>
         </div>
       </Card>
+      </FadeIn>
     </div>
   );
 }

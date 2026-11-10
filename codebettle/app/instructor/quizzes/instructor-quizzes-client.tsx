@@ -8,6 +8,7 @@ import Select from '@/components/ui/Select';
 import Card from '@/components/ui/Card';
 import Badge from '@/components/ui/Badge';
 import Modal from '@/components/ui/Modal';
+import FadeIn from '@/components/ui/FadeIn';
 import type { Quiz, Course } from '@/lib/db/types';
 import toast from 'react-hot-toast';
 
@@ -69,7 +70,7 @@ export default function InstructorQuizzesClient({
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-start justify-between gap-3">
+      <FadeIn className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h1 className="text-2xl font-black text-white">Quizzes</h1>
           <p className="text-muted text-sm mt-1">
@@ -86,7 +87,7 @@ export default function InstructorQuizzesClient({
             <Plus className="w-4 h-4 mr-2" /> New Quiz
           </Button>
         </div>
-      </div>
+      </FadeIn>
 
       {courses.length === 0 && (
         <Card className="py-8 text-center">
@@ -106,8 +107,9 @@ export default function InstructorQuizzesClient({
         </Card>
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-          {quizzes.map((quiz) => (
-            <Card key={quiz.id} className="p-5">
+          {quizzes.map((quiz, i) => (
+            <FadeIn key={quiz.id} delay={Math.min(i % 2, 1) * 0.07}>
+            <Card className="p-5 h-full">
               <div className="flex items-start justify-between gap-3">
                 <div>
                   <h2 className="text-white font-bold">{quiz.title}</h2>
@@ -141,6 +143,7 @@ export default function InstructorQuizzesClient({
                 )}
               </div>
             </Card>
+            </FadeIn>
           ))}
         </div>
       )}
