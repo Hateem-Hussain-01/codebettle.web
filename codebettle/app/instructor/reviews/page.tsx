@@ -1,7 +1,8 @@
 import { getSession } from '@/lib/auth';
-import { getCoursesByInstructor } from '@/lib/data/courses';
-import { getReviewsByCourse } from '@/lib/data/reviews';
-import { getUserById } from '@/lib/data/users';
+import { getCoursesByInstructor } from '@/lib/db/courses';
+import { getReviewsByCourseIds } from '@/lib/db/reviews';
+import { getUserById } from '@/lib/db/users';
+import type { SafeUser } from '@/lib/db/types';
 import StarRating from '@/components/ui/StarRating';
 import Card from '@/components/ui/Card';
 import { Star } from 'lucide-react';
@@ -9,13 +10,29 @@ import { formatDateShort } from '@/lib/utils';
 
 export default async function InstructorReviewsPage() {
   const session = await getSession();
-  const myCourses = getCoursesByInstructor(session!.id);
+  const myCourses = await getCoursesByInstructor(session!.id);
 
-  const allReviews = myCourses.flatMap(course =>
-    getReviewsByCourse(course.id).map(r => ({ ...r, course }))
+  // Reviews for all my courses in ONE query (Phase 7 perf — was one
+  // query per course).
+  const allCourseReviews = await getReviewsByCourseIds(myCourses.map((c) => c.id));
+  const reviewsByCourse = myCourses.map((course) => ({
+    course,
+    reviews: allCourseReviews.filter((r) => r.courseId === course.id),
+  }));
+  const allReviews = reviewsByCourse.flatMap(({ course, reviews }) =>
+    reviews.map(r => ({ ...r, course }))
   );
 
   const avgRating = allReviews.length ? (allReviews.reduce((a, r) => a + r.rating, 0) / allReviews.length).toFixed(1) : '0.0';
+
+  // Student map built once (was a getUserById call inside JSX per row).
+  const studentMap = new Map<string, SafeUser>();
+  await Promise.all(
+    [...new Set(allReviews.map(r => r.studentId))].map(async (studentId) => {
+      const student = await getUserById(studentId);
+      if (student) studentMap.set(studentId, student);
+    }),
+  );
 
   return (
     <div className="space-y-6">
@@ -35,7 +52,7 @@ export default async function InstructorReviewsPage() {
       ) : (
         <div className="space-y-4">
           {allReviews.map(review => {
-            const student = getUserById(review.studentId);
+            const student = studentMap.get(review.studentId);
             return (
               <Card key={review.id} hover>
                 <div className="flex items-start gap-4">

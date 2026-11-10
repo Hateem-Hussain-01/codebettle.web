@@ -101,7 +101,7 @@ export default function HeroSection() {
           className="flex flex-col sm:flex-row items-center justify-center gap-4"
         >
           <Link href="/courses">
-            <Button size="lg" variant="primary" className="group">
+            <Button size="lg" variant="primary" neon className="group">
               Explore Courses
               <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
             </Button>

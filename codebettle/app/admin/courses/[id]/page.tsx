@@ -1,7 +1,8 @@
 import { notFound } from 'next/navigation';
-import { getCourseById } from '@/lib/data/courses';
-import { getEnrollmentsByCourse } from '@/lib/data/enrollments';
-import { getUserById } from '@/lib/data/users';
+import { getCourseById } from '@/lib/db/courses';
+import { getEnrollmentsByCourse } from '@/lib/db/enrollments';
+import { getUserById } from '@/lib/db/users';
+import type { SafeUser } from '@/lib/db/types';
 import { getSession } from '@/lib/auth';
 import { redirect } from 'next/navigation';
 import Card from '@/components/ui/Card';
@@ -11,6 +12,7 @@ import { Award, XCircle, Lock, Users, Calendar, Clock, BookOpen, Video } from 'l
 import { formatDate, formatDateShort, formatPrice } from '@/lib/utils';
 import Link from 'next/link';
 import Button from '@/components/ui/Button';
+import CourseCurriculumClient from './course-curriculum-client';
 
 const DAYS = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
 
@@ -19,11 +21,20 @@ export default async function AdminCourseDetailPage({ params }: PageProps<'/admi
   const session = await getSession();
   if (!session || session.role !== 'admin') redirect('/auth/login');
 
-  const course = getCourseById(id);
+  const course = await getCourseById(id);
   if (!course) notFound();
 
-  const enrollments = getEnrollmentsByCourse(id);
-  const instructor = getUserById(course.instructorId);
+  const enrollments = await getEnrollmentsByCourse(id);
+  const instructor = await getUserById(course.instructorId);
+
+  // Student map built once (was a getUserById call inside JSX per row).
+  const studentMap = new Map<string, SafeUser>();
+  await Promise.all(
+    [...new Set(enrollments.map(e => e.studentId))].map(async (studentId) => {
+      const student = await getUserById(studentId);
+      if (student) studentMap.set(studentId, student);
+    }),
+  );
 
   const scheduleDays = course.schedule
     ? course.schedule.scheduleType === 'custom' ? (course.schedule.customDays || [])
@@ -76,39 +87,6 @@ export default async function AdminCourseDetailPage({ params }: PageProps<'/admi
         </Card>
       )}
 
-      {/* ── PRIVATE Instructor Review (admin only) ── */}
-      {course.instructorPrivateReview && (
-        <Card className="border-yellow-500/20">
-          <div className="flex items-center gap-2 mb-3">
-            <Lock className="w-4 h-4 text-yellow-400" />
-            <h2 className="text-white font-bold text-sm">Instructor's Private Review</h2>
-            <span className="text-xs px-2 py-0.5 rounded-full bg-yellow-500/10 text-yellow-400 border border-yellow-500/20 ml-auto">Admin Only</span>
-          </div>
-          <div className="flex items-center gap-2 mb-2">
-            <StarRating rating={course.instructorPrivateReview.rating} size="sm" />
-            <span className="text-muted text-xs">{course.instructorPrivateReview.rating}/5</span>
-            <span className="text-muted text-xs ml-auto">{formatDateShort(course.instructorPrivateReview.submittedAt)}</span>
-          </div>
-          <p className="text-muted text-sm leading-relaxed italic">"{course.instructorPrivateReview.comment}"</p>
-        </Card>
-      )}
-
-      {/* ── PUBLIC Instructor Review ── */}
-      {course.instructorClassReview && (
-        <Card className="border-primary/20">
-          <div className="flex items-center gap-2 mb-3">
-            <h2 className="text-white font-bold text-sm">Instructor's Class Review</h2>
-            <span className="text-xs px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20 ml-auto">Visible to students</span>
-          </div>
-          <div className="flex items-center gap-2 mb-2">
-            <StarRating rating={course.instructorClassReview.rating} size="sm" />
-            <span className="text-muted text-xs">{course.instructorClassReview.rating}/5</span>
-            <span className="text-muted text-xs ml-auto">{formatDateShort(course.instructorClassReview.submittedAt)}</span>
-          </div>
-          <p className="text-muted text-sm leading-relaxed italic">"{course.instructorClassReview.comment}"</p>
-        </Card>
-      )}
-
       {/* Schedule */}
       {course.schedule && (
         <Card>
@@ -142,7 +120,7 @@ export default async function AdminCourseDetailPage({ params }: PageProps<'/admi
         ) : (
           <div className="space-y-2">
             {enrollments.map(enr => {
-              const student = getUserById(enr.studentId);
+              const student = studentMap.get(enr.studentId);
               return (
                 <div key={enr.id} className="flex items-center gap-3 py-2 border-b border-dark-border/40 last:border-0">
                   <img src={student?.avatar || ''} alt={student?.name} className="w-8 h-8 rounded-full" />
@@ -192,6 +170,9 @@ export default async function AdminCourseDetailPage({ params }: PageProps<'/admi
           </div>
         )}
       </Card>
+
+      {/* Curriculum management (Phase 3 — wired to the module/lesson write APIs) */}
+      <CourseCurriculumClient courseId={course.id} modules={course.modules} />
     </div>
   );
 }

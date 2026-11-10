@@ -1,7 +1,8 @@
 import { getSession } from '@/lib/auth';
-import { getCoursesByInstructor } from '@/lib/data/courses';
-import { enrollments } from '@/lib/data/enrollments';
-import { getUserById } from '@/lib/data/users';
+import { getCoursesByInstructor } from '@/lib/db/courses';
+import { getEnrollmentsByCourseIds } from '@/lib/db/enrollments';
+import { getUserById } from '@/lib/db/users';
+import type { SafeUser } from '@/lib/db/types';
 import Card from '@/components/ui/Card';
 import Badge from '@/components/ui/Badge';
 import { Users, Award } from 'lucide-react';
@@ -9,11 +10,22 @@ import { formatDateShort } from '@/lib/utils';
 
 export default async function InstructorStudentsPage() {
   const session = await getSession();
-  const myCourses = getCoursesByInstructor(session!.id);
+  const myCourses = await getCoursesByInstructor(session!.id);
   const courseIds = myCourses.map(c => c.id);
-  const myEnrollments = enrollments.filter(e => courseIds.includes(e.courseId));
+  // Enrolments for all my courses in ONE query (Phase 7 perf — was one
+  // query per course).
+  const myEnrollments = await getEnrollmentsByCourseIds(courseIds);
 
   const uniqueStudentIds = [...new Set(myEnrollments.map(e => e.studentId))];
+
+  // Student map built once (was a getUserById call inside JSX per row).
+  const studentMap = new Map<string, SafeUser>();
+  await Promise.all(
+    uniqueStudentIds.map(async (studentId) => {
+      const student = await getUserById(studentId);
+      if (student) studentMap.set(studentId, student);
+    }),
+  );
 
   return (
     <div className="space-y-6">
@@ -46,7 +58,7 @@ export default async function InstructorStudentsPage() {
                 </thead>
                 <tbody>
                   {courseEnrollments.map(enr => {
-                    const student = getUserById(enr.studentId);
+                    const student = studentMap.get(enr.studentId);
                     return (
                       <tr key={enr.id} className="border-b border-dark-border/40 last:border-0">
                         <td className="py-3 pr-4">

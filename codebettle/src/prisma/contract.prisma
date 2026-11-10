@@ -1,0 +1,548 @@
+// use prisma-8
+//
+// CodeBettle data contract (Prisma 8, PostgreSQL 15+).
+// Source: transformation plan §3 + the existing lib/data/*.ts interfaces,
+// which are preserved exactly so the seed import (Phase 2) is mechanical.
+//
+// Design notes:
+// - Money is stored in the smallest unit as an integer (pricePkr, amountPkr)
+//   to avoid floating-point errors.
+// - Deletes are soft (deletedAt) for users, courses and enrolments, because
+//   financial and certificate records must remain auditable.
+// - Only SHA-256 hashes of tokens are stored (sessions, password resets) —
+//   never the tokens themselves.
+// - Instructor bio/expertise/socialLinks stay on User (as in the current
+//   interfaces) instead of a separate instructor_profiles table.
+// - Prisma 8 enum members take no attributes, so category/type values are
+//   stored as identifiers (Web_Development, site_wide); map them to the
+//   display strings ("Web Development", "site-wide") at the code boundary
+//   in Phase 2.
+// - Quiz models (Phase 5): Quiz, QuizQuestion, QuizOption, QuizAttempt,
+//   QuizAnswer — see the models below. No quiz seed data: quizzes are
+//   teacher-created content, never invented seed content.
+// - Seed-import validation counts (Phase 2): 27 users (2 admin, 5 instructor,
+//   20 student), 8 courses (6 paid, 2 free), 15 enrolments (11 paid, 4 free;
+//   6 completed), 6 certificates, seed amountPaid total PKR 57,489.
+enum Role {
+  student
+  instructor
+  admin
+}
+
+enum UserStatus {
+  active
+  suspended
+}
+
+enum CourseCategory {
+  Web_Development
+  Mobile_Development
+  Data_Science
+  UI_UX_Design
+  DevOps
+  Programming
+}
+
+enum CourseLevel {
+  beginner
+  intermediate
+  advanced
+}
+
+enum CourseStatus {
+  draft
+  published
+  archived
+}
+
+enum EnrollmentPaymentStatus {
+  paid
+  free
+  pending
+}
+
+enum PaymentStatus {
+  pending
+  paid
+  failed
+  refunded
+}
+
+enum CouponType {
+  percentage
+  fixed
+}
+
+enum AnnouncementType {
+  site_wide
+  course
+}
+
+enum ApplicationStatus {
+  pending
+  approved
+  rejected
+}
+
+enum QuizStatus {
+  draft
+  published
+  archived
+}
+
+enum QuizQuestionType {
+  mcq
+  fill_blank
+  checkbox
+  choose_two
+  choose_three
+}
+
+enum QuizAttemptStatus {
+  in_progress
+  submitted
+}
+
+enum QuizScoringPolicy {
+  exact
+  partial
+}
+
+model User {
+  id                 String                  @id @onCreate(cuid(2))
+  name               String
+  email              String                  @unique
+  passwordHash       String
+  role               Role
+  avatar             String?
+  bio                String?
+  phone              String?
+  expertise          String[]
+  socialLinks        Json?
+  notificationPrefs  Json?
+  status             UserStatus              @default(active)
+  joinedAt           DateTime                @default(now())
+  deletedAt          DateTime?
+  createdAt          DateTime                @default(now()) @onCreate(now())
+  updatedAt          temporal.UpdatedAt
+
+  coursesTaught      Course[]                @relation("InstructorCourses")
+  enrollments        Enrollment[]
+  certificates       Certificate[]
+  reviews            Review[]
+  announcements      Announcement[]          @relation("AnnouncementAuthor")
+  notifications      Notification[]
+  applicationsReview InstructorApplication[] @relation("ApplicationReviewer")
+  auditLogs          AuditLog[]
+  loginEvents        LoginEvent[]
+  passwordResets     PasswordReset[]
+  sessions           Session[]
+  blogPosts          BlogPost[]
+  quizzesCreated     Quiz[]             @relation("QuizCreator")
+  quizAttempts       QuizAttempt[]      @relation("QuizAttempts")
+}
+
+model Course {
+  id              String             @id @onCreate(cuid(2))
+  slug            String             @unique
+  title           String
+  description     String
+  longDescription String
+  thumbnail       String
+  category        CourseCategory
+  level           CourseLevel
+  pricePkr        Int
+  isFree          Boolean            @default(false)
+  instructorId    String
+  instructor      User               @relation("InstructorCourses", fields: [instructorId], references: [id])
+  zoomLink        String?
+  schedule        Json?
+  status          CourseStatus       @default(draft)
+  isFeatured      Boolean            @default(false)
+  isCompleted     Boolean            @default(false)
+  completedAt     DateTime?
+  requirements    String[]
+  whatYouLearn    String[]
+  tags            String[]
+  enrolledCount   Int                @default(0)
+  rating          Float              @default(0)
+  reviewCount     Int                @default(0)
+  deletedAt       DateTime?
+  createdAt       DateTime           @default(now()) @onCreate(now())
+  updatedAt       temporal.UpdatedAt
+
+  modules         Module[]
+  enrollments     Enrollment[]
+  reviews         Review[]
+  certificates    Certificate[]
+  announcements   Announcement[]
+  quizzes         Quiz[]
+}
+
+model Module {
+  id       String   @id @onCreate(cuid(2))
+  courseId String
+  course   Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  title    String
+  position Int
+  lessons  Lesson[]
+
+  @@unique([courseId, position])
+}
+
+model Lesson {
+  id           String           @id @onCreate(cuid(2))
+  moduleId     String
+  module       Module           @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  title        String
+  position     Int
+  description  String?
+  recordingUrl String?
+  materials    Json?
+  duration     String?
+  // Date of the live class session. Shown on the student/instructor course
+  // pages; the seed data carries one date per lesson (all 2024-05-10).
+  date         DateTime?
+  progress     LessonProgress[]
+
+  @@unique([moduleId, position])
+}
+
+model Enrollment {
+  id                  String                  @id @onCreate(cuid(2))
+  studentId           String
+  student             User                    @relation(fields: [studentId], references: [id])
+  courseId            String
+  course              Course                  @relation(fields: [courseId], references: [id])
+  enrolledAt          DateTime                @default(now())
+  completedAt         DateTime?
+  isCompleted         Boolean                 @default(false)
+  paymentStatus       EnrollmentPaymentStatus @default(pending)
+  couponUsed          String?
+  amountPaid          Int                     @default(0)
+  certificateEligible Boolean?
+  deletedAt           DateTime?
+  createdAt           DateTime                @default(now()) @onCreate(now())
+  updatedAt           temporal.UpdatedAt
+
+  lessonProgress      LessonProgress[]
+  payments            Payment[]
+  certificate         Certificate?
+
+  @@unique([studentId, courseId])
+  @@index([studentId])
+  @@index([courseId])
+}
+
+model LessonProgress {
+  enrollmentId String
+  enrollment   Enrollment @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
+  lessonId     String
+  lesson       Lesson     @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  completedAt  DateTime   @default(now())
+
+  @@id([enrollmentId, lessonId])
+  @@index([enrollmentId])
+}
+
+model Payment {
+  id           String        @id @onCreate(cuid(2))
+  enrollmentId String
+  enrollment   Enrollment    @relation(fields: [enrollmentId], references: [id])
+  provider     String
+  providerRef  String?
+  amountPkr    Int
+  status       PaymentStatus @default(pending)
+  couponId     String?
+  coupon       Coupon?       @relation(fields: [couponId], references: [id])
+  createdAt    DateTime      @default(now()) @onCreate(now())
+
+  @@unique([provider, providerRef])
+  @@index([status, createdAt])
+}
+
+model Coupon {
+  id                String             @id @onCreate(cuid(2))
+  code              String             @unique
+  type              CouponType
+  value             Int
+  maxUses           Int
+  usedCount         Int                @default(0)
+  expiresAt         DateTime
+  isActive          Boolean            @default(true)
+  createdAt         DateTime           @default(now()) @onCreate(now())
+  applicableCourses String[]
+  payments          Payment[]
+  redemptions       CouponRedemption[]
+}
+
+model CouponRedemption {
+  id           String     @id @onCreate(cuid(2))
+  couponId     String
+  coupon       Coupon     @relation(fields: [couponId], references: [id])
+  enrollmentId String
+  enrollment   Enrollment @relation(fields: [enrollmentId], references: [id])
+  redeemedAt   DateTime   @default(now())
+
+  @@unique([couponId, enrollmentId])
+}
+
+model Certificate {
+  id                String     @id @onCreate(cuid(2))
+  studentId         String
+  student           User       @relation(fields: [studentId], references: [id])
+  courseId          String
+  course            Course     @relation(fields: [courseId], references: [id])
+  enrollmentId      String     @unique
+  enrollment        Enrollment @relation(fields: [enrollmentId], references: [id])
+  certificateNumber String     @unique
+  verificationToken String     @unique
+  issuedAt          DateTime   @default(now())
+}
+
+// Quiz models (Phase 5): a teacher creates a quiz for their own course,
+// uploads an externally-AI-generated PDF, the app parses it into
+// questions, the teacher reviews and publishes, students attempt it.
+// The answer key lives server-side only (QuizOption.isCorrect /
+// QuizQuestion.correctText) — attempt payloads must never include it.
+model Quiz {
+  id                    String            @id @onCreate(cuid(2))
+  courseId              String
+  course                Course            @relation(fields: [courseId], references: [id])
+  title                 String
+  description           String?
+  topics                String[]
+  difficulty            CourseLevel?
+  timeLimitMin          Int?
+  attemptsAllowed       Int               @default(1)
+  passMark              Int?
+  scoringPolicy         QuizScoringPolicy @default(exact)
+  showResultsToStudents Boolean           @default(true)
+  showCorrectAnswers    Boolean           @default(false)
+  availableFrom         DateTime?
+  availableUntil        DateTime?
+  instructions          String?
+  status                QuizStatus        @default(draft)
+  createdById           String
+  creator               User              @relation("QuizCreator", fields: [createdById], references: [id])
+  pdfUrl                String?
+  pdfStoragePath        String?
+  parseWarnings         Json?
+  deletedAt             DateTime?
+  createdAt             DateTime          @default(now()) @onCreate(now())
+  updatedAt             temporal.UpdatedAt
+
+  questions             QuizQuestion[]
+  attempts              QuizAttempt[]
+
+  @@index([courseId, status])
+}
+
+model QuizQuestion {
+  id              String           @id @onCreate(cuid(2))
+  quizId          String
+  quiz            Quiz             @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  type            QuizQuestionType
+  position        Int
+  prompt          String
+  points          Int              @default(1)
+  topic           String?
+  difficulty      CourseLevel?
+  correctText     String?
+  acceptedAnswers String[]
+  needsReview     Boolean          @default(false)
+  reviewNote      String?
+
+  options         QuizOption[]
+  answers         QuizAnswer[]
+
+  @@unique([quizId, position])
+}
+
+model QuizOption {
+  id         String       @id @onCreate(cuid(2))
+  questionId String
+  question   QuizQuestion @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  text       String
+  position   Int
+  isCorrect  Boolean      @default(false)
+
+  @@unique([questionId, position])
+}
+
+model QuizAttempt {
+  id            String           @id @onCreate(cuid(2))
+  quizId        String
+  quiz          Quiz             @relation(fields: [quizId], references: [id])
+  studentId     String
+  student       User             @relation("QuizAttempts", fields: [studentId], references: [id])
+  status        QuizAttemptStatus @default(in_progress)
+  startedAt     DateTime         @default(now())
+  dueAt         DateTime?
+  submittedAt   DateTime?
+  score         Int?
+  totalPoints   Int?
+  timeSpentSec  Int?
+  submittedLate Boolean          @default(false)
+
+  answers       QuizAnswer[]
+
+  @@index([quizId, studentId])
+}
+
+model QuizAnswer {
+  id                String       @id @onCreate(cuid(2))
+  attemptId         String
+  attempt           QuizAttempt  @relation(fields: [attemptId], references: [id], onDelete: Cascade)
+  questionId        String
+  question          QuizQuestion @relation(fields: [questionId], references: [id])
+  selectedOptionIds String[]
+  textAnswer        String?
+  isCorrect         Boolean?
+  pointsAwarded     Int          @default(0)
+  needsManualReview Boolean      @default(false)
+
+  @@unique([attemptId, questionId])
+}
+
+model Review {
+  id        String   @id @onCreate(cuid(2))
+  studentId String
+  student   User     @relation(fields: [studentId], references: [id])
+  courseId  String
+  course    Course   @relation(fields: [courseId], references: [id])
+  rating    Int
+  comment   String
+  createdAt DateTime @default(now()) @onCreate(now())
+
+  @@unique([studentId, courseId])
+}
+
+model Announcement {
+  id        String           @id @onCreate(cuid(2))
+  title     String
+  content   String
+  type      AnnouncementType
+  courseId  String?
+  course    Course?          @relation(fields: [courseId], references: [id])
+  authorId  String
+  author    User             @relation("AnnouncementAuthor", fields: [authorId], references: [id])
+  isActive  Boolean          @default(true)
+  createdAt DateTime         @default(now()) @onCreate(now())
+}
+
+model Notification {
+  id        String    @id @onCreate(cuid(2))
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      String
+  title     String
+  body      String
+  readAt    DateTime?
+  createdAt DateTime  @default(now()) @onCreate(now())
+
+  @@index([userId, readAt])
+}
+
+model InstructorApplication {
+  id         String            @id @onCreate(cuid(2))
+  name       String
+  email      String
+  phone      String?
+  expertise  String?
+  experience String?
+  message    String?
+  status     ApplicationStatus @default(pending)
+  reviewedBy String?
+  reviewer   User?             @relation("ApplicationReviewer", fields: [reviewedBy], references: [id])
+  createdAt  DateTime          @default(now()) @onCreate(now())
+}
+
+model ContactMessage {
+  id        String   @id @onCreate(cuid(2))
+  name      String
+  email     String
+  subject   String?
+  message   String
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now()) @onCreate(now())
+}
+
+model BlogPost {
+  id          String             @id @onCreate(cuid(2))
+  slug        String             @unique
+  title       String
+  excerpt     String
+  content     String
+  pdfUrl      String?
+  thumbnail   String
+  category    String
+  authorId    String
+  author      User               @relation(fields: [authorId], references: [id])
+  authorName  String
+  publishedAt DateTime?
+  isPublished Boolean            @default(false)
+  readTime    String
+  tags        String[]
+  createdAt   DateTime           @default(now()) @onCreate(now())
+  updatedAt   temporal.UpdatedAt
+}
+
+model Testimonial {
+  id            String   @id @onCreate(cuid(2))
+  studentName   String
+  studentAvatar String
+  courseTitle   String
+  rating        Int
+  comment       String
+  date          DateTime @default(now())
+}
+
+model AuditLog {
+  id        String   @id @onCreate(cuid(2))
+  actorId   String?
+  actor     User?    @relation(fields: [actorId], references: [id])
+  action    String
+  entity    String
+  entityId  String?
+  detail    String?
+  ip        String?
+  createdAt DateTime @default(now()) @onCreate(now())
+
+  @@index([createdAt])
+}
+
+model LoginEvent {
+  id        String   @id @onCreate(cuid(2))
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id])
+  email     String
+  success   Boolean
+  ip        String?
+  userAgent String?
+  createdAt DateTime @default(now()) @onCreate(now())
+}
+
+model PasswordReset {
+  id        String    @id @onCreate(cuid(2))
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now()) @onCreate(now())
+}
+
+model Session {
+  id         String    @id
+  userId     String
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt  DateTime  @default(now()) @onCreate(now())
+  expiresAt  DateTime
+  lastSeenAt DateTime  @default(now())
+  revokedAt  DateTime?
+  ip         String?
+  userAgent  String?
+
+  @@index([userId, expiresAt])
+}

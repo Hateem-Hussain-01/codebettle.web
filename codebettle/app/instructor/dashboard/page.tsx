@@ -1,8 +1,9 @@
 import { getSession } from '@/lib/auth';
-import { getCoursesByInstructor } from '@/lib/data/courses';
-import { enrollments } from '@/lib/data/enrollments';
-import { reviews } from '@/lib/data/reviews';
-import { getUserById } from '@/lib/data/users';
+import { getCoursesByInstructor } from '@/lib/db/courses';
+import { getEnrollmentsByCourseIds } from '@/lib/db/enrollments';
+import { getReviewsByCourseIds } from '@/lib/db/reviews';
+import { getUserById } from '@/lib/db/users';
+import type { SafeUser } from '@/lib/db/types';
 import StatCard from '@/components/ui/StatCard';
 import Card from '@/components/ui/Card';
 import StarRating from '@/components/ui/StarRating';
@@ -11,12 +12,23 @@ import { formatDateShort } from '@/lib/utils';
 
 export default async function InstructorDashboard() {
   const session = await getSession();
-  const myCourses = getCoursesByInstructor(session!.id);
+  const myCourses = await getCoursesByInstructor(session!.id);
   const courseIds = myCourses.map(c => c.id);
-  const myEnrollments = enrollments.filter(e => courseIds.includes(e.courseId));
-  const myReviews = reviews.filter(r => courseIds.includes(r.courseId));
+  // Enrolments + reviews for all my courses in TWO queries (Phase 7
+  // perf — was one query per course for each).
+  const myEnrollments = await getEnrollmentsByCourseIds(courseIds);
+  const myReviews = await getReviewsByCourseIds(courseIds);
   const avgRating = myReviews.length ? (myReviews.reduce((a, r) => a + r.rating, 0) / myReviews.length).toFixed(1) : '0.0';
   const published = myCourses.filter(c => c.status === 'published').length;
+
+  // Student map built once (was a getUserById call inside JSX per row).
+  const studentMap = new Map<string, SafeUser>();
+  await Promise.all(
+    [...new Set(myEnrollments.map(e => e.studentId))].map(async (studentId) => {
+      const student = await getUserById(studentId);
+      if (student) studentMap.set(studentId, student);
+    }),
+  );
 
   return (
     <div className="space-y-8">
@@ -41,7 +53,7 @@ export default async function InstructorDashboard() {
           ) : (
             <div className="space-y-3">
               {myEnrollments.slice(0, 6).map(enr => {
-                const student = getUserById(enr.studentId);
+                const student = studentMap.get(enr.studentId);
                 const course = myCourses.find(c => c.id === enr.courseId);
                 return (
                   <div key={enr.id} className="flex items-center gap-3 py-2 border-b border-dark-border last:border-0">

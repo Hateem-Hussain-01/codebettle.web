@@ -1,11 +1,17 @@
 import Link from 'next/link';
 import { ArrowRight } from 'lucide-react';
 import CourseCard from '@/components/ui/CourseCard';
-import { getFeaturedCourses } from '@/lib/data/courses';
-import { getUserById } from '@/lib/data/users';
+import { getFeaturedCourses } from '@/lib/db/courses';
+import { toPublicCourse } from '@/lib/db/mappers';
+import { getUserById } from '@/lib/db/users';
 
-export default function FeaturedCourses() {
-  const featured = getFeaturedCourses();
+export default async function FeaturedCourses() {
+  const featured = await getFeaturedCourses();
+  const instructorNames: Record<string, string> = {};
+  for (const id of [...new Set(featured.map((c) => c.instructorId))]) {
+    const instructor = await getUserById(id);
+    instructorNames[id] = instructor?.name ?? 'CodeBettle Instructor';
+  }
 
   return (
     <section className="py-24 bg-background">
@@ -24,17 +30,14 @@ export default function FeaturedCourses() {
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          {featured.map((course, i) => {
-            const instructor = getUserById(course.instructorId);
-            return (
-              <CourseCard
-                key={course.id}
-                course={course}
-                instructorName={instructor?.name || 'CodeBettle Instructor'}
-                index={i}
-              />
-            );
-          })}
+          {featured.map((course, i) => (
+            <CourseCard
+              key={course.id}
+              course={toPublicCourse(course)}
+              instructorName={instructorNames[course.instructorId] ?? 'CodeBettle Instructor'}
+              index={i}
+            />
+          ))}
         </div>
 
         <div className="sm:hidden mt-8 text-center">

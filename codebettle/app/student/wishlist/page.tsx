@@ -1,49 +1,26 @@
-'use client';
-import { useState } from 'react';
-import { Heart, Trash2 } from 'lucide-react';
-import CourseCard from '@/components/ui/CourseCard';
-import Card from '@/components/ui/Card';
-import { courses } from '@/lib/data/courses';
-import { getUserById } from '@/lib/data/users';
-import toast from 'react-hot-toast';
+import { getCoursesByIds } from '@/lib/db/courses';
+import { toPublicCourse } from '@/lib/db/mappers';
+import { getUserById } from '@/lib/db/users';
+import StudentWishlistClient from './student-wishlist-client';
 
+/**
+ * Student wishlist — server wrapper (Phase 2).
+ * The wishlist itself is hardcoded local state (INITIAL_WISHLIST =
+ * ['course-3', 'course-5']) — kept exactly as before; the wrapper only
+ * fetches the course details for those ids (and their instructor names)
+ * and passes them to the client component. Remove-from-wishlist stays
+ * local-only (no wishlist table exists yet).
+ */
 const INITIAL_WISHLIST = ['course-3', 'course-5'];
 
-export default function StudentWishlistPage() {
-  const [wishlist, setWishlist] = useState<string[]>(INITIAL_WISHLIST);
-
-  const wishlisted = courses.filter(c => wishlist.includes(c.id));
-
-  const removeFromWishlist = (id: string) => {
-    setWishlist(w => w.filter(i => i !== id));
-    toast.success('Removed from wishlist');
-  };
-
-  return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-black text-white">My Wishlist</h1>
-        <p className="text-muted text-sm mt-1">{wishlisted.length} saved course{wishlisted.length !== 1 ? 's' : ''}</p>
-      </div>
-
-      {wishlisted.length === 0 ? (
-        <Card className="py-16 text-center">
-          <Heart className="w-12 h-12 text-muted mx-auto mb-4" />
-          <p className="text-white font-semibold mb-2">Your wishlist is empty</p>
-          <p className="text-muted text-sm">Save courses you're interested in to access them later.</p>
-        </Card>
-      ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
-          {wishlisted.map((course, i) => {
-            const instructor = getUserById(course.instructorId);
-            return (
-              <div key={course.id} className="relative">
-                <CourseCard course={course} instructorName={instructor?.name || 'Instructor'} index={i} isWishlisted={true} onWishlist={removeFromWishlist} />
-              </div>
-            );
-          })}
-        </div>
-      )}
-    </div>
-  );
+export default async function StudentWishlistPage() {
+  // One query for the whole wishlist (Phase 7 perf — was one query per id).
+  const courses = await getCoursesByIds(INITIAL_WISHLIST);
+  const instructorIds = [...new Set(courses.map((c) => c.instructorId))];
+  const instructorNames: Record<string, string> = {};
+  for (const id of instructorIds) {
+    const instructor = await getUserById(id);
+    instructorNames[id] = instructor?.name ?? 'Instructor';
+  }
+  return <StudentWishlistClient courses={courses.map(toPublicCourse)} instructorNames={instructorNames} />;
 }

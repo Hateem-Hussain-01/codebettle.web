@@ -1,0 +1,30 @@
+# CodeBettle CI — runs on every push and pull request.
+# No secrets are needed: the tests use an in-memory fake database,
+# the build does not need a database, and `prisma migration check`
+# is offline (it only validates the on-disk migration packages).
+# The live-database steps (migrations 2-5, seed, buckets) are the
+# owner's job — see codebettle/RUNBOOK.md and DEPLOYMENT.md.
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: codebettle
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: codebettle/package-lock.json
+      - run: npm ci
+      - run: npx tsc --noEmit
+      - run: npm test
+      - run: npx prisma migration check
+      - run: npm run build

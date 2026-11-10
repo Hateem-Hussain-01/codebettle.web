@@ -1,10 +1,10 @@
 import Link from 'next/link';
 import { ArrowRight, Clock } from 'lucide-react';
-import { getPublishedPosts } from '@/lib/data/blog';
+import { getPublishedPosts } from '@/lib/db/blog';
 import { motion } from 'framer-motion';
 
-export default function BlogPreview() {
-  const posts = getPublishedPosts().slice(0, 3);
+export default async function BlogPreview() {
+  const posts = (await getPublishedPosts()).slice(0, 3);
 
   return (
     <section className="py-24 bg-dark-card border-y border-dark-border">

@@ -5,10 +5,10 @@ import { motion } from 'framer-motion';
 import { Star, Users, BookOpen, Heart } from 'lucide-react';
 import Badge from './Badge';
 import { formatPrice, getLevelColor, getCategoryColor } from '@/lib/utils';
-import type { Course } from '@/lib/data/courses';
+import type { PublicCourse } from '@/lib/db/types';
 
 interface CourseCardProps {
-  course: Course;
+  course: PublicCourse;
   instructorName: string;
   isWishlisted?: boolean;
   onWishlist?: (id: string) => void;
@@ -26,7 +26,7 @@ export default function CourseCard({ course, instructorName, isWishlisted, onWis
       className="group"
     >
       <Link href={`/courses/${course.slug}`}>
-        <div className="bg-dark-card border border-dark-border rounded-xl overflow-hidden hover:border-primary/40 transition-all duration-300 hover:shadow-[0_0_20px_rgba(245,197,24,0.1)] h-full flex flex-col">
+        <div className="card-lift bg-dark-card border border-dark-border rounded-xl overflow-hidden hover:border-primary/40 hover:shadow-[0_0_20px_rgba(245,197,24,0.1)] h-full flex flex-col">
           {/* Thumbnail */}
           <div className="relative h-44 overflow-hidden bg-dark-border flex-shrink-0">
             <img

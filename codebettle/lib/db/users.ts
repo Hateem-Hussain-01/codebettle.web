@@ -1,0 +1,261 @@
+/**
+ * User repository (Phase 2, Prisma-backed).
+ *
+ * Same function names as the old lib/data/users.ts so call sites change
+ * minimally (import path + await). All functions are async and read from
+ * Postgres through the Prisma client — no module-level arrays.
+ *
+ * Safety rules:
+ * - Soft-deleted users (deletedAt set) are invisible to every read and
+ *   cannot log in. Deletion is a soft delete, never a hard delete.
+ * - Page-facing functions return SafeUser (no passwordHash). Only
+ *   getUserByEmail returns the hash, and only the auth service calls it.
+ * - enrolledCourses is computed from Enrollment rows (there is no such
+ *   column). getUserById includes it (one extra batched query), matching
+ *   the old lib/data shape pages rely on.
+ */
+import { getDb } from './client';
+import { mapUserRow, stripUndefined, toNotificationPrefs, toSafeUser } from './mappers';
+import { parsePageParams, toPage, type Page } from './pagination';
+import type { NotificationPrefs, SafeUser, SocialLinks, User, UserRole, UserStatus } from './types';
+
+export async function getUserById(id: string): Promise<SafeUser | null> {
+  const row = await getDb()
+    .orm.public.User.where({ id })
+    .where((u) => u.deletedAt.isNull())
+    .first();
+  if (!row) return null;
+  const courseIds = await getEnrolledCourseIds([id]);
+  return toSafeUser(mapUserRow(row, courseIds.get(id) ?? []));
+}
+
+export async function getUserByIdWithEnrollments(id: string): Promise<SafeUser | null> {
+  return getUserById(id);
+}
+
+/**
+ * Internal/auth use ONLY — returns the password hash. Pages and API
+ * responses must never call this; use getUserById (SafeUser) instead.
+ */
+export async function getUserByEmail(email: string): Promise<User | null> {
+  const row = await getDb()
+    .orm.public.User.where((u) => u.email.eq(email))
+    .where((u) => u.deletedAt.isNull())
+    .first();
+  if (!row) return null;
+  return mapUserRow(row);
+}
+
+/**
+ * Get a user by id WITH the password hash.
+ * INTERNAL / AUTH USE ONLY — never return this from a page or an API.
+ * Needed for password verification (change-password), where the caller
+ * has a user id, not an email.
+ */
+export async function getUserByIdWithHash(id: string): Promise<User | null> {
+  const row = await getDb()
+    .orm.public.User.where({ id })
+    .where((u) => u.deletedAt.isNull())
+    .first();
+  if (!row) return null;
+  return mapUserRow(row);
+}
+
+/** Enrolled course ids per student, one query for many students. */
+async function getEnrolledCourseIds(studentIds: string[]): Promise<Map<string, string[]>> {
+  const out = new Map<string, string[]>();
+  if (studentIds.length === 0) return out;
+  for (const id of studentIds) out.set(id, []);
+  const rows = await getDb()
+    .orm.public.Enrollment.where((e) => e.studentId.in(studentIds))
+    .where((e) => e.deletedAt.isNull())
+    .select('studentId', 'courseId')
+    .all();
+  for (const r of rows) out.get(r.studentId)?.push(r.courseId);
+  return out;
+}
+
+export async function getStudents(): Promise<SafeUser[]> {
+  const rows = await getDb()
+    .orm.public.User.where({ role: 'student' })
+    .where((u) => u.deletedAt.isNull())
+    .orderBy((u) => u.createdAt.desc())
+    .all();
+  const ids = rows.map((r) => r.id);
+  const enrolled = await getEnrolledCourseIds(ids);
+  return rows.map((r) =>
+    toSafeUser(mapUserRow(r, enrolled.get(r.id) ?? [])),
+  );
+}
+
+export async function getInstructors(): Promise<SafeUser[]> {
+  const rows = await getDb()
+    .orm.public.User.where({ role: 'instructor' })
+    .where((u) => u.deletedAt.isNull())
+    .orderBy((u) => u.name.asc())
+    .all();
+  return rows.map((r) => toSafeUser(mapUserRow(r)));
+}
+
+export interface ListUsersOptions {
+  role?: UserRole;
+  search?: string;
+  page?: string | string[];
+  limit?: string | string[];
+}
+
+/** Paginated admin user list (safe fields only). Search matches name or email. */
+export async function listUsers(opts: ListUsersOptions = {}): Promise<Page<SafeUser>> {
+  const params = parsePageParams({ page: opts.page, limit: opts.limit });
+  let query = getDb().orm.public.User.where((u) => u.deletedAt.isNull());
+  if (opts.role) query = query.where({ role: opts.role });
+  if (opts.search) {
+    const term = opts.search.trim();
+    if (term) {
+      query = query.where((u) => u.name.ilike(`%${term}%`));
+    }
+  }
+  const totalRows = await query.all();
+  const total = totalRows.length;
+  const rows = await query
+    .orderBy((u) => u.createdAt.desc())
+    .limit(params.limit)
+    .offset(params.offset)
+    .all();
+  const enrolled = await getEnrolledCourseIds(rows.map((r) => r.id));
+  const items = rows.map((r) => toSafeUser(mapUserRow(r, enrolled.get(r.id) ?? [])));
+  return toPage(items, total, params);
+}
+
+export interface CreateUserInput {
+  name: string;
+  email: string;
+  passwordHash: string;
+  role: UserRole;
+  phone?: string;
+  avatar?: string;
+}
+
+/** Create a user. Id is generated by the database (cuid). Returns the safe user (no hash) — callers that need the hash (login) re-read via getUserByEmail. */
+export async function createUser(input: CreateUserInput): Promise<SafeUser> {
+  const row = await getDb().orm.public.User.create({
+    name: input.name,
+    email: input.email,
+    passwordHash: input.passwordHash,
+    role: input.role,
+    phone: input.phone ?? null,
+    avatar:
+      input.avatar ??
+      `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(input.name)}&backgroundColor=1C1C1C&textColor=F5C518`,
+    expertise: [],
+  });
+  return toSafeUser(mapUserRow(row));
+}
+
+export interface UpdateUserInput {
+  name?: string;
+  email?: string;
+  phone?: string | null;
+  avatar?: string | null;
+  bio?: string | null;
+  expertise?: string[];
+  socialLinks?: SocialLinks | null;
+  /** Role changes are policy-checked in admin-service; the repository just applies them. */
+  role?: UserRole;
+}
+
+/**
+ * Update a user's editable details. Returns the safe user (never the hash),
+ * or null when the user does not exist (or is soft-deleted). No hard deletes
+ * anywhere — deletion stays softDeleteUser.
+ */
+export async function updateUser(id: string, input: UpdateUserInput): Promise<SafeUser | null> {
+  const row = await getDb()
+    .orm.public.User.where({ id })
+    .where((u) => u.deletedAt.isNull())
+    .update(
+      stripUndefined({
+        name: input.name,
+        email: input.email,
+        phone: input.phone,
+        avatar: input.avatar,
+        bio: input.bio,
+        expertise: input.expertise,
+        // JSON round-trip: SocialLinks has no index signature, so it is not
+        // assignable to Prisma's JsonValue; the parsed value is plain JSON.
+        socialLinks: input.socialLinks
+          ? JSON.parse(JSON.stringify(input.socialLinks))
+          : input.socialLinks,
+        role: input.role,
+      }),
+    );
+  if (!row) return null;
+  return getUserById(id);
+}
+
+export async function updateUserPassword(id: string, passwordHash: string): Promise<boolean> {
+  const row = await getDb()
+    .orm.public.User.where({ id })
+    .where((u) => u.deletedAt.isNull())
+    .update({ passwordHash });
+  return row !== null;
+}
+
+export async function setUserStatusDb(id: string, status: UserStatus): Promise<SafeUser | null> {
+  const row = await getDb()
+    .orm.public.User.where({ id })
+    .where((u) => u.deletedAt.isNull())
+    .update({ status });
+  if (!row) return null;
+  return toSafeUser(mapUserRow(row));
+}
+
+/** Soft delete: sets deletedAt (the record stays for auditability). Returns false when the user does not exist or is already deleted. */
+export async function softDeleteUser(id: string): Promise<boolean> {
+  const row = await getDb()
+    .orm.public.User.where({ id })
+    .where((u) => u.deletedAt.isNull())
+    .update({ deletedAt: new Date() });
+  return row !== null;
+}
+
+/** All users (admin use). Excludes soft-deleted. */
+export async function getAllUsers(): Promise<SafeUser[]> {
+  const rows = await getDb()
+    .orm.public.User.where((u) => u.deletedAt.isNull())
+    .orderBy((u) => u.createdAt.desc())
+    .all();
+  return rows.map((r) => toSafeUser(mapUserRow(r)));
+}
+
+/**
+ * Notification preferences (Phase 4). NULL in the DB (or a missing /
+ * non-boolean field) falls back to the defaults — inApp on, email off,
+ * all events on. Returns null when the user does not exist (or is
+ * soft-deleted).
+ */
+export async function getUserNotificationPrefs(id: string): Promise<NotificationPrefs | null> {
+  const row = await getDb()
+    .orm.public.User.where({ id })
+    .where((u) => u.deletedAt.isNull())
+    .first();
+  if (!row) return null;
+  return toNotificationPrefs(row.notificationPrefs);
+}
+
+/** Replace a user's notification preferences wholesale. Returns null when the user does not exist (or is soft-deleted). */
+export async function updateUserNotificationPrefs(
+  id: string,
+  prefs: NotificationPrefs,
+): Promise<NotificationPrefs | null> {
+  const row = await getDb()
+    .orm.public.User.where({ id })
+    .where((u) => u.deletedAt.isNull())
+    .update({
+      // JSON round-trip: NotificationPrefs is a type alias with an index
+      // signature, but the parsed value is plain JSON either way.
+      notificationPrefs: JSON.parse(JSON.stringify(prefs)),
+    });
+  if (!row) return null;
+  return toNotificationPrefs(row.notificationPrefs);
+}

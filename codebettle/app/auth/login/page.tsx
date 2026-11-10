@@ -3,16 +3,11 @@ import { useState, Suspense } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { motion } from 'framer-motion';
-import { Mail, Lock, Eye, EyeOff } from 'lucide-react';
+import { Mail, Lock, Eye, EyeOff, ShieldCheck } from 'lucide-react';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
+import { getSafeRedirect } from '@/lib/security';
 import toast from 'react-hot-toast';
-
-const DEMO_ACCOUNTS = [
-  { role: 'Student', email: 'ali.raza@gmail.com', password: '***REMOVED***', color: 'text-blue-400' },
-  { role: 'Instructor', email: 'usman@codebettle.com', password: '***REMOVED***', color: 'text-green-400' },
-  { role: 'Admin', email: 'admin@codebettle.com', password: '***REMOVED***', color: 'text-primary' },
-];
 
 function LoginForm() {
   const router = useRouter();
@@ -34,17 +29,12 @@ function LoginForm() {
       const data = await res.json();
       if (!res.ok) { toast.error(data.error); return; }
       toast.success(`Welcome back, ${data.user.name}!`);
-      const redirect = searchParams.get('redirect');
-      if (redirect) router.push(redirect);
-      else router.push(`/${data.user.role}/dashboard`);
+      const redirect = getSafeRedirect(searchParams.get('redirect'), `/${data.user.role}/dashboard`);
+      router.push(redirect);
       router.refresh();
     } finally {
       setLoading(false);
     }
-  };
-
-  const fillDemo = (email: string, password: string) => {
-    setEmail(email); setPassword(password);
   };
 
   return (
@@ -55,27 +45,12 @@ function LoginForm() {
         <p className="text-muted text-sm mt-1">Sign in to continue your learning journey</p>
       </div>
 
-      {/* Demo accounts */}
-      <div className="mb-6">
-        <p className="text-xs text-muted mb-2 text-center">Quick login with demo accounts:</p>
-        <div className="grid grid-cols-3 gap-2">
-          {DEMO_ACCOUNTS.map(acc => (
-            <button
-              key={acc.role}
-              onClick={() => fillDemo(acc.email, acc.password)}
-              className={`text-xs py-1.5 px-2 rounded-lg border border-dark-border hover:border-primary/30 hover:bg-dark-border/50 transition-all cursor-pointer ${acc.color}`}
-            >
-              {acc.role}
-            </button>
-          ))}
-        </div>
-      </div>
-
       <form onSubmit={handleLogin} className="space-y-4">
         <Input
           label="Email Address"
           type="email"
           placeholder="you@example.com"
+          autoComplete="email"
           value={email}
           onChange={e => setEmail(e.target.value)}
           icon={<Mail className="w-4 h-4" />}
@@ -86,6 +61,7 @@ function LoginForm() {
             label="Password"
             type={showPassword ? 'text' : 'password'}
             placeholder="Your password"
+            autoComplete="current-password"
             value={password}
             onChange={e => setPassword(e.target.value)}
             icon={<Lock className="w-4 h-4" />}
@@ -98,8 +74,13 @@ function LoginForm() {
         <Button type="submit" fullWidth size="lg" loading={loading}>Sign In</Button>
       </form>
 
-      <p className="text-center text-sm text-muted mt-6">
-        Don't have an account?{' '}
+      <p className="flex items-center justify-center gap-1.5 text-center text-xs text-muted mt-6">
+        <ShieldCheck className="w-3.5 h-3.5 text-primary" />
+        Protected by secure sign-in
+      </p>
+
+      <p className="text-center text-sm text-muted mt-4">
+        Don&apos;t have an account?{' '}
         <Link href="/auth/register" className="text-primary hover:underline font-medium">Sign up free</Link>
       </p>
     </div>

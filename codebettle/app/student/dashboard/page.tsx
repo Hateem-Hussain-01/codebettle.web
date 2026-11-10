@@ -1,8 +1,8 @@
 import { getSession } from '@/lib/auth';
-import { getEnrollmentsByStudent } from '@/lib/data/enrollments';
-import { getCourseById } from '@/lib/data/courses';
-import { getCertificatesByStudent } from '@/lib/data/certificates';
-import { getSiteWideAnnouncements } from '@/lib/data/announcements';
+import { getEnrollmentsByStudent } from '@/lib/db/enrollments';
+import { getCoursesByIds } from '@/lib/db/courses';
+import { getCertificatesByStudent } from '@/lib/db/certificates';
+import { getSiteWideAnnouncements } from '@/lib/db/announcements';
 import { formatDateShort } from '@/lib/utils';
 import Link from 'next/link';
 import { BookOpen, Award, Bell, ArrowRight, CheckCircle } from 'lucide-react';
@@ -11,14 +11,16 @@ import Badge from '@/components/ui/Badge';
 
 export default async function StudentDashboard() {
   const session = await getSession();
-  const enrollments = getEnrollmentsByStudent(session!.id);
-  const certificates = getCertificatesByStudent(session!.id);
-  const announcements = getSiteWideAnnouncements();
+  const enrollments = await getEnrollmentsByStudent(session!.id);
+  const certificates = await getCertificatesByStudent(session!.id);
+  const announcements = await getSiteWideAnnouncements();
 
-  const enrolledCourses = enrollments.map(e => ({
-    enrollment: e,
-    course: getCourseById(e.courseId),
-  })).filter(item => item.course);
+  // Courses fetched in ONE query (Phase 7 perf — was one getCourseById
+  // per enrolment).
+  const coursesById = new Map((await getCoursesByIds(enrollments.map((e) => e.courseId))).map((c) => [c.id, c]));
+  const enrolledCourses = enrollments
+    .map((e) => ({ enrollment: e, course: coursesById.get(e.courseId) }))
+    .filter((item): item is { enrollment: (typeof enrollments)[number]; course: NonNullable<ReturnType<typeof coursesById.get>> } => item.course !== undefined);
 
   const completed = enrollments.filter(e => e.isCompleted).length;
 

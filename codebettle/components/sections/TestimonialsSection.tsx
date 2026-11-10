@@ -2,9 +2,9 @@
 import { motion } from 'framer-motion';
 import { Quote } from 'lucide-react';
 import StarRating from '@/components/ui/StarRating';
-import { testimonials } from '@/lib/data/testimonials';
+import type { Testimonial } from '@/lib/db/types';
 
-export default function TestimonialsSection() {
+export default function TestimonialsSection({ testimonials }: { testimonials: Testimonial[] }) {
   return (
     <section className="py-24 bg-background">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">

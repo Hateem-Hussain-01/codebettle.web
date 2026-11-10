@@ -1,0 +1,130 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { registerUser, login } from '../lib/services/auth-service';
+import {
+  hashResetToken,
+  requestPasswordReset,
+  resetPassword,
+} from '../lib/services/password-reset-service';
+import { findPasswordResetByTokenHash } from '../lib/db/password-resets';
+import { __resetDbClient, __setDbClient } from '../lib/db/client';
+import { createFakeDb } from './fake-db';
+
+const suffix = () => `${Date.now()}-${Math.floor(Math.random() * 1e6)}`;
+
+test.beforeEach(() => {
+  __setDbClient(createFakeDb().asClient());
+});
+
+test.afterEach(() => {
+  __resetDbClient();
+});
+
+async function makeUser(tag: string): Promise<string> {
+  const email = `reset-${tag}-${suffix()}@example.com`;
+  const created = await registerUser({ name: 'Reset User', email, password: 'OldPass123' });
+  assert.ok('user' in created);
+  return email;
+}
+
+/** Request a reset and capture the delivered token. */
+async function requestWithCapture(email: string): Promise<string> {
+  let captured = '';
+  const result = await requestPasswordReset(email, {
+    deliver: async (_to, token) => {
+      captured = token;
+    },
+  });
+  assert.ok(result.ok);
+  assert.ok(captured, 'expected a token to be delivered');
+  return captured;
+}
+
+test('request -> reset round-trips; the token is single-use and hashed at rest', async () => {
+  const email = await makeUser('roundtrip');
+  const token = await requestWithCapture(email);
+
+  // Only the hash is stored, never the raw token.
+  const stored = await findPasswordResetByTokenHash(hashResetToken(token));
+  assert.ok(stored);
+  assert.notEqual((stored as unknown as { token?: string }).token, token);
+
+  const reset = await resetPassword(token, 'NewPass123');
+  assert.ok('success' in reset);
+  assert.equal(await login(email, 'OldPass123'), null);
+  assert.ok(await login(email, 'NewPass123'));
+
+  // The same token cannot be used twice.
+  const reuse = await resetPassword(token, 'AnotherPass123');
+  assert.ok('error' in reuse);
+  assert.ok(await login(email, 'NewPass123'));
+});
+
+test('unknown tokens and unknown emails fail generically (no enumeration)', async () => {
+  const email = await makeUser('unknown');
+  // Unknown email: same ok response, no token delivered.
+  let delivered = false;
+  const result = await requestPasswordReset('nobody@example.com', {
+    deliver: async () => {
+      delivered = true;
+    },
+  });
+  assert.ok(result.ok);
+  assert.equal(delivered, false);
+
+  assert.ok('error' in (await resetPassword('0'.repeat(64), 'NewPass123')));
+  assert.ok(await login(email, 'OldPass123'), 'the real account is untouched');
+});
+
+test('an expired token is rejected', async () => {
+  const email = await makeUser('expired');
+  const now = Date.now();
+  const token = await requestWithCapture(email);
+  // 61 minutes later — past the 60-minute TTL.
+  const late = await resetPassword(token, 'NewPass123', { now: now + 61 * 60 * 1000 });
+  assert.ok('error' in late);
+  assert.ok(await login(email, 'OldPass123'));
+});
+
+test('a second request invalidates the first token', async () => {
+  const email = await makeUser('second');
+  const first = await requestWithCapture(email);
+  const second = await requestWithCapture(email);
+  assert.notEqual(first, second);
+  assert.ok('error' in (await resetPassword(first, 'NewPass123')));
+  assert.ok('success' in (await resetPassword(second, 'NewPass123')));
+});
+
+test('reset validates the new password', async () => {
+  const email = await makeUser('short');
+  const token = await requestWithCapture(email);
+  const result = await resetPassword(token, 'short');
+  assert.ok('error' in result);
+  assert.ok(await login(email, 'OldPass123'));
+});
+
+// --- Route rate limiting (Phase 7, SEC-05) ---
+
+test('POST /api/auth/reset request: 6th rapid request for one email is 429, another email is unaffected', async () => {
+  const { POST } = await import('../app/api/auth/reset/route');
+  const { __clearRateLimits } = await import('../lib/rate-limit');
+  const { NextRequest } = await import('next/server');
+  __clearRateLimits();
+  const email = await makeUser('ratelimit');
+  const req = (body: unknown, ip: string) =>
+    new NextRequest('http://localhost/api/auth/reset', {
+      method: 'POST',
+      body: JSON.stringify(body),
+      headers: { 'Content-Type': 'application/json', 'x-forwarded-for': ip },
+    });
+  for (let i = 0; i < 5; i++) {
+    const res = await POST(req({ action: 'request', email }, '10.9.9.9'));
+    assert.equal(res.status, 200, `attempt ${i + 1}`);
+  }
+  const blocked = await POST(req({ action: 'request', email }, '10.9.9.9'));
+  assert.equal(blocked.status, 429);
+  // A different email from the same IP has its own window.
+  const other = await POST(req({ action: 'request', email: 'someone-else@example.com' }, '10.9.9.9'));
+  assert.equal(other.status, 200);
+  __clearRateLimits();
+});

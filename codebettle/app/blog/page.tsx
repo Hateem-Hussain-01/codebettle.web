@@ -1,13 +1,13 @@
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
 import Link from 'next/link';
-import { getPublishedPosts } from '@/lib/data/blog';
+import { getPublishedPosts } from '@/lib/db/blog';
 import { getSession } from '@/lib/auth';
-import { Clock, ArrowRight } from 'lucide-react';
+import { Clock, ArrowRight, FileText } from 'lucide-react';
 
 export default async function BlogPage() {
   const session = await getSession();
-  const posts = getPublishedPosts();
+  const posts = await getPublishedPosts();
 
   return (
     <>
@@ -30,7 +30,14 @@ export default async function BlogPage() {
                     <img src={post.thumbnail} alt={post.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
                   </div>
                   <div className="p-5 flex flex-col flex-1">
-                    <span className="text-xs font-medium text-primary mb-2">{post.category}</span>
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="text-xs font-medium text-primary">{post.category}</span>
+                      {post.pdfUrl && (
+                        <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20">
+                          <FileText className="w-3 h-3" /> PDF
+                        </span>
+                      )}
+                    </div>
                     <h2 className="text-white font-bold leading-snug mb-2 group-hover:text-primary transition-colors flex-1">{post.title}</h2>
                     <p className="text-muted text-sm line-clamp-2 mb-4">{post.excerpt}</p>
                     <div className="flex items-center justify-between text-xs text-muted">

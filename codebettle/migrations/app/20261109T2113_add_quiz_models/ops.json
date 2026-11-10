@@ -1,0 +1,1407 @@
+[
+  {
+    "id": "table.Quiz",
+    "label": "Create table \"Quiz\"",
+    "summary": "Creates table \"Quiz\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "Quiz"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"Quiz\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"Quiz\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "table \"Quiz\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"Quiz\"",
+        "sql": "CREATE TABLE \"public\".\"Quiz\" (\n  \"attemptsAllowed\" int4 DEFAULT 1 NOT NULL,\n  \"availableFrom\" timestamptz(3),\n  \"availableUntil\" timestamptz(3),\n  \"courseId\" text NOT NULL,\n  \"createdAt\" timestamptz(3) DEFAULT (now()) NOT NULL,\n  \"createdById\" text NOT NULL,\n  \"deletedAt\" timestamptz(3),\n  \"description\" text,\n  \"difficulty\" text,\n  \"id\" text NOT NULL,\n  \"instructions\" text,\n  \"parseWarnings\" json,\n  \"passMark\" int4,\n  \"pdfStoragePath\" text,\n  \"pdfUrl\" text,\n  \"scoringPolicy\" text DEFAULT 'exact' NOT NULL,\n  \"showCorrectAnswers\" bool DEFAULT false NOT NULL,\n  \"showResultsToStudents\" bool DEFAULT true NOT NULL,\n  \"status\" text DEFAULT 'draft' NOT NULL,\n  \"timeLimitMin\" int4,\n  \"title\" text NOT NULL,\n  \"topics\" text[] NOT NULL,\n  \"updatedAt\" timestamptz(3) NOT NULL,\n  PRIMARY KEY (\"id\"),\n  CONSTRAINT \"Quiz_difficulty_check_160b9fc4\" CHECK (\"difficulty\" IN ('beginner', 'intermediate', 'advanced')),\n  CONSTRAINT \"Quiz_scoringPolicy_check_7aeb3d4a\" CHECK (\"scoringPolicy\" IN ('exact', 'partial')),\n  CONSTRAINT \"Quiz_status_check_6db19c90\" CHECK (\"status\" IN ('draft', 'published', 'archived')),\n  CONSTRAINT \"Quiz_topics_elem_not_null_1acb8bbc\" CHECK (array_position(\"topics\", NULL) IS NULL)\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"Quiz\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" WHERE (\"c\".\"oid\" = to_regclass($1) AND (\"c\".\"relkind\" = $2 OR \"c\".\"relkind\" = $3))) AS \"result\"",
+        "params": [
+          "\"public\".\"Quiz\"",
+          "r",
+          "p"
+        ],
+        "expectation": {
+          "expects": "present",
+          "object": "table \"Quiz\""
+        }
+      }
+    ]
+  },
+  {
+    "id": "table.QuizAnswer",
+    "label": "Create table \"QuizAnswer\"",
+    "summary": "Creates table \"QuizAnswer\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "QuizAnswer"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"QuizAnswer\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"QuizAnswer\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "table \"QuizAnswer\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"QuizAnswer\"",
+        "sql": "CREATE TABLE \"public\".\"QuizAnswer\" (\n  \"attemptId\" text NOT NULL,\n  \"id\" text NOT NULL,\n  \"isCorrect\" bool,\n  \"needsManualReview\" bool DEFAULT false NOT NULL,\n  \"pointsAwarded\" int4 DEFAULT 0 NOT NULL,\n  \"questionId\" text NOT NULL,\n  \"selectedOptionIds\" text[] NOT NULL,\n  \"textAnswer\" text,\n  PRIMARY KEY (\"id\"),\n  CONSTRAINT \"QuizAnswer_selectedOptionIds_elem_not_null_be6c2108\" CHECK (array_position(\"selectedOptionIds\", NULL) IS NULL)\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"QuizAnswer\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" WHERE (\"c\".\"oid\" = to_regclass($1) AND (\"c\".\"relkind\" = $2 OR \"c\".\"relkind\" = $3))) AS \"result\"",
+        "params": [
+          "\"public\".\"QuizAnswer\"",
+          "r",
+          "p"
+        ],
+        "expectation": {
+          "expects": "present",
+          "object": "table \"QuizAnswer\""
+        }
+      }
+    ]
+  },
+  {
+    "id": "table.QuizAttempt",
+    "label": "Create table \"QuizAttempt\"",
+    "summary": "Creates table \"QuizAttempt\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "QuizAttempt"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"QuizAttempt\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"QuizAttempt\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "table \"QuizAttempt\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"QuizAttempt\"",
+        "sql": "CREATE TABLE \"public\".\"QuizAttempt\" (\n  \"dueAt\" timestamptz(3),\n  \"id\" text NOT NULL,\n  \"quizId\" text NOT NULL,\n  \"score\" int4,\n  \"startedAt\" timestamptz(3) DEFAULT (now()) NOT NULL,\n  \"status\" text DEFAULT 'in_progress' NOT NULL,\n  \"studentId\" text NOT NULL,\n  \"submittedAt\" timestamptz(3),\n  \"submittedLate\" bool DEFAULT false NOT NULL,\n  \"timeSpentSec\" int4,\n  \"totalPoints\" int4,\n  PRIMARY KEY (\"id\"),\n  CONSTRAINT \"QuizAttempt_status_check_a49ec839\" CHECK (\"status\" IN ('in_progress', 'submitted'))\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"QuizAttempt\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" WHERE (\"c\".\"oid\" = to_regclass($1) AND (\"c\".\"relkind\" = $2 OR \"c\".\"relkind\" = $3))) AS \"result\"",
+        "params": [
+          "\"public\".\"QuizAttempt\"",
+          "r",
+          "p"
+        ],
+        "expectation": {
+          "expects": "present",
+          "object": "table \"QuizAttempt\""
+        }
+      }
+    ]
+  },
+  {
+    "id": "table.QuizOption",
+    "label": "Create table \"QuizOption\"",
+    "summary": "Creates table \"QuizOption\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "QuizOption"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"QuizOption\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"QuizOption\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "table \"QuizOption\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"QuizOption\"",
+        "sql": "CREATE TABLE \"public\".\"QuizOption\" (\n  \"id\" text NOT NULL,\n  \"isCorrect\" bool DEFAULT false NOT NULL,\n  \"position\" int4 NOT NULL,\n  \"questionId\" text NOT NULL,\n  \"text\" text NOT NULL,\n  PRIMARY KEY (\"id\")\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"QuizOption\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" WHERE (\"c\".\"oid\" = to_regclass($1) AND (\"c\".\"relkind\" = $2 OR \"c\".\"relkind\" = $3))) AS \"result\"",
+        "params": [
+          "\"public\".\"QuizOption\"",
+          "r",
+          "p"
+        ],
+        "expectation": {
+          "expects": "present",
+          "object": "table \"QuizOption\""
+        }
+      }
+    ]
+  },
+  {
+    "id": "table.QuizQuestion",
+    "label": "Create table \"QuizQuestion\"",
+    "summary": "Creates table \"QuizQuestion\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "QuizQuestion"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"QuizQuestion\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"QuizQuestion\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "table \"QuizQuestion\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"QuizQuestion\"",
+        "sql": "CREATE TABLE \"public\".\"QuizQuestion\" (\n  \"acceptedAnswers\" text[] NOT NULL,\n  \"correctText\" text,\n  \"difficulty\" text,\n  \"id\" text NOT NULL,\n  \"needsReview\" bool DEFAULT false NOT NULL,\n  \"points\" int4 DEFAULT 1 NOT NULL,\n  \"position\" int4 NOT NULL,\n  \"prompt\" text NOT NULL,\n  \"quizId\" text NOT NULL,\n  \"reviewNote\" text,\n  \"topic\" text,\n  \"type\" text NOT NULL,\n  PRIMARY KEY (\"id\"),\n  CONSTRAINT \"QuizQuestion_acceptedAnswers_elem_not_null_17328033\" CHECK (array_position(\"acceptedAnswers\", NULL) IS NULL),\n  CONSTRAINT \"QuizQuestion_difficulty_check_160b9fc4\" CHECK (\"difficulty\" IN ('beginner', 'intermediate', 'advanced')),\n  CONSTRAINT \"QuizQuestion_type_check_eb39468a\" CHECK (\"type\" IN ('mcq', 'fill_blank', 'checkbox', 'choose_two', 'choose_three'))\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"QuizQuestion\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" WHERE (\"c\".\"oid\" = to_regclass($1) AND (\"c\".\"relkind\" = $2 OR \"c\".\"relkind\" = $3))) AS \"result\"",
+        "params": [
+          "\"public\".\"QuizQuestion\"",
+          "r",
+          "p"
+        ],
+        "expectation": {
+          "expects": "present",
+          "object": "table \"QuizQuestion\""
+        }
+      }
+    ]
+  },
+  {
+    "id": "column.public.InstructorApplication.message",
+    "label": "Add column \"message\" to \"InstructorApplication\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "message",
+        "table": "InstructorApplication"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"message\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "InstructorApplication",
+          "message"
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "column \"message\" on \"InstructorApplication\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"message\"",
+        "sql": "ALTER TABLE \"public\".\"InstructorApplication\" ADD COLUMN \"message\" text"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"message\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "InstructorApplication",
+          "message"
+        ],
+        "expectation": {
+          "expects": "present",
+          "object": "column \"message\" on \"InstructorApplication\""
+        }
+      },
+      {
+        "description": "verify column \"message\" has type \"text\"",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_attribute\" AS \"a\" INNER JOIN \"pg_class\" AS \"c\" ON \"c\".\"oid\" = \"a\".\"attrelid\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"relnamespace\" WHERE (\"n\".\"nspname\" = $1 AND \"c\".\"relname\" = $2 AND \"a\".\"attname\" = $3 AND (format_type(\"a\".\"atttypid\", \"a\".\"atttypmod\")) = $4 AND NOT (\"a\".\"attisdropped\"))) AS \"result\"",
+        "params": [
+          "public",
+          "InstructorApplication",
+          "message",
+          "text"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "column.public.User.notificationPrefs",
+    "label": "Add column \"notificationPrefs\" to \"User\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "notificationPrefs",
+        "table": "User"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"notificationPrefs\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "User",
+          "notificationPrefs"
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "column \"notificationPrefs\" on \"User\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"notificationPrefs\"",
+        "sql": "ALTER TABLE \"public\".\"User\" ADD COLUMN \"notificationPrefs\" json"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"notificationPrefs\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "User",
+          "notificationPrefs"
+        ],
+        "expectation": {
+          "expects": "present",
+          "object": "column \"notificationPrefs\" on \"User\""
+        }
+      },
+      {
+        "description": "verify column \"notificationPrefs\" has type \"json\"",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_attribute\" AS \"a\" INNER JOIN \"pg_class\" AS \"c\" ON \"c\".\"oid\" = \"a\".\"attrelid\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"relnamespace\" WHERE (\"n\".\"nspname\" = $1 AND \"c\".\"relname\" = $2 AND \"a\".\"attname\" = $3 AND (format_type(\"a\".\"atttypid\", \"a\".\"atttypmod\")) = $4 AND NOT (\"a\".\"attisdropped\"))) AS \"result\"",
+        "params": [
+          "public",
+          "User",
+          "notificationPrefs",
+          "json"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "unique.QuizAnswer.QuizAnswer_attemptId_questionId_key",
+    "label": "Add unique constraint on \"QuizAnswer\" (attemptId, questionId)",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "unique",
+        "name": "QuizAnswer_attemptId_questionId_key",
+        "table": "QuizAnswer"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"QuizAnswer_attemptId_questionId_key\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "QuizAnswer_attemptId_questionId_key",
+          "public",
+          "\"public\".\"QuizAnswer\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "constraint \"QuizAnswer_attemptId_questionId_key\" on \"QuizAnswer\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "add unique constraint \"QuizAnswer_attemptId_questionId_key\"",
+        "sql": "ALTER TABLE \"public\".\"QuizAnswer\" ADD CONSTRAINT \"QuizAnswer_attemptId_questionId_key\" UNIQUE (\"attemptId\", \"questionId\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify unique constraint \"QuizAnswer_attemptId_questionId_key\" exists on (attemptId, questionId)",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3) AND \"c\".\"contype\" = $4 AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"c\".\"conkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"c\".\"conrelid\" AND key_attribute.attnum = key_column.attnum) = ($5)::jsonb)) AS \"result\"",
+        "params": [
+          "QuizAnswer_attemptId_questionId_key",
+          "public",
+          "\"public\".\"QuizAnswer\"",
+          "u",
+          "[\"attemptId\",\"questionId\"]"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "unique.QuizOption.QuizOption_questionId_position_key",
+    "label": "Add unique constraint on \"QuizOption\" (questionId, position)",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "unique",
+        "name": "QuizOption_questionId_position_key",
+        "table": "QuizOption"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"QuizOption_questionId_position_key\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "QuizOption_questionId_position_key",
+          "public",
+          "\"public\".\"QuizOption\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "constraint \"QuizOption_questionId_position_key\" on \"QuizOption\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "add unique constraint \"QuizOption_questionId_position_key\"",
+        "sql": "ALTER TABLE \"public\".\"QuizOption\" ADD CONSTRAINT \"QuizOption_questionId_position_key\" UNIQUE (\"questionId\", \"position\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify unique constraint \"QuizOption_questionId_position_key\" exists on (questionId, position)",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3) AND \"c\".\"contype\" = $4 AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"c\".\"conkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"c\".\"conrelid\" AND key_attribute.attnum = key_column.attnum) = ($5)::jsonb)) AS \"result\"",
+        "params": [
+          "QuizOption_questionId_position_key",
+          "public",
+          "\"public\".\"QuizOption\"",
+          "u",
+          "[\"questionId\",\"position\"]"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "unique.QuizQuestion.QuizQuestion_quizId_position_key",
+    "label": "Add unique constraint on \"QuizQuestion\" (quizId, position)",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "unique",
+        "name": "QuizQuestion_quizId_position_key",
+        "table": "QuizQuestion"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"QuizQuestion_quizId_position_key\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "QuizQuestion_quizId_position_key",
+          "public",
+          "\"public\".\"QuizQuestion\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "constraint \"QuizQuestion_quizId_position_key\" on \"QuizQuestion\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "add unique constraint \"QuizQuestion_quizId_position_key\"",
+        "sql": "ALTER TABLE \"public\".\"QuizQuestion\" ADD CONSTRAINT \"QuizQuestion_quizId_position_key\" UNIQUE (\"quizId\", \"position\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify unique constraint \"QuizQuestion_quizId_position_key\" exists on (quizId, position)",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3) AND \"c\".\"contype\" = $4 AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"c\".\"conkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"c\".\"conrelid\" AND key_attribute.attnum = key_column.attnum) = ($5)::jsonb)) AS \"result\"",
+        "params": [
+          "QuizQuestion_quizId_position_key",
+          "public",
+          "\"public\".\"QuizQuestion\"",
+          "u",
+          "[\"quizId\",\"position\"]"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.Quiz.Quiz_courseId_idx_12f72d2a",
+    "label": "Create index \"Quiz_courseId_idx_12f72d2a\" on \"Quiz\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "Quiz_courseId_idx_12f72d2a",
+        "table": "Quiz"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"Quiz_courseId_idx_12f72d2a\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"Quiz_courseId_idx_12f72d2a\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "index \"Quiz_courseId_idx_12f72d2a\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"Quiz_courseId_idx_12f72d2a\"",
+        "sql": "CREATE INDEX \"Quiz_courseId_idx_12f72d2a\" ON \"public\".\"Quiz\" (\"courseId\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"Quiz_courseId_idx_12f72d2a\" exists on \"Quiz\" with the planned definition",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" INNER JOIN \"pg_index\" AS \"i\" ON \"i\".\"indexrelid\" = \"c\".\"oid\" INNER JOIN \"pg_am\" AS \"m\" ON \"m\".\"oid\" = \"c\".\"relam\" WHERE (\"c\".\"oid\" = to_regclass($1) AND (\"c\".\"relkind\" = $2 OR \"c\".\"relkind\" = $3) AND \"i\".\"indrelid\" = to_regclass($4) AND NOT (\"i\".\"indisunique\") AND \"m\".\"amname\" = $5 AND (\"i\".\"indexprs\" IS NULL AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"i\".\"indkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"i\".\"indrelid\" AND key_attribute.attnum = key_column.attnum) = ($6)::jsonb) AND \"i\".\"indpred\" IS NULL)) AS \"result\"",
+        "params": [
+          "\"public\".\"Quiz_courseId_idx_12f72d2a\"",
+          "i",
+          "I",
+          "\"public\".\"Quiz\"",
+          "btree",
+          "[\"courseId\"]"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.Quiz.Quiz_courseId_status_idx_7c6c2bd8",
+    "label": "Create index \"Quiz_courseId_status_idx_7c6c2bd8\" on \"Quiz\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "Quiz_courseId_status_idx_7c6c2bd8",
+        "table": "Quiz"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"Quiz_courseId_status_idx_7c6c2bd8\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"Quiz_courseId_status_idx_7c6c2bd8\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "index \"Quiz_courseId_status_idx_7c6c2bd8\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"Quiz_courseId_status_idx_7c6c2bd8\"",
+        "sql": "CREATE INDEX \"Quiz_courseId_status_idx_7c6c2bd8\" ON \"public\".\"Quiz\" (\"courseId\", \"status\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"Quiz_courseId_status_idx_7c6c2bd8\" exists on \"Quiz\" with the planned definition",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" INNER JOIN \"pg_index\" AS \"i\" ON \"i\".\"indexrelid\" = \"c\".\"oid\" INNER JOIN \"pg_am\" AS \"m\" ON \"m\".\"oid\" = \"c\".\"relam\" WHERE (\"c\".\"oid\" = to_regclass($1) AND (\"c\".\"relkind\" = $2 OR \"c\".\"relkind\" = $3) AND \"i\".\"indrelid\" = to_regclass($4) AND NOT (\"i\".\"indisunique\") AND \"m\".\"amname\" = $5 AND (\"i\".\"indexprs\" IS NULL AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"i\".\"indkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"i\".\"indrelid\" AND key_attribute.attnum = key_column.attnum) = ($6)::jsonb) AND \"i\".\"indpred\" IS NULL)) AS \"result\"",
+        "params": [
+          "\"public\".\"Quiz_courseId_status_idx_7c6c2bd8\"",
+          "i",
+          "I",
+          "\"public\".\"Quiz\"",
+          "btree",
+          "[\"courseId\",\"status\"]"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.Quiz.Quiz_createdById_idx_8bf640ed",
+    "label": "Create index \"Quiz_createdById_idx_8bf640ed\" on \"Quiz\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "Quiz_createdById_idx_8bf640ed",
+        "table": "Quiz"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"Quiz_createdById_idx_8bf640ed\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"Quiz_createdById_idx_8bf640ed\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "index \"Quiz_createdById_idx_8bf640ed\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"Quiz_createdById_idx_8bf640ed\"",
+        "sql": "CREATE INDEX \"Quiz_createdById_idx_8bf640ed\" ON \"public\".\"Quiz\" (\"createdById\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"Quiz_createdById_idx_8bf640ed\" exists on \"Quiz\" with the planned definition",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" INNER JOIN \"pg_index\" AS \"i\" ON \"i\".\"indexrelid\" = \"c\".\"oid\" INNER JOIN \"pg_am\" AS \"m\" ON \"m\".\"oid\" = \"c\".\"relam\" WHERE (\"c\".\"oid\" = to_regclass($1) AND (\"c\".\"relkind\" = $2 OR \"c\".\"relkind\" = $3) AND \"i\".\"indrelid\" = to_regclass($4) AND NOT (\"i\".\"indisunique\") AND \"m\".\"amname\" = $5 AND (\"i\".\"indexprs\" IS NULL AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"i\".\"indkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"i\".\"indrelid\" AND key_attribute.attnum = key_column.attnum) = ($6)::jsonb) AND \"i\".\"indpred\" IS NULL)) AS \"result\"",
+        "params": [
+          "\"public\".\"Quiz_createdById_idx_8bf640ed\"",
+          "i",
+          "I",
+          "\"public\".\"Quiz\"",
+          "btree",
+          "[\"createdById\"]"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.QuizAnswer.QuizAnswer_attemptId_idx_94f50eb9",
+    "label": "Create index \"QuizAnswer_attemptId_idx_94f50eb9\" on \"QuizAnswer\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "QuizAnswer_attemptId_idx_94f50eb9",
+        "table": "QuizAnswer"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"QuizAnswer_attemptId_idx_94f50eb9\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"QuizAnswer_attemptId_idx_94f50eb9\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "index \"QuizAnswer_attemptId_idx_94f50eb9\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"QuizAnswer_attemptId_idx_94f50eb9\"",
+        "sql": "CREATE INDEX \"QuizAnswer_attemptId_idx_94f50eb9\" ON \"public\".\"QuizAnswer\" (\"attemptId\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"QuizAnswer_attemptId_idx_94f50eb9\" exists on \"QuizAnswer\" with the planned definition",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" INNER JOIN \"pg_index\" AS \"i\" ON \"i\".\"indexrelid\" = \"c\".\"oid\" INNER JOIN \"pg_am\" AS \"m\" ON \"m\".\"oid\" = \"c\".\"relam\" WHERE (\"c\".\"oid\" = to_regclass($1) AND (\"c\".\"relkind\" = $2 OR \"c\".\"relkind\" = $3) AND \"i\".\"indrelid\" = to_regclass($4) AND NOT (\"i\".\"indisunique\") AND \"m\".\"amname\" = $5 AND (\"i\".\"indexprs\" IS NULL AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"i\".\"indkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"i\".\"indrelid\" AND key_attribute.attnum = key_column.attnum) = ($6)::jsonb) AND \"i\".\"indpred\" IS NULL)) AS \"result\"",
+        "params": [
+          "\"public\".\"QuizAnswer_attemptId_idx_94f50eb9\"",
+          "i",
+          "I",
+          "\"public\".\"QuizAnswer\"",
+          "btree",
+          "[\"attemptId\"]"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.QuizAnswer.QuizAnswer_questionId_idx_fdb42076",
+    "label": "Create index \"QuizAnswer_questionId_idx_fdb42076\" on \"QuizAnswer\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "QuizAnswer_questionId_idx_fdb42076",
+        "table": "QuizAnswer"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"QuizAnswer_questionId_idx_fdb42076\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"QuizAnswer_questionId_idx_fdb42076\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "index \"QuizAnswer_questionId_idx_fdb42076\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"QuizAnswer_questionId_idx_fdb42076\"",
+        "sql": "CREATE INDEX \"QuizAnswer_questionId_idx_fdb42076\" ON \"public\".\"QuizAnswer\" (\"questionId\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"QuizAnswer_questionId_idx_fdb42076\" exists on \"QuizAnswer\" with the planned definition",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" INNER JOIN \"pg_index\" AS \"i\" ON \"i\".\"indexrelid\" = \"c\".\"oid\" INNER JOIN \"pg_am\" AS \"m\" ON \"m\".\"oid\" = \"c\".\"relam\" WHERE (\"c\".\"oid\" = to_regclass($1) AND (\"c\".\"relkind\" = $2 OR \"c\".\"relkind\" = $3) AND \"i\".\"indrelid\" = to_regclass($4) AND NOT (\"i\".\"indisunique\") AND \"m\".\"amname\" = $5 AND (\"i\".\"indexprs\" IS NULL AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"i\".\"indkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"i\".\"indrelid\" AND key_attribute.attnum = key_column.attnum) = ($6)::jsonb) AND \"i\".\"indpred\" IS NULL)) AS \"result\"",
+        "params": [
+          "\"public\".\"QuizAnswer_questionId_idx_fdb42076\"",
+          "i",
+          "I",
+          "\"public\".\"QuizAnswer\"",
+          "btree",
+          "[\"questionId\"]"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.QuizAttempt.QuizAttempt_quizId_idx_c721979c",
+    "label": "Create index \"QuizAttempt_quizId_idx_c721979c\" on \"QuizAttempt\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "QuizAttempt_quizId_idx_c721979c",
+        "table": "QuizAttempt"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"QuizAttempt_quizId_idx_c721979c\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"QuizAttempt_quizId_idx_c721979c\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "index \"QuizAttempt_quizId_idx_c721979c\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"QuizAttempt_quizId_idx_c721979c\"",
+        "sql": "CREATE INDEX \"QuizAttempt_quizId_idx_c721979c\" ON \"public\".\"QuizAttempt\" (\"quizId\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"QuizAttempt_quizId_idx_c721979c\" exists on \"QuizAttempt\" with the planned definition",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" INNER JOIN \"pg_index\" AS \"i\" ON \"i\".\"indexrelid\" = \"c\".\"oid\" INNER JOIN \"pg_am\" AS \"m\" ON \"m\".\"oid\" = \"c\".\"relam\" WHERE (\"c\".\"oid\" = to_regclass($1) AND (\"c\".\"relkind\" = $2 OR \"c\".\"relkind\" = $3) AND \"i\".\"indrelid\" = to_regclass($4) AND NOT (\"i\".\"indisunique\") AND \"m\".\"amname\" = $5 AND (\"i\".\"indexprs\" IS NULL AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"i\".\"indkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"i\".\"indrelid\" AND key_attribute.attnum = key_column.attnum) = ($6)::jsonb) AND \"i\".\"indpred\" IS NULL)) AS \"result\"",
+        "params": [
+          "\"public\".\"QuizAttempt_quizId_idx_c721979c\"",
+          "i",
+          "I",
+          "\"public\".\"QuizAttempt\"",
+          "btree",
+          "[\"quizId\"]"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.QuizAttempt.QuizAttempt_quizId_studentId_idx_30a37c38",
+    "label": "Create index \"QuizAttempt_quizId_studentId_idx_30a37c38\" on \"QuizAttempt\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "QuizAttempt_quizId_studentId_idx_30a37c38",
+        "table": "QuizAttempt"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"QuizAttempt_quizId_studentId_idx_30a37c38\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"QuizAttempt_quizId_studentId_idx_30a37c38\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "index \"QuizAttempt_quizId_studentId_idx_30a37c38\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"QuizAttempt_quizId_studentId_idx_30a37c38\"",
+        "sql": "CREATE INDEX \"QuizAttempt_quizId_studentId_idx_30a37c38\" ON \"public\".\"QuizAttempt\" (\"quizId\", \"studentId\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"QuizAttempt_quizId_studentId_idx_30a37c38\" exists on \"QuizAttempt\" with the planned definition",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" INNER JOIN \"pg_index\" AS \"i\" ON \"i\".\"indexrelid\" = \"c\".\"oid\" INNER JOIN \"pg_am\" AS \"m\" ON \"m\".\"oid\" = \"c\".\"relam\" WHERE (\"c\".\"oid\" = to_regclass($1) AND (\"c\".\"relkind\" = $2 OR \"c\".\"relkind\" = $3) AND \"i\".\"indrelid\" = to_regclass($4) AND NOT (\"i\".\"indisunique\") AND \"m\".\"amname\" = $5 AND (\"i\".\"indexprs\" IS NULL AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"i\".\"indkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"i\".\"indrelid\" AND key_attribute.attnum = key_column.attnum) = ($6)::jsonb) AND \"i\".\"indpred\" IS NULL)) AS \"result\"",
+        "params": [
+          "\"public\".\"QuizAttempt_quizId_studentId_idx_30a37c38\"",
+          "i",
+          "I",
+          "\"public\".\"QuizAttempt\"",
+          "btree",
+          "[\"quizId\",\"studentId\"]"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.QuizAttempt.QuizAttempt_studentId_idx_bf255322",
+    "label": "Create index \"QuizAttempt_studentId_idx_bf255322\" on \"QuizAttempt\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "QuizAttempt_studentId_idx_bf255322",
+        "table": "QuizAttempt"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"QuizAttempt_studentId_idx_bf255322\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"QuizAttempt_studentId_idx_bf255322\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "index \"QuizAttempt_studentId_idx_bf255322\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"QuizAttempt_studentId_idx_bf255322\"",
+        "sql": "CREATE INDEX \"QuizAttempt_studentId_idx_bf255322\" ON \"public\".\"QuizAttempt\" (\"studentId\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"QuizAttempt_studentId_idx_bf255322\" exists on \"QuizAttempt\" with the planned definition",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" INNER JOIN \"pg_index\" AS \"i\" ON \"i\".\"indexrelid\" = \"c\".\"oid\" INNER JOIN \"pg_am\" AS \"m\" ON \"m\".\"oid\" = \"c\".\"relam\" WHERE (\"c\".\"oid\" = to_regclass($1) AND (\"c\".\"relkind\" = $2 OR \"c\".\"relkind\" = $3) AND \"i\".\"indrelid\" = to_regclass($4) AND NOT (\"i\".\"indisunique\") AND \"m\".\"amname\" = $5 AND (\"i\".\"indexprs\" IS NULL AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"i\".\"indkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"i\".\"indrelid\" AND key_attribute.attnum = key_column.attnum) = ($6)::jsonb) AND \"i\".\"indpred\" IS NULL)) AS \"result\"",
+        "params": [
+          "\"public\".\"QuizAttempt_studentId_idx_bf255322\"",
+          "i",
+          "I",
+          "\"public\".\"QuizAttempt\"",
+          "btree",
+          "[\"studentId\"]"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.QuizOption.QuizOption_questionId_idx_fdb42076",
+    "label": "Create index \"QuizOption_questionId_idx_fdb42076\" on \"QuizOption\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "QuizOption_questionId_idx_fdb42076",
+        "table": "QuizOption"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"QuizOption_questionId_idx_fdb42076\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"QuizOption_questionId_idx_fdb42076\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "index \"QuizOption_questionId_idx_fdb42076\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"QuizOption_questionId_idx_fdb42076\"",
+        "sql": "CREATE INDEX \"QuizOption_questionId_idx_fdb42076\" ON \"public\".\"QuizOption\" (\"questionId\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"QuizOption_questionId_idx_fdb42076\" exists on \"QuizOption\" with the planned definition",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" INNER JOIN \"pg_index\" AS \"i\" ON \"i\".\"indexrelid\" = \"c\".\"oid\" INNER JOIN \"pg_am\" AS \"m\" ON \"m\".\"oid\" = \"c\".\"relam\" WHERE (\"c\".\"oid\" = to_regclass($1) AND (\"c\".\"relkind\" = $2 OR \"c\".\"relkind\" = $3) AND \"i\".\"indrelid\" = to_regclass($4) AND NOT (\"i\".\"indisunique\") AND \"m\".\"amname\" = $5 AND (\"i\".\"indexprs\" IS NULL AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"i\".\"indkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"i\".\"indrelid\" AND key_attribute.attnum = key_column.attnum) = ($6)::jsonb) AND \"i\".\"indpred\" IS NULL)) AS \"result\"",
+        "params": [
+          "\"public\".\"QuizOption_questionId_idx_fdb42076\"",
+          "i",
+          "I",
+          "\"public\".\"QuizOption\"",
+          "btree",
+          "[\"questionId\"]"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.QuizQuestion.QuizQuestion_quizId_idx_c721979c",
+    "label": "Create index \"QuizQuestion_quizId_idx_c721979c\" on \"QuizQuestion\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "QuizQuestion_quizId_idx_c721979c",
+        "table": "QuizQuestion"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"QuizQuestion_quizId_idx_c721979c\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"QuizQuestion_quizId_idx_c721979c\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "index \"QuizQuestion_quizId_idx_c721979c\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"QuizQuestion_quizId_idx_c721979c\"",
+        "sql": "CREATE INDEX \"QuizQuestion_quizId_idx_c721979c\" ON \"public\".\"QuizQuestion\" (\"quizId\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"QuizQuestion_quizId_idx_c721979c\" exists on \"QuizQuestion\" with the planned definition",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" INNER JOIN \"pg_index\" AS \"i\" ON \"i\".\"indexrelid\" = \"c\".\"oid\" INNER JOIN \"pg_am\" AS \"m\" ON \"m\".\"oid\" = \"c\".\"relam\" WHERE (\"c\".\"oid\" = to_regclass($1) AND (\"c\".\"relkind\" = $2 OR \"c\".\"relkind\" = $3) AND \"i\".\"indrelid\" = to_regclass($4) AND NOT (\"i\".\"indisunique\") AND \"m\".\"amname\" = $5 AND (\"i\".\"indexprs\" IS NULL AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"i\".\"indkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"i\".\"indrelid\" AND key_attribute.attnum = key_column.attnum) = ($6)::jsonb) AND \"i\".\"indpred\" IS NULL)) AS \"result\"",
+        "params": [
+          "\"public\".\"QuizQuestion_quizId_idx_c721979c\"",
+          "i",
+          "I",
+          "\"public\".\"QuizQuestion\"",
+          "btree",
+          "[\"quizId\"]"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.Quiz.Quiz_courseId_fkey",
+    "label": "Add foreign key \"Quiz_courseId_fkey\" on \"Quiz\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "Quiz_courseId_fkey",
+        "table": "Quiz"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"Quiz_courseId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "Quiz_courseId_fkey",
+          "public",
+          "\"public\".\"Quiz\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "FK \"Quiz_courseId_fkey\" on \"Quiz\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"Quiz_courseId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"Quiz\"\nADD CONSTRAINT \"Quiz_courseId_fkey\"\nFOREIGN KEY (\"courseId\")\nREFERENCES \"public\".\"Course\" (\"id\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"Quiz_courseId_fkey\" exists with the planned columns, referenced table and actions",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3) AND \"c\".\"contype\" = $4 AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"c\".\"conkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"c\".\"conrelid\" AND key_attribute.attnum = key_column.attnum) = ($5)::jsonb AND \"c\".\"confrelid\" = to_regclass($6) AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"c\".\"confkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"c\".\"confrelid\" AND key_attribute.attnum = key_column.attnum) = ($7)::jsonb AND \"c\".\"confdeltype\" = $8 AND \"c\".\"confupdtype\" = $9)) AS \"result\"",
+        "params": [
+          "Quiz_courseId_fkey",
+          "public",
+          "\"public\".\"Quiz\"",
+          "f",
+          "[\"courseId\"]",
+          "\"public\".\"Course\"",
+          "[\"id\"]",
+          "a",
+          "a"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.Quiz.Quiz_createdById_fkey",
+    "label": "Add foreign key \"Quiz_createdById_fkey\" on \"Quiz\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "Quiz_createdById_fkey",
+        "table": "Quiz"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"Quiz_createdById_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "Quiz_createdById_fkey",
+          "public",
+          "\"public\".\"Quiz\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "FK \"Quiz_createdById_fkey\" on \"Quiz\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"Quiz_createdById_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"Quiz\"\nADD CONSTRAINT \"Quiz_createdById_fkey\"\nFOREIGN KEY (\"createdById\")\nREFERENCES \"public\".\"User\" (\"id\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"Quiz_createdById_fkey\" exists with the planned columns, referenced table and actions",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3) AND \"c\".\"contype\" = $4 AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"c\".\"conkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"c\".\"conrelid\" AND key_attribute.attnum = key_column.attnum) = ($5)::jsonb AND \"c\".\"confrelid\" = to_regclass($6) AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"c\".\"confkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"c\".\"confrelid\" AND key_attribute.attnum = key_column.attnum) = ($7)::jsonb AND \"c\".\"confdeltype\" = $8 AND \"c\".\"confupdtype\" = $9)) AS \"result\"",
+        "params": [
+          "Quiz_createdById_fkey",
+          "public",
+          "\"public\".\"Quiz\"",
+          "f",
+          "[\"createdById\"]",
+          "\"public\".\"User\"",
+          "[\"id\"]",
+          "a",
+          "a"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.QuizAnswer.QuizAnswer_attemptId_fkey",
+    "label": "Add foreign key \"QuizAnswer_attemptId_fkey\" on \"QuizAnswer\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "QuizAnswer_attemptId_fkey",
+        "table": "QuizAnswer"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"QuizAnswer_attemptId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "QuizAnswer_attemptId_fkey",
+          "public",
+          "\"public\".\"QuizAnswer\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "FK \"QuizAnswer_attemptId_fkey\" on \"QuizAnswer\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"QuizAnswer_attemptId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"QuizAnswer\"\nADD CONSTRAINT \"QuizAnswer_attemptId_fkey\"\nFOREIGN KEY (\"attemptId\")\nREFERENCES \"public\".\"QuizAttempt\" (\"id\")\nON DELETE CASCADE"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"QuizAnswer_attemptId_fkey\" exists with the planned columns, referenced table and actions",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3) AND \"c\".\"contype\" = $4 AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"c\".\"conkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"c\".\"conrelid\" AND key_attribute.attnum = key_column.attnum) = ($5)::jsonb AND \"c\".\"confrelid\" = to_regclass($6) AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"c\".\"confkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"c\".\"confrelid\" AND key_attribute.attnum = key_column.attnum) = ($7)::jsonb AND \"c\".\"confdeltype\" = $8 AND \"c\".\"confupdtype\" = $9)) AS \"result\"",
+        "params": [
+          "QuizAnswer_attemptId_fkey",
+          "public",
+          "\"public\".\"QuizAnswer\"",
+          "f",
+          "[\"attemptId\"]",
+          "\"public\".\"QuizAttempt\"",
+          "[\"id\"]",
+          "c",
+          "a"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.QuizAnswer.QuizAnswer_questionId_fkey",
+    "label": "Add foreign key \"QuizAnswer_questionId_fkey\" on \"QuizAnswer\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "QuizAnswer_questionId_fkey",
+        "table": "QuizAnswer"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"QuizAnswer_questionId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "QuizAnswer_questionId_fkey",
+          "public",
+          "\"public\".\"QuizAnswer\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "FK \"QuizAnswer_questionId_fkey\" on \"QuizAnswer\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"QuizAnswer_questionId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"QuizAnswer\"\nADD CONSTRAINT \"QuizAnswer_questionId_fkey\"\nFOREIGN KEY (\"questionId\")\nREFERENCES \"public\".\"QuizQuestion\" (\"id\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"QuizAnswer_questionId_fkey\" exists with the planned columns, referenced table and actions",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3) AND \"c\".\"contype\" = $4 AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"c\".\"conkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"c\".\"conrelid\" AND key_attribute.attnum = key_column.attnum) = ($5)::jsonb AND \"c\".\"confrelid\" = to_regclass($6) AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"c\".\"confkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"c\".\"confrelid\" AND key_attribute.attnum = key_column.attnum) = ($7)::jsonb AND \"c\".\"confdeltype\" = $8 AND \"c\".\"confupdtype\" = $9)) AS \"result\"",
+        "params": [
+          "QuizAnswer_questionId_fkey",
+          "public",
+          "\"public\".\"QuizAnswer\"",
+          "f",
+          "[\"questionId\"]",
+          "\"public\".\"QuizQuestion\"",
+          "[\"id\"]",
+          "a",
+          "a"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.QuizAttempt.QuizAttempt_quizId_fkey",
+    "label": "Add foreign key \"QuizAttempt_quizId_fkey\" on \"QuizAttempt\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "QuizAttempt_quizId_fkey",
+        "table": "QuizAttempt"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"QuizAttempt_quizId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "QuizAttempt_quizId_fkey",
+          "public",
+          "\"public\".\"QuizAttempt\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "FK \"QuizAttempt_quizId_fkey\" on \"QuizAttempt\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"QuizAttempt_quizId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"QuizAttempt\"\nADD CONSTRAINT \"QuizAttempt_quizId_fkey\"\nFOREIGN KEY (\"quizId\")\nREFERENCES \"public\".\"Quiz\" (\"id\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"QuizAttempt_quizId_fkey\" exists with the planned columns, referenced table and actions",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3) AND \"c\".\"contype\" = $4 AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"c\".\"conkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"c\".\"conrelid\" AND key_attribute.attnum = key_column.attnum) = ($5)::jsonb AND \"c\".\"confrelid\" = to_regclass($6) AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"c\".\"confkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"c\".\"confrelid\" AND key_attribute.attnum = key_column.attnum) = ($7)::jsonb AND \"c\".\"confdeltype\" = $8 AND \"c\".\"confupdtype\" = $9)) AS \"result\"",
+        "params": [
+          "QuizAttempt_quizId_fkey",
+          "public",
+          "\"public\".\"QuizAttempt\"",
+          "f",
+          "[\"quizId\"]",
+          "\"public\".\"Quiz\"",
+          "[\"id\"]",
+          "a",
+          "a"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.QuizAttempt.QuizAttempt_studentId_fkey",
+    "label": "Add foreign key \"QuizAttempt_studentId_fkey\" on \"QuizAttempt\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "QuizAttempt_studentId_fkey",
+        "table": "QuizAttempt"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"QuizAttempt_studentId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "QuizAttempt_studentId_fkey",
+          "public",
+          "\"public\".\"QuizAttempt\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "FK \"QuizAttempt_studentId_fkey\" on \"QuizAttempt\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"QuizAttempt_studentId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"QuizAttempt\"\nADD CONSTRAINT \"QuizAttempt_studentId_fkey\"\nFOREIGN KEY (\"studentId\")\nREFERENCES \"public\".\"User\" (\"id\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"QuizAttempt_studentId_fkey\" exists with the planned columns, referenced table and actions",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3) AND \"c\".\"contype\" = $4 AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"c\".\"conkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"c\".\"conrelid\" AND key_attribute.attnum = key_column.attnum) = ($5)::jsonb AND \"c\".\"confrelid\" = to_regclass($6) AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"c\".\"confkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"c\".\"confrelid\" AND key_attribute.attnum = key_column.attnum) = ($7)::jsonb AND \"c\".\"confdeltype\" = $8 AND \"c\".\"confupdtype\" = $9)) AS \"result\"",
+        "params": [
+          "QuizAttempt_studentId_fkey",
+          "public",
+          "\"public\".\"QuizAttempt\"",
+          "f",
+          "[\"studentId\"]",
+          "\"public\".\"User\"",
+          "[\"id\"]",
+          "a",
+          "a"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.QuizOption.QuizOption_questionId_fkey",
+    "label": "Add foreign key \"QuizOption_questionId_fkey\" on \"QuizOption\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "QuizOption_questionId_fkey",
+        "table": "QuizOption"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"QuizOption_questionId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "QuizOption_questionId_fkey",
+          "public",
+          "\"public\".\"QuizOption\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "FK \"QuizOption_questionId_fkey\" on \"QuizOption\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"QuizOption_questionId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"QuizOption\"\nADD CONSTRAINT \"QuizOption_questionId_fkey\"\nFOREIGN KEY (\"questionId\")\nREFERENCES \"public\".\"QuizQuestion\" (\"id\")\nON DELETE CASCADE"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"QuizOption_questionId_fkey\" exists with the planned columns, referenced table and actions",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3) AND \"c\".\"contype\" = $4 AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"c\".\"conkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"c\".\"conrelid\" AND key_attribute.attnum = key_column.attnum) = ($5)::jsonb AND \"c\".\"confrelid\" = to_regclass($6) AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"c\".\"confkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"c\".\"confrelid\" AND key_attribute.attnum = key_column.attnum) = ($7)::jsonb AND \"c\".\"confdeltype\" = $8 AND \"c\".\"confupdtype\" = $9)) AS \"result\"",
+        "params": [
+          "QuizOption_questionId_fkey",
+          "public",
+          "\"public\".\"QuizOption\"",
+          "f",
+          "[\"questionId\"]",
+          "\"public\".\"QuizQuestion\"",
+          "[\"id\"]",
+          "c",
+          "a"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.QuizQuestion.QuizQuestion_quizId_fkey",
+    "label": "Add foreign key \"QuizQuestion_quizId_fkey\" on \"QuizQuestion\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "QuizQuestion_quizId_fkey",
+        "table": "QuizQuestion"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"QuizQuestion_quizId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "QuizQuestion_quizId_fkey",
+          "public",
+          "\"public\".\"QuizQuestion\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "FK \"QuizQuestion_quizId_fkey\" on \"QuizQuestion\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"QuizQuestion_quizId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"QuizQuestion\"\nADD CONSTRAINT \"QuizQuestion_quizId_fkey\"\nFOREIGN KEY (\"quizId\")\nREFERENCES \"public\".\"Quiz\" (\"id\")\nON DELETE CASCADE"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"QuizQuestion_quizId_fkey\" exists with the planned columns, referenced table and actions",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3) AND \"c\".\"contype\" = $4 AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"c\".\"conkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"c\".\"conrelid\" AND key_attribute.attnum = key_column.attnum) = ($5)::jsonb AND \"c\".\"confrelid\" = to_regclass($6) AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"c\".\"confkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"c\".\"confrelid\" AND key_attribute.attnum = key_column.attnum) = ($7)::jsonb AND \"c\".\"confdeltype\" = $8 AND \"c\".\"confupdtype\" = $9)) AS \"result\"",
+        "params": [
+          "QuizQuestion_quizId_fkey",
+          "public",
+          "\"public\".\"QuizQuestion\"",
+          "f",
+          "[\"quizId\"]",
+          "\"public\".\"Quiz\"",
+          "[\"id\"]",
+          "c",
+          "a"
+        ]
+      }
+    ]
+  }
+]

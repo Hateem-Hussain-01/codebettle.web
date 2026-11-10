@@ -1,6 +1,6 @@
 import { getSession } from '@/lib/auth';
-import { getCoursesByInstructor } from '@/lib/data/courses';
-import { getEnrollmentsByCourse } from '@/lib/data/enrollments';
+import { getCoursesByInstructor } from '@/lib/db/courses';
+import { getEnrollmentsByCourse } from '@/lib/db/enrollments';
 import Link from 'next/link';
 import Badge from '@/components/ui/Badge';
 import Card from '@/components/ui/Card';
@@ -9,11 +9,20 @@ import { Settings, Users, Star, BookOpen, Video } from 'lucide-react';
 
 export default async function InstructorCoursesPage() {
   const session = await getSession();
-  const myCourses = getCoursesByInstructor(session!.id);
+  const myCourses = await getCoursesByInstructor(session!.id);
+
+  // Enrollment counts fetched once per course (was a sync call inside .map).
+  const enrolledCountByCourse = new Map<string, number>();
+  await Promise.all(
+    myCourses.map(async (c) => {
+      const enrollments = await getEnrollmentsByCourse(c.id);
+      enrolledCountByCourse.set(c.id, enrollments.length);
+    }),
+  );
 
   const coursesWithStats = myCourses.map(c => ({
     ...c,
-    enrolledCount: getEnrollmentsByCourse(c.id).length,
+    enrolledCount: enrolledCountByCourse.get(c.id) ?? 0,
   }));
 
   return (
