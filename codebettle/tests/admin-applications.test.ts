@@ -10,6 +10,16 @@ const D = (s: string) => new Date(s);
 
 const ADMIN: Actor = { id: 'admin-1', role: 'admin', name: 'Admin' };
 
+// Module 3: submitApplication requires LinkedIn/CV/demo/whyGoodFit now;
+// existing tests below carry them via this spread (their intent —
+// message round-trip, review flow — is unchanged).
+const REQUIRED_FIELDS = {
+  linkedinUrl: 'https://linkedin.com/in/teacher',
+  cvUrl: 'cvs/11111111-1111-1111-1111-111111111111.pdf',
+  demoRecordingUrl: 'demos/22222222-2222-2222-2222-222222222222.mp4',
+  whyGoodFit: 'I love teaching.',
+};
+
 let fake: FakeDb;
 
 test.beforeEach(() => {
@@ -34,6 +44,7 @@ test('submit stores the message (trimmed) and it round-trips through list and ge
     expertise: 'Python',
     experience: '5 years',
     message: '  I want to teach because I love helping students.  ',
+    ...REQUIRED_FIELDS,
   });
   assert.ok('application' in created, JSON.stringify(created));
   assert.equal(created.application.message, 'I want to teach because I love helping students.');
@@ -58,6 +69,7 @@ test('submit with CV, LinkedIn, GitHub and demo recording round-trips through li
     linkedinUrl: 'https://www.linkedin.com/in/full-profile',
     githubUrl: 'https://github.com/fullprofile',
     demoRecordingUrl: 'demos/def-456.mp4',
+    whyGoodFit: 'I built the course this site teaches.',
   });
   assert.ok('application' in created, JSON.stringify(created));
   assert.equal(created.application.cvUrl, 'cvs/abc-123.pdf');
@@ -94,7 +106,7 @@ test('submit rejects profile URLs on the wrong host', async () => {
 });
 
 test('submit without a message stores none (undefined, not an empty string)', async () => {
-  const created = await submitApplication({ name: 'No Message', email: 'nomsg@example.com' });
+  const created = await submitApplication({ name: 'No Message', email: 'nomsg@example.com', ...REQUIRED_FIELDS });
   assert.ok('application' in created, JSON.stringify(created));
   assert.equal(created.application.message, undefined);
 
@@ -113,6 +125,7 @@ test('pending -> approved records the reviewer and keeps the message', async () 
     name: 'T',
     email: 't@example.com',
     message: 'Teach all the things.',
+    ...REQUIRED_FIELDS,
   });
   assert.ok('application' in submitted, JSON.stringify(submitted));
 
@@ -124,7 +137,7 @@ test('pending -> approved records the reviewer and keeps the message', async () 
 });
 
 test('pending -> rejected works', async () => {
-  const submitted = await submitApplication({ name: 'R', email: 'r@example.com', message: 'Please let me teach.' });
+  const submitted = await submitApplication({ name: 'R', email: 'r@example.com', message: 'Please let me teach.', ...REQUIRED_FIELDS });
   assert.ok('application' in submitted, JSON.stringify(submitted));
 
   const rejected = await reviewApplicationService(ADMIN, submitted.application.id, 'rejected');
@@ -135,14 +148,14 @@ test('pending -> rejected works', async () => {
 });
 
 test('re-review is rejected after approval and after rejection', async () => {
-  const a = await submitApplication({ name: 'A', email: 'a@example.com' });
+  const a = await submitApplication({ name: 'A', email: 'a@example.com', ...REQUIRED_FIELDS });
   assert.ok('application' in a, JSON.stringify(a));
   const approved = await reviewApplicationService(ADMIN, a.application.id, 'approved');
   assert.ok('application' in approved, JSON.stringify(approved));
   const againAfterApprove = await reviewApplicationService(ADMIN, a.application.id, 'rejected');
   assert.ok('error' in againAfterApprove && againAfterApprove.status === 400, JSON.stringify(againAfterApprove));
 
-  const b = await submitApplication({ name: 'B', email: 'b@example.com' });
+  const b = await submitApplication({ name: 'B', email: 'b@example.com', ...REQUIRED_FIELDS });
   assert.ok('application' in b, JSON.stringify(b));
   const rejected = await reviewApplicationService(ADMIN, b.application.id, 'rejected');
   assert.ok('application' in rejected, JSON.stringify(rejected));

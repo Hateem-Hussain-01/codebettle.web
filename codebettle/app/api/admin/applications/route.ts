@@ -51,7 +51,10 @@ export async function POST(request: NextRequest) {
   if (body === null) return invalidBody();
   const parsed = applicationCreateSchema.safeParse(body);
   if (!parsed.success) {
-    return NextResponse.json({ error: 'Name and a valid email are required' }, { status: 400 });
+    return NextResponse.json(
+      { error: 'Name, a valid email, LinkedIn profile, CV, demo recording and why you are a good fit are required' },
+      { status: 400 },
+    );
   }
   const result = await submitApplication(parsed.data);
   if ('error' in result) {

@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation';
 import { getSession } from '@/lib/auth';
 import { hasTeacherCapability } from '@/lib/rbac';
 import PortalLayout from '@/components/layout/PortalLayout';
+import ViewAsBanner from '@/components/layout/ViewAsBanner';
 import { LayoutDashboard, BookOpen, Users, Bell, Star, FolderOpen, User, BarChart2, FileQuestion } from 'lucide-react';
 
 const NAV_ITEMS = [
@@ -28,8 +29,14 @@ export default async function InstructorLayout({ children }: { children: React.R
   if (!session || !hasTeacherCapability(session)) redirect('/auth/login');
 
   return (
-    <PortalLayout user={session} navItems={NAV_ITEMS} portalName="Instructor Portal">
-      {children}
-    </PortalLayout>
+    <>
+      {/* Phase 2, Module 21.4: while an admin views this portal, show
+          the banner (who is viewing + the way back). The session user
+          is the teacher; session.viewAs names the viewing admin. */}
+      {session.viewAs && <ViewAsBanner adminName={session.viewAs.adminName} />}
+      <PortalLayout user={session} navItems={NAV_ITEMS} portalName="Instructor Portal">
+        {children}
+      </PortalLayout>
+    </>
   );
 }

@@ -44,6 +44,11 @@ const NAV_ICONS = {
  */
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const session = await getSession();
+  // Phase 2, Module 21.4: while an admin is viewing a teacher's
+  // portal (view-as), the admin panel is unreachable — the session
+  // is the teacher's until they return via the banner. Send them
+  // back to the portal they are viewing instead of the login page.
+  if (session?.viewAs) redirect('/instructor/dashboard');
   // Phase 2: admin capability is the isAdmin flag (legacy primary role 'admin' still counts).
   if (!session || !hasAdminCapability(session)) redirect('/auth/login');
 

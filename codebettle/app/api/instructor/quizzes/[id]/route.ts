@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { invalidBody, readJson, requireRoles, serviceError } from '@/lib/api-helpers';
+import { assertNotViewAs, invalidBody, readJson, requireRoles, serviceError } from '@/lib/api-helpers';
 import { quizUpdateSchema } from '@/lib/api-schemas';
 import {
   deleteQuiz,
@@ -23,6 +23,8 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
 export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const auth = await requireRoles(['admin', 'instructor']);
   if ('error' in auth) return auth.error;
+  const viewing = assertNotViewAs(auth.session);
+  if (viewing) return viewing;
   const { id } = await params;
   const body = await readJson(request);
   if (body === null) return invalidBody();
@@ -49,6 +51,8 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
 export async function DELETE(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const auth = await requireRoles(['admin', 'instructor']);
   if ('error' in auth) return auth.error;
+  const viewing = assertNotViewAs(auth.session);
+  if (viewing) return viewing;
   const { id } = await params;
   const result = await deleteQuiz(auth.session, id);
   if ('error' in result) return serviceError(result);

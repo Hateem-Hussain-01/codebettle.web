@@ -112,6 +112,17 @@ export async function listInvitations(): Promise<Invitation[]> {
   return rows.map(mapInvitationRow);
 }
 
+/**
+ * Delete an invitation row (Module 18: a full admin revoking an unused
+ * invitation). Returns false when the invitation does not exist. Only
+ * the service calls this, and only for unused invitations — a used
+ * invitation is history, not something to erase.
+ */
+export async function deleteInvitation(id: string): Promise<boolean> {
+  const row = await getDb().orm.public.Invitation.where({ id }).delete();
+  return row !== null;
+}
+
 /** Pending (unused, unexpired) invitations for one email, newest first. */
 export async function listPendingInvitationsForEmail(email: string): Promise<Invitation[]> {
   const rows = await getDb()

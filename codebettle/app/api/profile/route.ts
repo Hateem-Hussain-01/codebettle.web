@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { getUserById, updateUser } from '@/lib/db/users';
-import { invalidBody, readJson, requireSession } from '@/lib/api-helpers';
+import { assertNotViewAs, invalidBody, readJson, requireSession } from '@/lib/api-helpers';
 
 /**
  * GET /api/profile — the signed-in user's own profile (safe fields only,
@@ -41,6 +41,8 @@ export async function GET() {
 export async function PATCH(request: NextRequest) {
   const auth = await requireSession();
   if ('error' in auth) return auth.error;
+  const viewing = assertNotViewAs(auth.session);
+  if (viewing) return viewing;
   const body = await readJson(request);
   if (body === null) return invalidBody();
   const parsed = patchSchema.safeParse(body);

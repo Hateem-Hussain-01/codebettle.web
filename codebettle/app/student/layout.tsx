@@ -17,6 +17,10 @@ const NAV_ITEMS = [
 
 export default async function StudentLayout({ children }: { children: React.ReactNode }) {
   const session = await getSession();
+  // Phase 2, Module 21.4: view-as never opens a student portal. A
+  // viewing admin who navigates here by hand goes back to the teacher
+  // portal they are viewing.
+  if (session?.viewAs) redirect('/instructor/dashboard');
   // Phase 2, verified from code (not assumed): the student portal still
   // requires the PRIMARY role 'student' — NOT "any authenticated user".
   // A teacher or admin cannot open /student/*; if a multi-role user

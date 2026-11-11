@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
-import { invalidBody, readJson, requireRoles } from '@/lib/api-helpers';
+import { assertNotViewAs, invalidBody, readJson, requireRoles } from '@/lib/api-helpers';
 import { deleteNoteForUser, updateNoteForUser } from '@/lib/db/notes';
 import { getCourseById } from '@/lib/db/courses';
 
@@ -20,6 +20,8 @@ const updateSchema = z.object({
 export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const auth = await requireRoles(['student']);
   if ('error' in auth) return auth.error;
+  const viewing = assertNotViewAs(auth.session);
+  if (viewing) return viewing;
   const { id } = await params;
   const body = await readJson(request);
   const parsed = updateSchema.safeParse(body);
@@ -36,6 +38,8 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
 export async function DELETE(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const auth = await requireRoles(['student']);
   if ('error' in auth) return auth.error;
+  const viewing = assertNotViewAs(auth.session);
+  if (viewing) return viewing;
   const { id } = await params;
   const deleted = await deleteNoteForUser(auth.session.id, id);
   if (!deleted) return NextResponse.json({ error: 'Note not found' }, { status: 404 });

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
-import { invalidBody, readJson, requireRoles, serviceError } from '@/lib/api-helpers';
+import { assertNotViewAs, invalidBody, readJson, requireRoles, serviceError } from '@/lib/api-helpers';
 import { setCertificateEligibility } from '@/lib/services/enrollment-service';
 
 /**
@@ -18,6 +18,8 @@ export async function PATCH(
 ) {
   const auth = await requireRoles(['instructor']);
   if ('error' in auth) return auth.error;
+  const viewing = assertNotViewAs(auth.session);
+  if (viewing) return viewing;
 
   const body = await readJson(request);
   if (body === null) return invalidBody();

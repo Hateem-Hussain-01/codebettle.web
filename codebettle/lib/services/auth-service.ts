@@ -45,6 +45,16 @@ export interface SessionUser {
    * Guards read this directly — no extra query is needed.
    */
   adminPermissions?: AdminPermissions;
+  /**
+   * Phase 2, Module 21.4 (admin-assisted view-as): set ONLY when an
+   * admin is viewing this teacher's portal through a valid view-as
+   * token (see lib/auth.ts getSession). The session user is then the
+   * TEACHER, and this marker names the admin doing the viewing — so
+   * write routes can refuse mutations while viewing (see
+   * assertNotViewAs in lib/api-helpers.ts) and layouts can show the
+   * viewing banner. Absent in every normal session.
+   */
+  viewAs?: { adminId: string; adminName: string };
 }
 
 export function toSessionUser(user: User | SafeUser): SessionUser {

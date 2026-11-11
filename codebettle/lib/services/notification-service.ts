@@ -254,6 +254,84 @@ export async function onApplicationReviewed(
   }
 }
 
+// ---------------------------------------------------------------------------
+// Applicant-facing recruitment notifications (Phase 2, Modules 19/20/21).
+//
+// Unlike onApplicationReviewed above (admins only), these notify the
+// APPLICANT — but only when the application is linked to an account
+// (userId). An applicant who filed before creating an account has no
+// userId, so there is nobody to notify in-app; the function returns
+// { ok: false, reason: 'no-account' } instead of throwing, and the
+// caller carries on (the stage change itself is never blocked by a
+// missing notification). Best-effort, like every other hook here.
+// ---------------------------------------------------------------------------
+
+/** Notify the applicant of a review decision (approved / rejected). */
+export async function notifyApplicantReviewed(
+  application: InstructorApplication,
+  status: 'approved' | 'rejected',
+): Promise<NotifyResult> {
+  if (!application.userId) return { ok: false, reason: 'no-account' };
+  return notifyUser(application.userId, {
+    type: 'application',
+    event: 'application',
+    title:
+      status === 'approved'
+        ? 'Your instructor application was approved'
+        : 'Your instructor application was not approved',
+    body:
+      status === 'approved'
+        ? 'Good news — your application to teach at CodeBettle was approved. Our team will contact you about the next onboarding step.'
+        : 'Thank you for applying to teach at CodeBettle. Unfortunately your application was not approved this time — you are welcome to apply again in the future.',
+  });
+}
+
+/** Notify the applicant that their application moved to a new stage. */
+export async function notifyApplicantStageChanged(
+  application: InstructorApplication,
+  stageName: string,
+  instructions?: string,
+): Promise<NotifyResult> {
+  if (!application.userId) return { ok: false, reason: 'no-account' };
+  return notifyUser(application.userId, {
+    type: 'application',
+    event: 'application',
+    title: `Application update: ${stageName}`,
+    body: instructions?.trim()
+      ? `Your instructor application moved to “${stageName}”. ${instructions.trim()}`
+      : `Your instructor application moved to “${stageName}”. You can track your progress in the applicant portal.`,
+  });
+}
+
+/** Notify the applicant that the admin asked for more information. */
+export async function notifyApplicantInfoRequested(
+  application: InstructorApplication,
+  note?: string,
+): Promise<NotifyResult> {
+  if (!application.userId) return { ok: false, reason: 'no-account' };
+  return notifyUser(application.userId, {
+    type: 'application',
+    event: 'application',
+    title: 'More information needed for your application',
+    body: note?.trim()
+      ? `Our team needs a little more from you for your instructor application: ${note.trim()}`
+      : 'Our team needs a little more from you for your instructor application. Please check your email or the applicant portal.',
+  });
+}
+
+/** Notify the applicant that they are now onboarded as a teacher. */
+export async function notifyApplicantOnboarded(
+  application: InstructorApplication,
+): Promise<NotifyResult> {
+  if (!application.userId) return { ok: false, reason: 'no-account' };
+  return notifyUser(application.userId, {
+    type: 'application',
+    event: 'application',
+    title: 'Welcome to CodeBettle — you are now a teacher!',
+    body: 'Your onboarding is complete. Sign in with your existing account to open the Teacher Portal and start setting up your courses.',
+  });
+}
+
 /**
  * A payment submission was approved. Recipient: the student.
  * Event: 'enrollment' (reused — there is no separate `payment`

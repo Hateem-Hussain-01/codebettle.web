@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { requireSession } from '@/lib/api-helpers';
+import { assertNotViewAs, requireSession } from '@/lib/api-helpers';
 import { updateUser } from '@/lib/db/users';
 import { uploadAvatar } from '@/lib/services/avatar-storage';
 
@@ -20,6 +20,8 @@ import { uploadAvatar } from '@/lib/services/avatar-storage';
 export async function POST(request: NextRequest) {
   const auth = await requireSession();
   if ('error' in auth) return auth.error;
+  const viewing = assertNotViewAs(auth.session);
+  if (viewing) return viewing;
 
   let form: FormData;
   try {

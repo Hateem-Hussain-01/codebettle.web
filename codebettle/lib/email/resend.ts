@@ -23,6 +23,7 @@
  */
 import { Resend } from 'resend';
 import {
+  adminInvitationEmail,
   notificationEmail,
   passwordResetEmail,
   verificationEmail,
@@ -179,6 +180,34 @@ export async function sendNotificationEmail(
   return sendTemplatedEmail(
     to,
     notificationEmail({ title, body, siteUrl: getAppBaseUrl() }),
+    opts,
+  );
+}
+
+/** Public accept-invitation link for a raw token. The token itself is never stored. */
+export function buildInvitationUrl(baseUrl: string, token: string): string {
+  return `${getAppBaseUrl(baseUrl)}/auth/accept-invitation?token=${encodeURIComponent(token)}`;
+}
+
+/**
+ * Admin invitation email (Phase 2, Module 18). Best-effort like the
+ * other senders: when Resend is not configured the send is skipped and
+ * the caller gets { sent: false, reason: 'email-not-configured' } — the
+ * invitation itself is still created and the admin copies the link
+ * from the create response instead. Never throws.
+ */
+export async function sendInvitationEmail(
+  to: string,
+  name: string,
+  token: string,
+  baseUrl: string,
+  expiresInDays: number,
+  opts: { transport?: EmailTransport } = {},
+): Promise<SendEmailResult> {
+  const inviteUrl = buildInvitationUrl(baseUrl, token);
+  return sendTemplatedEmail(
+    to,
+    adminInvitationEmail({ name, inviteUrl, expiresInDays }),
     opts,
   );
 }

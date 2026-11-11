@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { invalidBody, readJson, requireRoles, serviceError } from '@/lib/api-helpers';
+import { assertNotViewAs, invalidBody, readJson, requireRoles, serviceError } from '@/lib/api-helpers';
 import { quizReviewSchema } from '@/lib/api-schemas';
 import { saveQuizReview } from '@/lib/services/quiz-service';
 
@@ -11,6 +11,8 @@ import { saveQuizReview } from '@/lib/services/quiz-service';
 export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const auth = await requireRoles(['admin', 'instructor']);
   if ('error' in auth) return auth.error;
+  const viewing = assertNotViewAs(auth.session);
+  if (viewing) return viewing;
   const { id } = await params;
   const body = await readJson(request);
   if (body === null) return invalidBody();

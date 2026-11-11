@@ -5,14 +5,15 @@
  * reviewApplicationService is admin-only. No Next.js imports —
  * unit-testable with the fake db. Both paths write an audit entry.
  */
-import { createApplication, getApplicationById, reviewApplication } from '../db/applications';
+import { createApplication, getApplicationById, getPendingApplicationByEmail, reviewApplication } from '../db/applications';
+import { addHistory } from '../db/application-stages';
 import { getUserByEmail } from '../db/users';
 import { hasAdminCapability } from '../rbac';
 import { logAudit } from '../db/audit';
-import { onApplicationReviewed } from './notification-service';
+import { notifyApplicantReviewed, onApplicationReviewed } from './notification-service';
 import { normalizeEmail } from '../security';
 import type { InstructorApplication } from '../db/types';
-import { badRequest, forbidden, notFound, type Actor, type ServiceError } from './errors';
+import { badRequest, conflict, forbidden, notFound, type Actor, type ServiceError } from './errors';
 
 type Result<T> = T | ServiceError;
 
@@ -60,6 +61,27 @@ export async function submitApplication(
   if (!isProfileUrl(githubUrl, 'github.com')) {
     return badRequest('GitHub profile must be a valid github.com URL');
   }
+  // Module 3: the form's required fields are enforced here too, so a
+  // direct API call cannot skip them (the zod schema enforces the same
+  // set at the route). expertise/experience/message stay optional here
+  // on purpose — the form UI requires them, the server tolerates their
+  // absence (see the schema comment). Host checks above run first so a
+  // wrong-host URL still reports the host problem, not "missing".
+  const cvUrl = input.cvUrl?.trim() || undefined;
+  if (!cvUrl) return badRequest('CV is required');
+  const demoRecordingUrl = input.demoRecordingUrl?.trim() || undefined;
+  if (!demoRecordingUrl) return badRequest('Demo recording is required');
+  if (!linkedinUrl) return badRequest('LinkedIn profile is required');
+  const whyGoodFit = input.whyGoodFit?.trim() || undefined;
+  if (!whyGoodFit) return badRequest('Why you are a good fit is required');
+  // Module 3 duplicate rule: one pending application per email. A
+  // reviewed (approved/rejected) application does not block a fresh one.
+  const pending = await getPendingApplicationByEmail(email);
+  if (pending) {
+    return conflict(
+      'You already have a pending instructor application. We will review it and contact you within 3-5 business days.',
+    );
+  }
   const application = await createApplication({
     name,
     email,
@@ -68,17 +90,17 @@ export async function submitApplication(
     experience: input.experience?.trim() || undefined,
     message: input.message?.trim() || undefined,
     additionalInfo: input.additionalInfo?.trim() || undefined,
-    whyGoodFit: input.whyGoodFit?.trim() || undefined,
+    whyGoodFit,
     // Phase 2: link to the applicant's account when one exists under
     // this email, so the applicant portal can find their applications.
     // No account yet (or lookup fails) => userId stays null; the
     // application is still valid — linking is best-effort, never a
     // reason to reject a submission.
     userId: (await getUserByEmail(email))?.id,
-    cvUrl: input.cvUrl?.trim() || undefined,
+    cvUrl,
     linkedinUrl,
     githubUrl,
-    demoRecordingUrl: input.demoRecordingUrl?.trim() || undefined,
+    demoRecordingUrl,
   });
   await logAudit({
     actorId: null,
@@ -107,6 +129,18 @@ export async function reviewApplicationService(
     entityId: applicationId,
     detail: `${status} ${existing.email}`,
   });
+  // Phase 2 (Modules 19/20): the review decision is also a pipeline
+  // event — record it in the stage history (history IS the stage
+  // record; there is no stage column) so the applicant's tracker
+  // shows it, and notify the applicant when they have an account.
+  await addHistory({
+    applicationId,
+    stageId: null,
+    stageName: status === 'approved' ? 'Approved' : 'Rejected',
+    actorId: actor.id,
+    action: status,
+  });
+  await notifyApplicantReviewed(reviewed, status);
   // Notify the admins (Phase 4 hook — best-effort, never throws).
   await onApplicationReviewed(reviewed, status);
   return { application: reviewed };

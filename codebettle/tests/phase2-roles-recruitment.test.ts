@@ -287,6 +287,10 @@ test('applications: new fields round-trip and submit links userId by email', asy
     email: 'student-1@example.com',
     message: 'I want to teach too',
     whyGoodFit: 'I love teaching',
+    // Module 3: LinkedIn/CV/demo are required by submitApplication now.
+    linkedinUrl: 'https://linkedin.com/in/student-one',
+    cvUrl: 'cvs/11111111-1111-1111-1111-111111111111.pdf',
+    demoRecordingUrl: 'demos/22222222-2222-2222-2222-222222222222.mp4',
   });
   assert.ok(!('error' in submitted));
   assert.equal(submitted.application.userId, 'student-1');
@@ -296,6 +300,10 @@ test('applications: new fields round-trip and submit links userId by email', asy
     email: 'nobody@example.com',
     message: 'Hello',
     whyGoodFit: 'Fit',
+    // Module 3: LinkedIn/CV/demo are required by submitApplication now.
+    linkedinUrl: 'https://linkedin.com/in/nobody',
+    cvUrl: 'cvs/33333333-3333-3333-3333-333333333333.pdf',
+    demoRecordingUrl: 'demos/44444444-4444-4444-4444-444444444444.mp4',
   });
   assert.ok(!('error' in stranger));
   assert.equal(stranger.application.userId, undefined);

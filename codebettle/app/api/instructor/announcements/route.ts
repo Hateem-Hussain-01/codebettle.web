@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
-import { invalidBody, readJson, requireRoles } from '@/lib/api-helpers';
+import { assertNotViewAs, invalidBody, readJson, requireRoles } from '@/lib/api-helpers';
 import { createAnnouncement } from '@/lib/db/announcements';
 import { getCourseById } from '@/lib/db/courses';
 import { onAnnouncementPublished } from '@/lib/services/notification-service';
@@ -22,6 +22,8 @@ const instructorAnnouncementSchema = z.object({
 export async function POST(request: NextRequest) {
   const auth = await requireRoles(['instructor']);
   if ('error' in auth) return auth.error;
+  const viewing = assertNotViewAs(auth.session);
+  if (viewing) return viewing;
   // Phase 0b: the whole handler body is wrapped so a database/validation
   // failure returns a parseable JSON 500 instead of Next's HTML error
   // page (which the client could not parse and which surfaced as a

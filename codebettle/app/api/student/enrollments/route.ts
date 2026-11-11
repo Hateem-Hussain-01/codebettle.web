@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
-import { invalidBody, readJson, requireRoles, serviceError } from '@/lib/api-helpers';
+import { assertNotViewAs, invalidBody, readJson, requireRoles, serviceError } from '@/lib/api-helpers';
 import { enrollSelfService } from '@/lib/services/enrollment-service';
 
 /**
@@ -21,6 +21,8 @@ const enrollSchema = z.object({
 export async function POST(request: NextRequest) {
   const auth = await requireRoles(['student']);
   if ('error' in auth) return auth.error;
+  const viewing = assertNotViewAs(auth.session);
+  if (viewing) return viewing;
   const body = await readJson(request);
   const parsed = enrollSchema.safeParse(body);
   if (!parsed.success) return invalidBody('courseId is required');

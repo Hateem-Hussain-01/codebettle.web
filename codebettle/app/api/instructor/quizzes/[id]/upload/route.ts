@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { requireRoles, serviceError } from '@/lib/api-helpers';
+import { assertNotViewAs, requireRoles, serviceError } from '@/lib/api-helpers';
 import { importQuizPdf } from '@/lib/services/quiz-service';
 
 /**
@@ -15,6 +15,8 @@ import { importQuizPdf } from '@/lib/services/quiz-service';
 export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const auth = await requireRoles(['admin', 'instructor']);
   if ('error' in auth) return auth.error;
+  const viewing = assertNotViewAs(auth.session);
+  if (viewing) return viewing;
   const { id } = await params;
 
   let form: FormData;

@@ -56,6 +56,57 @@ export function mapApplicationNoteRow(row: ApplicationNoteRow): ApplicationNote 
   };
 }
 
+/**
+ * The default recruitment pipeline (Phase 2, Modules 19/20 — the
+ * admin-configurable stage list ships with these eight). Seeded
+ * idempotently by ensureDefaultStages when the stage table is empty;
+ * an admin can rename, reorder, add or remove stages afterwards and
+ * the seed never runs again (it only fires on an empty table).
+ */
+export const DEFAULT_APPLICATION_STAGES: ReadonlyArray<{ name: string; position: number }> = [
+  { name: 'Submitted', position: 1 },
+  { name: 'Under Review', position: 2 },
+  { name: 'Interview Scheduled', position: 3 },
+  { name: 'Teaching Demo', position: 4 },
+  { name: 'Waiting for Approval', position: 5 },
+  { name: 'Onboarding', position: 6 },
+  { name: 'Successfully Onboarded', position: 7 },
+  { name: 'Rejected', position: 8 },
+];
+
+/**
+ * Seed the default pipeline when no stages exist yet. Returns the
+ * stages in display order (the seeded defaults, or the existing list
+ * when the table is non-empty). Never overwrites admin customisation.
+ */
+export async function ensureDefaultStages(): Promise<ApplicationStage[]> {
+  const existing = await listStages();
+  if (existing.length > 0) return existing;
+  for (const stage of DEFAULT_APPLICATION_STAGES) {
+    await createStage({ name: stage.name, position: stage.position });
+  }
+  return listStages();
+}
+
+/**
+ * STAGE-COLUMN DECISION (Modules 19/20): the contract has NO stage
+ * column on InstructorApplication and the contract must not be
+ * modified by this worker — so the current stage is NOT a stored
+ * column. It is derived from the append-only history: the latest
+ * history entry's stageName snapshot (see listHistory, oldest first).
+ * History survives stage renames/deletes (the snapshot), so the
+ * current stage stays readable even after an admin edits the
+ * pipeline. Returns null when the application has no history yet
+ * (a fresh submission — callers treat that as 'Submitted').
+ */
+export async function getCurrentStage(
+  applicationId: string,
+): Promise<ApplicationStageHistory | null> {
+  const history = await listHistory(applicationId);
+  if (history.length === 0) return null;
+  return history[history.length - 1];
+}
+
 // ---------------------------------------------------------------------------
 // Stages
 // ---------------------------------------------------------------------------

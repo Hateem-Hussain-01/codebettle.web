@@ -156,6 +156,33 @@ export async function requireRoles(roles: UserRole[]): Promise<
   return { session };
 }
 
+/**
+ * View-as mutation block (Phase 2, Module 21.4 — admin-assisted
+ * teacher-portal viewing is VIEW-ONLY).
+ *
+ * While an admin is viewing a teacher's portal, the effective session
+ * is the teacher (see getSession in lib/auth.ts) — so without this
+ * check the admin could mutate the teacher's data through the normal
+ * write routes. Every POST/PATCH/DELETE instructor, student and
+ * profile route calls this right after its auth gate and returns the
+ * 403 when it fires. Reads are unaffected (viewing is for looking).
+ * The check reads the `viewAs` marker on the session, never the
+ * cookie directly, so tests can set a viewing session with
+ * __setTestSession and production code needs no extra plumbing.
+ */
+export function assertNotViewAs(session: SessionUser | null): NextResponse | null {
+  if (session?.viewAs) {
+    return NextResponse.json(
+      {
+        error:
+          'You are viewing this portal as an admin. Changes are disabled while viewing — return to the Admin Panel to make changes.',
+      },
+      { status: 403 },
+    );
+  }
+  return null;
+}
+
 /** Parse a JSON body. Returns null when the body is not valid JSON. */
 export async function readJson(request: NextRequest): Promise<unknown | null> {
   try {

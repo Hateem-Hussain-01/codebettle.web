@@ -83,6 +83,21 @@ export async function getApplicationByEmail(email: string): Promise<InstructorAp
   return mapApplicationRow(row);
 }
 
+/**
+ * Phase 2 (Module 3): the applicant's PENDING application for this
+ * email, if any — the duplicate check. A reviewed (approved/rejected)
+ * application does not block a fresh one, so only pending rows count.
+ */
+export async function getPendingApplicationByEmail(email: string): Promise<InstructorApplication | null> {
+  const row = await getDb()
+    .orm.public.InstructorApplication.where((a) => a.email.eq(email))
+    .where((a) => a.status.eq('pending'))
+    .orderBy((a) => a.createdAt.desc())
+    .first();
+  if (!row) return null;
+  return mapApplicationRow(row);
+}
+
 export interface CreateApplicationInput {
   name: string;
   email: string;

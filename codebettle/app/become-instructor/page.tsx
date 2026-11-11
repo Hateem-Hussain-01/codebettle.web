@@ -8,6 +8,8 @@ import Textarea from '@/components/ui/Textarea';
 import { useState } from 'react';
 import { CheckCircle, Users, DollarSign, BookOpen, Send, Upload, FileText, Video, X } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { isApplicationFormValid } from '@/lib/application-form-validation';
+import { cleanupUploadedApplicationFiles } from '@/lib/application-file-cleanup';
 
 const MAX_CV_BYTES = 5 * 1024 * 1024; // 5 MB
 const MAX_DEMO_BYTES = 100 * 1024 * 1024; // 100 MB
@@ -31,7 +33,11 @@ const perks = [
 ];
 
 export default function BecomeInstructorPage() {
-  const [form, setForm] = useState({ name: '', email: '', expertise: '', experience: '', message: '', linkedinUrl: '', githubUrl: '' });
+  // Module 3: `message` ("Why do you want to teach?") stays as-is and is
+  // separate from `whyGoodFit` ("Why do you think you are a good fit for
+  // this role?") — the contract keeps both. `phone` is optional end to
+  // end (schema/service/DB already had it; only this UI lacked it).
+  const [form, setForm] = useState({ name: '', email: '', phone: '', expertise: '', experience: '', message: '', additionalInfo: '', whyGoodFit: '', linkedinUrl: '', githubUrl: '' });
   const [loading, setLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [submitError, setSubmitError] = useState('');
@@ -40,6 +46,23 @@ export default function BecomeInstructorPage() {
   const [cvError, setCvError] = useState('');
   const [demoError, setDemoError] = useState('');
   const [uploading, setUploading] = useState<'cv' | 'demo' | null>(null);
+
+  // Module 3: Submit stays disabled until every required field
+  // validates — including both files present with no file errors.
+  const isValid = isApplicationFormValid({
+    name: form.name,
+    email: form.email,
+    expertise: form.expertise,
+    experience: form.experience,
+    message: form.message,
+    linkedinUrl: form.linkedinUrl,
+    githubUrl: form.githubUrl,
+    whyGoodFit: form.whyGoodFit,
+    hasCvFile: cvFile !== null,
+    hasDemoFile: demoFile !== null,
+    cvError,
+    demoError,
+  });
 
   const pickCv = (file: File | undefined) => {
     setCvError('');
@@ -86,26 +109,36 @@ export default function BecomeInstructorPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    // The button is disabled until valid, but guard a keyboard/programmatic
+    // submit too — never POST an incomplete application.
+    if (!isValid) return;
     setLoading(true);
     setSubmitError('');
+    // Module 3 orphan cleanup: every path uploaded in this submit is
+    // tracked here; any failure after an upload deletes what landed.
+    const uploadedPaths: string[] = [];
     try {
       let cvUrl: string | undefined;
       let demoRecordingUrl: string | undefined;
-      if (cvFile) {
-        try {
+      try {
+        if (cvFile) {
           cvUrl = await uploadFile('cv', cvFile);
-        } catch (err) {
-          setSubmitError(err instanceof Error ? err.message : 'CV upload failed. Please try again.');
-          return;
+          uploadedPaths.push(cvUrl);
         }
+      } catch (err) {
+        setSubmitError(err instanceof Error ? err.message : 'CV upload failed. Please try again.');
+        return;
       }
-      if (demoFile) {
-        try {
+      try {
+        if (demoFile) {
           demoRecordingUrl = await uploadFile('demo', demoFile);
-        } catch (err) {
-          setSubmitError(err instanceof Error ? err.message : 'Demo recording upload failed. Please try again.');
-          return;
+          uploadedPaths.push(demoRecordingUrl);
         }
+      } catch (err) {
+        // The CV already uploaded — delete it so it does not sit orphaned.
+        await cleanupUploadedApplicationFiles(uploadedPaths);
+        setSubmitError(err instanceof Error ? err.message : 'Demo recording upload failed. Please try again.');
+        return;
       }
       const res = await fetch('/api/admin/applications', {
         method: 'POST',
@@ -113,20 +146,29 @@ export default function BecomeInstructorPage() {
         body: JSON.stringify({
           name: form.name.trim(),
           email: form.email.trim(),
+          ...(form.phone.trim() ? { phone: form.phone.trim() } : {}),
           expertise: form.expertise.trim(),
           experience: form.experience.trim(),
           message: form.message.trim(),
-          ...(form.linkedinUrl.trim() ? { linkedinUrl: form.linkedinUrl.trim() } : {}),
+          ...(form.additionalInfo.trim() ? { additionalInfo: form.additionalInfo.trim() } : {}),
+          whyGoodFit: form.whyGoodFit.trim(),
+          linkedinUrl: form.linkedinUrl.trim(),
           ...(form.githubUrl.trim() ? { githubUrl: form.githubUrl.trim() } : {}),
           ...(cvUrl ? { cvUrl } : {}),
           ...(demoRecordingUrl ? { demoRecordingUrl } : {}),
         }),
       });
       const data = await res.json();
-      if (!res.ok) { setSubmitError(data.error || 'Could not submit your application. Please try again.'); return; }
+      if (!res.ok) {
+        // Final POST failed after uploads succeeded — delete the orphans.
+        await cleanupUploadedApplicationFiles(uploadedPaths);
+        setSubmitError(data.error || 'Could not submit your application. Please try again.');
+        return;
+      }
       setSubmitted(true);
       toast.success('Application submitted! We will review and contact you within 3-5 business days.');
     } catch {
+      await cleanupUploadedApplicationFiles(uploadedPaths);
       setSubmitError('Could not submit your application. Please check your connection and try again.');
     } finally {
       setLoading(false);
@@ -178,14 +220,17 @@ export default function BecomeInstructorPage() {
                   </div>
                   <Input label="Area of Expertise" placeholder="e.g., React, Python, UI/UX Design" value={form.expertise} onChange={e => setForm(f => ({ ...f, expertise: e.target.value }))} required />
                   <Input label="Years of Experience" placeholder="e.g., 5 years as a full-stack developer" value={form.experience} onChange={e => setForm(f => ({ ...f, experience: e.target.value }))} required />
+                  <Input label="Phone (optional)" type="tel" placeholder="+92 300 1234567" value={form.phone} onChange={e => setForm(f => ({ ...f, phone: e.target.value }))} />
                   <Textarea label="Why do you want to teach?" placeholder="Tell us about yourself and your teaching goals..." value={form.message} onChange={e => setForm(f => ({ ...f, message: e.target.value }))} rows={4} required />
+                  <Textarea label="Why do you think you are a good fit for this role?" placeholder="What makes you a good fit to teach at CodeBettle?..." value={form.whyGoodFit} onChange={e => setForm(f => ({ ...f, whyGoodFit: e.target.value }))} rows={4} required />
+                  <Textarea label="Anything Additional You Have (optional)" placeholder="Anything else you'd like us to know — other skills, availability, links..." value={form.additionalInfo} onChange={e => setForm(f => ({ ...f, additionalInfo: e.target.value }))} rows={3} />
                   <div className="grid sm:grid-cols-2 gap-4">
-                    <Input label="LinkedIn Profile (optional)" type="url" placeholder="https://linkedin.com/in/your-name" value={form.linkedinUrl} onChange={e => setForm(f => ({ ...f, linkedinUrl: e.target.value }))} />
+                    <Input label="LinkedIn Profile" type="url" placeholder="https://linkedin.com/in/your-name" value={form.linkedinUrl} onChange={e => setForm(f => ({ ...f, linkedinUrl: e.target.value }))} required />
                     <Input label="GitHub Profile (optional)" type="url" placeholder="https://github.com/your-name" value={form.githubUrl} onChange={e => setForm(f => ({ ...f, githubUrl: e.target.value }))} />
                   </div>
                   <div className="grid sm:grid-cols-2 gap-4">
                     <div className="flex flex-col gap-1.5">
-                      <label className="text-sm font-medium text-white/80">Upload CV (optional)</label>
+                      <label className="text-sm font-medium text-white/80">Upload CV *</label>
                       <label className="flex items-center gap-3 bg-dark-card border border-dark-border rounded-lg px-4 py-2.5 text-sm text-white cursor-pointer hover:border-primary/50 transition-colors">
                         <FileText className="w-4 h-4 text-primary shrink-0" />
                         {cvFile ? (
@@ -205,7 +250,7 @@ export default function BecomeInstructorPage() {
                       {cvError && <p className="text-xs text-red-400">{cvError}</p>}
                     </div>
                     <div className="flex flex-col gap-1.5">
-                      <label className="text-sm font-medium text-white/80">Demo Lecture Recording (optional)</label>
+                      <label className="text-sm font-medium text-white/80">Demo Lecture Recording *</label>
                       <label className="flex items-center gap-3 bg-dark-card border border-dark-border rounded-lg px-4 py-2.5 text-sm text-white cursor-pointer hover:border-primary/50 transition-colors">
                         <Video className="w-4 h-4 text-primary shrink-0" />
                         {demoFile ? (
@@ -228,7 +273,10 @@ export default function BecomeInstructorPage() {
                   {submitError && (
                     <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-3 text-sm text-red-400">{submitError}</div>
                   )}
-                  <Button type="submit" size="lg" loading={loading} fullWidth><Send className="w-4 h-4" />Submit Application</Button>
+                  <Button type="submit" size="lg" loading={loading} disabled={!isValid} fullWidth><Send className="w-4 h-4" />Submit Application</Button>
+                  {!isValid && (
+                    <p className="text-xs text-muted text-center">Fill in all required fields — including your LinkedIn profile, CV and demo recording — to submit.</p>
+                  )}
                 </form>
               </div>
             )}

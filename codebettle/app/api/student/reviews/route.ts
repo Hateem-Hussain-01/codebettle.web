@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
-import { invalidBody, readJson, requireRoles, serviceError } from '@/lib/api-helpers';
+import { assertNotViewAs, invalidBody, readJson, requireRoles, serviceError } from '@/lib/api-helpers';
 import { createReviewService } from '@/lib/services/review-service';
 
 /**
@@ -19,6 +19,8 @@ const reviewSchema = z.object({
 export async function POST(request: NextRequest) {
   const auth = await requireRoles(['student']);
   if ('error' in auth) return auth.error;
+  const viewing = assertNotViewAs(auth.session);
+  if (viewing) return viewing;
   const body = await readJson(request);
   const parsed = reviewSchema.safeParse(body);
   if (!parsed.success) return invalidBody('courseId, a rating from 1 to 5 and a review are required');
