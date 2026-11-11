@@ -18,7 +18,7 @@ import CourseInstructorClient from './course-instructor-client';
 
 const DAYS = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
 
-export default async function AdminCourseDetailPage({ params }: PageProps<'/admin/courses/[id]'>) {
+export default async function AdminCourseDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const session = await getSession();
   if (!session || session.role !== 'admin') redirect('/auth/login');

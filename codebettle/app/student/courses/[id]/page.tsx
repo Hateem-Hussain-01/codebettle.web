@@ -15,7 +15,7 @@ import Link from 'next/link';
 
 const DAYS = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
 
-export default async function StudentCourseViewPage({ params }: PageProps<'/student/courses/[id]'>) {
+export default async function StudentCourseViewPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const session = await getSession();
   const course = await getCourseById(id);
