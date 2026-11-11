@@ -125,6 +125,10 @@ export const applicationCreateSchema = z.object({
   expertise: z.string().optional(),
   experience: z.string().optional(),
   message: z.string().optional(),
+  cvUrl: z.string().optional(),
+  linkedinUrl: z.string().url().optional(),
+  githubUrl: z.string().url().optional(),
+  demoRecordingUrl: z.string().optional(),
 });
 
 export const applicationReviewSchema = z.object({

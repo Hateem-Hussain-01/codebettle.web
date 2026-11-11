@@ -21,6 +21,22 @@ export interface SubmitApplicationInput {
   expertise?: string;
   experience?: string;
   message?: string;
+  cvUrl?: string;
+  linkedinUrl?: string;
+  githubUrl?: string;
+  demoRecordingUrl?: string;
+}
+
+/** A profile URL must be http(s) and on the expected host (linkedin.com / github.com). */
+function isProfileUrl(value: string | undefined, host: string): boolean {
+  if (!value) return true;
+  try {
+    const url = new URL(value);
+    if (url.protocol !== 'http:' && url.protocol !== 'https:') return false;
+    return url.hostname === host || url.hostname.endsWith(`.${host}`);
+  } catch {
+    return false;
+  }
 }
 
 export async function submitApplication(
@@ -30,6 +46,14 @@ export async function submitApplication(
   if (!name) return badRequest('Name is required');
   const email = normalizeEmail(input.email);
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return badRequest('Valid email required');
+  const linkedinUrl = input.linkedinUrl?.trim() || undefined;
+  if (!isProfileUrl(linkedinUrl, 'linkedin.com')) {
+    return badRequest('LinkedIn profile must be a valid linkedin.com URL');
+  }
+  const githubUrl = input.githubUrl?.trim() || undefined;
+  if (!isProfileUrl(githubUrl, 'github.com')) {
+    return badRequest('GitHub profile must be a valid github.com URL');
+  }
   const application = await createApplication({
     name,
     email,
@@ -37,6 +61,10 @@ export async function submitApplication(
     expertise: input.expertise?.trim() || undefined,
     experience: input.experience?.trim() || undefined,
     message: input.message?.trim() || undefined,
+    cvUrl: input.cvUrl?.trim() || undefined,
+    linkedinUrl,
+    githubUrl,
+    demoRecordingUrl: input.demoRecordingUrl?.trim() || undefined,
   });
   await logAudit({
     actorId: null,

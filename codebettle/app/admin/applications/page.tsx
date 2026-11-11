@@ -4,7 +4,8 @@ import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
 import Badge from '@/components/ui/Badge';
 import FadeIn from '@/components/ui/FadeIn';
-import { UserCheck, Check, X, ChevronLeft, ChevronRight } from 'lucide-react';
+import { UserCheck, Check, X, ChevronLeft, ChevronRight, FileText, Video, ExternalLink } from 'lucide-react';
+import { LinkedInIcon } from '@/components/auth/BrandIcons';
 import { formatDateShort } from '@/lib/utils';
 import toast from 'react-hot-toast';
 
@@ -16,6 +17,10 @@ interface Application {
   expertise?: string;
   experience?: string;
   message?: string;
+  cvUrl?: string;
+  linkedinUrl?: string;
+  githubUrl?: string;
+  demoRecordingUrl?: string;
   status: 'pending' | 'approved' | 'rejected';
   reviewedBy?: string;
   reviewedByName?: string | null;
@@ -42,6 +47,28 @@ export default function AdminApplicationsPage() {
   const [totalPages, setTotalPages] = useState(1);
   const [total, setTotal] = useState(0);
   const [reviewingId, setReviewingId] = useState<string | null>(null);
+  const [openingFile, setOpeningFile] = useState<string | null>(null);
+
+  /**
+   * Open an applicant's CV or demo recording. The files live in the
+   * PRIVATE `application-files` bucket, so the stored cvUrl /
+   * demoRecordingUrl is a storage path, not a public URL — this mints a
+   * short-lived signed URL (admin only) and opens it in a new tab.
+   */
+  const openApplicationFile = async (id: string, kind: 'cv' | 'demo') => {
+    const key = `${id}:${kind}`;
+    setOpeningFile(key);
+    try {
+      const res = await fetch(`/api/admin/applications/${id}/file?kind=${kind}`);
+      const data = await res.json();
+      if (!res.ok) { toast.error(data.error || 'Could not open the file'); return; }
+      window.open(data.url, '_blank', 'noopener,noreferrer');
+    } catch {
+      toast.error('Could not open the file');
+    } finally {
+      setOpeningFile(null);
+    }
+  };
 
   const loadApplications = async (status: StatusFilter, pageToLoad: number) => {
     setLoading(true);
@@ -145,6 +172,22 @@ export default function AdminApplicationsPage() {
                     {app.expertise && <p className="text-muted text-xs mb-1"><span className="text-white">Expertise:</span> {app.expertise}</p>}
                     {app.experience && <p className="text-muted text-xs mb-2"><span className="text-white">Experience:</span> {app.experience}</p>}
                     {app.message && <p className="text-muted text-xs italic">"{app.message}"</p>}
+                    {(app.linkedinUrl || app.githubUrl || app.cvUrl || app.demoRecordingUrl) && (
+                      <div className="flex flex-wrap items-center gap-2 mt-3">
+                        {app.linkedinUrl && (
+                          <a href={app.linkedinUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-xs text-primary hover:underline"><LinkedInIcon className="w-3.5 h-3.5" />LinkedIn<ExternalLink className="w-3 h-3" /></a>
+                        )}
+                        {app.githubUrl && (
+                          <a href={app.githubUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-xs text-primary hover:underline">GitHub<ExternalLink className="w-3 h-3" /></a>
+                        )}
+                        {app.cvUrl && (
+                          <button onClick={() => openApplicationFile(app.id, 'cv')} disabled={openingFile === `${app.id}:cv`} className="inline-flex items-center gap-1 text-xs bg-dark-border hover:bg-primary hover:text-black text-white rounded-md px-2 py-1 cursor-pointer disabled:opacity-50 transition-colors"><FileText className="w-3.5 h-3.5" />{openingFile === `${app.id}:cv` ? 'Opening…' : 'View CV'}</button>
+                        )}
+                        {app.demoRecordingUrl && (
+                          <button onClick={() => openApplicationFile(app.id, 'demo')} disabled={openingFile === `${app.id}:demo`} className="inline-flex items-center gap-1 text-xs bg-dark-border hover:bg-primary hover:text-black text-white rounded-md px-2 py-1 cursor-pointer disabled:opacity-50 transition-colors"><Video className="w-3.5 h-3.5" />{openingFile === `${app.id}:demo` ? 'Opening…' : 'Watch Demo Lecture'}</button>
+                        )}
+                      </div>
+                    )}
                     <p className="text-muted text-xs mt-2">Submitted {formatDateShort(app.createdAt)}</p>
                   </div>
                   <div className="flex items-center gap-2 flex-shrink-0">
@@ -172,6 +215,14 @@ export default function AdminApplicationsPage() {
                 <div className="flex-1">
                   <p className="text-white text-sm font-medium">{app.name}</p>
                   <p className="text-muted text-xs">{app.email} · {app.expertise}</p>
+                  {(app.linkedinUrl || app.githubUrl || app.cvUrl || app.demoRecordingUrl) && (
+                    <p className="text-muted text-xs mt-1 flex flex-wrap items-center gap-2">
+                      {app.linkedinUrl && <a href={app.linkedinUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-primary hover:underline"><LinkedInIcon className="w-3.5 h-3.5" />LinkedIn</a>}
+                      {app.githubUrl && <a href={app.githubUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-primary hover:underline">GitHub</a>}
+                      {app.cvUrl && <button onClick={() => openApplicationFile(app.id, 'cv')} disabled={openingFile === `${app.id}:cv`} className="inline-flex items-center gap-1 text-primary hover:underline cursor-pointer disabled:opacity-50"><FileText className="w-3.5 h-3.5" />CV</button>}
+                      {app.demoRecordingUrl && <button onClick={() => openApplicationFile(app.id, 'demo')} disabled={openingFile === `${app.id}:demo`} className="inline-flex items-center gap-1 text-primary hover:underline cursor-pointer disabled:opacity-50"><Video className="w-3.5 h-3.5" />Demo</button>}
+                    </p>
+                  )}
                   {app.reviewedBy && <p className="text-muted text-xs mt-0.5">Reviewed by {app.reviewedByName ?? app.reviewedBy}</p>}
                 </div>
                 <Badge variant={app.status === 'approved' ? 'success' : 'danger'}>{app.status}</Badge>

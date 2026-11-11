@@ -58,6 +58,11 @@ export function contactRateLimitKey(ip: string): string {
   return `contact:${ip}`;
 }
 
+/** Application-file uploads: 10 per 15 minutes, keyed by IP (spam guard — files cost storage). */
+export function applicationUploadRateLimitKey(ip: string): string {
+  return `application-upload:${ip}`;
+}
+
 /** Test helper: clear all windows. Never call in production code. */
 export function __clearRateLimits(): void {
   windows.clear();

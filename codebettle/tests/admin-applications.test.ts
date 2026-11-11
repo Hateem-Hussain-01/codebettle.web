@@ -47,6 +47,52 @@ test('submit stores the message (trimmed) and it round-trips through list and ge
   assert.equal(byId?.message, 'I want to teach because I love helping students.');
 });
 
+test('submit with CV, LinkedIn, GitHub and demo recording round-trips through list and get', async () => {
+  const created = await submitApplication({
+    name: 'Full Profile',
+    email: 'full@example.com',
+    expertise: 'Python',
+    experience: '5 years',
+    message: 'I want to teach.',
+    cvUrl: 'cvs/abc-123.pdf',
+    linkedinUrl: 'https://www.linkedin.com/in/full-profile',
+    githubUrl: 'https://github.com/fullprofile',
+    demoRecordingUrl: 'demos/def-456.mp4',
+  });
+  assert.ok('application' in created, JSON.stringify(created));
+  assert.equal(created.application.cvUrl, 'cvs/abc-123.pdf');
+  assert.equal(created.application.linkedinUrl, 'https://www.linkedin.com/in/full-profile');
+  assert.equal(created.application.githubUrl, 'https://github.com/fullprofile');
+  assert.equal(created.application.demoRecordingUrl, 'demos/def-456.mp4');
+
+  const byId = await getApplicationById(created.application.id);
+  assert.equal(byId?.cvUrl, 'cvs/abc-123.pdf');
+  assert.equal(byId?.linkedinUrl, 'https://www.linkedin.com/in/full-profile');
+  assert.equal(byId?.githubUrl, 'https://github.com/fullprofile');
+  assert.equal(byId?.demoRecordingUrl, 'demos/def-456.mp4');
+
+  const approved = await reviewApplicationService(ADMIN, created.application.id, 'approved');
+  assert.ok('application' in approved, JSON.stringify(approved));
+  assert.equal(approved.application.cvUrl, 'cvs/abc-123.pdf');
+  assert.equal(approved.application.demoRecordingUrl, 'demos/def-456.mp4');
+});
+
+test('submit rejects profile URLs on the wrong host', async () => {
+  const badLinkedin = await submitApplication({
+    name: 'Bad LinkedIn',
+    email: 'badli@example.com',
+    linkedinUrl: 'https://example.com/in/someone',
+  });
+  assert.ok('error' in badLinkedin && badLinkedin.status === 400, JSON.stringify(badLinkedin));
+
+  const badGithub = await submitApplication({
+    name: 'Bad GitHub',
+    email: 'badgh@example.com',
+    githubUrl: 'https://gitlab.com/someone',
+  });
+  assert.ok('error' in badGithub && badGithub.status === 400, JSON.stringify(badGithub));
+});
+
 test('submit without a message stores none (undefined, not an empty string)', async () => {
   const created = await submitApplication({ name: 'No Message', email: 'nomsg@example.com' });
   assert.ok('application' in created, JSON.stringify(created));
