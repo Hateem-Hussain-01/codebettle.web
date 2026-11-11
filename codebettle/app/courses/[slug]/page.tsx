@@ -37,7 +37,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   };
 }
 
-export default async function CourseDetailPage({ params }: PageProps<'/courses/[slug]'>) {
+export default async function CourseDetailPage({ params }: { params: Promise<{ slug: string }> }) {
   await connection();
   const { slug } = await params;
   const course = await getCourseBySlug(slug);

@@ -10,7 +10,7 @@ import InstructorCourseManageClient from './instructor-course-manage-client';
  * them to the client component. Local edits (zoom link, recordings,
  * curriculum, mark complete) stay local-only (Phase 3 builds the write APIs).
  */
-export default async function InstructorCourseManagePage({ params }: PageProps<'/instructor/courses/[id]'>) {
+export default async function InstructorCourseManagePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const course = await getCourseById(id);
   if (!course) notFound();
