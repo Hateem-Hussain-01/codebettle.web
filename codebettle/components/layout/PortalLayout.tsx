@@ -6,6 +6,8 @@ import { Menu, X, LogOut, Bell, ChevronRight, ArrowLeftRight } from 'lucide-reac
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { getPortalSwitch, portalFromPathname } from '@/lib/portal-switch';
+import LoginNotificationPopup from '@/components/notifications/LoginNotificationPopup';
+import NotificationBadge from '@/components/notifications/NotificationBadge';
 import type { SessionUser } from '@/lib/auth';
 
 interface NavItem {
@@ -126,6 +128,11 @@ export default function PortalLayout({ user, navItems, children, portalName }: P
 
   return (
     <div className="flex h-screen bg-background overflow-hidden">
+      {/* Phase 3 (Worker B) — login notification popup. Mounted here so
+          it runs after login in every portal (student / instructor /
+          admin) and never on public/auth pages. It fetches its own
+          pending notifications and renders nothing on failure. */}
+      <LoginNotificationPopup />
       {/* Desktop Sidebar */}
       <aside className="hidden lg:flex flex-col w-64 bg-dark-card border-r border-dark-border flex-shrink-0">
         <Sidebar user={user} navItems={navItems} pathname={pathname} portalName={portalName} onClose={() => setSidebarOpen(false)} />
@@ -169,10 +176,15 @@ export default function PortalLayout({ user, navItems, children, portalName }: P
               </Link>
             )}
             {/* The bell used to be a dead button (no action at all). It is
-                now a link to the portal notifications page. */}
+                now a link to the portal notifications page, with a real
+                unread-count badge (Phase 3, NotificationBadge — the fetch
+                lives in that component so this layout keeps only its
+                logout fetch). The badge is display-only: nothing here
+                enforces access — the notifications page and its API
+                enforce ownership server-side. */}
             <Link href={`/${portalSlug}/notifications`} aria-label="Notifications" className="relative text-muted hover:text-white transition-colors p-2 rounded-lg hover:bg-dark-border cursor-pointer">
               <Bell className="w-5 h-5" />
-              <span className="absolute top-1 right-1 w-2 h-2 bg-primary rounded-full" />
+              <NotificationBadge />
             </Link>
             <Link href={`/${portalSlug}/profile`}>
               <img src={user.avatar || `https://api.dicebear.com/7.x/initials/svg?seed=${user.name}`} alt={user.name} className="w-8 h-8 rounded-full object-cover border-2 border-primary/40 cursor-pointer hover:border-primary transition-colors" />
