@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { requireAdmin } from '@/lib/api-helpers';
+import { requireAdminArea } from '@/lib/api-helpers';
 import { getIntegritySummary } from '@/lib/services/data-integrity-service';
 
 /**
@@ -10,7 +10,7 @@ import { getIntegritySummary } from '@/lib/services/data-integrity-service';
  * student/course does not exist.
  */
 export async function GET() {
-  const auth = await requireAdmin();
+  const auth = await requireAdminArea('reports');
   if ('error' in auth) return auth.error;
   const summary = await getIntegritySummary();
   return NextResponse.json(summary);

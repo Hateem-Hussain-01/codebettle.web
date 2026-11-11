@@ -17,7 +17,7 @@
 import { getDb } from './client';
 import { mapUserRow, stripUndefined, toNotificationPrefs, toSafeUser } from './mappers';
 import { parsePageParams, toPage, type Page } from './pagination';
-import type { NotificationPrefs, SafeUser, SocialLinks, User, UserRole, UserStatus } from './types';
+import type { AdminPermissions, NotificationPrefs, SafeUser, SocialLinks, User, UserRole, UserStatus } from './types';
 
 export async function getUserById(id: string): Promise<SafeUser | null> {
   const row = await getDb()
@@ -160,6 +160,12 @@ export interface UpdateUserInput {
   bio?: string | null;
   expertise?: string[];
   socialLinks?: SocialLinks | null;
+  /**
+   * Per-area admin permissions (Item G). A map grants only the listed
+   * areas; explicit null clears the restriction (full admin). Undefined
+   * leaves the stored value unchanged.
+   */
+  adminPermissions?: AdminPermissions | null;
   /** Role changes are policy-checked in admin-service; the repository just applies them. */
   role?: UserRole;
 }
@@ -186,6 +192,15 @@ export async function updateUser(id: string, input: UpdateUserInput): Promise<Sa
         socialLinks: input.socialLinks
           ? JSON.parse(JSON.stringify(input.socialLinks))
           : input.socialLinks,
+        // Same JSON round-trip for the per-area permissions map (Item G).
+        // Explicit null clears the restriction (full admin); undefined
+        // is stripped by stripUndefined, leaving the column unchanged.
+        adminPermissions:
+          input.adminPermissions === undefined
+            ? undefined
+            : input.adminPermissions === null
+              ? null
+              : JSON.parse(JSON.stringify(input.adminPermissions)),
         role: input.role,
       }),
     );

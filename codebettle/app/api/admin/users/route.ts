@@ -1,30 +1,22 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
-import { getSession } from '@/lib/auth';
+import { requireAdminArea, requireAdminAreas } from '@/lib/api-helpers';
 import { listUsers } from '@/lib/db/users';
 import { createManagedUser } from '@/lib/admin-users';
 
 /**
  * GET /api/admin/users — list students (safe fields only, never the password hash).
  * Query params: page, limit, search (name match). Returns
- * { users, page, totalPages, total }.
+ * { users, page, totalPages, total }. Requires the `students` area (Item G).
  * POST /api/admin/users — create a student or instructor (admin only).
  * Passwords are hashed server-side with bcrypt; the caller can never set a role of admin.
+ * Requires the `students` or `instructors` area (Item G).
  * Business logic lives in lib/admin-users.ts so it is unit-testable;
  * this route only enforces the admin gate and validates the request shape.
  */
 
-async function requireAdmin() {
-  const session = await getSession();
-  if (!session) return { error: NextResponse.json({ error: 'Not signed in' }, { status: 401 }) };
-  if (session.role !== 'admin') {
-    return { error: NextResponse.json({ error: 'Admin access required' }, { status: 403 }) };
-  }
-  return { session };
-}
-
 export async function GET(request: NextRequest) {
-  const auth = await requireAdmin();
+  const auth = await requireAdminArea('students');
   if ('error' in auth) return auth.error;
   const params = request.nextUrl.searchParams;
   const page = await listUsers({
@@ -49,7 +41,7 @@ const createSchema = z.object({
 });
 
 export async function POST(request: NextRequest) {
-  const auth = await requireAdmin();
+  const auth = await requireAdminAreas(['students', 'instructors']);
   if ('error' in auth) return auth.error;
 
   let body: unknown;

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { requireAdmin } from '@/lib/api-helpers';
+import { requireAdminArea } from '@/lib/api-helpers';
 import { listContactMessages } from '@/lib/db/contact-messages';
 
 /**
@@ -7,7 +7,7 @@ import { listContactMessages } from '@/lib/db/contact-messages';
  * Query params: page, limit, unreadOnly=true.
  */
 export async function GET(request: NextRequest) {
-  const auth = await requireAdmin();
+  const auth = await requireAdminArea('messages');
   if ('error' in auth) return auth.error;
   const params = request.nextUrl.searchParams;
   const page = await listContactMessages({

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { invalidBody, readJson, requireAdmin, serviceError } from '@/lib/api-helpers';
+import { invalidBody, readJson, requireAdminArea, serviceError } from '@/lib/api-helpers';
 import { enrollmentUpdateSchema } from '@/lib/api-schemas';
 import { deleteEnrollmentService, updateEnrollmentService } from '@/lib/services/enrollment-service';
 
@@ -9,7 +9,7 @@ import { deleteEnrollmentService, updateEnrollmentService } from '@/lib/services
  * given. DELETE — soft-delete an enrolment (admin only).
  */
 export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const auth = await requireAdmin();
+  const auth = await requireAdminArea('enrollments');
   if ('error' in auth) return auth.error;
   const { id } = await params;
 
@@ -28,7 +28,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
 }
 
 export async function DELETE(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const auth = await requireAdmin();
+  const auth = await requireAdminArea('enrollments');
   if ('error' in auth) return auth.error;
   const { id } = await params;
 

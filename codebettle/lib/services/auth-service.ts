@@ -18,7 +18,7 @@ import { createUser, getUserByEmail, getUserByIdWithHash, updateUserPassword } f
 import { createSessionRecord, revokeAllSessionsForUser } from '../db/sessions';
 import { logAudit } from '../db/audit';
 import { toSafeUser } from '../db/mappers';
-import type { SafeUser, User } from '../db/types';
+import type { AdminPermissions, SafeUser, User } from '../db/types';
 
 export interface SessionUser {
   id: string;
@@ -26,6 +26,13 @@ export interface SessionUser {
   email: string;
   role: 'student' | 'instructor' | 'admin';
   avatar?: string;
+  /**
+   * Per-area admin permissions (Item G), read fresh from the user record
+   * on every request (see getSession in lib/auth.ts). Undefined = full
+   * admin (every area granted). A map grants only the listed areas.
+   * Guards read this directly — no extra query is needed.
+   */
+  adminPermissions?: AdminPermissions;
 }
 
 export function toSessionUser(user: User | SafeUser): SessionUser {
@@ -35,6 +42,7 @@ export function toSessionUser(user: User | SafeUser): SessionUser {
     email: user.email,
     role: user.role,
     avatar: user.avatar,
+    adminPermissions: user.adminPermissions,
   };
 }
 

@@ -1,7 +1,7 @@
 import { notFound } from 'next/navigation';
 import { getCourseById } from '@/lib/db/courses';
 import { getEnrollmentsByCourse } from '@/lib/db/enrollments';
-import { getUserById } from '@/lib/db/users';
+import { getInstructors, getUserById } from '@/lib/db/users';
 import type { SafeUser } from '@/lib/db/types';
 import { getSession } from '@/lib/auth';
 import { redirect } from 'next/navigation';
@@ -14,6 +14,7 @@ import { formatDate, formatDateShort, formatPrice } from '@/lib/utils';
 import Link from 'next/link';
 import Button from '@/components/ui/Button';
 import CourseCurriculumClient from './course-curriculum-client';
+import CourseInstructorClient from './course-instructor-client';
 
 const DAYS = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
 
@@ -27,6 +28,7 @@ export default async function AdminCourseDetailPage({ params }: PageProps<'/admi
 
   const enrollments = await getEnrollmentsByCourse(id);
   const instructor = await getUserById(course.instructorId);
+  const instructors = await getInstructors();
 
   // Student map built once (was a getUserById call inside JSX per row).
   const studentMap = new Map<string, SafeUser>();
@@ -61,34 +63,41 @@ export default async function AdminCourseDetailPage({ params }: PageProps<'/admi
         </div>
       </FadeIn>
 
-      {/* Instructor info */}
-      {instructor && (
-        <FadeIn delay={0.05}>
+      {/* Instructor info + assign control (always shown, even if the
+          current instructor record is missing — the assign control is
+          how an unassigned course gets a teacher). */}
+      <FadeIn delay={0.05}>
         <Card>
           <h2 className="text-white font-bold mb-3 text-sm">Assigned Instructor</h2>
-          <div className="flex items-center gap-3">
-            <img src={instructor.avatar || ''} alt={instructor.name} className="w-12 h-12 rounded-full border-2 border-primary/30" />
-            <div>
-              <p className="text-white font-semibold">{instructor.name}</p>
-              <p className="text-muted text-xs">{instructor.email}</p>
-              <p className="text-muted text-xs mt-0.5">{instructor.expertise?.join(' · ')}</p>
-            </div>
-            <div className="ml-auto flex items-center gap-2">
-              {/* Curriculum status */}
-              {course.modules.length > 0
-                ? <Badge variant="success">Curriculum Added</Badge>
-                : <Badge variant="warning">No Curriculum Yet</Badge>
-              }
-            </div>
-          </div>
-          {course.zoomLink && (
-            <div className="mt-3 flex items-center gap-2 text-xs text-blue-400 bg-blue-500/10 border border-blue-500/20 rounded-lg px-3 py-2">
-              <Video className="w-3.5 h-3.5" />Zoom: {course.zoomLink}
-            </div>
+          {instructor ? (
+            <>
+              <div className="flex items-center gap-3">
+                <img src={instructor.avatar || ''} alt={instructor.name} className="w-12 h-12 rounded-full border-2 border-primary/30" />
+                <div>
+                  <p className="text-white font-semibold">{instructor.name}</p>
+                  <p className="text-muted text-xs">{instructor.email}</p>
+                  <p className="text-muted text-xs mt-0.5">{instructor.expertise?.join(' · ')}</p>
+                </div>
+                <div className="ml-auto flex items-center gap-2">
+                  {/* Curriculum status */}
+                  {course.modules.length > 0
+                    ? <Badge variant="success">Curriculum Added</Badge>
+                    : <Badge variant="warning">No Curriculum Yet</Badge>
+                  }
+                </div>
+              </div>
+              {course.zoomLink && (
+                <div className="mt-3 flex items-center gap-2 text-xs text-blue-400 bg-blue-500/10 border border-blue-500/20 rounded-lg px-3 py-2">
+                  <Video className="w-3.5 h-3.5" />Zoom: {course.zoomLink}
+                </div>
+              )}
+            </>
+          ) : (
+            <p className="text-muted text-sm">No instructor assigned yet.</p>
           )}
+          <CourseInstructorClient courseId={course.id} currentInstructorId={course.instructorId} instructors={instructors} />
         </Card>
-        </FadeIn>
-      )}
+      </FadeIn>
 
       {/* Schedule */}
       {course.schedule && (

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
-import { requireAdmin } from '@/lib/api-helpers';
+import { requireAdminAreas } from '@/lib/api-helpers';
 import { deleteManagedUser, setUserStatus, updateManagedUser } from '@/lib/admin-users';
 import { userUpdateSchema } from '@/lib/api-schemas';
 import { getCertificatesByStudent } from '@/lib/db/certificates';
@@ -27,7 +27,7 @@ import { getUserById } from '@/lib/db/users';
  */
 
 export async function GET(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const auth = await requireAdmin();
+  const auth = await requireAdminAreas(['students', 'instructors']);
   if ('error' in auth) return auth.error;
   const { id } = await params;
 
@@ -54,7 +54,7 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
 }
 
 export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const auth = await requireAdmin();
+  const auth = await requireAdminAreas(['students', 'instructors']);
   if ('error' in auth) return auth.error;
   const { id } = await params;
 
@@ -84,7 +84,7 @@ const patchSchema = z.object({
 });
 
 export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const auth = await requireAdmin();
+  const auth = await requireAdminAreas(['students', 'instructors']);
   if ('error' in auth) return auth.error;
   const { id } = await params;
 
@@ -108,7 +108,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
 }
 
 export async function DELETE(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const auth = await requireAdmin();
+  const auth = await requireAdminAreas(['students', 'instructors']);
   if ('error' in auth) return auth.error;
   const { id } = await params;
 

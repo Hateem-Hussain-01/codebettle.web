@@ -58,6 +58,7 @@ import type {
   UserRow,
 } from './types';
 import { DEFAULT_NOTIFICATION_PREFS, NOTIFICATION_EVENT_KEYS } from './types';
+import { toAdminPermissions } from '../admin-access';
 
 export const CATEGORY_TO_STORAGE: Record<CourseCategory, CourseRow['category']> = {
   'Web Development': 'Web_Development',
@@ -218,6 +219,7 @@ export function mapUserRow(row: UserRow, enrolledCourseIds?: string[]): User {
     expertise: [...(row.expertise ?? [])],
     socialLinks: toSocialLinks(row.socialLinks),
     notificationPrefs: toNotificationPrefs(row.notificationPrefs),
+    adminPermissions: toAdminPermissions(row.adminPermissions),
     status: row.status,
     joinedAt: dateToString(row.joinedAt),
     enrolledCourses: enrolledCourseIds ?? [],

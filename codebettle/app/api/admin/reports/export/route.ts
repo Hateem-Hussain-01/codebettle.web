@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { requireAdmin, serviceError } from '@/lib/api-helpers';
+import { requireAdminArea, serviceError } from '@/lib/api-helpers';
 import { getExportData, parseDateRange } from '@/lib/services/reporting-service';
 import { coursesCsv, enrollmentsCsv, revenueCsv, studentsCsv } from '@/lib/services/csv-export';
 
@@ -13,7 +13,7 @@ const EXPORT_TYPES = ['enrollments', 'students', 'courses', 'revenue'] as const;
 type ExportType = (typeof EXPORT_TYPES)[number];
 
 export async function GET(request: NextRequest) {
-  const auth = await requireAdmin();
+  const auth = await requireAdminArea('reports');
   if ('error' in auth) return auth.error;
   const params = request.nextUrl.searchParams;
   const type = params.get('type');

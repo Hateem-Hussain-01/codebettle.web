@@ -120,6 +120,7 @@ model User {
   expertise          String[]
   socialLinks        Json?
   notificationPrefs  Json?
+  adminPermissions   Json?
   status             UserStatus              @default(active)
   emailVerifiedAt    DateTime?
   joinedAt           DateTime                @default(now())
@@ -454,6 +455,10 @@ model InstructorApplication {
   expertise  String?
   experience String?
   message    String?
+  cvUrl      String?
+  linkedinUrl String?
+  githubUrl  String?
+  demoRecordingUrl String?
   status     ApplicationStatus @default(pending)
   reviewedBy String?
   reviewer   User?             @relation("ApplicationReviewer", fields: [reviewedBy], references: [id])

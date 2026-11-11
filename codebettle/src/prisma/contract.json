@@ -2033,6 +2033,20 @@
                   }
                 }
               },
+              "cvUrl": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "demoRecordingUrl": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
               "email": {
                 "nullable": false,
                 "type": {
@@ -2054,8 +2068,22 @@
                   "kind": "scalar"
                 }
               },
+              "githubUrl": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
               "id": {
                 "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "linkedinUrl": {
+                "nullable": true,
                 "type": {
                   "codecId": "pg/text@1",
                   "kind": "scalar"
@@ -2126,6 +2154,12 @@
                 "createdAt": {
                   "column": "createdAt"
                 },
+                "cvUrl": {
+                  "column": "cvUrl"
+                },
+                "demoRecordingUrl": {
+                  "column": "demoRecordingUrl"
+                },
                 "email": {
                   "column": "email"
                 },
@@ -2135,8 +2169,14 @@
                 "expertise": {
                   "column": "expertise"
                 },
+                "githubUrl": {
+                  "column": "githubUrl"
+                },
                 "id": {
                   "column": "id"
+                },
+                "linkedinUrl": {
+                  "column": "linkedinUrl"
                 },
                 "message": {
                   "column": "message"
@@ -4124,6 +4164,13 @@
           },
           "User": {
             "fields": {
+              "adminPermissions": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/json@1",
+                  "kind": "scalar"
+                }
+              },
               "avatar": {
                 "nullable": true,
                 "type": {
@@ -4503,6 +4550,9 @@
             },
             "storage": {
               "fields": {
+                "adminPermissions": {
+                  "column": "adminPermissions"
+                },
                 "avatar": {
                   "column": "avatar"
                 },
@@ -5944,6 +5994,16 @@
                     "precision": 3
                   }
                 },
+                "cvUrl": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": true
+                },
+                "demoRecordingUrl": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": true
+                },
                 "email": {
                   "codecId": "pg/text@1",
                   "dataType": "pg/text",
@@ -5959,10 +6019,20 @@
                   "dataType": "pg/text",
                   "nullable": true
                 },
+                "githubUrl": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": true
+                },
                 "id": {
                   "codecId": "pg/text@1",
                   "dataType": "pg/text",
                   "nullable": false
+                },
+                "linkedinUrl": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": true
                 },
                 "message": {
                   "codecId": "pg/text@1",
@@ -7812,6 +7882,11 @@
                 }
               ],
               "columns": {
+                "adminPermissions": {
+                  "codecId": "pg/json@1",
+                  "dataType": "pg/json",
+                  "nullable": true
+                },
                 "avatar": {
                   "codecId": "pg/text@1",
                   "dataType": "pg/text",
@@ -8076,7 +8151,7 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "11b127ec7577bb2f74443a7d5db27ee578e80d0839fb00a624a2b3093934d65f"
+    "storageHash": "caeb9dc90aed76996f75d9f9bc2603e292000aea7683d3bdbbb49bf1f219f201"
   },
   "execution": {
     "executionHash": "724cb5805679e422d27371e55faf7662b11f26ef5bc01a2bbe6f9f9678d62a75",

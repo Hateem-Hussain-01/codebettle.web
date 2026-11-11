@@ -21,6 +21,10 @@ export function mapApplicationRow(row: ApplicationRow): InstructorApplication {
     expertise: row.expertise ?? undefined,
     experience: row.experience ?? undefined,
     message: row.message ?? undefined,
+    cvUrl: row.cvUrl ?? undefined,
+    linkedinUrl: row.linkedinUrl ?? undefined,
+    githubUrl: row.githubUrl ?? undefined,
+    demoRecordingUrl: row.demoRecordingUrl ?? undefined,
     status: row.status,
     reviewedBy: row.reviewedBy ?? undefined,
     createdAt: dateToString(row.createdAt),
@@ -58,6 +62,10 @@ export interface CreateApplicationInput {
   expertise?: string;
   experience?: string;
   message?: string;
+  cvUrl?: string;
+  linkedinUrl?: string;
+  githubUrl?: string;
+  demoRecordingUrl?: string;
 }
 
 /** Create a pending application. No auth — the public form calls this. */
@@ -69,6 +77,10 @@ export async function createApplication(input: CreateApplicationInput): Promise<
     expertise: input.expertise ?? null,
     experience: input.experience ?? null,
     message: input.message ?? null,
+    cvUrl: input.cvUrl ?? null,
+    linkedinUrl: input.linkedinUrl ?? null,
+    githubUrl: input.githubUrl ?? null,
+    demoRecordingUrl: input.demoRecordingUrl ?? null,
     status: 'pending',
   });
   return mapApplicationRow(row);

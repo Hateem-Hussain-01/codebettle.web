@@ -6,8 +6,23 @@ import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
 import Textarea from '@/components/ui/Textarea';
 import { useState } from 'react';
-import { CheckCircle, Users, DollarSign, BookOpen, Send } from 'lucide-react';
+import { CheckCircle, Users, DollarSign, BookOpen, Send, Upload, FileText, Video, X } from 'lucide-react';
 import toast from 'react-hot-toast';
+
+const MAX_CV_BYTES = 5 * 1024 * 1024; // 5 MB
+const MAX_DEMO_BYTES = 100 * 1024 * 1024; // 100 MB
+const CV_EXTENSIONS = ['.pdf', '.doc', '.docx'];
+const DEMO_EXTENSIONS = ['.mp4', '.webm', '.mov'];
+
+function formatFileSize(bytes: number): string {
+  if (bytes >= 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  return `${Math.max(1, Math.round(bytes / 1024))} KB`;
+}
+
+function fileExtension(name: string): string {
+  const i = name.lastIndexOf('.');
+  return i >= 0 ? name.slice(i).toLowerCase() : '';
+}
 
 const perks = [
   { icon: <Users className="w-6 h-6" />, title: 'Reach Thousands', desc: 'Share your knowledge with our growing community of motivated students.' },
@@ -16,16 +31,82 @@ const perks = [
 ];
 
 export default function BecomeInstructorPage() {
-  const [form, setForm] = useState({ name: '', email: '', expertise: '', experience: '', message: '' });
+  const [form, setForm] = useState({ name: '', email: '', expertise: '', experience: '', message: '', linkedinUrl: '', githubUrl: '' });
   const [loading, setLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [submitError, setSubmitError] = useState('');
+  const [cvFile, setCvFile] = useState<File | null>(null);
+  const [demoFile, setDemoFile] = useState<File | null>(null);
+  const [cvError, setCvError] = useState('');
+  const [demoError, setDemoError] = useState('');
+  const [uploading, setUploading] = useState<'cv' | 'demo' | null>(null);
+
+  const pickCv = (file: File | undefined) => {
+    setCvError('');
+    if (!file) return;
+    if (!CV_EXTENSIONS.includes(fileExtension(file.name))) {
+      setCvError('CV must be a PDF, DOC or DOCX file.');
+      return;
+    }
+    if (file.size > MAX_CV_BYTES) {
+      setCvError('CV must be 5 MB or smaller.');
+      return;
+    }
+    setCvFile(file);
+  };
+
+  const pickDemo = (file: File | undefined) => {
+    setDemoError('');
+    if (!file) return;
+    if (!DEMO_EXTENSIONS.includes(fileExtension(file.name))) {
+      setDemoError('Demo recording must be an MP4, WebM or MOV video.');
+      return;
+    }
+    if (file.size > MAX_DEMO_BYTES) {
+      setDemoError('Demo recording must be 100 MB or smaller.');
+      return;
+    }
+    setDemoFile(file);
+  };
+
+  const uploadFile = async (kind: 'cv' | 'demo', file: File): Promise<string> => {
+    setUploading(kind);
+    try {
+      const data = new FormData();
+      data.append('kind', kind);
+      data.append('file', file);
+      const res = await fetch('/api/applications/upload', { method: 'POST', body: data });
+      const result = await res.json();
+      if (!res.ok) throw new Error(result.error || 'Upload failed');
+      return result.path as string;
+    } finally {
+      setUploading(null);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setSubmitError('');
     try {
+      let cvUrl: string | undefined;
+      let demoRecordingUrl: string | undefined;
+      if (cvFile) {
+        try {
+          cvUrl = await uploadFile('cv', cvFile);
+        } catch (err) {
+          setSubmitError(err instanceof Error ? err.message : 'CV upload failed. Please try again.');
+          return;
+        }
+      }
+      if (demoFile) {
+        try {
+          demoRecordingUrl = await uploadFile('demo', demoFile);
+        } catch (err) {
+          setSubmitError(err instanceof Error ? err.message : 'Demo recording upload failed. Please try again.');
+          return;
+        }
+      }
       const res = await fetch('/api/admin/applications', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -35,6 +116,10 @@ export default function BecomeInstructorPage() {
           expertise: form.expertise.trim(),
           experience: form.experience.trim(),
           message: form.message.trim(),
+          ...(form.linkedinUrl.trim() ? { linkedinUrl: form.linkedinUrl.trim() } : {}),
+          ...(form.githubUrl.trim() ? { githubUrl: form.githubUrl.trim() } : {}),
+          ...(cvUrl ? { cvUrl } : {}),
+          ...(demoRecordingUrl ? { demoRecordingUrl } : {}),
         }),
       });
       const data = await res.json();
@@ -94,6 +179,52 @@ export default function BecomeInstructorPage() {
                   <Input label="Area of Expertise" placeholder="e.g., React, Python, UI/UX Design" value={form.expertise} onChange={e => setForm(f => ({ ...f, expertise: e.target.value }))} required />
                   <Input label="Years of Experience" placeholder="e.g., 5 years as a full-stack developer" value={form.experience} onChange={e => setForm(f => ({ ...f, experience: e.target.value }))} required />
                   <Textarea label="Why do you want to teach?" placeholder="Tell us about yourself and your teaching goals..." value={form.message} onChange={e => setForm(f => ({ ...f, message: e.target.value }))} rows={4} required />
+                  <div className="grid sm:grid-cols-2 gap-4">
+                    <Input label="LinkedIn Profile (optional)" type="url" placeholder="https://linkedin.com/in/your-name" value={form.linkedinUrl} onChange={e => setForm(f => ({ ...f, linkedinUrl: e.target.value }))} />
+                    <Input label="GitHub Profile (optional)" type="url" placeholder="https://github.com/your-name" value={form.githubUrl} onChange={e => setForm(f => ({ ...f, githubUrl: e.target.value }))} />
+                  </div>
+                  <div className="grid sm:grid-cols-2 gap-4">
+                    <div className="flex flex-col gap-1.5">
+                      <label className="text-sm font-medium text-white/80">Upload CV (optional)</label>
+                      <label className="flex items-center gap-3 bg-dark-card border border-dark-border rounded-lg px-4 py-2.5 text-sm text-white cursor-pointer hover:border-primary/50 transition-colors">
+                        <FileText className="w-4 h-4 text-primary shrink-0" />
+                        {cvFile ? (
+                          <span className="flex-1 truncate">{cvFile.name} <span className="text-muted">({formatFileSize(cvFile.size)})</span></span>
+                        ) : (
+                          <span className="flex-1 text-muted">PDF, DOC or DOCX · up to 5 MB</span>
+                        )}
+                        {uploading === 'cv' ? (
+                          <span className="text-primary text-xs shrink-0">Uploading…</span>
+                        ) : cvFile ? (
+                          <button type="button" aria-label="Remove CV" onClick={ev => { ev.preventDefault(); setCvFile(null); }} className="text-muted hover:text-white shrink-0 cursor-pointer"><X className="w-4 h-4" /></button>
+                        ) : (
+                          <Upload className="w-4 h-4 text-muted shrink-0" />
+                        )}
+                        <input type="file" accept=".pdf,.doc,.docx" className="hidden" onChange={e => { pickCv(e.target.files?.[0]); e.target.value = ''; }} />
+                      </label>
+                      {cvError && <p className="text-xs text-red-400">{cvError}</p>}
+                    </div>
+                    <div className="flex flex-col gap-1.5">
+                      <label className="text-sm font-medium text-white/80">Demo Lecture Recording (optional)</label>
+                      <label className="flex items-center gap-3 bg-dark-card border border-dark-border rounded-lg px-4 py-2.5 text-sm text-white cursor-pointer hover:border-primary/50 transition-colors">
+                        <Video className="w-4 h-4 text-primary shrink-0" />
+                        {demoFile ? (
+                          <span className="flex-1 truncate">{demoFile.name} <span className="text-muted">({formatFileSize(demoFile.size)})</span></span>
+                        ) : (
+                          <span className="flex-1 text-muted">MP4, WebM or MOV · up to 100 MB</span>
+                        )}
+                        {uploading === 'demo' ? (
+                          <span className="text-primary text-xs shrink-0">Uploading…</span>
+                        ) : demoFile ? (
+                          <button type="button" aria-label="Remove demo recording" onClick={ev => { ev.preventDefault(); setDemoFile(null); }} className="text-muted hover:text-white shrink-0 cursor-pointer"><X className="w-4 h-4" /></button>
+                        ) : (
+                          <Upload className="w-4 h-4 text-muted shrink-0" />
+                        )}
+                        <input type="file" accept=".mp4,.webm,.mov" className="hidden" onChange={e => { pickDemo(e.target.files?.[0]); e.target.value = ''; }} />
+                      </label>
+                      {demoError && <p className="text-xs text-red-400">{demoError}</p>}
+                    </div>
+                  </div>
                   {submitError && (
                     <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-3 text-sm text-red-400">{submitError}</div>
                   )}

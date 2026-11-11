@@ -23,7 +23,7 @@ import type {
 } from '@prisma/orm-postgres/contract/types';
 
 export type StorageHash =
-  StorageHashBase<'11b127ec7577bb2f74443a7d5db27ee578e80d0839fb00a624a2b3093934d65f'>;
+  StorageHashBase<'caeb9dc90aed76996f75d9f9bc2603e292000aea7683d3bdbbb49bf1f219f201'>;
 export type ExecutionHash =
   ExecutionHashBase<'724cb5805679e422d27371e55faf7662b11f26ef5bc01a2bbe6f9f9678d62a75'>;
 export type ProfileHash =
@@ -677,10 +677,14 @@ export namespace Models {
   };
   export type public_InstructorApplication = {
     createdAt: FieldOutputTypes['public']['InstructorApplication']['createdAt'];
+    cvUrl: FieldOutputTypes['public']['InstructorApplication']['cvUrl'];
+    demoRecordingUrl: FieldOutputTypes['public']['InstructorApplication']['demoRecordingUrl'];
     email: FieldOutputTypes['public']['InstructorApplication']['email'];
     experience: FieldOutputTypes['public']['InstructorApplication']['experience'];
     expertise: FieldOutputTypes['public']['InstructorApplication']['expertise'];
+    githubUrl: FieldOutputTypes['public']['InstructorApplication']['githubUrl'];
     id: FieldOutputTypes['public']['InstructorApplication']['id'];
+    linkedinUrl: FieldOutputTypes['public']['InstructorApplication']['linkedinUrl'];
     message: FieldOutputTypes['public']['InstructorApplication']['message'];
     name: FieldOutputTypes['public']['InstructorApplication']['name'];
     phone: FieldOutputTypes['public']['InstructorApplication']['phone'];
@@ -886,6 +890,7 @@ export namespace Models {
     readonly [RelationKeys]?: never;
   };
   export type public_User = {
+    adminPermissions: FieldOutputTypes['public']['User']['adminPermissions'];
     avatar: FieldOutputTypes['public']['User']['avatar'];
     bio: FieldOutputTypes['public']['User']['bio'];
     createdAt: FieldOutputTypes['public']['User']['createdAt'];
@@ -2054,6 +2059,18 @@ type ContractBase = Omit<
                   readonly typeParams: { readonly precision: 3 };
                   readonly many: false;
                 };
+                readonly cvUrl: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly demoRecordingUrl: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
                 readonly email: {
                   readonly dataType: 'pg/text';
                   readonly codecId: 'pg/text@1';
@@ -2072,10 +2089,22 @@ type ContractBase = Omit<
                   readonly nullable: true;
                   readonly many: false;
                 };
+                readonly githubUrl: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
                 readonly id: {
                   readonly dataType: 'pg/text';
                   readonly codecId: 'pg/text@1';
                   readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly linkedinUrl: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
                   readonly many: false;
                 };
                 readonly message: {
@@ -3508,6 +3537,12 @@ type ContractBase = Omit<
             };
             readonly User: {
               columns: {
+                readonly adminPermissions: {
+                  readonly dataType: 'pg/json';
+                  readonly codecId: 'pg/json@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
                 readonly avatar: {
                   readonly dataType: 'pg/text';
                   readonly codecId: 'pg/text@1';
@@ -4790,6 +4825,14 @@ type ContractBase = Omit<
                   readonly typeParams: { readonly precision: 3 };
                 };
               };
+              readonly cvUrl: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly demoRecordingUrl: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
               readonly email: {
                 readonly nullable: false;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
@@ -4802,8 +4845,16 @@ type ContractBase = Omit<
                 readonly nullable: true;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
               };
+              readonly githubUrl: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
               readonly id: {
                 readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly linkedinUrl: {
+                readonly nullable: true;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
               };
               readonly message: {
@@ -4843,10 +4894,14 @@ type ContractBase = Omit<
               readonly namespaceId: 'public';
               readonly fields: {
                 readonly createdAt: { readonly column: 'createdAt' };
+                readonly cvUrl: { readonly column: 'cvUrl' };
+                readonly demoRecordingUrl: { readonly column: 'demoRecordingUrl' };
                 readonly email: { readonly column: 'email' };
                 readonly experience: { readonly column: 'experience' };
                 readonly expertise: { readonly column: 'expertise' };
+                readonly githubUrl: { readonly column: 'githubUrl' };
                 readonly id: { readonly column: 'id' };
+                readonly linkedinUrl: { readonly column: 'linkedinUrl' };
                 readonly message: { readonly column: 'message' };
                 readonly name: { readonly column: 'name' };
                 readonly phone: { readonly column: 'phone' };
@@ -6041,6 +6096,10 @@ type ContractBase = Omit<
           };
           readonly User: {
             readonly fields: {
+              readonly adminPermissions: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/json@1' };
+              };
               readonly avatar: {
                 readonly nullable: true;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
@@ -6299,6 +6358,7 @@ type ContractBase = Omit<
               readonly table: 'User';
               readonly namespaceId: 'public';
               readonly fields: {
+                readonly adminPermissions: { readonly column: 'adminPermissions' };
                 readonly avatar: { readonly column: 'avatar' };
                 readonly bio: { readonly column: 'bio' };
                 readonly createdAt: { readonly column: 'createdAt' };

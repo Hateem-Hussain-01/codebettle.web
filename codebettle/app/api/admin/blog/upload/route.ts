@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { requireRoles } from '@/lib/api-helpers';
+import { requireRoles, adminAreaError } from '@/lib/api-helpers';
 import { uploadBlogPdf } from '@/lib/services/blog-storage';
 
 /**
@@ -14,6 +14,8 @@ import { uploadBlogPdf } from '@/lib/services/blog-storage';
 export async function POST(request: NextRequest) {
   const auth = await requireRoles(['admin', 'instructor']);
   if ('error' in auth) return auth.error;
+  const areaError = adminAreaError(auth.session, 'blog');
+  if (areaError) return areaError;
 
   let form: FormData;
   try {

@@ -67,10 +67,10 @@ export default function RegisterForm() {
 
   return (
     <div>
-      <div className="mb-8 text-center">
+      <div className="mb-5 text-center">
         <Link href="/" className="gradient-text text-2xl font-black">CodeBettle</Link>
-        <h1 className="mt-4 text-xl font-bold text-white">Create Your Account</h1>
-        <p className="mt-1 text-sm text-muted">Start your coding journey today — it&apos;s free!</p>
+        <h1 className="mt-3 text-xl font-bold text-white">Create Your Account</h1>
+        <p className="mt-1 text-sm text-muted">Start your coding journey today</p>
       </div>
 
       {verificationSent ? (
@@ -101,7 +101,7 @@ export default function RegisterForm() {
           </div>
         </div>
       ) : (
-        <form onSubmit={handleRegister} className="space-y-4">
+        <form onSubmit={handleRegister} className="space-y-3">
           <Input label="Full Name" placeholder="Your full name" value={form.name} onChange={set('name')} icon={<User className="h-4 w-4" />} error={errors.name} required />
           <Input label="Email Address" type="email" placeholder="you@example.com" value={form.email} onChange={set('email')} icon={<Mail className="h-4 w-4" />} error={errors.email} required />
           <Input label="Phone Number" type="tel" placeholder="+92 300 0000000" value={form.phone} onChange={set('phone')} icon={<Phone className="h-4 w-4" />} />
@@ -126,7 +126,7 @@ export default function RegisterForm() {
       )}
 
       {!verificationSent && (
-        <p className="mt-6 text-center text-sm text-muted">
+        <p className="mt-4 text-center text-sm text-muted">
           Already have an account?{' '}
           <Link href="/auth/login" className="font-medium text-primary hover:underline">Sign in</Link>
         </p>

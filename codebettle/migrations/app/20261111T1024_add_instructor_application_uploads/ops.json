@@ -1,0 +1,242 @@
+[
+  {
+    "id": "column.public.InstructorApplication.cvUrl",
+    "label": "Add column \"cvUrl\" to \"InstructorApplication\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "cvUrl",
+        "table": "InstructorApplication"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"cvUrl\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "InstructorApplication",
+          "cvUrl"
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "column \"cvUrl\" on \"InstructorApplication\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"cvUrl\"",
+        "sql": "ALTER TABLE \"public\".\"InstructorApplication\" ADD COLUMN \"cvUrl\" text"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"cvUrl\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "InstructorApplication",
+          "cvUrl"
+        ],
+        "expectation": {
+          "expects": "present",
+          "object": "column \"cvUrl\" on \"InstructorApplication\""
+        }
+      },
+      {
+        "description": "verify column \"cvUrl\" has type \"text\"",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_attribute\" AS \"a\" INNER JOIN \"pg_class\" AS \"c\" ON \"c\".\"oid\" = \"a\".\"attrelid\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"relnamespace\" WHERE (\"n\".\"nspname\" = $1 AND \"c\".\"relname\" = $2 AND \"a\".\"attname\" = $3 AND (format_type(\"a\".\"atttypid\", \"a\".\"atttypmod\")) = $4 AND NOT (\"a\".\"attisdropped\"))) AS \"result\"",
+        "params": [
+          "public",
+          "InstructorApplication",
+          "cvUrl",
+          "text"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "column.public.InstructorApplication.demoRecordingUrl",
+    "label": "Add column \"demoRecordingUrl\" to \"InstructorApplication\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "demoRecordingUrl",
+        "table": "InstructorApplication"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"demoRecordingUrl\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "InstructorApplication",
+          "demoRecordingUrl"
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "column \"demoRecordingUrl\" on \"InstructorApplication\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"demoRecordingUrl\"",
+        "sql": "ALTER TABLE \"public\".\"InstructorApplication\" ADD COLUMN \"demoRecordingUrl\" text"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"demoRecordingUrl\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "InstructorApplication",
+          "demoRecordingUrl"
+        ],
+        "expectation": {
+          "expects": "present",
+          "object": "column \"demoRecordingUrl\" on \"InstructorApplication\""
+        }
+      },
+      {
+        "description": "verify column \"demoRecordingUrl\" has type \"text\"",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_attribute\" AS \"a\" INNER JOIN \"pg_class\" AS \"c\" ON \"c\".\"oid\" = \"a\".\"attrelid\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"relnamespace\" WHERE (\"n\".\"nspname\" = $1 AND \"c\".\"relname\" = $2 AND \"a\".\"attname\" = $3 AND (format_type(\"a\".\"atttypid\", \"a\".\"atttypmod\")) = $4 AND NOT (\"a\".\"attisdropped\"))) AS \"result\"",
+        "params": [
+          "public",
+          "InstructorApplication",
+          "demoRecordingUrl",
+          "text"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "column.public.InstructorApplication.githubUrl",
+    "label": "Add column \"githubUrl\" to \"InstructorApplication\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "githubUrl",
+        "table": "InstructorApplication"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"githubUrl\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "InstructorApplication",
+          "githubUrl"
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "column \"githubUrl\" on \"InstructorApplication\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"githubUrl\"",
+        "sql": "ALTER TABLE \"public\".\"InstructorApplication\" ADD COLUMN \"githubUrl\" text"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"githubUrl\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "InstructorApplication",
+          "githubUrl"
+        ],
+        "expectation": {
+          "expects": "present",
+          "object": "column \"githubUrl\" on \"InstructorApplication\""
+        }
+      },
+      {
+        "description": "verify column \"githubUrl\" has type \"text\"",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_attribute\" AS \"a\" INNER JOIN \"pg_class\" AS \"c\" ON \"c\".\"oid\" = \"a\".\"attrelid\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"relnamespace\" WHERE (\"n\".\"nspname\" = $1 AND \"c\".\"relname\" = $2 AND \"a\".\"attname\" = $3 AND (format_type(\"a\".\"atttypid\", \"a\".\"atttypmod\")) = $4 AND NOT (\"a\".\"attisdropped\"))) AS \"result\"",
+        "params": [
+          "public",
+          "InstructorApplication",
+          "githubUrl",
+          "text"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "column.public.InstructorApplication.linkedinUrl",
+    "label": "Add column \"linkedinUrl\" to \"InstructorApplication\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "linkedinUrl",
+        "table": "InstructorApplication"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"linkedinUrl\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "InstructorApplication",
+          "linkedinUrl"
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "column \"linkedinUrl\" on \"InstructorApplication\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"linkedinUrl\"",
+        "sql": "ALTER TABLE \"public\".\"InstructorApplication\" ADD COLUMN \"linkedinUrl\" text"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"linkedinUrl\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "InstructorApplication",
+          "linkedinUrl"
+        ],
+        "expectation": {
+          "expects": "present",
+          "object": "column \"linkedinUrl\" on \"InstructorApplication\""
+        }
+      },
+      {
+        "description": "verify column \"linkedinUrl\" has type \"text\"",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_attribute\" AS \"a\" INNER JOIN \"pg_class\" AS \"c\" ON \"c\".\"oid\" = \"a\".\"attrelid\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"relnamespace\" WHERE (\"n\".\"nspname\" = $1 AND \"c\".\"relname\" = $2 AND \"a\".\"attname\" = $3 AND (format_type(\"a\".\"atttypid\", \"a\".\"atttypmod\")) = $4 AND NOT (\"a\".\"attisdropped\"))) AS \"result\"",
+        "params": [
+          "public",
+          "InstructorApplication",
+          "linkedinUrl",
+          "text"
+        ]
+      }
+    ]
+  }
+]

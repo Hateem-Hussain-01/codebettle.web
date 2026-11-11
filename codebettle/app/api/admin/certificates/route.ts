@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { invalidBody, readJson, requireAdmin, serviceError } from '@/lib/api-helpers';
+import { invalidBody, readJson, requireAdminArea, serviceError } from '@/lib/api-helpers';
 import { certificateCreateSchema } from '@/lib/api-schemas';
 import { listCertificates } from '@/lib/db/certificates';
 import { issueCertificateWithRetry } from '@/lib/services/certificate-service';
@@ -16,7 +16,7 @@ import { logAudit } from '@/lib/db/audit';
  * via the certificate service, which retries the next seq on collision.
  */
 export async function GET(request: NextRequest) {
-  const auth = await requireAdmin();
+  const auth = await requireAdminArea('certificates');
   if ('error' in auth) return auth.error;
   const params = request.nextUrl.searchParams;
   const page = await listCertificates({
@@ -34,7 +34,7 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
-  const auth = await requireAdmin();
+  const auth = await requireAdminArea('certificates');
   if ('error' in auth) return auth.error;
 
   const body = await readJson(request);

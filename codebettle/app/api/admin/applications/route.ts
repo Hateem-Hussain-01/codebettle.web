@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { invalidBody, readJson, requireAdmin } from '@/lib/api-helpers';
+import { invalidBody, readJson, requireAdminArea } from '@/lib/api-helpers';
 import { applicationCreateSchema } from '@/lib/api-schemas';
 import { listApplications } from '@/lib/db/applications';
 import { getUserById } from '@/lib/db/users';
@@ -16,7 +16,7 @@ import type { ApplicationStatus } from '@/lib/db/types';
 const STATUSES = ['pending', 'approved', 'rejected'] as const;
 
 export async function GET(request: NextRequest) {
-  const auth = await requireAdmin();
+  const auth = await requireAdminArea('applications');
   if ('error' in auth) return auth.error;
   const params = request.nextUrl.searchParams;
   const rawStatus = params.get('status');

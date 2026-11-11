@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { invalidBody, readJson, requireAdmin, serviceError } from '@/lib/api-helpers';
+import { invalidBody, readJson, requireAdminArea, serviceError } from '@/lib/api-helpers';
 import { enrollmentCreateSchema } from '@/lib/api-schemas';
 import { listEnrollments } from '@/lib/db/enrollments';
 import { createEnrollmentService } from '@/lib/services/enrollment-service';
@@ -11,7 +11,7 @@ import { createEnrollmentService } from '@/lib/services/enrollment-service';
  * Business logic lives in lib/services/enrollment-service.ts.
  */
 export async function GET(request: NextRequest) {
-  const auth = await requireAdmin();
+  const auth = await requireAdminArea('enrollments');
   if ('error' in auth) return auth.error;
   const params = request.nextUrl.searchParams;
   const page = await listEnrollments({
@@ -29,7 +29,7 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
-  const auth = await requireAdmin();
+  const auth = await requireAdminArea('enrollments');
   if ('error' in auth) return auth.error;
 
   const body = await readJson(request);

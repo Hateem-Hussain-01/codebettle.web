@@ -14,6 +14,7 @@
  */
 import { NextRequest, NextResponse } from 'next/server';
 import { getSession, type SessionUser } from './auth';
+import { hasAdminArea, hasAnyAdminArea, isFullAdmin, type AdminAreaKey } from './admin-access';
 import type { UserRole } from './db/types';
 
 /** undefined = use the real session cookie; null/a user = test override. */
@@ -49,6 +50,71 @@ export async function requireAdmin(): Promise<
   if (!session) return { error: NextResponse.json({ error: 'Not signed in' }, { status: 401 }) };
   if (session.role !== 'admin') {
     return { error: NextResponse.json({ error: 'Admin access required' }, { status: 403 }) };
+  }
+  return { session };
+}
+
+/**
+ * Per-area admin gate (Item G). Same 401/403 shape as requireAdmin, plus
+ * the area check: a restricted admin (a permissions map on the session)
+ * is denied unless that area is granted. A full admin (no restriction)
+ * passes every area. The permissions ride on the session, which
+ * getSession() rebuilds from the user record on every request, so a
+ * change made in /admin/access takes effect on the target's next request.
+ */
+export async function requireAdminArea(area: AdminAreaKey): Promise<
+  { session: SessionUser } | { error: NextResponse }
+> {
+  const session = await getRequestSession();
+  if (!session) return { error: NextResponse.json({ error: 'Not signed in' }, { status: 401 }) };
+  if (session.role !== 'admin') {
+    return { error: NextResponse.json({ error: 'Admin access required' }, { status: 403 }) };
+  }
+  if (!hasAdminArea(session.adminPermissions, area)) {
+    return { error: NextResponse.json({ error: 'Access to this admin area is not granted' }, { status: 403 }) };
+  }
+  return { session };
+}
+
+/** Admin gate requiring at least one of the given areas (e.g. user management spans students + instructors). */
+export async function requireAdminAreas(areas: readonly AdminAreaKey[]): Promise<
+  { session: SessionUser } | { error: NextResponse }
+> {
+  const session = await getRequestSession();
+  if (!session) return { error: NextResponse.json({ error: 'Not signed in' }, { status: 401 }) };
+  if (session.role !== 'admin') {
+    return { error: NextResponse.json({ error: 'Admin access required' }, { status: 403 }) };
+  }
+  if (!hasAnyAdminArea(session.adminPermissions, areas)) {
+    return { error: NextResponse.json({ error: 'Access to this admin area is not granted' }, { status: 403 }) };
+  }
+  return { session };
+}
+
+/**
+ * For routes open to non-admin roles too (e.g. instructors may write
+ * blog posts): admins additionally need the area, other roles pass
+ * through unchanged. Returns the 403 response when denied, else null.
+ */
+export function adminAreaError(session: SessionUser, area: AdminAreaKey): NextResponse | null {
+  if (session.role === 'admin' && !hasAdminArea(session.adminPermissions, area)) {
+    return NextResponse.json({ error: 'Access to this admin area is not granted' }, { status: 403 });
+  }
+  return null;
+}
+
+/**
+ * Full-admin gate (Item G): role admin AND no permissions restriction.
+ * Only full admins may grant/revoke admin access or edit permissions —
+ * a restricted admin must never be able to escalate themselves.
+ */
+export async function requireFullAdmin(): Promise<
+  { session: SessionUser } | { error: NextResponse }
+> {
+  const session = await getRequestSession();
+  if (!session) return { error: NextResponse.json({ error: 'Not signed in' }, { status: 401 }) };
+  if (session.role !== 'admin' || !isFullAdmin(session.adminPermissions)) {
+    return { error: NextResponse.json({ error: 'Full admin access required' }, { status: 403 }) };
   }
   return { session };
 }
