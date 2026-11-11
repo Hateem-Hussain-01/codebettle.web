@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { requireRoles } from '@/lib/api-helpers';
+import { assertNotViewAs, requireRoles } from '@/lib/api-helpers';
 import { uploadPaymentProof } from '@/lib/services/payment-proof-storage';
 
 /**
@@ -15,6 +15,8 @@ import { uploadPaymentProof } from '@/lib/services/payment-proof-storage';
 export async function POST(request: NextRequest) {
   const auth = await requireRoles(['student']);
   if ('error' in auth) return auth.error;
+  const viewing = assertNotViewAs(auth.session);
+  if (viewing) return viewing;
 
   let form: FormData;
   try {

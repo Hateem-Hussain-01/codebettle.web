@@ -49,6 +49,7 @@ import type {
 } from '../db/types';
 import { requiredSelectionCount, QUIZ_QUESTION_TYPES } from '../db/types';
 import { badRequest, forbidden, notFound, type Actor, type ServiceError } from './errors';
+import { hasAdminCapability, hasTeacherCapability } from '../rbac';
 import { gradeAttempt } from './quiz-grading';
 import { parseQuizPdf, MAX_QUIZ_PDF_BYTES, type ParsedQuestion } from './quiz-parser';
 import { uploadQuizPdf, type QuizPdfFile } from './quiz-storage';
@@ -67,7 +68,8 @@ async function audit(actorId: string | null, action: string, entityId: string, d
 }
 
 function canManageCourse(actor: Actor, course: { instructorId: string }): boolean {
-  return actor.role === 'admin' || (actor.role === 'instructor' && course.instructorId === actor.id);
+  // Phase 2: admin flag, or teacher flag (legacy role fallback) + ownership.
+  return hasAdminCapability(actor) || (hasTeacherCapability(actor) && course.instructorId === actor.id);
 }
 
 async function loadQuizForManagement(actor: Actor, quizId: string): Promise<Result<{ quiz: Quiz }>> {
@@ -101,7 +103,7 @@ export interface CreateQuizServiceInput {
 }
 
 export async function createQuizForTeacher(actor: Actor, input: CreateQuizServiceInput): Promise<Result<{ quiz: Quiz }>> {
-  if (actor.role !== 'instructor' && actor.role !== 'admin') {
+  if (!hasTeacherCapability(actor) && !hasAdminCapability(actor)) {
     return forbidden('Only instructors and admins can create quizzes');
   }
   const course = await getCourseById(input.courseId);
@@ -123,15 +125,15 @@ export async function createQuizForTeacher(actor: Actor, input: CreateQuizServic
 }
 
 export async function getQuizForTeacher(actor: Actor, quizId: string): Promise<Result<{ quiz: Quiz }>> {
-  if (actor.role !== 'instructor' && actor.role !== 'admin') {
+  if (!hasTeacherCapability(actor) && !hasAdminCapability(actor)) {
     return forbidden('Only instructors and admins can view quiz details');
   }
   return loadQuizForManagement(actor, quizId);
 }
 
 export async function listQuizzesForTeacher(actor: Actor): Promise<Result<{ quizzes: Quiz[] }>> {
-  if (actor.role === 'admin') return { quizzes: await listAllQuizzes() };
-  if (actor.role !== 'instructor') return forbidden('Only instructors and admins can list quizzes');
+  if (hasAdminCapability(actor)) return { quizzes: await listAllQuizzes() };
+  if (!hasTeacherCapability(actor)) return forbidden('Only instructors and admins can list quizzes');
   // Instructor sees quizzes for courses they teach.
   const myCourses = await getCoursesByInstructor(actor.id);
   const quizzes: Quiz[] = [];

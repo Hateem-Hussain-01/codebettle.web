@@ -85,6 +85,8 @@ export async function completeFirstRunSetup(
     email: normalized,
     passwordHash: await hashPassword(password),
     role: 'admin',
+    // Phase 2: the admin FLAG is what confers admin capability now.
+    isAdmin: true,
   });
   await logAudit({
     actorId: user.id,

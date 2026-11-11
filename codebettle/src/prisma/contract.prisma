@@ -128,6 +128,28 @@ model User {
   email              String                  @unique
   passwordHash       String
   role               Role
+  // Phase 2 (flags role model, user-confirmed): multi-role is boolean
+  // on/off switches on this record — NOT a separate role table.
+  //
+  // Semantics (the single source of truth; see lib/rbac.ts):
+  // - `role` is the PRIMARY role: the user's home portal / landing
+  //   portal and the role shown in the UI. It is kept for backward
+  //   compatibility and is never removed.
+  // - `isAdmin` / `isTeacher` are ADDITIONAL capabilities. A user is an
+  //   admin iff isAdmin is true, a teacher iff isTeacher is true.
+  // - A user can hold both flags at once (teacher + admin). Granting
+  //   admin never destroys the teacher capability, and revoking admin
+  //   restores the primary role from the remaining flags (isTeacher ->
+  //   'instructor', otherwise 'student') — see
+  //   lib/services/admin-access-service.ts.
+  // - A plain student is role 'student' with both flags false.
+  // - Guards MUST use the capability helpers in lib/rbac.ts
+  //   (hasAdminCapability / hasTeacherCapability), never `role ===`
+  //   alone. The helpers also treat the legacy primary role as a
+  //   capability (role 'admin' / 'instructor'), so rows created before
+  //   the flags were backfilled — and the seed — keep working.
+  isAdmin            Boolean                 @default(false)
+  isTeacher          Boolean                 @default(false)
   avatar             String?
   bio                String?
   phone              String?
@@ -160,6 +182,10 @@ model User {
   notes              Note[]
   wishlist           Wishlist[]
   paymentSubmissionsReviewed PaymentSubmission[] @relation("PaymentSubmissionReviewer")
+  invitationsSent    Invitation[]            @relation("InvitationInviter")
+  stageHistory       ApplicationStageHistory[] @relation("StageHistoryActor")
+  applicationNotes   ApplicationNote[]       @relation("ApplicationNoteAuthor")
+  applications       InstructorApplication[] @relation("ApplicationApplicant")
 }
 
 model Course {
@@ -561,6 +587,18 @@ model InstructorApplication {
   expertise  String?
   experience String?
   message    String?
+  // Phase 2: optional free-text "anything else we should know" (multiline
+  // in the form). Kept separate from `message` — message stays the
+  // "Why do you want to teach?" answer and is never renamed/dropped.
+  additionalInfo String?
+  // Phase 2: "Why are you a good fit for CodeBettle?" — nullable in the
+  // DB on purpose (required only in form validation), so no backfill is
+  // needed for existing rows.
+  whyGoodFit String?
+  // Phase 2: links the application to the applicant's account, matched
+  // by email at submit time. Nullable — existing rows have no account.
+  userId     String?
+  user       User?             @relation("ApplicationApplicant", fields: [userId], references: [id])
   cvUrl      String?
   linkedinUrl String?
   githubUrl  String?
@@ -569,6 +607,89 @@ model InstructorApplication {
   reviewedBy String?
   reviewer   User?             @relation("ApplicationReviewer", fields: [reviewedBy], references: [id])
   createdAt  DateTime          @default(now()) @onCreate(now())
+
+  stageHistory ApplicationStageHistory[]
+  notes        ApplicationNote[]
+}
+
+// Phase 2 models (23-module plan, Module 22 — roles & recruitment).
+//
+// - ApplicationStage: the pipeline stages an application moves through
+//   (e.g. Received, Screening, Demo, Approved). Admin-managed; `position`
+//   is the display order. Deleting a stage never deletes history —
+//   ApplicationStageHistory keeps a denormalised stageName snapshot.
+// - ApplicationStageHistory: an append-only audit trail of stage moves
+//   and review actions on one application. `action` values:
+//   stage_assigned, approved, rejected, info_requested, onboarded.
+// - ApplicationNote: an admin note on an application. isInternal=true
+//   notes are admin-only; a future applicant-visible note would set it
+//   false — nothing exposes notes to applicants today.
+// - Invitation: an invite to join as staff. Only the SHA-256 hash of
+//   the token is stored (same pattern as PasswordReset /
+//   EmailVerification), single-use (usedAt) and expiring. `grants` is
+//   the Json payload applied on accept: { isAdmin?: boolean,
+//   isTeacher?: boolean, adminPermissions?: AdminPermissions | null }.
+model ApplicationStage {
+  id           String   @id @onCreate(cuid(2))
+  name         String
+  position     Int
+  instructions String?
+  createdAt    DateTime @default(now()) @onCreate(now())
+  updatedAt    temporal.UpdatedAt
+
+  history ApplicationStageHistory[]
+
+  @@index([position])
+}
+
+model ApplicationStageHistory {
+  id            String               @id @onCreate(cuid(2))
+  applicationId String
+  application   InstructorApplication @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  stageId       String?
+  stage         ApplicationStage?    @relation(fields: [stageId], references: [id], onDelete: SetNull)
+  // Denormalised snapshot so history survives stage renames/deletes.
+  stageName     String
+  actorId       String?
+  actor         User?                @relation("StageHistoryActor", fields: [actorId], references: [id])
+  note          String?
+  action        String
+  createdAt     DateTime             @default(now()) @onCreate(now())
+
+  @@index([applicationId, createdAt])
+}
+
+model ApplicationNote {
+  id            String               @id @onCreate(cuid(2))
+  applicationId String
+  application   InstructorApplication @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  authorId      String
+  author        User                 @relation("ApplicationNoteAuthor", fields: [authorId], references: [id])
+  body          String
+  isInternal    Boolean              @default(true)
+  createdAt     DateTime             @default(now()) @onCreate(now())
+
+  @@index([applicationId, createdAt])
+}
+
+model Invitation {
+  id           String    @id @onCreate(cuid(2))
+  email        String
+  firstName    String
+  lastName     String
+  contactNumber String?
+  // Flags + adminPermissions to grant on accept (see header comment).
+  // Declared as Json; the repository validates its shape on read.
+  grants       Json
+  // SHA-256 hash of the raw token. The raw token is never stored.
+  tokenHash    String    @unique
+  expiresAt    DateTime
+  usedAt       DateTime?
+  invitedById  String
+  invitedBy    User      @relation("InvitationInviter", fields: [invitedById], references: [id])
+  createdAt    DateTime  @default(now()) @onCreate(now())
+
+  @@index([email])
 }
 
 model ContactMessage {

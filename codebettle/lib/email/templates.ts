@@ -177,6 +177,52 @@ export function passwordResetEmail(input: PasswordResetEmailInput): EmailTemplat
   return { subject: 'Reset your CodeBettle password', html, text };
 }
 
+export interface AdminInvitationEmailInput {
+  name: string;
+  inviteUrl: string;
+  /** Whole days the link stays valid (see INVITATION_TTL_DAYS in lib/services/invitation-service.ts). */
+  expiresInDays: number;
+}
+
+/**
+ * Admin invitation email (Phase 2, Module 18). The invited person sets
+ * their OWN password from the link — no password is ever sent in email,
+ * and no admin ever chooses it for them.
+ */
+export function adminInvitationEmail(input: AdminInvitationEmailInput): EmailTemplate {
+  const name = escapeHtml(input.name || 'there');
+  const days = input.expiresInDays;
+  const html = emailLayout({
+    preheader: 'You have been invited to join CodeBettle as an administrator.',
+    heading: 'You are invited to join CodeBettle',
+    bodyHtml:
+      bodyParagraph(`Hi ${name},`) +
+      bodyParagraph(
+        'You have been invited to join CodeBettle as an administrator. ' +
+          'Click the button below to set your own password and activate your account.',
+      ) +
+      bodyParagraph(
+        `This link expires in ${days} day${days === 1 ? '' : 's'} and can only be used once. ` +
+          'Your password is yours alone — nobody at CodeBettle sets it for you.',
+      ) +
+      bodyParagraph('If you were not expecting this invitation, you can safely ignore this email.'),
+    cta: { label: 'Set your password and join', url: input.inviteUrl },
+    fallbackUrl: input.inviteUrl,
+  });
+  const text = [
+    `Hi ${input.name || 'there'},`,
+    '',
+    'You have been invited to join CodeBettle as an administrator. Use the link below to set your own password and activate your account.',
+    '',
+    `Join CodeBettle: ${input.inviteUrl}`,
+    '',
+    `This link expires in ${days} day${days === 1 ? '' : 's'} and can only be used once. Your password is yours alone — nobody at CodeBettle sets it for you.`,
+    '',
+    'If you were not expecting this invitation, you can safely ignore this email.',
+  ].join('\n');
+  return { subject: 'You are invited to join CodeBettle as an admin', html, text };
+}
+
 // ---------------------------------------------------------------------------
 // Notification email (Part 1)
 // ---------------------------------------------------------------------------

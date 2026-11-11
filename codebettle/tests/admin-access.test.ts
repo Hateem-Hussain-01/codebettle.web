@@ -186,7 +186,11 @@ test('grant: a student becomes a restricted admin with exactly the checked areas
     permissions: { dashboard: true, courses: true, settings: false },
   });
   assert.ok(!('error' in result));
-  assert.equal(result.user.role, 'admin');
+  // Phase 2: granting sets the isAdmin FLAG and preserves the primary
+  // role — a student granted admin stays role 'student' (their home
+  // portal) with admin capability from the flag.
+  assert.equal(result.user.isAdmin, true);
+  assert.equal(result.user.role, 'student');
   assert.deepEqual(result.user.adminPermissions, { dashboard: true, courses: true });
 
   const stored = await getUserById('student-1');
@@ -197,7 +201,8 @@ test('grant: all areas checked grants FULL admin (NULL permissions)', async () =
   const all = Object.fromEntries(ADMIN_AREAS.map((a) => [a.key, true]));
   const result = await updateAdminAccess('admin-full', 'student-1', { permissions: all });
   assert.ok(!('error' in result));
-  assert.equal(result.user.role, 'admin');
+  assert.equal(result.user.isAdmin, true);
+  assert.equal(result.user.role, 'student');
   assert.equal(result.user.adminPermissions, undefined);
 });
 

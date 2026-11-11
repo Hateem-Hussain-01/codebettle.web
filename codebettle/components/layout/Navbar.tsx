@@ -5,6 +5,7 @@ import { useState, useEffect } from 'react';
 import { Menu, X, ChevronDown } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Button from '@/components/ui/Button';
+import { primaryPortalDashboard } from '@/lib/portal-switch';
 
 interface NavbarProps {
   session?: { name: string; role: string; avatar?: string } | null;
@@ -20,7 +21,10 @@ export default function Navbar({ session }: NavbarProps) {
     return () => window.removeEventListener('scroll', handler);
   }, []);
 
-  const portalLink = session ? `/${session.role}/dashboard` : null;
+  // Module 17: the public navbar points at the user's PRIMARY portal
+  // (role is the primary role). A dual-role user lands on their home
+  // portal here and uses the in-portal switcher to reach the other one.
+  const portalLink = primaryPortalDashboard(session);
 
   return (
     <nav className={`fixed top-0 left-0 right-0 z-40 transition-all duration-300 ${scrolled ? 'bg-dark/95 backdrop-blur-md border-b border-dark-border shadow-lg' : 'bg-transparent'}`}>

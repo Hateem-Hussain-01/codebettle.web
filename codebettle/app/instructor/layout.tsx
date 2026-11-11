@@ -1,6 +1,8 @@
 import { redirect } from 'next/navigation';
 import { getSession } from '@/lib/auth';
+import { hasTeacherCapability } from '@/lib/rbac';
 import PortalLayout from '@/components/layout/PortalLayout';
+import ViewAsBanner from '@/components/layout/ViewAsBanner';
 import { LayoutDashboard, BookOpen, Users, Bell, Star, FolderOpen, User, BarChart2, FileQuestion } from 'lucide-react';
 
 const NAV_ITEMS = [
@@ -18,11 +20,23 @@ const NAV_ITEMS = [
 
 export default async function InstructorLayout({ children }: { children: React.ReactNode }) {
   const session = await getSession();
-  if (!session || session.role !== 'instructor') redirect('/auth/login');
+  // Phase 2: teacher capability is the isTeacher flag (legacy primary
+  // role 'instructor' still counts). A PURE admin (isAdmin only, no
+  // teacher flag) is still redirected — unchanged from before; admins
+  // use the admin portal and the quiz APIs that already allow admins,
+  // not the instructor portal. An admin WITH the teacher flag passes
+  // here and uses the teacher portal.
+  if (!session || !hasTeacherCapability(session)) redirect('/auth/login');
 
   return (
-    <PortalLayout user={session} navItems={NAV_ITEMS} portalName="Instructor Portal">
-      {children}
-    </PortalLayout>
+    <>
+      {/* Phase 2, Module 21.4: while an admin views this portal, show
+          the banner (who is viewing + the way back). The session user
+          is the teacher; session.viewAs names the viewing admin. */}
+      {session.viewAs && <ViewAsBanner adminName={session.viewAs.adminName} />}
+      <PortalLayout user={session} navItems={NAV_ITEMS} portalName="Instructor Portal">
+        {children}
+      </PortalLayout>
+    </>
   );
 }

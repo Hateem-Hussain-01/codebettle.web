@@ -2,9 +2,10 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Menu, X, LogOut, Bell, ChevronRight } from 'lucide-react';
+import { Menu, X, LogOut, Bell, ChevronRight, ArrowLeftRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
+import { getPortalSwitch, portalFromPathname } from '@/lib/portal-switch';
 import type { SessionUser } from '@/lib/auth';
 
 interface NavItem {
@@ -107,6 +108,22 @@ export default function PortalLayout({ user, navItems, children, portalName }: P
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const pathname = usePathname();
 
+  // Module 17 — dual-role portal switching. The switch link is plain
+  // navigation to the other portal's dashboard: the target portal's
+  // server layout guard (capability flags) is the enforcement point,
+  // and the session cookie is untouched, so switching never logs the
+  // user out. getPortalSwitch returns null unless the user holds the
+  // OTHER portal's capability — a normal teacher/admin/student sees
+  // no switch option at all.
+  const switchTarget = getPortalSwitch(user, pathname);
+  // Bell/avatar stay in the CURRENT portal, not the user's primary
+  // role: a teacher+admin whose primary role is 'instructor' but who
+  // switched into the admin panel must get /admin/notifications, not
+  // /instructor/notifications. Falls back to the primary role outside
+  // any portal (should not happen — this layout only renders inside
+  // a portal — but keeps the old behaviour rather than a broken link).
+  const portalSlug = portalFromPathname(pathname) ?? user.role;
+
   return (
     <div className="flex h-screen bg-background overflow-hidden">
       {/* Desktop Sidebar */}
@@ -135,13 +152,29 @@ export default function PortalLayout({ user, navItems, children, portalName }: P
           </button>
           <div className="flex-1 lg:flex-none" />
           <div className="flex items-center gap-3">
+            {/* Module 17 — portal switcher. Rendered only when the user
+                holds the other portal's capability (see getPortalSwitch);
+                otherwise nothing renders here at all. A plain <Link>:
+                no session change, no client-sent role, no extra request
+                — the target portal's layout guard decides access. */}
+            {switchTarget && (
+              <Link
+                href={switchTarget.href}
+                aria-label={switchTarget.label}
+                title={switchTarget.label}
+                className="flex items-center gap-2 px-2.5 py-2 rounded-lg text-sm font-medium text-muted hover:text-white hover:bg-dark-border border border-dark-border hover:border-primary/40 transition-colors cursor-pointer"
+              >
+                <ArrowLeftRight className="w-4 h-4 text-primary" />
+                <span className="hidden sm:inline">{switchTarget.label}</span>
+              </Link>
+            )}
             {/* The bell used to be a dead button (no action at all). It is
                 now a link to the portal notifications page. */}
-            <Link href={`/${user.role}/notifications`} aria-label="Notifications" className="relative text-muted hover:text-white transition-colors p-2 rounded-lg hover:bg-dark-border cursor-pointer">
+            <Link href={`/${portalSlug}/notifications`} aria-label="Notifications" className="relative text-muted hover:text-white transition-colors p-2 rounded-lg hover:bg-dark-border cursor-pointer">
               <Bell className="w-5 h-5" />
               <span className="absolute top-1 right-1 w-2 h-2 bg-primary rounded-full" />
             </Link>
-            <Link href={`/${user.role}/profile`}>
+            <Link href={`/${portalSlug}/profile`}>
               <img src={user.avatar || `https://api.dicebear.com/7.x/initials/svg?seed=${user.name}`} alt={user.name} className="w-8 h-8 rounded-full object-cover border-2 border-primary/40 cursor-pointer hover:border-primary transition-colors" />
             </Link>
           </div>

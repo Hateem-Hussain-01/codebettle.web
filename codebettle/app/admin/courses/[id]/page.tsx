@@ -4,6 +4,7 @@ import { getEnrollmentsByCourse } from '@/lib/db/enrollments';
 import { getInstructors, getUserById } from '@/lib/db/users';
 import type { SafeUser } from '@/lib/db/types';
 import { getSession } from '@/lib/auth';
+import { hasAdminCapability } from '@/lib/rbac';
 import { redirect } from 'next/navigation';
 import Card from '@/components/ui/Card';
 import Badge from '@/components/ui/Badge';
@@ -21,7 +22,7 @@ const DAYS = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sun
 export default async function AdminCourseDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const session = await getSession();
-  if (!session || session.role !== 'admin') redirect('/auth/login');
+  if (!session || !hasAdminCapability(session)) redirect('/auth/login');
 
   const course = await getCourseById(id);
   if (!course) notFound();

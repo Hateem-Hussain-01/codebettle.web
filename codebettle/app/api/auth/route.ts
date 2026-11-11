@@ -13,6 +13,7 @@ import {
 import { checkRateLimit, loginRateLimitKey } from '@/lib/rate-limit';
 import { recordLoginEvent } from '@/lib/db/login-events';
 import { requestEmailVerification } from '@/lib/services/email-verification-service';
+import { VIEW_AS_COOKIE } from '@/lib/view-as';
 
 /** Login-event recording is best-effort: it must never block a sign-in. */
 async function safeRecordLoginEvent(input: Parameters<typeof recordLoginEvent>[0]): Promise<void> {
@@ -117,6 +118,8 @@ export async function POST(request: NextRequest) {
     });
     const response = NextResponse.json({ user, success: true });
     response.cookies.set(SESSION_COOKIE, token, sessionCookieOptions());
+    // A fresh sign-in ends any stale view-as state (Phase 2, Module 21.4).
+    response.cookies.delete(VIEW_AS_COOKIE);
     return response;
   }
 
@@ -161,6 +164,8 @@ export async function POST(request: NextRequest) {
       { status: 201 },
     );
     response.cookies.set(SESSION_COOKIE, token, sessionCookieOptions());
+    // A fresh sign-in ends any stale view-as state (Phase 2, Module 21.4).
+    response.cookies.delete(VIEW_AS_COOKIE);
     return response;
   }
 
@@ -169,9 +174,21 @@ export async function POST(request: NextRequest) {
     if (!parsed.success) {
       return NextResponse.json({ error: 'Invalid action' }, { status: 400 });
     }
+    // Phase 2, Module 21.4: while viewing a teacher's portal, logout
+    // would revoke the ADMIN's own session (the cookie holds the
+    // admin's token) — refuse it and send the admin back via the
+    // banner's Return to Admin Panel instead.
+    const viewingSession = await getSession();
+    if (viewingSession?.viewAs) {
+      return NextResponse.json(
+        { error: 'You are viewing a teacher portal as an admin. Return to the Admin Panel first, then sign out.' },
+        { status: 403 },
+      );
+    }
     await destroySession();
     const response = NextResponse.json({ success: true });
     response.cookies.delete(SESSION_COOKIE);
+    response.cookies.delete(VIEW_AS_COOKIE);
     return response;
   }
 
@@ -183,6 +200,16 @@ export async function POST(request: NextRequest) {
     const session = await getSession();
     if (!session) {
       return NextResponse.json({ error: 'Not signed in' }, { status: 401 });
+    }
+    // Phase 2, Module 21.4: while viewing, the session is the
+    // teacher's — changing the teacher's password from the viewing
+    // session must be refused (the admin must return to their own
+    // session first).
+    if (session.viewAs) {
+      return NextResponse.json(
+        { error: 'You are viewing a teacher portal as an admin. Return to the Admin Panel first, then change passwords from your own session.' },
+        { status: 403 },
+      );
     }
     const { currentPassword, newPassword } = parsed.data;
     const result = await changePassword(session.id, currentPassword, newPassword);

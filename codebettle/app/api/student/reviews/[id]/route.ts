@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { requireRoles, serviceError } from '@/lib/api-helpers';
+import { assertNotViewAs, requireRoles, serviceError } from '@/lib/api-helpers';
 import { deleteReviewService } from '@/lib/services/review-service';
 
 /**
@@ -9,6 +9,8 @@ import { deleteReviewService } from '@/lib/services/review-service';
 export async function DELETE(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const auth = await requireRoles(['student']);
   if ('error' in auth) return auth.error;
+  const viewing = assertNotViewAs(auth.session);
+  if (viewing) return viewing;
   const { id } = await params;
   const result = await deleteReviewService(auth.session, id);
   if ('error' in result) return serviceError(result);

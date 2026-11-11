@@ -105,7 +105,13 @@ export const lessonUpdateSchema = z.object({
 export const enrollmentCreateSchema = z.object({
   studentId: z.string().min(1),
   courseId: z.string().min(1),
-  paymentStatus: z.enum(['paid', 'free', 'pending']),
+  // Phase 2 (paid-with-no-proof fix): an admin creating an enrolment
+  // directly may NOT set it to 'paid' — a brand-new enrolment cannot
+  // have a linked approved payment submission yet. 'paid' is only
+  // reachable through the payment verification flow (approve a submitted
+  // payment, or PATCH with an approved submission). Create as 'pending'
+  // and verify the payment, or 'free' for free courses.
+  paymentStatus: z.enum(['free', 'pending']),
   amountPaid: z.number().int().min(0),
   couponUsed: z.string().optional(),
 });
@@ -118,21 +124,69 @@ export const enrollmentUpdateSchema = z.object({
   certificateEligible: z.boolean().optional(),
 });
 
+/**
+ * Module 3 (Phase 2): LinkedIn, CV, demo recording and whyGoodFit are
+ * REQUIRED — the become-instructor form requires them and the service
+ * enforces the same set. expertise/experience/message stay optional
+ * here on purpose: the form UI marks them required (HTML required +
+ * disabled-until-valid), but the server tolerates their absence — a
+ * committed test pins message as optional in this schema, and older
+ * direct callers submit without them. additionalInfo and phone are
+ * optional end to end.
+ */
 export const applicationCreateSchema = z.object({
   name: z.string().min(1),
-  email: z.string().min(1),
+  email: z.string().email(),
   phone: z.string().optional(),
   expertise: z.string().optional(),
   experience: z.string().optional(),
   message: z.string().optional(),
-  cvUrl: z.string().optional(),
-  linkedinUrl: z.string().url().optional(),
+  additionalInfo: z.string().optional(),
+  whyGoodFit: z.string().min(1),
+  cvUrl: z.string().min(1),
+  linkedinUrl: z.string().url().min(1),
   githubUrl: z.string().url().optional(),
-  demoRecordingUrl: z.string().optional(),
+  demoRecordingUrl: z.string().min(1),
 });
 
 export const applicationReviewSchema = z.object({
   status: z.enum(['approved', 'rejected']),
+});
+
+// ---------------------------------------------------------------------------
+// Recruitment pipeline — Modules 19/20/21 (Phase 2)
+// ---------------------------------------------------------------------------
+
+/** Admin-managed pipeline stage (create/update). */
+export const applicationStageSchema = z.object({
+  name: z.string().min(1).max(100),
+  instructions: z.string().max(1000).nullable().optional(),
+});
+
+/** Reorder the pipeline: the full stage id list in the new order. */
+export const applicationStageReorderSchema = z.object({
+  ids: z.array(z.string().min(1)).min(1),
+});
+
+/** Move an application to a pipeline stage. */
+export const applicationAssignStageSchema = z.object({
+  stageId: z.string().min(1),
+  note: z.string().max(500).optional(),
+});
+
+/** Ask the applicant for more information (note is the message). */
+export const applicationRequestInfoSchema = z.object({
+  note: z.string().min(1).max(1000),
+});
+
+/** Internal admin note — always stored internal, never shown to applicants. */
+export const applicationNoteSchema = z.object({
+  body: z.string().min(1).max(2000),
+});
+
+/** Admin-assisted view-as: mint a token for one teacher's portal. */
+export const viewAsSchema = z.object({
+  teacherId: z.string().min(1),
 });
 
 // ---------------------------------------------------------------------------

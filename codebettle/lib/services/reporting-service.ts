@@ -22,6 +22,7 @@
  * with the shared mappers. Exports therefore cover everything in
  * range, not just the first page.
  */
+import { hasTeacherCapability } from '../rbac';
 import { getDb } from '../db/client';
 import { getAllCourses, getCourseById, getCoursesByInstructor } from '../db/courses';
 import { getAllUsers, getUserById } from '../db/users';
@@ -173,6 +174,9 @@ export async function getAdminOverview(rangeInput: DateRangeInput): Promise<Resu
   const completed = enrollments.filter((e) => e.isCompleted);
   const certificates = data.certificates.filter((c) => inRange(c.issuedAt, range));
   const reviews = data.reviews.filter((r) => inRange(r.createdAt, range));
+  // Phase 2 note: these counts are by PRIMARY role, deliberately —
+  // a teacher+admin is counted once, under their primary role. They
+  // are a headcount breakdown, not capability counts.
   const usersByRole = {
     student: data.users.filter((u) => u.role === 'student').length,
     instructor: data.users.filter((u) => u.role === 'instructor').length,
@@ -369,7 +373,8 @@ export async function getInstructorReport(
   const range = parseDateRange(rangeInput);
   if ('error' in range) return range;
   const instructor = await getUserById(instructorId);
-  if (!instructor || instructor.role !== 'instructor') return notFound('Instructor');
+  // Phase 2: anyone with the teacher capability (flag or legacy role).
+  if (!instructor || !hasTeacherCapability(instructor)) return notFound('Instructor');
   // Ownership scope: ONLY courses this instructor teaches — enforced
   // here, so no caller can widen it by passing a different id.
   const ownCourses = await getCoursesByInstructor(instructorId);

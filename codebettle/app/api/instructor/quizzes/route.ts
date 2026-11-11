@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { invalidBody, readJson, requireRoles, serviceError } from '@/lib/api-helpers';
+import { assertNotViewAs, invalidBody, readJson, requireRoles, serviceError } from '@/lib/api-helpers';
 import { quizCreateSchema } from '@/lib/api-schemas';
 import { createQuizForTeacher, listQuizzesForTeacher } from '@/lib/services/quiz-service';
 
@@ -16,6 +16,8 @@ export async function GET() {
 export async function POST(request: NextRequest) {
   const auth = await requireRoles(['admin', 'instructor']);
   if ('error' in auth) return auth.error;
+  const viewing = assertNotViewAs(auth.session);
+  if (viewing) return viewing;
   const body = await readJson(request);
   if (body === null) return invalidBody();
   const parsed = quizCreateSchema.safeParse(body);

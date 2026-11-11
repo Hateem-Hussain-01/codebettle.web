@@ -11,6 +11,16 @@ const D = (s: string) => new Date(s);
 const ADMIN: Actor = { id: 'admin-1', role: 'admin', name: 'Admin' };
 const STUDENT: Actor = { id: 'stu-1', role: 'student', name: 'Ali' };
 
+// Module 3: submitApplication requires LinkedIn/CV/demo/whyGoodFit now;
+// existing tests below carry them via this spread (their intent —
+// review flow, listing, validation — is unchanged).
+const REQUIRED_FIELDS = {
+  linkedinUrl: 'https://linkedin.com/in/teacher',
+  cvUrl: 'cvs/11111111-1111-1111-1111-111111111111.pdf',
+  demoRecordingUrl: 'demos/22222222-2222-2222-2222-222222222222.mp4',
+  whyGoodFit: 'I love teaching.',
+};
+
 let fake: FakeDb;
 
 test.beforeEach(() => {
@@ -36,6 +46,7 @@ test('public submit creates a pending application with a normalised email', asyn
     phone: '0300 1234567',
     expertise: 'Python',
     experience: '5 years',
+    ...REQUIRED_FIELDS,
   });
   assert.ok('application' in created, JSON.stringify(created));
   assert.equal(created.application.status, 'pending');
@@ -53,7 +64,7 @@ test('submit validates name and email', async () => {
 });
 
 test('admin approves; the reviewer is recorded; re-review is rejected', async () => {
-  const submitted = await submitApplication({ name: 'T', email: 't@example.com' });
+  const submitted = await submitApplication({ name: 'T', email: 't@example.com', ...REQUIRED_FIELDS });
   assert.ok('application' in submitted, JSON.stringify(submitted));
 
   const approved = await reviewApplicationService(ADMIN, submitted.application.id, 'approved');
@@ -66,7 +77,7 @@ test('admin approves; the reviewer is recorded; re-review is rejected', async ()
 });
 
 test('review rejects non-admins and missing applications', async () => {
-  const submitted = await submitApplication({ name: 'T', email: 't2@example.com' });
+  const submitted = await submitApplication({ name: 'T', email: 't2@example.com', ...REQUIRED_FIELDS });
   assert.ok('application' in submitted, JSON.stringify(submitted));
 
   const asStudent = await reviewApplicationService(STUDENT, submitted.application.id, 'approved');
@@ -77,8 +88,8 @@ test('review rejects non-admins and missing applications', async () => {
 });
 
 test('listApplications filters by status and paginates', async () => {
-  await submitApplication({ name: 'P1', email: 'p1@example.com' });
-  await submitApplication({ name: 'P2', email: 'p2@example.com' });
+  await submitApplication({ name: 'P1', email: 'p1@example.com', ...REQUIRED_FIELDS });
+  await submitApplication({ name: 'P2', email: 'p2@example.com', ...REQUIRED_FIELDS });
   const pending = await listApplications({ status: 'pending' });
   assert.equal(pending.total, 2);
   const approved = await listApplications({ status: 'approved' });

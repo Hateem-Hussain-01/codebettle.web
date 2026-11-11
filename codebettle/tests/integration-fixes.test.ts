@@ -131,14 +131,23 @@ test('PATCH /api/instructor/enrollments/[id]: ownership enforced at the route', 
 });
 
 test('application create schema keeps the message field', () => {
+  // Module 3: LinkedIn/CV/demo/whyGoodFit are required now, so the
+  // parses below carry them; what this test pins is that `message`
+  // itself is optional and round-trips when present.
+  const required = {
+    linkedinUrl: 'https://linkedin.com/in/rahim',
+    cvUrl: 'cvs/11111111-1111-1111-1111-111111111111.pdf',
+    demoRecordingUrl: 'demos/22222222-2222-2222-2222-222222222222.mp4',
+    whyGoodFit: 'I love teaching.',
+  };
   const parsed = applicationCreateSchema.safeParse({
     name: 'Rahim', email: 'rahim@example.com', expertise: 'React', experience: '5y',
-    message: 'I want to teach.',
+    message: 'I want to teach.', ...required,
   });
   assert.ok(parsed.success, JSON.stringify(parsed.error));
   assert.equal(parsed.data.message, 'I want to teach.');
 
-  const noMessage = applicationCreateSchema.safeParse({ name: 'Rahim', email: 'rahim@example.com' });
+  const noMessage = applicationCreateSchema.safeParse({ name: 'Rahim', email: 'rahim@example.com', ...required });
   assert.ok(noMessage.success);
   assert.equal(noMessage.data.message, undefined);
 });

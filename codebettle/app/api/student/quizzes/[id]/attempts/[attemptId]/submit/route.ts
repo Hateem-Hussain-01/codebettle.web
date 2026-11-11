@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { invalidBody, readJson, requireRoles, serviceError } from '@/lib/api-helpers';
+import { assertNotViewAs, invalidBody, readJson, requireRoles, serviceError } from '@/lib/api-helpers';
 import { quizSubmitSchema } from '@/lib/api-schemas';
 import { submitAttempt } from '@/lib/services/quiz-service';
 
@@ -15,6 +15,8 @@ export async function POST(
 ) {
   const auth = await requireRoles(['student']);
   if ('error' in auth) return auth.error;
+  const viewing = assertNotViewAs(auth.session);
+  if (viewing) return viewing;
   const { attemptId } = await params;
   const body = await readJson(request);
   if (body === null) return invalidBody();

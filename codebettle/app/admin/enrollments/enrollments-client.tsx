@@ -25,6 +25,15 @@ const PAYMENT_OPTIONS = [
   { value: 'pending', label: 'Pending' },
 ];
 
+// Phase 2 (paid-with-no-proof fix): the CREATE form may not offer 'paid' —
+// a new enrolment has no linked approved submission yet, so 'paid' is only
+// reachable through the payment verification flow. The EDIT form keeps the
+// full list (PATCH enforces the approved-submission requirement itself).
+const CREATE_PAYMENT_OPTIONS = [
+  { value: 'free', label: 'Free' },
+  { value: 'pending', label: 'Pending' },
+];
+
 /**
  * Admin enrollments — wired to /api/admin/enrollments (Phase 3).
  * The list is fetched page by page (25 per page by default); the old
@@ -44,7 +53,7 @@ export default function EnrollmentsClient({ students, courses }: EnrollmentsClie
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [editTarget, setEditTarget] = useState<Enrollment | null>(null);
   const [saving, setSaving] = useState(false);
-  const [newForm, setNewForm] = useState({ studentId: '', courseId: '', paymentStatus: 'paid' as EnrollmentPaymentStatus, amountPaid: '', couponUsed: '' });
+  const [newForm, setNewForm] = useState({ studentId: '', courseId: '', paymentStatus: 'pending' as EnrollmentPaymentStatus, amountPaid: '', couponUsed: '' });
   const [editForm, setEditForm] = useState({ paymentStatus: 'paid' as EnrollmentPaymentStatus, amountPaid: '', certificateEligible: false });
 
   const studentMap = useMemo(() => Object.fromEntries(students.map(s => [s.id, s])), [students]);
@@ -98,7 +107,7 @@ export default function EnrollmentsClient({ students, courses }: EnrollmentsClie
       const data = await res.json();
       if (!res.ok) { toast.error(data.error || 'Could not create enrollment'); return; }
       setIsCreateOpen(false);
-      setNewForm({ studentId: '', courseId: '', paymentStatus: 'paid', amountPaid: '', couponUsed: '' });
+      setNewForm({ studentId: '', courseId: '', paymentStatus: 'pending', amountPaid: '', couponUsed: '' });
       toast.success('Enrollment created');
       loadEnrollments(1, limit);
     } finally {
@@ -280,7 +289,7 @@ export default function EnrollmentsClient({ students, courses }: EnrollmentsClie
             label="Payment Status"
             value={newForm.paymentStatus}
             onChange={e => setNewForm(f => ({ ...f, paymentStatus: e.target.value as EnrollmentPaymentStatus }))}
-            options={PAYMENT_OPTIONS}
+            options={CREATE_PAYMENT_OPTIONS}
           />
           <Input label="Amount Paid (PKR)" type="number" placeholder="0" value={newForm.amountPaid} onChange={e => setNewForm(f => ({ ...f, amountPaid: e.target.value }))} />
           <Input label="Coupon Used (optional)" placeholder="Coupon code" value={newForm.couponUsed} onChange={e => setNewForm(f => ({ ...f, couponUsed: e.target.value }))} />

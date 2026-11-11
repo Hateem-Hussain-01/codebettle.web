@@ -149,3 +149,21 @@ export async function deleteApplicationFile(path: string, client?: SupabaseClien
     throw new Error(`Application file delete failed: ${error.message}`);
   }
 }
+
+/**
+ * Module 3: is this a storage path the upload route itself returned
+ * (`cvs/<uuid>.pdf|doc|docx` or `demos/<uuid>.mp4|webm|mov`)? The
+ * public DELETE cleanup endpoint only ever deletes paths matching
+ * this shape — it can never be pointed at another bucket path, and
+ * CVs are documents while demos are videos, never the other way round.
+ */
+const APPLICATION_FILE_PATH_PATTERN =
+  /^(cvs|demos)\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\.(pdf|doc|docx|mp4|webm|mov)$/;
+
+export function isApplicationFilePath(path: string): boolean {
+  if (!APPLICATION_FILE_PATH_PATTERN.test(path)) return false;
+  const [dir, file] = path.split('/');
+  const ext = file.split('.').pop() ?? '';
+  if (dir === 'cvs') return ['pdf', 'doc', 'docx'].includes(ext);
+  return ['mp4', 'webm', 'mov'].includes(ext);
+}

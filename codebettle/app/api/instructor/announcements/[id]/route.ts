@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { requireRoles } from '@/lib/api-helpers';
+import { assertNotViewAs, requireRoles } from '@/lib/api-helpers';
 import { deleteAnnouncement, getAnnouncementById } from '@/lib/db/announcements';
 
 /**
@@ -9,6 +9,8 @@ import { deleteAnnouncement, getAnnouncementById } from '@/lib/db/announcements'
 export async function DELETE(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const auth = await requireRoles(['instructor']);
   if ('error' in auth) return auth.error;
+  const viewing = assertNotViewAs(auth.session);
+  if (viewing) return viewing;
   const { id } = await params;
   const existing = await getAnnouncementById(id);
   if (!existing) return NextResponse.json({ error: 'Announcement not found' }, { status: 404 });

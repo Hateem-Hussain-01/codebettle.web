@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { applicationUploadRateLimitKey, checkRateLimit } from '@/lib/rate-limit';
 import {
+  deleteApplicationFile,
+  isApplicationFilePath,
   uploadApplicationFile,
   type ApplicationFileKind,
 } from '@/lib/services/application-storage';
@@ -24,6 +26,15 @@ import {
  * not exist yet in Supabase Storage, this returns 503 naming the bucket
  * (create it in the dashboard: Storage -> New bucket ->
  * `application-files`, Private).
+ *
+ * DELETE /api/applications/upload?path=<storage path> — Module 3
+ * orphan cleanup: the become-instructor form calls this for each file
+ * it uploaded when the final application POST fails, so a failed
+ * submit does not leave orphaned CVs/demo recordings in Storage.
+ * Only paths the upload route itself returns are accepted
+ * (isApplicationFilePath); anything else is a 400. Same rate limit as
+ * uploads. Best-effort by design — a delete failure never blocks the
+ * form's error message.
  */
 function clientIp(request: NextRequest): string {
   const forwarded = request.headers.get('x-forwarded-for');
@@ -89,5 +100,44 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: message }, { status: 400 });
     }
     return NextResponse.json({ error: 'File upload failed' }, { status: 500 });
+  }
+}
+
+export async function DELETE(request: NextRequest) {
+  const limit = checkRateLimit(applicationUploadRateLimitKey(clientIp(request)), 10, 15 * 60 * 1000);
+  if (!limit.allowed) {
+    return NextResponse.json(
+      { error: 'Too many uploads. Please try again later.' },
+      { status: 429 },
+    );
+  }
+  const path = request.nextUrl.searchParams.get('path');
+  if (!path || !isApplicationFilePath(path)) {
+    return NextResponse.json({ error: 'A valid uploaded file path is required' }, { status: 400 });
+  }
+  try {
+    await deleteApplicationFile(path);
+    return NextResponse.json({ deleted: true });
+  } catch (e) {
+    const message = e instanceof Error ? e.message : '';
+    if (
+      message.includes('SUPABASE_SERVICE_ROLE_KEY') ||
+      message.includes('Supabase URL is not set')
+    ) {
+      return NextResponse.json(
+        { error: 'File uploads are not configured yet (Supabase service-role key missing)' },
+        { status: 503 },
+      );
+    }
+    if (message.includes('Bucket not found')) {
+      return NextResponse.json(
+        {
+          error:
+            'File uploads are not set up yet (the application-files bucket does not exist in Supabase Storage)',
+        },
+        { status: 503 },
+      );
+    }
+    return NextResponse.json({ error: 'File delete failed' }, { status: 500 });
   }
 }

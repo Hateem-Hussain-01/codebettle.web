@@ -138,6 +138,11 @@ test('applications: public submit works without a session; admin review works; s
   __setTestSession(null);
   const created = await list.POST(jsonReq('http://localhost/api/admin/applications', 'POST', {
     name: 'New Teacher', email: 'teacher@example.com', expertise: 'Python', experience: '4 years',
+    // Module 3: LinkedIn/CV/demo/whyGoodFit are required by the schema now.
+    linkedinUrl: 'https://linkedin.com/in/new-teacher',
+    cvUrl: 'cvs/11111111-1111-1111-1111-111111111111.pdf',
+    demoRecordingUrl: 'demos/22222222-2222-2222-2222-222222222222.mp4',
+    whyGoodFit: 'I love teaching.',
   }));
   assert.equal(created.status, 201);
   const createdBody = await created.json();

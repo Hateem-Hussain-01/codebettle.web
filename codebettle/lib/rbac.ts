@@ -5,6 +5,27 @@ import type { UserRole } from './db/types';
  * Authorisation is enforced server-side: in route guards, in API routes,
  * and — from Phase 2 — per record in every query (ownership scoping).
  * The frontend only hides controls; it never grants access.
+ *
+ * Phase 2 — flags role model (user-confirmed): multi-role is boolean
+ * on/off switches on the User record (`isAdmin`, `isTeacher`), NOT a
+ * separate role table. `role` stays as the PRIMARY role (home portal /
+ * landing portal). Semantics:
+ * - A user is an admin iff `isAdmin` is true; a teacher iff `isTeacher`
+ *   is true. Both flags can be true at once.
+ * - A plain student is primary role `student` with both flags false.
+ * - Capability checks MUST go through hasAdminCapability /
+ *   hasTeacherCapability below, never `role === 'admin'` alone.
+ * - TRANSITIONAL FALLBACK: the helpers also treat the legacy primary
+ *   role as a capability (`role === 'admin'` counts as admin,
+ *   `role === 'instructor'` as teacher). This is what keeps pre-flag
+ *   rows — the seed, and any row created before the Phase 2 migration's
+ *   backfill ran — working. Once the backfill has run everywhere, the
+ *   flags and the primary role agree and the fallback is a no-op; do
+ *   not remove it without a data check that every admin/teacher row
+ *   carries its flag.
+ * - Student-only flows (enrol, review, quiz attempts, payment submit)
+ *   stay keyed to the PRIMARY role (`role === 'student'`): being a
+ *   teacher or an admin does not make you a student.
  */
 
 export type Capability =
@@ -27,6 +48,51 @@ export type Capability =
   | 'verifyPayment'
   | 'managePaymentAccounts';
 
+/** Anything that carries a primary role and/or the Phase 2 flags. */
+export interface CapabilitySubject {
+  role?: UserRole;
+  isAdmin?: boolean;
+  isTeacher?: boolean;
+}
+
+/** Admin capability: the isAdmin flag, or (transitional fallback) primary role admin. */
+export function hasAdminCapability(
+  user: CapabilitySubject | null | undefined,
+): boolean {
+  if (!user) return false;
+  return user.isAdmin === true || user.role === 'admin';
+}
+
+/** Teacher capability: the isTeacher flag, or (transitional fallback) primary role instructor. */
+export function hasTeacherCapability(
+  user: CapabilitySubject | null | undefined,
+): boolean {
+  if (!user) return false;
+  return user.isTeacher === true || user.role === 'instructor';
+}
+
+/** Student identity is the PRIMARY role only — flags never confer it. */
+export function isStudent(user: CapabilitySubject | null | undefined): boolean {
+  return user?.role === 'student';
+}
+
+/**
+ * The effective roles a subject acts with, for the capability matrix:
+ * admin (flag or legacy role), instructor (flag or legacy role), and
+ * student (primary role only). A teacher+admin therefore acts with both
+ * admin and instructor capabilities; a pure admin does NOT gain
+ * instructor-only capabilities (editOwnCourse, proposeCertificate)
+ * unless they also hold the teacher flag.
+ */
+export function effectiveRoles(user: CapabilitySubject | null | undefined): UserRole[] {
+  if (!user) return [];
+  const roles: UserRole[] = [];
+  if (hasAdminCapability(user)) roles.push('admin');
+  if (hasTeacherCapability(user)) roles.push('instructor');
+  if (user.role === 'student') roles.push('student');
+  return roles;
+}
+
 const MATRIX: Record<Capability, UserRole[]> = {
   browseCatalogue: ['student', 'instructor', 'admin'],
   enroll: ['student'],
@@ -48,12 +114,24 @@ const MATRIX: Record<Capability, UserRole[]> = {
   managePaymentAccounts: ['admin'],
 };
 
-/** Does this role have this capability at all (before ownership checks)? */
-export function can(role: UserRole, capability: Capability): boolean {
-  return MATRIX[capability].includes(role);
+/**
+ * Does this role / subject have this capability at all (before ownership
+ * checks)? Accepts a bare primary role (legacy call sites) or a full
+ * subject with flags. A bare role behaves exactly as before.
+ */
+export function can(role: UserRole, capability: Capability): boolean;
+export function can(subject: CapabilitySubject, capability: Capability): boolean;
+export function can(
+  roleOrSubject: UserRole | CapabilitySubject,
+  capability: Capability,
+): boolean {
+  if (typeof roleOrSubject === 'string') {
+    return MATRIX[capability].includes(roleOrSubject);
+  }
+  return effectiveRoles(roleOrSubject).some((role) => MATRIX[capability].includes(role));
 }
 
-/** Does the session user (if any) have one of the given roles? */
+/** Does the session user (if any) have one of the given PRIMARY roles? Role-only on purpose — capability checks use hasAdminCapability / hasTeacherCapability. */
 export function hasRole(
   session: { role: UserRole } | null,
   roles: UserRole[]
@@ -61,17 +139,17 @@ export function hasRole(
   return session !== null && roles.includes(session.role);
 }
 
-/** Ownership: an instructor may only touch courses they teach. */
-export function ownsCourse(session: { id: string; role: UserRole } | null, instructorId: string): boolean {
-  return session !== null && session.role === 'instructor' && session.id === instructorId;
+/** Ownership: a teacher (flag or legacy role) may only touch courses they teach. */
+export function ownsCourse(session: { id: string; role: UserRole; isAdmin?: boolean; isTeacher?: boolean } | null, instructorId: string): boolean {
+  return session !== null && hasTeacherCapability(session) && session.id === instructorId;
 }
 
 /** Ownership: a student may only touch their own records. Admins may touch any. */
 export function ownsEnrollment(
-  session: { id: string; role: UserRole } | null,
+  session: { id: string; role: UserRole; isAdmin?: boolean; isTeacher?: boolean } | null,
   studentId: string
 ): boolean {
   if (session === null) return false;
-  if (session.role === 'admin') return true;
+  if (hasAdminCapability(session)) return true;
   return session.role === 'student' && session.id === studentId;
 }

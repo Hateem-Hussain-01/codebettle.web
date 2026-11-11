@@ -18,6 +18,7 @@ import { createUser, getUserByEmail } from '../db/users';
 import { logAudit } from '../db/audit';
 import { hashPassword, normalizeEmail } from '../security';
 import { badRequest, forbidden, type Actor, type ServiceError } from './errors';
+import { hasAdminCapability } from '../rbac';
 
 type Result<T> = T | ServiceError;
 
@@ -52,7 +53,7 @@ export interface ImportPreview {
 }
 
 function requireAdmin(actor: Actor): ServiceError | null {
-  return actor.role === 'admin' ? null : forbidden('Only admins can import users');
+  return hasAdminCapability(actor) ? null : forbidden('Only admins can import users');
 }
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -314,6 +315,8 @@ export async function importUsers(
       // The user cannot sign in until an admin sets a password.
       passwordHash: await hashPassword(randomBytes(32).toString('hex')),
       role,
+      // Phase 2: keep the teacher flag in sync with the imported primary role.
+      isTeacher: role === 'instructor',
       ...(row.phone ? { phone: row.phone.trim() } : {}),
     });
     imported.push({ id: user.id, email: user.email });

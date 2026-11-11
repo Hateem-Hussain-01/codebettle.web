@@ -6,6 +6,9 @@ import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
 import Textarea from '@/components/ui/Textarea';
 import Card from '@/components/ui/Card';
+import Badge from '@/components/ui/Badge';
+import TrackingTimeline, { type TrackingViewShape } from '@/components/applicant/TrackingTimeline';
+import { formatDateShort } from '@/lib/utils';
 import toast from 'react-hot-toast';
 
 export default function InstructorProfilePage() {
@@ -28,6 +31,55 @@ export default function InstructorProfilePage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
+
+  // Phase 2, Module 21: My Applications — the recruitment record that
+  // brought this teacher here (status, current stage, recruitment
+  // progress, onboarding information). Read from the same applicant
+  // tracking API the applicant portal uses (own applications only).
+  const [myApps, setMyApps] = useState<Array<{ id: string; status: string; createdAt: string; currentStageName: string; nextStageName: string | null }>>([]);
+  const [appsLoading, setAppsLoading] = useState(true);
+  const [openTracking, setOpenTracking] = useState<TrackingViewShape | null>(null);
+  const [trackingLoadingId, setTrackingLoadingId] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch('/api/applicant/applications', { cache: 'no-store' });
+        const data = await res.json().catch(() => ({}));
+        if (cancelled) return;
+        if (res.ok) setMyApps(data.applications ?? []);
+      } catch {
+        // The applications section is secondary — profile editing is the priority.
+      } finally {
+        if (!cancelled) setAppsLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const loadTracking = async (id: string) => {
+    if (openTracking?.application.id === id) {
+      setOpenTracking(null);
+      return;
+    }
+    setTrackingLoadingId(id);
+    try {
+      const res = await fetch(`/api/applicant/applications/${id}`, { cache: 'no-store' });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        toast.error(data.error || 'Could not load the application');
+        return;
+      }
+      setOpenTracking(data.tracking);
+    } catch {
+      toast.error('Could not load the application');
+    } finally {
+      setTrackingLoadingId(null);
+    }
+  };
 
   // Load the real signed-in user — never a hardcoded demo user.
   useEffect(() => {
@@ -277,6 +329,45 @@ export default function InstructorProfilePage() {
           <Input label="Confirm New Password" type="password" placeholder="Repeat new password" value={passwords.confirm} onChange={e => setPasswords(p => ({ ...p, confirm: e.target.value }))} required />
           <Button type="submit" loading={saving} variant="outline"><Lock className="w-4 h-4" />Change Password</Button>
         </form>
+      </Card>
+
+      {/* My Applications — recruitment history (Phase 2, Module 21). */}
+      <Card>
+        <h2 className="text-white font-bold mb-1">My Applications</h2>
+        <p className="text-muted text-sm mb-4">Your instructor application(s), recruitment progress and onboarding information.</p>
+        {appsLoading && <p className="text-muted text-sm">Loading your applications…</p>}
+        {!appsLoading && myApps.length === 0 && (
+          <p className="text-muted text-sm">No applications on file — your account was created another way (invitation or admin setup).</p>
+        )}
+        {!appsLoading && myApps.length > 0 && (
+          <div className="space-y-3">
+            {myApps.map((app) => (
+              <div key={app.id} className="border border-dark-border rounded-lg p-3">
+                <div className="flex items-center gap-3 flex-wrap">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-white text-sm font-mono truncate">{app.id}</p>
+                    <p className="text-muted text-xs mt-1">
+                      Submitted {formatDateShort(app.createdAt)} · Current stage: <span className="text-white">{app.currentStageName}</span>
+                      {app.currentStageName === 'Successfully Onboarded' ? ' — onboarding complete' : ''}
+                      {app.nextStageName ? <> · Next: <span className="text-white">{app.nextStageName}</span></> : ''}
+                    </p>
+                  </div>
+                  <Badge variant={app.status === 'approved' ? 'success' : app.status === 'rejected' ? 'danger' : 'warning'}>
+                    {app.status}
+                  </Badge>
+                  <Button size="sm" variant="secondary" onClick={() => loadTracking(app.id)} loading={trackingLoadingId === app.id}>
+                    {openTracking?.application.id === app.id ? 'Hide progress' : 'Recruitment progress'}
+                  </Button>
+                </div>
+                {openTracking?.application.id === app.id && (
+                  <div className="mt-4">
+                    <TrackingTimeline tracking={openTracking} />
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
       </Card>
     </div>
   );

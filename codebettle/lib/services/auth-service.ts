@@ -27,12 +27,34 @@ export interface SessionUser {
   role: 'student' | 'instructor' | 'admin';
   avatar?: string;
   /**
+   * Phase 2 flags, read fresh from the user record on every request
+   * (see getSession in lib/auth.ts) — a flag change takes effect on the
+   * next request, same as a role change. Guards read these, never
+   * `role` alone (see lib/rbac.ts hasAdminCapability /
+   * hasTeacherCapability). Optional so hand-built test sessions that
+   * only carry a role keep compiling; an absent flag is treated as
+   * false and the capability helpers fall back to `role`.
+   * toSessionUser always populates both.
+   */
+  isAdmin?: boolean;
+  isTeacher?: boolean;
+  /**
    * Per-area admin permissions (Item G), read fresh from the user record
    * on every request (see getSession in lib/auth.ts). Undefined = full
    * admin (every area granted). A map grants only the listed areas.
    * Guards read this directly — no extra query is needed.
    */
   adminPermissions?: AdminPermissions;
+  /**
+   * Phase 2, Module 21.4 (admin-assisted view-as): set ONLY when an
+   * admin is viewing this teacher's portal through a valid view-as
+   * token (see lib/auth.ts getSession). The session user is then the
+   * TEACHER, and this marker names the admin doing the viewing — so
+   * write routes can refuse mutations while viewing (see
+   * assertNotViewAs in lib/api-helpers.ts) and layouts can show the
+   * viewing banner. Absent in every normal session.
+   */
+  viewAs?: { adminId: string; adminName: string };
 }
 
 export function toSessionUser(user: User | SafeUser): SessionUser {
@@ -42,6 +64,10 @@ export function toSessionUser(user: User | SafeUser): SessionUser {
     email: user.email,
     role: user.role,
     avatar: user.avatar,
+    // `?? false` covers User objects built before the flags existed
+    // (e.g. hand-built fixtures in tests).
+    isAdmin: user.isAdmin ?? false,
+    isTeacher: user.isTeacher ?? false,
     adminPermissions: user.adminPermissions,
   };
 }

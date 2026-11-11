@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
-import { invalidBody, readJson, requireRoles } from '@/lib/api-helpers';
+import { assertNotViewAs, invalidBody, readJson, requireRoles } from '@/lib/api-helpers';
 import { createNote, listNotesForUser } from '@/lib/db/notes';
 import { getCourseById, getCoursesByIds } from '@/lib/db/courses';
 import { getEnrollmentsByStudent } from '@/lib/db/enrollments';
@@ -37,6 +37,8 @@ export async function GET() {
 export async function POST(request: NextRequest) {
   const auth = await requireRoles(['student']);
   if ('error' in auth) return auth.error;
+  const viewing = assertNotViewAs(auth.session);
+  if (viewing) return viewing;
   const body = await readJson(request);
   const parsed = noteSchema.safeParse(body);
   if (!parsed.success) return invalidBody('A title and content are required');

@@ -1,0 +1,1458 @@
+[
+  {
+    "id": "table.ApplicationNote",
+    "label": "Create table \"ApplicationNote\"",
+    "summary": "Creates table \"ApplicationNote\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "ApplicationNote"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"ApplicationNote\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"ApplicationNote\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "table \"ApplicationNote\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"ApplicationNote\"",
+        "sql": "CREATE TABLE \"public\".\"ApplicationNote\" (\n  \"applicationId\" text NOT NULL,\n  \"authorId\" text NOT NULL,\n  \"body\" text NOT NULL,\n  \"createdAt\" timestamptz(3) DEFAULT (now()) NOT NULL,\n  \"id\" text NOT NULL,\n  \"isInternal\" bool DEFAULT true NOT NULL,\n  PRIMARY KEY (\"id\")\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"ApplicationNote\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" WHERE (\"c\".\"oid\" = to_regclass($1) AND (\"c\".\"relkind\" = $2 OR \"c\".\"relkind\" = $3))) AS \"result\"",
+        "params": [
+          "\"public\".\"ApplicationNote\"",
+          "r",
+          "p"
+        ],
+        "expectation": {
+          "expects": "present",
+          "object": "table \"ApplicationNote\""
+        }
+      }
+    ]
+  },
+  {
+    "id": "table.ApplicationStage",
+    "label": "Create table \"ApplicationStage\"",
+    "summary": "Creates table \"ApplicationStage\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "ApplicationStage"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"ApplicationStage\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"ApplicationStage\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "table \"ApplicationStage\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"ApplicationStage\"",
+        "sql": "CREATE TABLE \"public\".\"ApplicationStage\" (\n  \"createdAt\" timestamptz(3) DEFAULT (now()) NOT NULL,\n  \"id\" text NOT NULL,\n  \"instructions\" text,\n  \"name\" text NOT NULL,\n  \"position\" int4 NOT NULL,\n  \"updatedAt\" timestamptz(3) NOT NULL,\n  PRIMARY KEY (\"id\")\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"ApplicationStage\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" WHERE (\"c\".\"oid\" = to_regclass($1) AND (\"c\".\"relkind\" = $2 OR \"c\".\"relkind\" = $3))) AS \"result\"",
+        "params": [
+          "\"public\".\"ApplicationStage\"",
+          "r",
+          "p"
+        ],
+        "expectation": {
+          "expects": "present",
+          "object": "table \"ApplicationStage\""
+        }
+      }
+    ]
+  },
+  {
+    "id": "table.ApplicationStageHistory",
+    "label": "Create table \"ApplicationStageHistory\"",
+    "summary": "Creates table \"ApplicationStageHistory\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "ApplicationStageHistory"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"ApplicationStageHistory\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"ApplicationStageHistory\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "table \"ApplicationStageHistory\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"ApplicationStageHistory\"",
+        "sql": "CREATE TABLE \"public\".\"ApplicationStageHistory\" (\n  \"action\" text NOT NULL,\n  \"actorId\" text,\n  \"applicationId\" text NOT NULL,\n  \"createdAt\" timestamptz(3) DEFAULT (now()) NOT NULL,\n  \"id\" text NOT NULL,\n  \"note\" text,\n  \"stageId\" text,\n  \"stageName\" text NOT NULL,\n  PRIMARY KEY (\"id\")\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"ApplicationStageHistory\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" WHERE (\"c\".\"oid\" = to_regclass($1) AND (\"c\".\"relkind\" = $2 OR \"c\".\"relkind\" = $3))) AS \"result\"",
+        "params": [
+          "\"public\".\"ApplicationStageHistory\"",
+          "r",
+          "p"
+        ],
+        "expectation": {
+          "expects": "present",
+          "object": "table \"ApplicationStageHistory\""
+        }
+      }
+    ]
+  },
+  {
+    "id": "table.Invitation",
+    "label": "Create table \"Invitation\"",
+    "summary": "Creates table \"Invitation\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "Invitation"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"Invitation\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"Invitation\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "table \"Invitation\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"Invitation\"",
+        "sql": "CREATE TABLE \"public\".\"Invitation\" (\n  \"contactNumber\" text,\n  \"createdAt\" timestamptz(3) DEFAULT (now()) NOT NULL,\n  \"email\" text NOT NULL,\n  \"expiresAt\" timestamptz(3) NOT NULL,\n  \"firstName\" text NOT NULL,\n  \"grants\" json NOT NULL,\n  \"id\" text NOT NULL,\n  \"invitedById\" text NOT NULL,\n  \"lastName\" text NOT NULL,\n  \"tokenHash\" text NOT NULL,\n  \"usedAt\" timestamptz(3),\n  PRIMARY KEY (\"id\")\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"Invitation\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" WHERE (\"c\".\"oid\" = to_regclass($1) AND (\"c\".\"relkind\" = $2 OR \"c\".\"relkind\" = $3))) AS \"result\"",
+        "params": [
+          "\"public\".\"Invitation\"",
+          "r",
+          "p"
+        ],
+        "expectation": {
+          "expects": "present",
+          "object": "table \"Invitation\""
+        }
+      }
+    ]
+  },
+  {
+    "id": "column.public.InstructorApplication.additionalInfo",
+    "label": "Add column \"additionalInfo\" to \"InstructorApplication\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "additionalInfo",
+        "table": "InstructorApplication"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"additionalInfo\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "InstructorApplication",
+          "additionalInfo"
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "column \"additionalInfo\" on \"InstructorApplication\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"additionalInfo\"",
+        "sql": "ALTER TABLE \"public\".\"InstructorApplication\" ADD COLUMN \"additionalInfo\" text"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"additionalInfo\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "InstructorApplication",
+          "additionalInfo"
+        ],
+        "expectation": {
+          "expects": "present",
+          "object": "column \"additionalInfo\" on \"InstructorApplication\""
+        }
+      },
+      {
+        "description": "verify column \"additionalInfo\" has type \"text\"",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_attribute\" AS \"a\" INNER JOIN \"pg_class\" AS \"c\" ON \"c\".\"oid\" = \"a\".\"attrelid\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"relnamespace\" WHERE (\"n\".\"nspname\" = $1 AND \"c\".\"relname\" = $2 AND \"a\".\"attname\" = $3 AND (format_type(\"a\".\"atttypid\", \"a\".\"atttypmod\")) = $4 AND NOT (\"a\".\"attisdropped\"))) AS \"result\"",
+        "params": [
+          "public",
+          "InstructorApplication",
+          "additionalInfo",
+          "text"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "column.public.InstructorApplication.userId",
+    "label": "Add column \"userId\" to \"InstructorApplication\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "userId",
+        "table": "InstructorApplication"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"userId\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "InstructorApplication",
+          "userId"
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "column \"userId\" on \"InstructorApplication\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"userId\"",
+        "sql": "ALTER TABLE \"public\".\"InstructorApplication\" ADD COLUMN \"userId\" text"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"userId\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "InstructorApplication",
+          "userId"
+        ],
+        "expectation": {
+          "expects": "present",
+          "object": "column \"userId\" on \"InstructorApplication\""
+        }
+      },
+      {
+        "description": "verify column \"userId\" has type \"text\"",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_attribute\" AS \"a\" INNER JOIN \"pg_class\" AS \"c\" ON \"c\".\"oid\" = \"a\".\"attrelid\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"relnamespace\" WHERE (\"n\".\"nspname\" = $1 AND \"c\".\"relname\" = $2 AND \"a\".\"attname\" = $3 AND (format_type(\"a\".\"atttypid\", \"a\".\"atttypmod\")) = $4 AND NOT (\"a\".\"attisdropped\"))) AS \"result\"",
+        "params": [
+          "public",
+          "InstructorApplication",
+          "userId",
+          "text"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "column.public.InstructorApplication.whyGoodFit",
+    "label": "Add column \"whyGoodFit\" to \"InstructorApplication\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "whyGoodFit",
+        "table": "InstructorApplication"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"whyGoodFit\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "InstructorApplication",
+          "whyGoodFit"
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "column \"whyGoodFit\" on \"InstructorApplication\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"whyGoodFit\"",
+        "sql": "ALTER TABLE \"public\".\"InstructorApplication\" ADD COLUMN \"whyGoodFit\" text"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"whyGoodFit\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "InstructorApplication",
+          "whyGoodFit"
+        ],
+        "expectation": {
+          "expects": "present",
+          "object": "column \"whyGoodFit\" on \"InstructorApplication\""
+        }
+      },
+      {
+        "description": "verify column \"whyGoodFit\" has type \"text\"",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_attribute\" AS \"a\" INNER JOIN \"pg_class\" AS \"c\" ON \"c\".\"oid\" = \"a\".\"attrelid\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"relnamespace\" WHERE (\"n\".\"nspname\" = $1 AND \"c\".\"relname\" = $2 AND \"a\".\"attname\" = $3 AND (format_type(\"a\".\"atttypid\", \"a\".\"atttypmod\")) = $4 AND NOT (\"a\".\"attisdropped\"))) AS \"result\"",
+        "params": [
+          "public",
+          "InstructorApplication",
+          "whyGoodFit",
+          "text"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "column.public.User.isAdmin",
+    "label": "Add column \"isAdmin\" to \"User\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "isAdmin",
+        "table": "User"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"isAdmin\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "User",
+          "isAdmin"
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "column \"isAdmin\" on \"User\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"isAdmin\"",
+        "sql": "ALTER TABLE \"public\".\"User\" ADD COLUMN \"isAdmin\" bool DEFAULT false NOT NULL"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"isAdmin\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "User",
+          "isAdmin"
+        ],
+        "expectation": {
+          "expects": "present",
+          "object": "column \"isAdmin\" on \"User\""
+        }
+      },
+      {
+        "description": "verify column \"isAdmin\" has type \"boolean\"",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_attribute\" AS \"a\" INNER JOIN \"pg_class\" AS \"c\" ON \"c\".\"oid\" = \"a\".\"attrelid\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"relnamespace\" WHERE (\"n\".\"nspname\" = $1 AND \"c\".\"relname\" = $2 AND \"a\".\"attname\" = $3 AND (format_type(\"a\".\"atttypid\", \"a\".\"atttypmod\")) = $4 AND NOT (\"a\".\"attisdropped\"))) AS \"result\"",
+        "params": [
+          "public",
+          "User",
+          "isAdmin",
+          "boolean"
+        ]
+      },
+      {
+        "description": "verify column \"isAdmin\" is NOT NULL",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3 AND \"is_nullable\" = $4)) AS \"result\"",
+        "params": [
+          "public",
+          "User",
+          "isAdmin",
+          "NO"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "column.public.User.isTeacher",
+    "label": "Add column \"isTeacher\" to \"User\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "isTeacher",
+        "table": "User"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"isTeacher\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "User",
+          "isTeacher"
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "column \"isTeacher\" on \"User\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"isTeacher\"",
+        "sql": "ALTER TABLE \"public\".\"User\" ADD COLUMN \"isTeacher\" bool DEFAULT false NOT NULL"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"isTeacher\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "User",
+          "isTeacher"
+        ],
+        "expectation": {
+          "expects": "present",
+          "object": "column \"isTeacher\" on \"User\""
+        }
+      },
+      {
+        "description": "verify column \"isTeacher\" has type \"boolean\"",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_attribute\" AS \"a\" INNER JOIN \"pg_class\" AS \"c\" ON \"c\".\"oid\" = \"a\".\"attrelid\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"relnamespace\" WHERE (\"n\".\"nspname\" = $1 AND \"c\".\"relname\" = $2 AND \"a\".\"attname\" = $3 AND (format_type(\"a\".\"atttypid\", \"a\".\"atttypmod\")) = $4 AND NOT (\"a\".\"attisdropped\"))) AS \"result\"",
+        "params": [
+          "public",
+          "User",
+          "isTeacher",
+          "boolean"
+        ]
+      },
+      {
+        "description": "verify column \"isTeacher\" is NOT NULL",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3 AND \"is_nullable\" = $4)) AS \"result\"",
+        "params": [
+          "public",
+          "User",
+          "isTeacher",
+          "NO"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "unique.Invitation.Invitation_tokenHash_key",
+    "label": "Add unique constraint on \"Invitation\" (tokenHash)",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "unique",
+        "name": "Invitation_tokenHash_key",
+        "table": "Invitation"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"Invitation_tokenHash_key\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "Invitation_tokenHash_key",
+          "public",
+          "\"public\".\"Invitation\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "constraint \"Invitation_tokenHash_key\" on \"Invitation\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "add unique constraint \"Invitation_tokenHash_key\"",
+        "sql": "ALTER TABLE \"public\".\"Invitation\" ADD CONSTRAINT \"Invitation_tokenHash_key\" UNIQUE (\"tokenHash\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify unique constraint \"Invitation_tokenHash_key\" exists on (tokenHash)",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3) AND \"c\".\"contype\" = $4 AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"c\".\"conkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"c\".\"conrelid\" AND key_attribute.attnum = key_column.attnum) = ($5)::jsonb)) AS \"result\"",
+        "params": [
+          "Invitation_tokenHash_key",
+          "public",
+          "\"public\".\"Invitation\"",
+          "u",
+          "[\"tokenHash\"]"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.ApplicationNote.ApplicationNote_applicationId_createdAt_idx_9384a092",
+    "label": "Create index \"ApplicationNote_applicationId_createdAt_idx_9384a092\" on \"ApplicationNote\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "ApplicationNote_applicationId_createdAt_idx_9384a092",
+        "table": "ApplicationNote"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"ApplicationNote_applicationId_createdAt_idx_9384a092\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"ApplicationNote_applicationId_createdAt_idx_9384a092\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "index \"ApplicationNote_applicationId_createdAt_idx_9384a092\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"ApplicationNote_applicationId_createdAt_idx_9384a092\"",
+        "sql": "CREATE INDEX \"ApplicationNote_applicationId_createdAt_idx_9384a092\" ON \"public\".\"ApplicationNote\" (\"applicationId\", \"createdAt\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"ApplicationNote_applicationId_createdAt_idx_9384a092\" exists on \"ApplicationNote\" with the planned definition",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" INNER JOIN \"pg_index\" AS \"i\" ON \"i\".\"indexrelid\" = \"c\".\"oid\" INNER JOIN \"pg_am\" AS \"m\" ON \"m\".\"oid\" = \"c\".\"relam\" WHERE (\"c\".\"oid\" = to_regclass($1) AND (\"c\".\"relkind\" = $2 OR \"c\".\"relkind\" = $3) AND \"i\".\"indrelid\" = to_regclass($4) AND NOT (\"i\".\"indisunique\") AND \"m\".\"amname\" = $5 AND (\"i\".\"indexprs\" IS NULL AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"i\".\"indkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"i\".\"indrelid\" AND key_attribute.attnum = key_column.attnum) = ($6)::jsonb) AND \"i\".\"indpred\" IS NULL)) AS \"result\"",
+        "params": [
+          "\"public\".\"ApplicationNote_applicationId_createdAt_idx_9384a092\"",
+          "i",
+          "I",
+          "\"public\".\"ApplicationNote\"",
+          "btree",
+          "[\"applicationId\",\"createdAt\"]"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.ApplicationNote.ApplicationNote_applicationId_idx_8158f91a",
+    "label": "Create index \"ApplicationNote_applicationId_idx_8158f91a\" on \"ApplicationNote\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "ApplicationNote_applicationId_idx_8158f91a",
+        "table": "ApplicationNote"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"ApplicationNote_applicationId_idx_8158f91a\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"ApplicationNote_applicationId_idx_8158f91a\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "index \"ApplicationNote_applicationId_idx_8158f91a\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"ApplicationNote_applicationId_idx_8158f91a\"",
+        "sql": "CREATE INDEX \"ApplicationNote_applicationId_idx_8158f91a\" ON \"public\".\"ApplicationNote\" (\"applicationId\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"ApplicationNote_applicationId_idx_8158f91a\" exists on \"ApplicationNote\" with the planned definition",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" INNER JOIN \"pg_index\" AS \"i\" ON \"i\".\"indexrelid\" = \"c\".\"oid\" INNER JOIN \"pg_am\" AS \"m\" ON \"m\".\"oid\" = \"c\".\"relam\" WHERE (\"c\".\"oid\" = to_regclass($1) AND (\"c\".\"relkind\" = $2 OR \"c\".\"relkind\" = $3) AND \"i\".\"indrelid\" = to_regclass($4) AND NOT (\"i\".\"indisunique\") AND \"m\".\"amname\" = $5 AND (\"i\".\"indexprs\" IS NULL AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"i\".\"indkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"i\".\"indrelid\" AND key_attribute.attnum = key_column.attnum) = ($6)::jsonb) AND \"i\".\"indpred\" IS NULL)) AS \"result\"",
+        "params": [
+          "\"public\".\"ApplicationNote_applicationId_idx_8158f91a\"",
+          "i",
+          "I",
+          "\"public\".\"ApplicationNote\"",
+          "btree",
+          "[\"applicationId\"]"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.ApplicationNote.ApplicationNote_authorId_idx_e47547ed",
+    "label": "Create index \"ApplicationNote_authorId_idx_e47547ed\" on \"ApplicationNote\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "ApplicationNote_authorId_idx_e47547ed",
+        "table": "ApplicationNote"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"ApplicationNote_authorId_idx_e47547ed\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"ApplicationNote_authorId_idx_e47547ed\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "index \"ApplicationNote_authorId_idx_e47547ed\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"ApplicationNote_authorId_idx_e47547ed\"",
+        "sql": "CREATE INDEX \"ApplicationNote_authorId_idx_e47547ed\" ON \"public\".\"ApplicationNote\" (\"authorId\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"ApplicationNote_authorId_idx_e47547ed\" exists on \"ApplicationNote\" with the planned definition",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" INNER JOIN \"pg_index\" AS \"i\" ON \"i\".\"indexrelid\" = \"c\".\"oid\" INNER JOIN \"pg_am\" AS \"m\" ON \"m\".\"oid\" = \"c\".\"relam\" WHERE (\"c\".\"oid\" = to_regclass($1) AND (\"c\".\"relkind\" = $2 OR \"c\".\"relkind\" = $3) AND \"i\".\"indrelid\" = to_regclass($4) AND NOT (\"i\".\"indisunique\") AND \"m\".\"amname\" = $5 AND (\"i\".\"indexprs\" IS NULL AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"i\".\"indkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"i\".\"indrelid\" AND key_attribute.attnum = key_column.attnum) = ($6)::jsonb) AND \"i\".\"indpred\" IS NULL)) AS \"result\"",
+        "params": [
+          "\"public\".\"ApplicationNote_authorId_idx_e47547ed\"",
+          "i",
+          "I",
+          "\"public\".\"ApplicationNote\"",
+          "btree",
+          "[\"authorId\"]"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.ApplicationStage.ApplicationStage_position_idx_82a01784",
+    "label": "Create index \"ApplicationStage_position_idx_82a01784\" on \"ApplicationStage\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "ApplicationStage_position_idx_82a01784",
+        "table": "ApplicationStage"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"ApplicationStage_position_idx_82a01784\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"ApplicationStage_position_idx_82a01784\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "index \"ApplicationStage_position_idx_82a01784\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"ApplicationStage_position_idx_82a01784\"",
+        "sql": "CREATE INDEX \"ApplicationStage_position_idx_82a01784\" ON \"public\".\"ApplicationStage\" (\"position\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"ApplicationStage_position_idx_82a01784\" exists on \"ApplicationStage\" with the planned definition",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" INNER JOIN \"pg_index\" AS \"i\" ON \"i\".\"indexrelid\" = \"c\".\"oid\" INNER JOIN \"pg_am\" AS \"m\" ON \"m\".\"oid\" = \"c\".\"relam\" WHERE (\"c\".\"oid\" = to_regclass($1) AND (\"c\".\"relkind\" = $2 OR \"c\".\"relkind\" = $3) AND \"i\".\"indrelid\" = to_regclass($4) AND NOT (\"i\".\"indisunique\") AND \"m\".\"amname\" = $5 AND (\"i\".\"indexprs\" IS NULL AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"i\".\"indkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"i\".\"indrelid\" AND key_attribute.attnum = key_column.attnum) = ($6)::jsonb) AND \"i\".\"indpred\" IS NULL)) AS \"result\"",
+        "params": [
+          "\"public\".\"ApplicationStage_position_idx_82a01784\"",
+          "i",
+          "I",
+          "\"public\".\"ApplicationStage\"",
+          "btree",
+          "[\"position\"]"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.ApplicationStageHistory.ApplicationStageHistory_actorId_idx_a58f6b4b",
+    "label": "Create index \"ApplicationStageHistory_actorId_idx_a58f6b4b\" on \"ApplicationStageHistory\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "ApplicationStageHistory_actorId_idx_a58f6b4b",
+        "table": "ApplicationStageHistory"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"ApplicationStageHistory_actorId_idx_a58f6b4b\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"ApplicationStageHistory_actorId_idx_a58f6b4b\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "index \"ApplicationStageHistory_actorId_idx_a58f6b4b\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"ApplicationStageHistory_actorId_idx_a58f6b4b\"",
+        "sql": "CREATE INDEX \"ApplicationStageHistory_actorId_idx_a58f6b4b\" ON \"public\".\"ApplicationStageHistory\" (\"actorId\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"ApplicationStageHistory_actorId_idx_a58f6b4b\" exists on \"ApplicationStageHistory\" with the planned definition",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" INNER JOIN \"pg_index\" AS \"i\" ON \"i\".\"indexrelid\" = \"c\".\"oid\" INNER JOIN \"pg_am\" AS \"m\" ON \"m\".\"oid\" = \"c\".\"relam\" WHERE (\"c\".\"oid\" = to_regclass($1) AND (\"c\".\"relkind\" = $2 OR \"c\".\"relkind\" = $3) AND \"i\".\"indrelid\" = to_regclass($4) AND NOT (\"i\".\"indisunique\") AND \"m\".\"amname\" = $5 AND (\"i\".\"indexprs\" IS NULL AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"i\".\"indkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"i\".\"indrelid\" AND key_attribute.attnum = key_column.attnum) = ($6)::jsonb) AND \"i\".\"indpred\" IS NULL)) AS \"result\"",
+        "params": [
+          "\"public\".\"ApplicationStageHistory_actorId_idx_a58f6b4b\"",
+          "i",
+          "I",
+          "\"public\".\"ApplicationStageHistory\"",
+          "btree",
+          "[\"actorId\"]"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.ApplicationStageHistory.ApplicationStageHistory_applicationId_createdAt_idx_9384a092",
+    "label": "Create index \"ApplicationStageHistory_applicationId_createdAt_idx_9384a092\" on \"ApplicationStageHistory\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "ApplicationStageHistory_applicationId_createdAt_idx_9384a092",
+        "table": "ApplicationStageHistory"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"ApplicationStageHistory_applicationId_createdAt_idx_9384a092\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"ApplicationStageHistory_applicationId_createdAt_idx_9384a092\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "index \"ApplicationStageHistory_applicationId_createdAt_idx_9384a092\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"ApplicationStageHistory_applicationId_createdAt_idx_9384a092\"",
+        "sql": "CREATE INDEX \"ApplicationStageHistory_applicationId_createdAt_idx_9384a092\" ON \"public\".\"ApplicationStageHistory\" (\"applicationId\", \"createdAt\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"ApplicationStageHistory_applicationId_createdAt_idx_9384a092\" exists on \"ApplicationStageHistory\" with the planned definition",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" INNER JOIN \"pg_index\" AS \"i\" ON \"i\".\"indexrelid\" = \"c\".\"oid\" INNER JOIN \"pg_am\" AS \"m\" ON \"m\".\"oid\" = \"c\".\"relam\" WHERE (\"c\".\"oid\" = to_regclass($1) AND (\"c\".\"relkind\" = $2 OR \"c\".\"relkind\" = $3) AND \"i\".\"indrelid\" = to_regclass($4) AND NOT (\"i\".\"indisunique\") AND \"m\".\"amname\" = $5 AND (\"i\".\"indexprs\" IS NULL AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"i\".\"indkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"i\".\"indrelid\" AND key_attribute.attnum = key_column.attnum) = ($6)::jsonb) AND \"i\".\"indpred\" IS NULL)) AS \"result\"",
+        "params": [
+          "\"public\".\"ApplicationStageHistory_applicationId_createdAt_idx_9384a092\"",
+          "i",
+          "I",
+          "\"public\".\"ApplicationStageHistory\"",
+          "btree",
+          "[\"applicationId\",\"createdAt\"]"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.ApplicationStageHistory.ApplicationStageHistory_applicationId_idx_8158f91a",
+    "label": "Create index \"ApplicationStageHistory_applicationId_idx_8158f91a\" on \"ApplicationStageHistory\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "ApplicationStageHistory_applicationId_idx_8158f91a",
+        "table": "ApplicationStageHistory"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"ApplicationStageHistory_applicationId_idx_8158f91a\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"ApplicationStageHistory_applicationId_idx_8158f91a\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "index \"ApplicationStageHistory_applicationId_idx_8158f91a\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"ApplicationStageHistory_applicationId_idx_8158f91a\"",
+        "sql": "CREATE INDEX \"ApplicationStageHistory_applicationId_idx_8158f91a\" ON \"public\".\"ApplicationStageHistory\" (\"applicationId\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"ApplicationStageHistory_applicationId_idx_8158f91a\" exists on \"ApplicationStageHistory\" with the planned definition",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" INNER JOIN \"pg_index\" AS \"i\" ON \"i\".\"indexrelid\" = \"c\".\"oid\" INNER JOIN \"pg_am\" AS \"m\" ON \"m\".\"oid\" = \"c\".\"relam\" WHERE (\"c\".\"oid\" = to_regclass($1) AND (\"c\".\"relkind\" = $2 OR \"c\".\"relkind\" = $3) AND \"i\".\"indrelid\" = to_regclass($4) AND NOT (\"i\".\"indisunique\") AND \"m\".\"amname\" = $5 AND (\"i\".\"indexprs\" IS NULL AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"i\".\"indkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"i\".\"indrelid\" AND key_attribute.attnum = key_column.attnum) = ($6)::jsonb) AND \"i\".\"indpred\" IS NULL)) AS \"result\"",
+        "params": [
+          "\"public\".\"ApplicationStageHistory_applicationId_idx_8158f91a\"",
+          "i",
+          "I",
+          "\"public\".\"ApplicationStageHistory\"",
+          "btree",
+          "[\"applicationId\"]"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.ApplicationStageHistory.ApplicationStageHistory_stageId_idx_43a99835",
+    "label": "Create index \"ApplicationStageHistory_stageId_idx_43a99835\" on \"ApplicationStageHistory\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "ApplicationStageHistory_stageId_idx_43a99835",
+        "table": "ApplicationStageHistory"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"ApplicationStageHistory_stageId_idx_43a99835\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"ApplicationStageHistory_stageId_idx_43a99835\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "index \"ApplicationStageHistory_stageId_idx_43a99835\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"ApplicationStageHistory_stageId_idx_43a99835\"",
+        "sql": "CREATE INDEX \"ApplicationStageHistory_stageId_idx_43a99835\" ON \"public\".\"ApplicationStageHistory\" (\"stageId\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"ApplicationStageHistory_stageId_idx_43a99835\" exists on \"ApplicationStageHistory\" with the planned definition",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" INNER JOIN \"pg_index\" AS \"i\" ON \"i\".\"indexrelid\" = \"c\".\"oid\" INNER JOIN \"pg_am\" AS \"m\" ON \"m\".\"oid\" = \"c\".\"relam\" WHERE (\"c\".\"oid\" = to_regclass($1) AND (\"c\".\"relkind\" = $2 OR \"c\".\"relkind\" = $3) AND \"i\".\"indrelid\" = to_regclass($4) AND NOT (\"i\".\"indisunique\") AND \"m\".\"amname\" = $5 AND (\"i\".\"indexprs\" IS NULL AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"i\".\"indkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"i\".\"indrelid\" AND key_attribute.attnum = key_column.attnum) = ($6)::jsonb) AND \"i\".\"indpred\" IS NULL)) AS \"result\"",
+        "params": [
+          "\"public\".\"ApplicationStageHistory_stageId_idx_43a99835\"",
+          "i",
+          "I",
+          "\"public\".\"ApplicationStageHistory\"",
+          "btree",
+          "[\"stageId\"]"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.InstructorApplication.InstructorApplication_userId_idx_a489d58a",
+    "label": "Create index \"InstructorApplication_userId_idx_a489d58a\" on \"InstructorApplication\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "InstructorApplication_userId_idx_a489d58a",
+        "table": "InstructorApplication"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"InstructorApplication_userId_idx_a489d58a\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"InstructorApplication_userId_idx_a489d58a\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "index \"InstructorApplication_userId_idx_a489d58a\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"InstructorApplication_userId_idx_a489d58a\"",
+        "sql": "CREATE INDEX \"InstructorApplication_userId_idx_a489d58a\" ON \"public\".\"InstructorApplication\" (\"userId\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"InstructorApplication_userId_idx_a489d58a\" exists on \"InstructorApplication\" with the planned definition",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" INNER JOIN \"pg_index\" AS \"i\" ON \"i\".\"indexrelid\" = \"c\".\"oid\" INNER JOIN \"pg_am\" AS \"m\" ON \"m\".\"oid\" = \"c\".\"relam\" WHERE (\"c\".\"oid\" = to_regclass($1) AND (\"c\".\"relkind\" = $2 OR \"c\".\"relkind\" = $3) AND \"i\".\"indrelid\" = to_regclass($4) AND NOT (\"i\".\"indisunique\") AND \"m\".\"amname\" = $5 AND (\"i\".\"indexprs\" IS NULL AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"i\".\"indkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"i\".\"indrelid\" AND key_attribute.attnum = key_column.attnum) = ($6)::jsonb) AND \"i\".\"indpred\" IS NULL)) AS \"result\"",
+        "params": [
+          "\"public\".\"InstructorApplication_userId_idx_a489d58a\"",
+          "i",
+          "I",
+          "\"public\".\"InstructorApplication\"",
+          "btree",
+          "[\"userId\"]"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.Invitation.Invitation_email_idx_46df9cad",
+    "label": "Create index \"Invitation_email_idx_46df9cad\" on \"Invitation\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "Invitation_email_idx_46df9cad",
+        "table": "Invitation"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"Invitation_email_idx_46df9cad\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"Invitation_email_idx_46df9cad\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "index \"Invitation_email_idx_46df9cad\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"Invitation_email_idx_46df9cad\"",
+        "sql": "CREATE INDEX \"Invitation_email_idx_46df9cad\" ON \"public\".\"Invitation\" (\"email\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"Invitation_email_idx_46df9cad\" exists on \"Invitation\" with the planned definition",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" INNER JOIN \"pg_index\" AS \"i\" ON \"i\".\"indexrelid\" = \"c\".\"oid\" INNER JOIN \"pg_am\" AS \"m\" ON \"m\".\"oid\" = \"c\".\"relam\" WHERE (\"c\".\"oid\" = to_regclass($1) AND (\"c\".\"relkind\" = $2 OR \"c\".\"relkind\" = $3) AND \"i\".\"indrelid\" = to_regclass($4) AND NOT (\"i\".\"indisunique\") AND \"m\".\"amname\" = $5 AND (\"i\".\"indexprs\" IS NULL AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"i\".\"indkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"i\".\"indrelid\" AND key_attribute.attnum = key_column.attnum) = ($6)::jsonb) AND \"i\".\"indpred\" IS NULL)) AS \"result\"",
+        "params": [
+          "\"public\".\"Invitation_email_idx_46df9cad\"",
+          "i",
+          "I",
+          "\"public\".\"Invitation\"",
+          "btree",
+          "[\"email\"]"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.Invitation.Invitation_invitedById_idx_61689f37",
+    "label": "Create index \"Invitation_invitedById_idx_61689f37\" on \"Invitation\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "Invitation_invitedById_idx_61689f37",
+        "table": "Invitation"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"Invitation_invitedById_idx_61689f37\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"Invitation_invitedById_idx_61689f37\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "index \"Invitation_invitedById_idx_61689f37\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"Invitation_invitedById_idx_61689f37\"",
+        "sql": "CREATE INDEX \"Invitation_invitedById_idx_61689f37\" ON \"public\".\"Invitation\" (\"invitedById\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"Invitation_invitedById_idx_61689f37\" exists on \"Invitation\" with the planned definition",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" INNER JOIN \"pg_index\" AS \"i\" ON \"i\".\"indexrelid\" = \"c\".\"oid\" INNER JOIN \"pg_am\" AS \"m\" ON \"m\".\"oid\" = \"c\".\"relam\" WHERE (\"c\".\"oid\" = to_regclass($1) AND (\"c\".\"relkind\" = $2 OR \"c\".\"relkind\" = $3) AND \"i\".\"indrelid\" = to_regclass($4) AND NOT (\"i\".\"indisunique\") AND \"m\".\"amname\" = $5 AND (\"i\".\"indexprs\" IS NULL AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"i\".\"indkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"i\".\"indrelid\" AND key_attribute.attnum = key_column.attnum) = ($6)::jsonb) AND \"i\".\"indpred\" IS NULL)) AS \"result\"",
+        "params": [
+          "\"public\".\"Invitation_invitedById_idx_61689f37\"",
+          "i",
+          "I",
+          "\"public\".\"Invitation\"",
+          "btree",
+          "[\"invitedById\"]"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.ApplicationNote.ApplicationNote_applicationId_fkey",
+    "label": "Add foreign key \"ApplicationNote_applicationId_fkey\" on \"ApplicationNote\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "ApplicationNote_applicationId_fkey",
+        "table": "ApplicationNote"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"ApplicationNote_applicationId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "ApplicationNote_applicationId_fkey",
+          "public",
+          "\"public\".\"ApplicationNote\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "FK \"ApplicationNote_applicationId_fkey\" on \"ApplicationNote\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"ApplicationNote_applicationId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"ApplicationNote\"\nADD CONSTRAINT \"ApplicationNote_applicationId_fkey\"\nFOREIGN KEY (\"applicationId\")\nREFERENCES \"public\".\"InstructorApplication\" (\"id\")\nON DELETE CASCADE"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"ApplicationNote_applicationId_fkey\" exists with the planned columns, referenced table and actions",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3) AND \"c\".\"contype\" = $4 AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"c\".\"conkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"c\".\"conrelid\" AND key_attribute.attnum = key_column.attnum) = ($5)::jsonb AND \"c\".\"confrelid\" = to_regclass($6) AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"c\".\"confkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"c\".\"confrelid\" AND key_attribute.attnum = key_column.attnum) = ($7)::jsonb AND \"c\".\"confdeltype\" = $8 AND \"c\".\"confupdtype\" = $9)) AS \"result\"",
+        "params": [
+          "ApplicationNote_applicationId_fkey",
+          "public",
+          "\"public\".\"ApplicationNote\"",
+          "f",
+          "[\"applicationId\"]",
+          "\"public\".\"InstructorApplication\"",
+          "[\"id\"]",
+          "c",
+          "a"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.ApplicationNote.ApplicationNote_authorId_fkey",
+    "label": "Add foreign key \"ApplicationNote_authorId_fkey\" on \"ApplicationNote\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "ApplicationNote_authorId_fkey",
+        "table": "ApplicationNote"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"ApplicationNote_authorId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "ApplicationNote_authorId_fkey",
+          "public",
+          "\"public\".\"ApplicationNote\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "FK \"ApplicationNote_authorId_fkey\" on \"ApplicationNote\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"ApplicationNote_authorId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"ApplicationNote\"\nADD CONSTRAINT \"ApplicationNote_authorId_fkey\"\nFOREIGN KEY (\"authorId\")\nREFERENCES \"public\".\"User\" (\"id\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"ApplicationNote_authorId_fkey\" exists with the planned columns, referenced table and actions",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3) AND \"c\".\"contype\" = $4 AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"c\".\"conkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"c\".\"conrelid\" AND key_attribute.attnum = key_column.attnum) = ($5)::jsonb AND \"c\".\"confrelid\" = to_regclass($6) AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"c\".\"confkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"c\".\"confrelid\" AND key_attribute.attnum = key_column.attnum) = ($7)::jsonb AND \"c\".\"confdeltype\" = $8 AND \"c\".\"confupdtype\" = $9)) AS \"result\"",
+        "params": [
+          "ApplicationNote_authorId_fkey",
+          "public",
+          "\"public\".\"ApplicationNote\"",
+          "f",
+          "[\"authorId\"]",
+          "\"public\".\"User\"",
+          "[\"id\"]",
+          "a",
+          "a"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.ApplicationStageHistory.ApplicationStageHistory_applicationId_fkey",
+    "label": "Add foreign key \"ApplicationStageHistory_applicationId_fkey\" on \"ApplicationStageHistory\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "ApplicationStageHistory_applicationId_fkey",
+        "table": "ApplicationStageHistory"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"ApplicationStageHistory_applicationId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "ApplicationStageHistory_applicationId_fkey",
+          "public",
+          "\"public\".\"ApplicationStageHistory\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "FK \"ApplicationStageHistory_applicationId_fkey\" on \"ApplicationStageHistory\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"ApplicationStageHistory_applicationId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"ApplicationStageHistory\"\nADD CONSTRAINT \"ApplicationStageHistory_applicationId_fkey\"\nFOREIGN KEY (\"applicationId\")\nREFERENCES \"public\".\"InstructorApplication\" (\"id\")\nON DELETE CASCADE"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"ApplicationStageHistory_applicationId_fkey\" exists with the planned columns, referenced table and actions",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3) AND \"c\".\"contype\" = $4 AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"c\".\"conkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"c\".\"conrelid\" AND key_attribute.attnum = key_column.attnum) = ($5)::jsonb AND \"c\".\"confrelid\" = to_regclass($6) AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"c\".\"confkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"c\".\"confrelid\" AND key_attribute.attnum = key_column.attnum) = ($7)::jsonb AND \"c\".\"confdeltype\" = $8 AND \"c\".\"confupdtype\" = $9)) AS \"result\"",
+        "params": [
+          "ApplicationStageHistory_applicationId_fkey",
+          "public",
+          "\"public\".\"ApplicationStageHistory\"",
+          "f",
+          "[\"applicationId\"]",
+          "\"public\".\"InstructorApplication\"",
+          "[\"id\"]",
+          "c",
+          "a"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.ApplicationStageHistory.ApplicationStageHistory_stageId_fkey",
+    "label": "Add foreign key \"ApplicationStageHistory_stageId_fkey\" on \"ApplicationStageHistory\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "ApplicationStageHistory_stageId_fkey",
+        "table": "ApplicationStageHistory"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"ApplicationStageHistory_stageId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "ApplicationStageHistory_stageId_fkey",
+          "public",
+          "\"public\".\"ApplicationStageHistory\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "FK \"ApplicationStageHistory_stageId_fkey\" on \"ApplicationStageHistory\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"ApplicationStageHistory_stageId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"ApplicationStageHistory\"\nADD CONSTRAINT \"ApplicationStageHistory_stageId_fkey\"\nFOREIGN KEY (\"stageId\")\nREFERENCES \"public\".\"ApplicationStage\" (\"id\")\nON DELETE SET NULL"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"ApplicationStageHistory_stageId_fkey\" exists with the planned columns, referenced table and actions",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3) AND \"c\".\"contype\" = $4 AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"c\".\"conkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"c\".\"conrelid\" AND key_attribute.attnum = key_column.attnum) = ($5)::jsonb AND \"c\".\"confrelid\" = to_regclass($6) AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"c\".\"confkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"c\".\"confrelid\" AND key_attribute.attnum = key_column.attnum) = ($7)::jsonb AND \"c\".\"confdeltype\" = $8 AND \"c\".\"confupdtype\" = $9)) AS \"result\"",
+        "params": [
+          "ApplicationStageHistory_stageId_fkey",
+          "public",
+          "\"public\".\"ApplicationStageHistory\"",
+          "f",
+          "[\"stageId\"]",
+          "\"public\".\"ApplicationStage\"",
+          "[\"id\"]",
+          "n",
+          "a"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.ApplicationStageHistory.ApplicationStageHistory_actorId_fkey",
+    "label": "Add foreign key \"ApplicationStageHistory_actorId_fkey\" on \"ApplicationStageHistory\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "ApplicationStageHistory_actorId_fkey",
+        "table": "ApplicationStageHistory"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"ApplicationStageHistory_actorId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "ApplicationStageHistory_actorId_fkey",
+          "public",
+          "\"public\".\"ApplicationStageHistory\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "FK \"ApplicationStageHistory_actorId_fkey\" on \"ApplicationStageHistory\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"ApplicationStageHistory_actorId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"ApplicationStageHistory\"\nADD CONSTRAINT \"ApplicationStageHistory_actorId_fkey\"\nFOREIGN KEY (\"actorId\")\nREFERENCES \"public\".\"User\" (\"id\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"ApplicationStageHistory_actorId_fkey\" exists with the planned columns, referenced table and actions",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3) AND \"c\".\"contype\" = $4 AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"c\".\"conkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"c\".\"conrelid\" AND key_attribute.attnum = key_column.attnum) = ($5)::jsonb AND \"c\".\"confrelid\" = to_regclass($6) AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"c\".\"confkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"c\".\"confrelid\" AND key_attribute.attnum = key_column.attnum) = ($7)::jsonb AND \"c\".\"confdeltype\" = $8 AND \"c\".\"confupdtype\" = $9)) AS \"result\"",
+        "params": [
+          "ApplicationStageHistory_actorId_fkey",
+          "public",
+          "\"public\".\"ApplicationStageHistory\"",
+          "f",
+          "[\"actorId\"]",
+          "\"public\".\"User\"",
+          "[\"id\"]",
+          "a",
+          "a"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.InstructorApplication.InstructorApplication_userId_fkey",
+    "label": "Add foreign key \"InstructorApplication_userId_fkey\" on \"InstructorApplication\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "InstructorApplication_userId_fkey",
+        "table": "InstructorApplication"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"InstructorApplication_userId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "InstructorApplication_userId_fkey",
+          "public",
+          "\"public\".\"InstructorApplication\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "FK \"InstructorApplication_userId_fkey\" on \"InstructorApplication\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"InstructorApplication_userId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"InstructorApplication\"\nADD CONSTRAINT \"InstructorApplication_userId_fkey\"\nFOREIGN KEY (\"userId\")\nREFERENCES \"public\".\"User\" (\"id\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"InstructorApplication_userId_fkey\" exists with the planned columns, referenced table and actions",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3) AND \"c\".\"contype\" = $4 AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"c\".\"conkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"c\".\"conrelid\" AND key_attribute.attnum = key_column.attnum) = ($5)::jsonb AND \"c\".\"confrelid\" = to_regclass($6) AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"c\".\"confkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"c\".\"confrelid\" AND key_attribute.attnum = key_column.attnum) = ($7)::jsonb AND \"c\".\"confdeltype\" = $8 AND \"c\".\"confupdtype\" = $9)) AS \"result\"",
+        "params": [
+          "InstructorApplication_userId_fkey",
+          "public",
+          "\"public\".\"InstructorApplication\"",
+          "f",
+          "[\"userId\"]",
+          "\"public\".\"User\"",
+          "[\"id\"]",
+          "a",
+          "a"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.Invitation.Invitation_invitedById_fkey",
+    "label": "Add foreign key \"Invitation_invitedById_fkey\" on \"Invitation\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "Invitation_invitedById_fkey",
+        "table": "Invitation"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"Invitation_invitedById_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "Invitation_invitedById_fkey",
+          "public",
+          "\"public\".\"Invitation\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "FK \"Invitation_invitedById_fkey\" on \"Invitation\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"Invitation_invitedById_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"Invitation\"\nADD CONSTRAINT \"Invitation_invitedById_fkey\"\nFOREIGN KEY (\"invitedById\")\nREFERENCES \"public\".\"User\" (\"id\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"Invitation_invitedById_fkey\" exists with the planned columns, referenced table and actions",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3) AND \"c\".\"contype\" = $4 AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"c\".\"conkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"c\".\"conrelid\" AND key_attribute.attnum = key_column.attnum) = ($5)::jsonb AND \"c\".\"confrelid\" = to_regclass($6) AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"c\".\"confkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"c\".\"confrelid\" AND key_attribute.attnum = key_column.attnum) = ($7)::jsonb AND \"c\".\"confdeltype\" = $8 AND \"c\".\"confupdtype\" = $9)) AS \"result\"",
+        "params": [
+          "Invitation_invitedById_fkey",
+          "public",
+          "\"public\".\"Invitation\"",
+          "f",
+          "[\"invitedById\"]",
+          "\"public\".\"User\"",
+          "[\"id\"]",
+          "a",
+          "a"
+        ]
+      }
+    ]
+  }
+]

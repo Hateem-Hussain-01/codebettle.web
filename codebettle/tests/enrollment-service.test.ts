@@ -55,9 +55,21 @@ test('admin creates an enrollment; duplicate is rejected', async () => {
   assert.equal(created.enrollment.studentId, 'stu-2');
 
   const dupe = await createEnrollmentService(ADMIN, {
-    studentId: 'stu-1', courseId: 'course-1', paymentStatus: 'paid', amountPaid: 5000,
+    studentId: 'stu-1', courseId: 'course-1', paymentStatus: 'pending', amountPaid: 0,
   });
   assert.ok('error' in dupe && dupe.status === 400, JSON.stringify(dupe));
+});
+
+// Phase 2 (paid-with-no-proof fix): an admin creating an enrolment directly
+// may not set it to 'paid' — a new enrolment has no linked approved payment
+// submission yet. 'paid' is only reachable through the payment verification
+// flow (approve a submitted payment, or PATCH with an approved submission).
+test('admin cannot create an enrollment directly as paid', async () => {
+  const result = await createEnrollmentService(ADMIN, {
+    studentId: 'stu-2', courseId: 'course-1', paymentStatus: 'paid', amountPaid: 5000,
+  });
+  assert.ok('error' in result && result.status === 400, JSON.stringify(result));
+  assert.match(result.error, /payment verification flow/);
 });
 
 test('create validates student, course and role', async () => {

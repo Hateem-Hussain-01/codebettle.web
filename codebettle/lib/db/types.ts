@@ -96,6 +96,16 @@ export interface User {
   email: string;
   passwordHash: string;
   role: UserRole;
+  /**
+   * Phase 2 flags (multi-role). `role` is the PRIMARY role (home portal);
+   * these flags are additional capabilities: isAdmin => admin capability,
+   * isTeacher => teacher capability, both may be true at once. A plain
+   * student is role 'student' with both false. See contract.prisma and
+   * lib/rbac.ts for the full semantics; guards must use
+   * hasAdminCapability / hasTeacherCapability, never `role ===` alone.
+   */
+  isAdmin: boolean;
+  isTeacher: boolean;
   avatar?: string;
   bio?: string;
   phone?: string;
@@ -302,6 +312,12 @@ export interface InstructorApplication {
   experience?: string;
   /** Free-text answer to "Why do you want to teach?" (nullable column, Phase 3). */
   message?: string;
+  /** Optional free-text "anything else we should know" (Phase 2). Separate from `message`. */
+  additionalInfo?: string;
+  /** "Why are you a good fit for CodeBettle?" (Phase 2). Nullable in the DB; required only in form validation. */
+  whyGoodFit?: string;
+  /** Applicant's account id, matched by email at submit time (Phase 2). Null when the applicant has no account. */
+  userId?: string;
   /** Storage path of the uploaded CV in the private `application-files` bucket (e.g. `cvs/<uuid>.pdf`). */
   cvUrl?: string;
   /** Applicant's LinkedIn profile URL. */
@@ -378,6 +394,8 @@ export type UserRow = Pick<
   | 'email'
   | 'passwordHash'
   | 'role'
+  | 'isAdmin'
+  | 'isTeacher'
   | 'avatar'
   | 'bio'
   | 'phone'
@@ -499,7 +517,7 @@ export type BlogPostRow = Pick<
 
 export type ApplicationRow = Pick<
   Models.public_InstructorApplication,
-  'id' | 'name' | 'email' | 'phone' | 'expertise' | 'experience' | 'message' | 'cvUrl' | 'linkedinUrl' | 'githubUrl' | 'demoRecordingUrl' | 'status' | 'reviewedBy' | 'createdAt'
+  'id' | 'name' | 'email' | 'phone' | 'expertise' | 'experience' | 'message' | 'additionalInfo' | 'whyGoodFit' | 'userId' | 'cvUrl' | 'linkedinUrl' | 'githubUrl' | 'demoRecordingUrl' | 'status' | 'reviewedBy' | 'createdAt'
 >;
 
 export type SessionRow = Pick<
@@ -917,4 +935,123 @@ export type PaymentSubmissionRow = Pick<
   | 'reviewNote'
   | 'createdAt'
   | 'updatedAt'
+>;
+
+// ---------------------------------------------------------------------------
+// Phase 2 — Roles & recruitment (Module 22): flags role model + contract
+// models. See src/prisma/contract.prisma for the storage semantics.
+// ---------------------------------------------------------------------------
+
+/** One pipeline stage an instructor application moves through. Admin-managed; `position` is the display order. */
+export interface ApplicationStage {
+  id: string;
+  name: string;
+  position: number;
+  instructions?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/** Actions recorded in an application's stage history. */
+export type ApplicationStageAction =
+  | 'stage_assigned'
+  | 'approved'
+  | 'rejected'
+  | 'info_requested'
+  | 'onboarded';
+
+/**
+ * One append-only history entry for an application. `stageName` is a
+ * denormalised snapshot taken at write time, so the entry stays readable
+ * if the stage is later renamed or deleted; `stageId` is null in that
+ * case (and for non-stage actions such as approval).
+ */
+export interface ApplicationStageHistory {
+  id: string;
+  applicationId: string;
+  stageId?: string;
+  stageName: string;
+  actorId?: string;
+  note?: string;
+  action: ApplicationStageAction;
+  createdAt: string;
+}
+
+/**
+ * An admin note on an application. `isInternal: true` notes are
+ * admin-only; nothing exposes notes to applicants today — a future
+ * applicant-visible note would set this false and needs its own read
+ * path (do not just flip the flag).
+ */
+export interface ApplicationNote {
+  id: string;
+  applicationId: string;
+  authorId: string;
+  body: string;
+  isInternal: boolean;
+  createdAt: string;
+}
+
+/**
+ * The flags + adminPermissions granted when an invitation is accepted.
+ * Declared as a `type` (not an `interface`) so it stays assignable to
+ * Prisma's JsonValue. `adminPermissions: null` means full admin;
+ * undefined/absent means no per-area restriction is recorded (the
+ * accept flow treats a missing map as full admin only when isAdmin is
+ * granted — see the invitation service, Phase 2 feature work).
+ */
+export type InvitationGrants = {
+  isAdmin?: boolean;
+  isTeacher?: boolean;
+  adminPermissions?: AdminPermissions | null;
+};
+
+/**
+ * An invite to join as staff. Only the SHA-256 hash of the token is
+ * stored (same pattern as PasswordReset / EmailVerification) — the raw
+ * token is never persisted. Single-use (`usedAt`) and expiring.
+ */
+export interface Invitation {
+  id: string;
+  email: string;
+  firstName: string;
+  lastName: string;
+  contactNumber?: string;
+  grants: InvitationGrants;
+  /** SHA-256 hash of the raw token. The raw token is never stored. */
+  tokenHash: string;
+  expiresAt: string;
+  usedAt?: string | null;
+  invitedById: string;
+  createdAt: string;
+}
+
+export type ApplicationStageRow = Pick<
+  Models.public_ApplicationStage,
+  'id' | 'name' | 'position' | 'instructions' | 'createdAt' | 'updatedAt'
+>;
+
+export type ApplicationStageHistoryRow = Pick<
+  Models.public_ApplicationStageHistory,
+  'id' | 'applicationId' | 'stageId' | 'stageName' | 'actorId' | 'note' | 'action' | 'createdAt'
+>;
+
+export type ApplicationNoteRow = Pick<
+  Models.public_ApplicationNote,
+  'id' | 'applicationId' | 'authorId' | 'body' | 'isInternal' | 'createdAt'
+>;
+
+export type InvitationRow = Pick<
+  Models.public_Invitation,
+  | 'id'
+  | 'email'
+  | 'firstName'
+  | 'lastName'
+  | 'contactNumber'
+  | 'grants'
+  | 'tokenHash'
+  | 'expiresAt'
+  | 'usedAt'
+  | 'invitedById'
+  | 'createdAt'
 >;
