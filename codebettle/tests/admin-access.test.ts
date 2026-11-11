@@ -56,16 +56,16 @@ test.afterEach(() => {
 // Pure helpers
 // ---------------------------------------------------------------------------
 
-test('survey: the checkbox list covers all 15 admin areas, in sidebar order', () => {
+test('survey: the checkbox list covers all 17 admin areas, in sidebar order', () => {
   assert.deepEqual(
     ADMIN_AREAS.map((a) => a.key),
     [
       'dashboard', 'courses', 'students', 'instructors', 'enrollments',
-      'coupons', 'announcements', 'messages', 'notifications', 'blog',
+      'coupons', 'announcements', 'messages', 'requests', 'notifications', 'communications', 'blog',
       'content', 'reports', 'certificates', 'applications', 'settings',
     ],
   );
-  assert.equal(new Set(ADMIN_AREAS.map((a) => a.key)).size, 15);
+  assert.equal(new Set(ADMIN_AREAS.map((a) => a.key)).size, 17);
 });
 
 test('toAdminPermissions: NULL means full admin; unknown/non-boolean keys are dropped', () => {

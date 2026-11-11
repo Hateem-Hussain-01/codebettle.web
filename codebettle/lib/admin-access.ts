@@ -42,7 +42,9 @@ export type AdminAreaKey =
   | 'coupons'
   | 'announcements'
   | 'messages'
+  | 'requests'
   | 'notifications'
+  | 'communications'
   | 'blog'
   | 'content'
   | 'reports'
@@ -66,7 +68,17 @@ export const ADMIN_AREAS: readonly AdminArea[] = [
   { key: 'coupons', label: 'Coupon Codes', href: '/admin/coupons', description: 'Discount coupon codes' },
   { key: 'announcements', label: 'Announcements', href: '/admin/announcements', description: 'Site-wide and course announcements' },
   { key: 'messages', label: 'Messages', href: '/admin/messages', description: 'Contact messages from visitors' },
+  // Phase 3, Worker C: student support requests. A NEW area (not folded
+  // into 'messages') because the contact-message inbox must stay
+  // separate from the student-request queue.
+  { key: 'requests', label: 'Requests', href: '/admin/requests', description: 'Student support requests (complaints, feedback, course issues)' },
   { key: 'notifications', label: 'Notifications', href: '/admin/notifications', description: 'In-app notifications' },
+  // Phase 3 (Module 14): the centralized communications dashboard —
+  // announcements, targeted notifications, read receipts and request
+  // summaries, read/aggregated over the data the other Phase 3 workers
+  // create. Restricted admins do NOT get it by default (secure default:
+  // missing keys are denied), so grant it explicitly in /admin/access.
+  { key: 'communications', label: 'Communications', href: '/admin/communications', description: 'Announcements, targeted notifications, read receipts and request summaries' },
   { key: 'blog', label: 'Blog', href: '/admin/blog', description: 'Blog posts, including PDF uploads' },
   { key: 'content', label: 'Content', href: '/admin/content', description: 'Site content pages' },
   { key: 'reports', label: 'Reports', href: '/admin/reports', description: 'Reports and exports' },
@@ -164,7 +176,7 @@ export function areaForAdminPath(pathname: string): AdminAreaKey | 'access' | nu
 /**
  * Normalise a permissions map received from the access UI before saving.
  * - Unknown keys are dropped; non-boolean values are dropped.
- * - All 15 areas true collapses to undefined (full admin), so "grant
+ * - All 17 areas true collapses to undefined (full admin), so "grant
  *   everything" stays a real full admin.
  * - No areas true stays `{}` (restricted admin with nothing granted).
  * Returns undefined for full admin, otherwise the restricted map.
