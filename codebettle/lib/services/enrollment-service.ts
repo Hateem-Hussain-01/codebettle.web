@@ -16,11 +16,13 @@ import { onCertificateIssued, onCourseCompleted, onEnrollmentCreated } from './n
 import type { Certificate, Enrollment, EnrollmentPaymentStatus } from '../db/types';
 import { badRequest, conflict, forbidden, notFound, type Actor, type ServiceError } from './errors';
 import { issueCertificateWithRetry } from './certificate-service';
+import { hasAdminCapability, hasTeacherCapability } from '../rbac';
 
 type Result<T> = T | ServiceError;
 
 function requireAdmin(actor: Actor): ServiceError | null {
-  return actor.role === 'admin' ? null : forbidden('Only admins can manage enrollments');
+  // Phase 2: admin capability is the isAdmin flag (legacy role fallback).
+  return hasAdminCapability(actor) ? null : forbidden('Only admins can manage enrollments');
 }
 
 export interface CreateEnrollmentServiceInput {
@@ -47,6 +49,16 @@ export async function createEnrollmentService(
   }
   if (!Number.isInteger(input.amountPaid) || input.amountPaid < 0) {
     return badRequest('Amount paid must be a non-negative number');
+  }
+  // Phase 2 (paid-with-no-proof fix): a brand-new enrolment cannot have
+  // a linked approved payment submission, so 'paid' is not creatable
+  // here. Create as 'pending' and let the payment verification flow
+  // approve it, or 'free' for free courses. (The PATCH path enforces
+  // the same rule via the approved-submission requirement.)
+  if (input.paymentStatus === 'paid') {
+    return badRequest(
+      'Paid enrolments must go through the payment verification flow — create as pending and approve the submitted payment instead',
+    );
   }
   const created = await createEnrollment({
     studentId: input.studentId,
@@ -234,7 +246,7 @@ export async function setCertificateEligibility(
   enrollmentId: string,
   eligible: boolean,
 ): Promise<Result<{ enrollment: Enrollment; certificate: Certificate | null }>> {
-  if (actor.role !== 'instructor') {
+  if (!hasTeacherCapability(actor)) {
     return forbidden('Only the course instructor can set certificate eligibility');
   }
   const existing = await getEnrollmentById(enrollmentId);

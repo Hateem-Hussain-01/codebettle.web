@@ -6,6 +6,8 @@
  * unit-testable with the fake db. Both paths write an audit entry.
  */
 import { createApplication, getApplicationById, reviewApplication } from '../db/applications';
+import { getUserByEmail } from '../db/users';
+import { hasAdminCapability } from '../rbac';
 import { logAudit } from '../db/audit';
 import { onApplicationReviewed } from './notification-service';
 import { normalizeEmail } from '../security';
@@ -21,6 +23,10 @@ export interface SubmitApplicationInput {
   expertise?: string;
   experience?: string;
   message?: string;
+  /** Phase 2: optional free-text "anything else we should know". */
+  additionalInfo?: string;
+  /** Phase 2: "Why are you a good fit for CodeBettle?" — required by the form, nullable in the DB. */
+  whyGoodFit?: string;
   cvUrl?: string;
   linkedinUrl?: string;
   githubUrl?: string;
@@ -61,6 +67,14 @@ export async function submitApplication(
     expertise: input.expertise?.trim() || undefined,
     experience: input.experience?.trim() || undefined,
     message: input.message?.trim() || undefined,
+    additionalInfo: input.additionalInfo?.trim() || undefined,
+    whyGoodFit: input.whyGoodFit?.trim() || undefined,
+    // Phase 2: link to the applicant's account when one exists under
+    // this email, so the applicant portal can find their applications.
+    // No account yet (or lookup fails) => userId stays null; the
+    // application is still valid — linking is best-effort, never a
+    // reason to reject a submission.
+    userId: (await getUserByEmail(email))?.id,
     cvUrl: input.cvUrl?.trim() || undefined,
     linkedinUrl,
     githubUrl,
@@ -81,7 +95,7 @@ export async function reviewApplicationService(
   applicationId: string,
   status: 'approved' | 'rejected',
 ): Promise<Result<{ application: InstructorApplication }>> {
-  if (actor.role !== 'admin') return forbidden('Only admins can review applications');
+  if (!hasAdminCapability(actor)) return forbidden('Only admins can review applications');
   const existing = await getApplicationById(applicationId);
   if (!existing) return notFound('Application');
   const reviewed = await reviewApplication(applicationId, { status, reviewedBy: actor.id });

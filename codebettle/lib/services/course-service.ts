@@ -25,20 +25,27 @@ import {
 } from '../db/courses';
 import { getUserById } from '../db/users';
 import { logAudit } from '../db/audit';
-import { can } from '../rbac';
+import { can, hasAdminCapability, hasTeacherCapability } from '../rbac';
 import type { Course, CourseCategory, CourseLevel, CourseSchedule, CourseStatus, Lesson, Module } from '../db/types';
 import { badRequest, forbidden, notFound, type Actor, type ServiceError } from './errors';
 
 type Result<T> = T | ServiceError;
 
 function isEditor(actor: Actor, course: Course): ServiceError | null {
-  if (actor.role === 'admin') return null;
-  if (actor.role === 'instructor' && course.instructorId === actor.id) return null;
+  // Phase 2: admin capability is the isAdmin flag; teacher capability
+  // the isTeacher flag (both fall back to the legacy primary role).
+  if (hasAdminCapability(actor)) return null;
+  if (hasTeacherCapability(actor) && course.instructorId === actor.id) return null;
   return forbidden(
-    actor.role === 'instructor'
+    hasTeacherCapability(actor)
       ? 'You can only edit courses you teach'
       : 'Students cannot edit courses',
   );
+}
+
+/** A teacher who is NOT also an admin: admin capability wins when both flags are set. */
+function isTeacherOnly(actor: Actor): boolean {
+  return hasTeacherCapability(actor) && !hasAdminCapability(actor);
 }
 
 async function loadCourse(courseId: string): Promise<Course | ServiceError> {
@@ -50,7 +57,8 @@ async function loadCourse(courseId: string): Promise<Course | ServiceError> {
 async function checkInstructorTarget(instructorId: string): Promise<ServiceError | null> {
   const user = await getUserById(instructorId);
   if (!user) return notFound('Instructor');
-  if (user.role !== 'instructor') return badRequest('The assigned instructor must be an instructor account');
+  // Phase 2: anyone with the teacher capability (flag or legacy role).
+  if (!hasTeacherCapability(user)) return badRequest('The assigned instructor must be an instructor account');
   return null;
 }
 
@@ -76,18 +84,18 @@ export async function createCourseService(
   actor: Actor,
   input: CreateCourseServiceInput,
 ): Promise<Result<{ course: Course }>> {
-  if (!can(actor.role, 'createCourse')) return forbidden('Only admins and instructors can create courses');
+  if (!can(actor, 'createCourse')) return forbidden('Only admins and instructors can create courses');
   const slug = input.slug.trim();
   if (!slug) return badRequest('Slug is required');
   if (!input.title.trim()) return badRequest('Title is required');
   if (!input.description.trim()) return badRequest('Description is required');
   if (!Number.isInteger(input.price) || input.price < 0) return badRequest('Price must be a non-negative number');
-  const instructorId = actor.role === 'instructor' ? actor.id : input.instructorId;
+  const instructorId = isTeacherOnly(actor) ? actor.id : input.instructorId;
   if (!instructorId) return badRequest('Instructor is required');
-  if (actor.role === 'instructor' && input.instructorId !== undefined && input.instructorId !== actor.id) {
+  if (isTeacherOnly(actor) && input.instructorId !== undefined && input.instructorId !== actor.id) {
     return forbidden('Instructors can only create courses for themselves');
   }
-  if (actor.role === 'admin') {
+  if (hasAdminCapability(actor)) {
     const err = await checkInstructorTarget(instructorId);
     if (err) return err;
   }
@@ -142,7 +150,7 @@ export async function updateCourseService(
   if ('error' in course) return course;
   const denied = isEditor(actor, course);
   if (denied) return denied;
-  if (actor.role === 'instructor' && (input.status !== undefined || input.instructorId !== undefined)) {
+  if (isTeacherOnly(actor) && (input.status !== undefined || input.instructorId !== undefined)) {
     return forbidden('Instructors cannot change a course status or instructor');
   }
   if (input.title !== undefined && !input.title.trim()) return badRequest('Title is required');
@@ -183,7 +191,7 @@ export async function setCourseStatus(
   courseId: string,
   status: CourseStatus,
 ): Promise<Result<{ course: Course }>> {
-  if (!can(actor.role, 'publishCourse')) return forbidden('Only admins can change course status');
+  if (!can(actor, 'publishCourse')) return forbidden('Only admins can change course status');
   const course = await loadCourse(courseId);
   if ('error' in course) return course;
   const updated = await updateCourse(courseId, { status });
@@ -197,7 +205,7 @@ export async function deleteCourseService(
   actor: Actor,
   courseId: string,
 ): Promise<Result<{ success: true }>> {
-  if (actor.role !== 'admin') return forbidden('Only admins can delete courses');
+  if (!hasAdminCapability(actor)) return forbidden('Only admins can delete courses');
   const course = await loadCourse(courseId);
   if ('error' in course) return course;
   const removed = await softDeleteCourse(courseId);

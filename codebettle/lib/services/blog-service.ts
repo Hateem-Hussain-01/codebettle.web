@@ -12,14 +12,16 @@ import { BLOG_PDF_BUCKET, deleteBlogPdf } from './blog-storage';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { BlogPost } from '../db/types';
 import { badRequest, forbidden, notFound, type Actor, type ServiceError } from './errors';
+import { hasAdminCapability, hasTeacherCapability } from '../rbac';
 
 type Result<T> = T | ServiceError;
 
 function isAuthorOrAdmin(actor: Actor, post: BlogPost): ServiceError | null {
-  if (actor.role === 'admin') return null;
-  if (actor.role === 'instructor' && post.authorId === actor.id) return null;
+  // Phase 2: admin flag / teacher flag (legacy role fallback).
+  if (hasAdminCapability(actor)) return null;
+  if (hasTeacherCapability(actor) && post.authorId === actor.id) return null;
   return forbidden(
-    actor.role === 'instructor'
+    hasTeacherCapability(actor)
       ? 'You can only edit your own blog posts'
       : 'Only admins and instructors can manage blog posts',
   );
@@ -44,7 +46,7 @@ export async function createBlogPostService(
   actor: Actor,
   input: CreateBlogPostServiceInput,
 ): Promise<Result<{ post: BlogPost }>> {
-  if (actor.role !== 'admin' && actor.role !== 'instructor') {
+  if (!hasAdminCapability(actor) && !hasTeacherCapability(actor)) {
     return forbidden('Only admins and instructors can write blog posts');
   }
   const slug = input.slug.trim();

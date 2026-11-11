@@ -9,7 +9,8 @@ export default async function InstructorQuizzesPage() {
   await connection();
   const session = await getSession();
   if (!session) redirect('/auth/login');
-  const actor = { id: session.id, role: session.role as 'admin' | 'instructor', name: session.name };
+  // Phase 2: pass the flags through so the quiz service sees the real capabilities.
+  const actor = { id: session.id, role: session.role as 'admin' | 'instructor', name: session.name, isAdmin: session.isAdmin, isTeacher: session.isTeacher };
   const [listed, courses] = await Promise.all([
     listQuizzesForTeacher(actor),
     getCoursesByInstructor(session.id),

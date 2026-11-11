@@ -213,6 +213,10 @@ export function mapUserRow(row: UserRow, enrolledCourseIds?: string[]): User {
     email: row.email,
     passwordHash: row.passwordHash,
     role: row.role,
+    // Phase 2 flags. `?? false` covers rows seeded/created before the
+    // flags existed (fake-db rows in tests, pre-migration rows).
+    isAdmin: row.isAdmin ?? false,
+    isTeacher: row.isTeacher ?? false,
     avatar: row.avatar ?? undefined,
     bio: row.bio ?? undefined,
     phone: row.phone ?? undefined,

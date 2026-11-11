@@ -1,6 +1,7 @@
 import { connection } from 'next/server';
 import { redirect } from 'next/navigation';
 import { getSession } from '@/lib/auth';
+import { hasTeacherCapability } from '@/lib/rbac';
 import { getUnreadCount, listNotificationsForUser } from '@/lib/db/notifications';
 import { getUserNotificationPrefs } from '@/lib/db/users';
 import InstructorNotificationsClient from './instructor-notifications-client';
@@ -17,7 +18,7 @@ export default async function InstructorNotificationsPage({
 }) {
   await connection();
   const session = await getSession();
-  if (!session || session.role !== 'instructor') redirect('/auth/login');
+  if (!session || !hasTeacherCapability(session)) redirect('/auth/login');
   const params = (await searchParams) ?? {};
   const page = await listNotificationsForUser(session.id, { page: params.page });
   const [unreadCount, preferences] = await Promise.all([

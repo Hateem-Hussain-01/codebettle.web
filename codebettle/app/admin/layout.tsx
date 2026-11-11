@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation';
 import { headers } from 'next/headers';
 import { getSession } from '@/lib/auth';
 import { ADMIN_AREAS, areaForAdminPath, firstGrantedArea, hasAdminArea, isFullAdmin } from '@/lib/admin-access';
+import { hasAdminCapability } from '@/lib/rbac';
 import PortalLayout from '@/components/layout/PortalLayout';
 import { LayoutDashboard, BookOpen, Users, GraduationCap, ClipboardList, Tag, Bell, FileText, Newspaper, BarChart2, Award, Settings, UserCheck, Mail, ShieldCheck } from 'lucide-react';
 
@@ -43,7 +44,8 @@ const NAV_ICONS = {
  */
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const session = await getSession();
-  if (!session || session.role !== 'admin') redirect('/auth/login');
+  // Phase 2: admin capability is the isAdmin flag (legacy primary role 'admin' still counts).
+  if (!session || !hasAdminCapability(session)) redirect('/auth/login');
 
   const permissions = session.adminPermissions;
   const fullAdmin = isFullAdmin(permissions);

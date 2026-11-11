@@ -8,6 +8,7 @@ import FadeIn from '@/components/ui/FadeIn';
 import { Search, ShieldCheck, ShieldAlert, Save, Ban } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { ADMIN_AREAS, type AdminAreaKey, type AdminPermissions } from '@/lib/admin-access';
+import { hasAdminCapability } from '@/lib/rbac';
 
 interface AccessUser {
   id: string;
@@ -15,22 +16,26 @@ interface AccessUser {
   email: string;
   avatar?: string;
   role: 'student' | 'instructor' | 'admin';
+  /** Phase 2 flags (SafeUser carries both). */
+  isAdmin?: boolean;
+  isTeacher?: boolean;
   status: 'active' | 'suspended';
   adminPermissions?: AdminPermissions;
 }
 
 function isFullAdminUser(user: AccessUser): boolean {
-  return user.role === 'admin' && user.adminPermissions === undefined;
+  // Phase 2: full admin = admin capability (flag or legacy role) with no permissions restriction.
+  return hasAdminCapability(user) && user.adminPermissions === undefined;
 }
 
 function grantedCount(user: AccessUser): number {
-  if (user.role !== 'admin') return 0;
+  if (!hasAdminCapability(user)) return 0;
   if (isFullAdminUser(user)) return ADMIN_AREAS.length;
   return ADMIN_AREAS.filter((a) => user.adminPermissions?.[a.key] === true).length;
 }
 
 function accessSummary(user: AccessUser): string {
-  if (user.role !== 'admin') return 'No admin access';
+  if (!hasAdminCapability(user)) return 'No admin access';
   if (isFullAdminUser(user)) return 'Full admin — all areas';
   const n = grantedCount(user);
   return n === 0 ? 'Admin — no areas granted' : `Restricted admin — ${n} of ${ADMIN_AREAS.length} areas`;
@@ -77,7 +82,7 @@ export default function AdminAccessClient() {
     setSelectedId(user.id);
     const next = {} as Record<AdminAreaKey, boolean>;
     for (const area of ADMIN_AREAS) {
-      next[area.key] = user.role === 'admin'
+      next[area.key] = hasAdminCapability(user)
         ? (isFullAdminUser(user) ? true : user.adminPermissions?.[area.key] === true)
         : false;
     }
@@ -182,7 +187,7 @@ export default function AdminAccessClient() {
                     </div>
                     <p className="text-xs text-muted truncate">{user.email}</p>
                     <p className="text-xs text-muted mt-1 flex items-center gap-1">
-                      {user.role === 'admin'
+                      {hasAdminCapability(user)
                         ? <ShieldCheck className="w-3 h-3 text-primary" />
                         : <ShieldAlert className="w-3 h-3" />}
                       {accessSummary(user)}
@@ -255,7 +260,7 @@ export default function AdminAccessClient() {
                   <Button onClick={handleSave} loading={saving} disabled={saving || checkedCount === 0}>
                     <Save className="w-4 h-4" /> Save admin access
                   </Button>
-                  {selected.role === 'admin' && (
+                  {selected && hasAdminCapability(selected) && (
                     <Button variant="danger" onClick={handleRevoke} loading={revoking} disabled={revoking}>
                       <Ban className="w-4 h-4" /> Revoke admin access
                     </Button>

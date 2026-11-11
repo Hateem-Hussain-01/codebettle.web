@@ -12,6 +12,14 @@ export interface Actor {
   id: string;
   role: UserRole;
   name?: string;
+  /**
+   * Phase 2 flags. Optional so legacy call sites that build an Actor
+   * from a bare role keep working — capability helpers fall back to
+   * `role` when a flag is absent. Sessions always carry both flags
+   * (see toSessionUser).
+   */
+  isAdmin?: boolean;
+  isTeacher?: boolean;
 }
 
 export interface ServiceError {

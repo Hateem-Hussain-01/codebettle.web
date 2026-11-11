@@ -16,6 +16,7 @@ import { revokeAllSessionsForUser } from '../db/sessions';
 import { logAudit } from '../db/audit';
 import type { SafeUser, SocialLinks, UserRole } from '../db/types';
 import { badRequest, forbidden, notFound, type ServiceError } from './errors';
+import { hasAdminCapability } from '../rbac';
 
 export type ManagedRole = 'student' | 'instructor';
 export type { SafeUser } from '../db/types';
@@ -45,6 +46,8 @@ export async function createManagedUser(
     email,
     passwordHash: await hashPassword(input.password),
     role,
+    // Phase 2: keep the teacher flag in sync with the primary role.
+    isTeacher: role === 'instructor',
     avatar: `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(name)}&backgroundColor=1C1C1C&textColor=F5C518`,
   });
   await logAudit({
@@ -130,7 +133,8 @@ export async function updateManagedUser(
   const target = await getUserById(userId);
   if (!target) return notFound('User');
   if (input.role !== undefined) {
-    if (target.role === 'admin') return forbidden('Cannot change the role of an admin account');
+    // Phase 2: an admin-capability account (flag or legacy role) can never have its role changed here.
+    if (hasAdminCapability(target)) return forbidden('Cannot change the role of an admin account');
     if (userId === actorId) return forbidden('You cannot change your own role');
     if (input.role !== 'student' && input.role !== 'instructor') {
       return badRequest('Role must be student or instructor');
@@ -155,6 +159,8 @@ export async function updateManagedUser(
     expertise: input.expertise,
     socialLinks: input.socialLinks,
     role: input.role,
+    // Phase 2: keep the teacher flag in sync with the new primary role.
+    isTeacher: input.role === 'instructor' ? true : input.role === 'student' ? false : undefined,
   });
   if (!updated) return notFound('User');
   await logAudit({

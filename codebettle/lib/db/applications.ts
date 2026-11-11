@@ -21,6 +21,9 @@ export function mapApplicationRow(row: ApplicationRow): InstructorApplication {
     expertise: row.expertise ?? undefined,
     experience: row.experience ?? undefined,
     message: row.message ?? undefined,
+    additionalInfo: row.additionalInfo ?? undefined,
+    whyGoodFit: row.whyGoodFit ?? undefined,
+    userId: row.userId ?? undefined,
     cvUrl: row.cvUrl ?? undefined,
     linkedinUrl: row.linkedinUrl ?? undefined,
     githubUrl: row.githubUrl ?? undefined,
@@ -55,6 +58,31 @@ export async function getApplicationById(id: string): Promise<InstructorApplicat
   return mapApplicationRow(row);
 }
 
+/**
+ * Phase 2: applications filed by one account (userId is set at submit
+ * time by matching the applicant's email to a User). The applicant
+ * portal uses this — "this user is an applicant" means "a row exists
+ * with userId = their id" (see the Phase 2 report for the full
+ * recommendation). Newest first.
+ */
+export async function getApplicationsByUserId(userId: string): Promise<InstructorApplication[]> {
+  const rows = await getDb()
+    .orm.public.InstructorApplication.where({ userId })
+    .orderBy((a) => a.createdAt.desc())
+    .all();
+  return rows.map(mapApplicationRow);
+}
+
+/** Phase 2: find an application by the applicant's email (used to link userId at submit time). */
+export async function getApplicationByEmail(email: string): Promise<InstructorApplication | null> {
+  const row = await getDb()
+    .orm.public.InstructorApplication.where((a) => a.email.eq(email))
+    .orderBy((a) => a.createdAt.desc())
+    .first();
+  if (!row) return null;
+  return mapApplicationRow(row);
+}
+
 export interface CreateApplicationInput {
   name: string;
   email: string;
@@ -62,6 +90,12 @@ export interface CreateApplicationInput {
   expertise?: string;
   experience?: string;
   message?: string;
+  /** Phase 2: optional free-text "anything else we should know". */
+  additionalInfo?: string;
+  /** Phase 2: "Why are you a good fit?" — validated in the service, nullable in the DB. */
+  whyGoodFit?: string;
+  /** Phase 2: applicant's account id (matched by email at submit time). */
+  userId?: string;
   cvUrl?: string;
   linkedinUrl?: string;
   githubUrl?: string;
@@ -77,6 +111,9 @@ export async function createApplication(input: CreateApplicationInput): Promise<
     expertise: input.expertise ?? null,
     experience: input.experience ?? null,
     message: input.message ?? null,
+    additionalInfo: input.additionalInfo ?? null,
+    whyGoodFit: input.whyGoodFit ?? null,
+    userId: input.userId ?? null,
     cvUrl: input.cvUrl ?? null,
     linkedinUrl: input.linkedinUrl ?? null,
     githubUrl: input.githubUrl ?? null,

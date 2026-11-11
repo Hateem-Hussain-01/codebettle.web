@@ -105,7 +105,13 @@ export const lessonUpdateSchema = z.object({
 export const enrollmentCreateSchema = z.object({
   studentId: z.string().min(1),
   courseId: z.string().min(1),
-  paymentStatus: z.enum(['paid', 'free', 'pending']),
+  // Phase 2 (paid-with-no-proof fix): an admin creating an enrolment
+  // directly may NOT set it to 'paid' — a brand-new enrolment cannot
+  // have a linked approved payment submission yet. 'paid' is only
+  // reachable through the payment verification flow (approve a submitted
+  // payment, or PATCH with an approved submission). Create as 'pending'
+  // and verify the payment, or 'free' for free courses.
+  paymentStatus: z.enum(['free', 'pending']),
   amountPaid: z.number().int().min(0),
   couponUsed: z.string().optional(),
 });

@@ -34,6 +34,7 @@ import type {
   PaymentSubmission,
 } from '../db/types';
 import { deliverEmailNotification, type EmailDeliveryResult } from './email-notifications';
+import { hasAdminCapability } from '../rbac';
 
 export interface NotifyInput {
   type: string;
@@ -149,7 +150,8 @@ export async function notifyEnrolledStudents(
 /** Notify every admin user (skips per-user by prefs). */
 export async function notifyAdmins(input: NotifyInput): Promise<NotifySummary> {
   try {
-    const admins = (await getAllUsers()).filter((u) => u.role === 'admin');
+    // Phase 2: anyone with the admin capability (flag or legacy role).
+    const admins = (await getAllUsers()).filter((u) => hasAdminCapability(u));
     return notifyUsers(
       admins.map((a) => a.id),
       input,

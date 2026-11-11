@@ -10,6 +10,7 @@ import { Search, Eye, Ban, CheckCircle, Trash2, Plus, Pencil, BookOpen } from 'l
 import { formatDateShort } from '@/lib/utils';
 import toast from 'react-hot-toast';
 import type { SafeUser } from '@/lib/db/types';
+import { hasTeacherCapability } from '@/lib/rbac';
 
 type User = SafeUser;
 
@@ -27,7 +28,8 @@ interface InstructorsClientProps {
  * Course counts and courses taught come from the server wrapper as props.
  */
 export default function InstructorsClient({ instructors: allInstructors, courseCounts: initialCounts, coursesByInstructor: initialByInstructor, allCourses: initialCourses }: InstructorsClientProps) {
-  const initialInstructors = allInstructors.filter(u => u.role === 'instructor');
+  // Phase 2: teacher capability (isTeacher flag or legacy primary role), not the primary role alone.
+  const initialInstructors = allInstructors.filter((u) => hasTeacherCapability(u));
   const [instructors, setInstructors] = useState(initialInstructors);
   // Live copies of the server-passed maps: assigning a course updates the
   // per-instructor count and list without a page reload.

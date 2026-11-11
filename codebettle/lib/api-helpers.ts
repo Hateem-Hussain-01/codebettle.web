@@ -15,7 +15,18 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSession, type SessionUser } from './auth';
 import { hasAdminArea, hasAnyAdminArea, isFullAdmin, type AdminAreaKey } from './admin-access';
+import { hasAdminCapability, hasTeacherCapability } from './rbac';
 import type { UserRole } from './db/types';
+
+/**
+ * Phase 2: admin capability is the isAdmin FLAG (hasAdminCapability),
+ * not the primary role alone — a teacher granted admin access keeps
+ * the teacher flag and passes these guards. The helper also accepts
+ * the legacy primary role 'admin', so pre-flag rows keep working.
+ * Exported for layouts and services that need the same check without
+ * going through a route guard.
+ */
+export { hasAdminCapability, hasTeacherCapability } from './rbac';
 
 /** undefined = use the real session cookie; null/a user = test override. */
 let testSession: SessionUser | null | undefined = undefined;
@@ -48,7 +59,7 @@ export async function requireAdmin(): Promise<
 > {
   const session = await getRequestSession();
   if (!session) return { error: NextResponse.json({ error: 'Not signed in' }, { status: 401 }) };
-  if (session.role !== 'admin') {
+  if (!hasAdminCapability(session)) {
     return { error: NextResponse.json({ error: 'Admin access required' }, { status: 403 }) };
   }
   return { session };
@@ -67,7 +78,7 @@ export async function requireAdminArea(area: AdminAreaKey): Promise<
 > {
   const session = await getRequestSession();
   if (!session) return { error: NextResponse.json({ error: 'Not signed in' }, { status: 401 }) };
-  if (session.role !== 'admin') {
+  if (!hasAdminCapability(session)) {
     return { error: NextResponse.json({ error: 'Admin access required' }, { status: 403 }) };
   }
   if (!hasAdminArea(session.adminPermissions, area)) {
@@ -82,7 +93,7 @@ export async function requireAdminAreas(areas: readonly AdminAreaKey[]): Promise
 > {
   const session = await getRequestSession();
   if (!session) return { error: NextResponse.json({ error: 'Not signed in' }, { status: 401 }) };
-  if (session.role !== 'admin') {
+  if (!hasAdminCapability(session)) {
     return { error: NextResponse.json({ error: 'Admin access required' }, { status: 403 }) };
   }
   if (!hasAnyAdminArea(session.adminPermissions, areas)) {
@@ -97,34 +108,49 @@ export async function requireAdminAreas(areas: readonly AdminAreaKey[]): Promise
  * through unchanged. Returns the 403 response when denied, else null.
  */
 export function adminAreaError(session: SessionUser, area: AdminAreaKey): NextResponse | null {
-  if (session.role === 'admin' && !hasAdminArea(session.adminPermissions, area)) {
+  if (hasAdminCapability(session) && !hasAdminArea(session.adminPermissions, area)) {
     return NextResponse.json({ error: 'Access to this admin area is not granted' }, { status: 403 });
   }
   return null;
 }
 
 /**
- * Full-admin gate (Item G): role admin AND no permissions restriction.
- * Only full admins may grant/revoke admin access or edit permissions —
- * a restricted admin must never be able to escalate themselves.
+ * Full-admin gate (Item G): admin capability AND no permissions
+ * restriction. Only full admins may grant/revoke admin access or edit
+ * permissions — a restricted admin must never be able to escalate
+ * themselves.
  */
 export async function requireFullAdmin(): Promise<
   { session: SessionUser } | { error: NextResponse }
 > {
   const session = await getRequestSession();
   if (!session) return { error: NextResponse.json({ error: 'Not signed in' }, { status: 401 }) };
-  if (session.role !== 'admin' || !isFullAdmin(session.adminPermissions)) {
+  if (!hasAdminCapability(session) || !isFullAdmin(session.adminPermissions)) {
     return { error: NextResponse.json({ error: 'Full admin access required' }, { status: 403 }) };
   }
   return { session };
 }
 
+/**
+ * Role gate (Phase 2, flags-aware): a requested 'admin' entry is
+ * satisfied by the isAdmin flag (or legacy primary role 'admin'), an
+ * 'instructor' entry by the isTeacher flag (or legacy primary role
+ * 'instructor'); 'student' stays primary-role only — flags never
+ * confer student identity.
+ */
 export async function requireRoles(roles: UserRole[]): Promise<
   { session: SessionUser } | { error: NextResponse }
 > {
   const session = await getRequestSession();
   if (!session) return { error: NextResponse.json({ error: 'Not signed in' }, { status: 401 }) };
-  if (!roles.includes(session.role)) {
+  const passes = roles.some((role) =>
+    role === 'admin'
+      ? hasAdminCapability(session)
+      : role === 'instructor'
+        ? hasTeacherCapability(session)
+        : session.role === role,
+  );
+  if (!passes) {
     return { error: NextResponse.json({ error: 'Access denied' }, { status: 403 }) };
   }
   return { session };

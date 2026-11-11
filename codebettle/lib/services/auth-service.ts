@@ -27,6 +27,18 @@ export interface SessionUser {
   role: 'student' | 'instructor' | 'admin';
   avatar?: string;
   /**
+   * Phase 2 flags, read fresh from the user record on every request
+   * (see getSession in lib/auth.ts) — a flag change takes effect on the
+   * next request, same as a role change. Guards read these, never
+   * `role` alone (see lib/rbac.ts hasAdminCapability /
+   * hasTeacherCapability). Optional so hand-built test sessions that
+   * only carry a role keep compiling; an absent flag is treated as
+   * false and the capability helpers fall back to `role`.
+   * toSessionUser always populates both.
+   */
+  isAdmin?: boolean;
+  isTeacher?: boolean;
+  /**
    * Per-area admin permissions (Item G), read fresh from the user record
    * on every request (see getSession in lib/auth.ts). Undefined = full
    * admin (every area granted). A map grants only the listed areas.
@@ -42,6 +54,10 @@ export function toSessionUser(user: User | SafeUser): SessionUser {
     email: user.email,
     role: user.role,
     avatar: user.avatar,
+    // `?? false` covers User objects built before the flags existed
+    // (e.g. hand-built fixtures in tests).
+    isAdmin: user.isAdmin ?? false,
+    isTeacher: user.isTeacher ?? false,
     adminPermissions: user.adminPermissions,
   };
 }
