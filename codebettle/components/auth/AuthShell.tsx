@@ -84,14 +84,16 @@ export default function AuthShell({ initialMode, loginForm, registerForm }: Auth
 
   return (
     <div className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden bg-background px-4 py-4">
-      {/* Page background: code-based grid texture (subtle) + dark veil + gold glow.
-          The texture never enters the cards. */}
+      {/* Page background: code-based grid texture (visible but subtle) + dark veil + gold glow.
+          The texture never enters the cards. Lines raised from 4.5% to 12%
+          and the layer from 40% to 70% opacity — the old values were so
+          faint the grid read as plain dark at normal size. */}
       <div
         aria-hidden="true"
-        className="absolute inset-0 opacity-40"
+        className="absolute inset-0 opacity-70"
         style={{
           backgroundImage:
-            'linear-gradient(to right, rgba(255, 255, 255, 0.045) 1px, transparent 1px), linear-gradient(to bottom, rgba(255, 255, 255, 0.045) 1px, transparent 1px)',
+            'linear-gradient(to right, rgba(255, 255, 255, 0.12) 1px, transparent 1px), linear-gradient(to bottom, rgba(255, 255, 255, 0.12) 1px, transparent 1px)',
           backgroundSize: '60px 60px',
         }}
       />
