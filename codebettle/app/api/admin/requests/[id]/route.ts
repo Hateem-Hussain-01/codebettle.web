@@ -24,7 +24,7 @@ export async function GET(
   _request: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
-  const auth = await requireAdminArea('messages');
+  const auth = await requireAdminArea('requests');
   if ('error' in auth) return auth.error;
   const { id } = await params;
   const requestRow = await getSupportRequestById(id);
@@ -35,7 +35,7 @@ export async function GET(
 }
 
 export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const auth = await requireAdminArea('messages');
+  const auth = await requireAdminArea('requests');
   if ('error' in auth) return auth.error;
   const { id } = await params;
   const body = await readJson(request);

@@ -1,4 +1,5 @@
 import { connection } from 'next/server';
+import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { getSession } from '@/lib/auth';
 import { hasAdminCapability } from '@/lib/rbac';
@@ -26,7 +27,17 @@ export default async function AdminNotificationsPage({
     getUserNotificationPrefs(session.id),
   ]);
   return (
-    <NotificationsClient
+    <div>
+      <div className="mb-4 flex items-center justify-between">
+        <h1 className="text-2xl font-bold text-white">Notifications</h1>
+        <Link
+          href="/admin/notifications/compose"
+          className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-dark hover:bg-primary-dark active:scale-95"
+        >
+          Compose notification
+        </Link>
+      </div>
+      <NotificationsClient
       initialNotifications={page.items}
       initialUnreadCount={unreadCount}
       initialPage={page.page}
@@ -38,6 +49,7 @@ export default async function AdminNotificationsPage({
           events: { enrollment: true, completion: true, certificate: true, application: true, announcement: true, support_request: true, request_update: true },
         }
       }
-    />
+      />
+    </div>
   );
 }

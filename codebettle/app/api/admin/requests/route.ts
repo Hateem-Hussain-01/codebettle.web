@@ -6,15 +6,12 @@ import { listSupportRequestsForAdmin } from '@/lib/db/support-requests';
  * GET /api/admin/requests — admin support-request inbox (Phase 3).
  * Query params: page, limit, status, category.
  *
- * Guard: requireAdminArea('messages') — there is no 'requests' area
- * in ADMIN_AREAS; the requests inbox is the inbound-message queue,
- * same as contact messages ('messages' area), so restricted admins
- * need that area granted. Full admins pass. (Flagged in the Phase 3
- * report: if a dedicated 'requests' area is ever added, switch this
- * guard and the [id] routes to it.)
+ * Guard: requireAdminArea('requests') — the dedicated 'requests' area
+ * in ADMIN_AREAS (added in Phase 3); restricted admins need that area
+ * granted. Full admins pass.
  */
 export async function GET(request: NextRequest) {
-  const auth = await requireAdminArea('messages');
+  const auth = await requireAdminArea('requests');
   if ('error' in auth) return auth.error;
   const params = request.nextUrl.searchParams;
   const status = params.get('status') ?? undefined;
