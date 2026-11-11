@@ -68,6 +68,20 @@ enum PaymentStatus {
   refunded
 }
 
+enum PaymentMethod {
+  bank
+  easypaisa
+  jazzcash
+  wallet
+  other
+}
+
+enum PaymentSubmissionStatus {
+  submitted
+  approved
+  rejected
+}
+
 enum CouponType {
   percentage
   fixed
@@ -143,6 +157,9 @@ model User {
   blogPosts          BlogPost[]
   quizzesCreated     Quiz[]             @relation("QuizCreator")
   quizAttempts       QuizAttempt[]      @relation("QuizAttempts")
+  notes              Note[]
+  wishlist           Wishlist[]
+  paymentSubmissionsReviewed PaymentSubmission[] @relation("PaymentSubmissionReviewer")
 }
 
 model Course {
@@ -180,6 +197,8 @@ model Course {
   certificates    Certificate[]
   announcements   Announcement[]
   quizzes         Quiz[]
+  notes           Note[]
+  wishlistEntries Wishlist[]
 }
 
 model Module {
@@ -230,6 +249,7 @@ model Enrollment {
 
   lessonProgress      LessonProgress[]
   payments            Payment[]
+  paymentSubmissions  PaymentSubmission[]
   certificate         Certificate?
 
   @@unique([studentId, courseId])
@@ -262,6 +282,92 @@ model Payment {
 
   @@unique([provider, providerRef])
   @@index([status, createdAt])
+}
+
+// Phase 0/1 models (23-module plan, Modules 4 + 16 + 1).
+//
+// - Note / Wishlist replace the hardcoded INITIAL_NOTES /
+//   INITIAL_WISHLIST on the student pages — every row is scoped to
+//   one user, enforced in the repositories (userId in the where clause).
+// - PaymentSubmission is a NEW model on purpose: the existing Payment
+//   model is gateway-shaped (provider/providerRef unique, status
+//   paid|failed|refunded) and nothing ever creates a Payment row today.
+//   Manual payment verification has a different lifecycle — a student
+//   submits proof of a transfer to a published payment account, an
+//   admin approves or rejects it — so it gets its own reviewStatus
+//   (submitted|approved|rejected) instead of overloading PaymentStatus,
+//   and Payment stays untouched for future gateway use.
+// - PaymentSubmission.accountSnapshot is a frozen copy of the payment
+//   account (label/method/holder/numbers) taken at submit time, so
+//   deleting or deactivating the account never damages history.
+model Note {
+  id        String   @id @onCreate(cuid(2))
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title     String
+  content   String
+  courseId  String?
+  course    Course?  @relation(fields: [courseId], references: [id])
+  createdAt DateTime @default(now()) @onCreate(now())
+  updatedAt temporal.UpdatedAt
+
+  @@index([userId, createdAt])
+}
+
+model Wishlist {
+  id        String   @id @onCreate(cuid(2))
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  courseId  String
+  course    Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now()) @onCreate(now())
+
+  @@unique([userId, courseId])
+  @@index([userId])
+}
+
+model PaymentAccount {
+  id            String        @id @onCreate(cuid(2))
+  label         String
+  method        PaymentMethod
+  accountHolder String
+  bankName      String?
+  accountNumber String?
+  iban          String?
+  walletNumber  String?
+  instructions  String?
+  isActive      Boolean       @default(true)
+  displayOrder  Int           @default(0)
+  createdAt     DateTime      @default(now()) @onCreate(now())
+  updatedAt     temporal.UpdatedAt
+
+  paymentSubmissions PaymentSubmission[]
+
+  @@index([isActive, displayOrder])
+}
+
+model PaymentSubmission {
+  id               String                  @id @onCreate(cuid(2))
+  enrollmentId     String
+  enrollment       Enrollment              @relation(fields: [enrollmentId], references: [id])
+  paymentAccountId String?
+  paymentAccount   PaymentAccount?         @relation(fields: [paymentAccountId], references: [id])
+  method           PaymentMethod
+  amountPkr        Int
+  transactionRef   String
+  proofUrl         String?
+  accountSnapshot  Json
+  reviewStatus     PaymentSubmissionStatus @default(submitted)
+  submittedAt      DateTime                @default(now())
+  reviewedBy       String?
+  reviewer         User?                   @relation("PaymentSubmissionReviewer", fields: [reviewedBy], references: [id])
+  reviewedAt       DateTime?
+  reviewNote       String?
+  createdAt        DateTime                @default(now()) @onCreate(now())
+  updatedAt        temporal.UpdatedAt
+
+  @@index([enrollmentId, reviewStatus])
+  @@index([reviewStatus, submittedAt])
 }
 
 model Coupon {

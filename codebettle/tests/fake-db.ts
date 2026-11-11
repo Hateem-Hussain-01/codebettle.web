@@ -36,6 +36,7 @@ const TIMESTAMP_DEFAULTS = new Set([
   'enrolledAt',
   'issuedAt',
   'publishedAt',
+  'submittedAt',
 ]);
 
 /** Relations the repositories include: parent model -> relation -> child model + FK. */
@@ -68,6 +69,9 @@ const NULLABLE_FIELDS: Record<string, string[]> = {
   QuizQuestion: ['topic', 'difficulty', 'correctText', 'reviewNote'],
   QuizAttempt: ['dueAt', 'submittedAt', 'score', 'totalPoints', 'timeSpentSec'],
   QuizAnswer: ['textAnswer', 'isCorrect'],
+  Note: ['courseId'],
+  PaymentAccount: ['bankName', 'accountNumber', 'iban', 'walletNumber', 'instructions'],
+  PaymentSubmission: ['paymentAccountId', 'proofUrl', 'reviewedBy', 'reviewedAt', 'reviewNote'],
 };
 
 let idCounter = 0;

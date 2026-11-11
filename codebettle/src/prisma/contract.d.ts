@@ -23,9 +23,9 @@ import type {
 } from '@prisma/orm-postgres/contract/types';
 
 export type StorageHash =
-  StorageHashBase<'caeb9dc90aed76996f75d9f9bc2603e292000aea7683d3bdbbb49bf1f219f201'>;
+  StorageHashBase<'1a361ee24d1bde00a4e91397adecd59050e6a90e2528859867ea328f12778b18'>;
 export type ExecutionHash =
-  ExecutionHashBase<'724cb5805679e422d27371e55faf7662b11f26ef5bc01a2bbe6f9f9678d62a75'>;
+  ExecutionHashBase<'f6e0e2ce33c447a1a3661291c4c4126f89eae6896a92e08486fa9f259e8ad5dc'>;
 export type ProfileHash =
   ProfileHashBase<'3916f444a8a17ad749191acf9e08dad97d1a327b88c2f1d45d12f240296aa8b2'>;
 
@@ -334,6 +334,22 @@ type FieldTypeOverrides = {
           readonly input: 'pending' | 'paid' | 'failed' | 'refunded';
         };
       };
+      readonly PaymentAccount: {
+        readonly method: {
+          readonly output: 'bank' | 'easypaisa' | 'jazzcash' | 'wallet' | 'other';
+          readonly input: 'bank' | 'easypaisa' | 'jazzcash' | 'wallet' | 'other';
+        };
+      };
+      readonly PaymentSubmission: {
+        readonly method: {
+          readonly output: 'bank' | 'easypaisa' | 'jazzcash' | 'wallet' | 'other';
+          readonly input: 'bank' | 'easypaisa' | 'jazzcash' | 'wallet' | 'other';
+        };
+        readonly reviewStatus: {
+          readonly output: 'submitted' | 'approved' | 'rejected';
+          readonly input: 'submitted' | 'approved' | 'rejected';
+        };
+      };
       readonly Quiz: {
         readonly difficulty: {
           readonly output: 'beginner' | 'intermediate' | 'advanced';
@@ -449,6 +465,22 @@ type ColumnTypeOverrides = {
       readonly status: {
         readonly output: 'pending' | 'paid' | 'failed' | 'refunded';
         readonly input: 'pending' | 'paid' | 'failed' | 'refunded';
+      };
+    };
+    readonly PaymentAccount: {
+      readonly method: {
+        readonly output: 'bank' | 'easypaisa' | 'jazzcash' | 'wallet' | 'other';
+        readonly input: 'bank' | 'easypaisa' | 'jazzcash' | 'wallet' | 'other';
+      };
+    };
+    readonly PaymentSubmission: {
+      readonly method: {
+        readonly output: 'bank' | 'easypaisa' | 'jazzcash' | 'wallet' | 'other';
+        readonly input: 'bank' | 'easypaisa' | 'jazzcash' | 'wallet' | 'other';
+      };
+      readonly reviewStatus: {
+        readonly output: 'submitted' | 'approved' | 'rejected';
+        readonly input: 'submitted' | 'approved' | 'rejected';
       };
     };
     readonly Quiz: {
@@ -633,16 +665,20 @@ export namespace Models {
     enrollments: public_Enrollment[];
     instructor: public_User;
     modules: public_Module[];
+    notes: public_Note[];
     quizzes: public_Quiz[];
     reviews: public_Review[];
+    wishlistEntries: public_Wishlist[];
     readonly [RelationKeys]?:
       | 'announcements'
       | 'certificates'
       | 'enrollments'
       | 'instructor'
       | 'modules'
+      | 'notes'
       | 'quizzes'
-      | 'reviews';
+      | 'reviews'
+      | 'wishlistEntries';
   };
   export type public_EmailVerification = {
     createdAt: FieldOutputTypes['public']['EmailVerification']['createdAt'];
@@ -671,9 +707,11 @@ export namespace Models {
     certificate: public_Certificate | null;
     course: public_Course;
     lessonProgress: public_LessonProgress[];
+    paymentSubmissions: public_PaymentSubmission[];
     payments: public_Payment[];
     student: public_User;
-    readonly [RelationKeys]?: 'certificate' | 'course' | 'lessonProgress' | 'payments' | 'student';
+    readonly [RelationKeys]?:
+      'certificate' | 'course' | 'lessonProgress' | 'paymentSubmissions' | 'payments' | 'student';
   };
   export type public_InstructorApplication = {
     createdAt: FieldOutputTypes['public']['InstructorApplication']['createdAt'];
@@ -735,6 +773,18 @@ export namespace Models {
     lessons: public_Lesson[];
     readonly [RelationKeys]?: 'course' | 'lessons';
   };
+  export type public_Note = {
+    content: FieldOutputTypes['public']['Note']['content'];
+    courseId: FieldOutputTypes['public']['Note']['courseId'];
+    createdAt: FieldOutputTypes['public']['Note']['createdAt'];
+    id: FieldOutputTypes['public']['Note']['id'];
+    title: FieldOutputTypes['public']['Note']['title'];
+    updatedAt: FieldOutputTypes['public']['Note']['updatedAt'];
+    userId: FieldOutputTypes['public']['Note']['userId'];
+    course: public_Course | null;
+    user: public_User;
+    readonly [RelationKeys]?: 'course' | 'user';
+  };
   export type public_Notification = {
     body: FieldOutputTypes['public']['Notification']['body'];
     createdAt: FieldOutputTypes['public']['Notification']['createdAt'];
@@ -768,6 +818,44 @@ export namespace Models {
     coupon: public_Coupon | null;
     enrollment: public_Enrollment;
     readonly [RelationKeys]?: 'coupon' | 'enrollment';
+  };
+  export type public_PaymentAccount = {
+    accountHolder: FieldOutputTypes['public']['PaymentAccount']['accountHolder'];
+    accountNumber: FieldOutputTypes['public']['PaymentAccount']['accountNumber'];
+    bankName: FieldOutputTypes['public']['PaymentAccount']['bankName'];
+    createdAt: FieldOutputTypes['public']['PaymentAccount']['createdAt'];
+    displayOrder: FieldOutputTypes['public']['PaymentAccount']['displayOrder'];
+    iban: FieldOutputTypes['public']['PaymentAccount']['iban'];
+    id: FieldOutputTypes['public']['PaymentAccount']['id'];
+    instructions: FieldOutputTypes['public']['PaymentAccount']['instructions'];
+    isActive: FieldOutputTypes['public']['PaymentAccount']['isActive'];
+    label: FieldOutputTypes['public']['PaymentAccount']['label'];
+    method: FieldOutputTypes['public']['PaymentAccount']['method'];
+    updatedAt: FieldOutputTypes['public']['PaymentAccount']['updatedAt'];
+    walletNumber: FieldOutputTypes['public']['PaymentAccount']['walletNumber'];
+    paymentSubmissions: public_PaymentSubmission[];
+    readonly [RelationKeys]?: 'paymentSubmissions';
+  };
+  export type public_PaymentSubmission = {
+    accountSnapshot: FieldOutputTypes['public']['PaymentSubmission']['accountSnapshot'];
+    amountPkr: FieldOutputTypes['public']['PaymentSubmission']['amountPkr'];
+    createdAt: FieldOutputTypes['public']['PaymentSubmission']['createdAt'];
+    enrollmentId: FieldOutputTypes['public']['PaymentSubmission']['enrollmentId'];
+    id: FieldOutputTypes['public']['PaymentSubmission']['id'];
+    method: FieldOutputTypes['public']['PaymentSubmission']['method'];
+    paymentAccountId: FieldOutputTypes['public']['PaymentSubmission']['paymentAccountId'];
+    proofUrl: FieldOutputTypes['public']['PaymentSubmission']['proofUrl'];
+    reviewNote: FieldOutputTypes['public']['PaymentSubmission']['reviewNote'];
+    reviewStatus: FieldOutputTypes['public']['PaymentSubmission']['reviewStatus'];
+    reviewedAt: FieldOutputTypes['public']['PaymentSubmission']['reviewedAt'];
+    reviewedBy: FieldOutputTypes['public']['PaymentSubmission']['reviewedBy'];
+    submittedAt: FieldOutputTypes['public']['PaymentSubmission']['submittedAt'];
+    transactionRef: FieldOutputTypes['public']['PaymentSubmission']['transactionRef'];
+    updatedAt: FieldOutputTypes['public']['PaymentSubmission']['updatedAt'];
+    enrollment: public_Enrollment;
+    paymentAccount: public_PaymentAccount | null;
+    reviewer: public_User | null;
+    readonly [RelationKeys]?: 'enrollment' | 'paymentAccount' | 'reviewer';
   };
   export type public_Quiz = {
     attemptsAllowed: FieldOutputTypes['public']['Quiz']['attemptsAllowed'];
@@ -917,12 +1005,15 @@ export namespace Models {
     emailVerifications: public_EmailVerification[];
     enrollments: public_Enrollment[];
     loginEvents: public_LoginEvent[];
+    notes: public_Note[];
     notifications: public_Notification[];
     passwordResets: public_PasswordReset[];
+    paymentSubmissionsReviewed: public_PaymentSubmission[];
     quizAttempts: public_QuizAttempt[];
     quizzesCreated: public_Quiz[];
     reviews: public_Review[];
     sessions: public_Session[];
+    wishlist: public_Wishlist[];
     readonly [RelationKeys]?:
       | 'announcements'
       | 'applicationsReview'
@@ -933,12 +1024,24 @@ export namespace Models {
       | 'emailVerifications'
       | 'enrollments'
       | 'loginEvents'
+      | 'notes'
       | 'notifications'
       | 'passwordResets'
+      | 'paymentSubmissionsReviewed'
       | 'quizAttempts'
       | 'quizzesCreated'
       | 'reviews'
-      | 'sessions';
+      | 'sessions'
+      | 'wishlist';
+  };
+  export type public_Wishlist = {
+    courseId: FieldOutputTypes['public']['Wishlist']['courseId'];
+    createdAt: FieldOutputTypes['public']['Wishlist']['createdAt'];
+    id: FieldOutputTypes['public']['Wishlist']['id'];
+    userId: FieldOutputTypes['public']['Wishlist']['userId'];
+    course: public_Course;
+    user: public_User;
+    readonly [RelationKeys]?: 'course' | 'user';
   };
 }
 
@@ -959,9 +1062,12 @@ export declare const models: {
     LessonProgress: Models.public_LessonProgress;
     LoginEvent: Models.public_LoginEvent;
     Module: Models.public_Module;
+    Note: Models.public_Note;
     Notification: Models.public_Notification;
     PasswordReset: Models.public_PasswordReset;
     Payment: Models.public_Payment;
+    PaymentAccount: Models.public_PaymentAccount;
+    PaymentSubmission: Models.public_PaymentSubmission;
     Quiz: Models.public_Quiz;
     QuizAnswer: Models.public_QuizAnswer;
     QuizAttempt: Models.public_QuizAttempt;
@@ -971,6 +1077,7 @@ export declare const models: {
     Session: Models.public_Session;
     Testimonial: Models.public_Testimonial;
     User: Models.public_User;
+    Wishlist: Models.public_Wishlist;
   };
 };
 
@@ -2440,6 +2547,103 @@ type ContractBase = Omit<
                 },
               ];
             };
+            readonly Note: {
+              columns: {
+                readonly content: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly courseId: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly createdAt: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly nullable: false;
+                  readonly default: { readonly kind: 'function'; readonly expression: 'now()' };
+                  readonly typeParams: { readonly precision: 3 };
+                  readonly many: false;
+                };
+                readonly id: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly title: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly updatedAt: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly nullable: false;
+                  readonly typeParams: { readonly precision: 3 };
+                  readonly many: false;
+                };
+                readonly userId: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+              };
+              primaryKey: { readonly columns: readonly ['id'] };
+              uniques: readonly [];
+              indexes: readonly [
+                {
+                  readonly name: 'Note_courseId_idx_12f72d2a';
+                  readonly prefix: 'Note_courseId_idx';
+                  readonly columns: readonly ['courseId'];
+                  readonly unique: false;
+                },
+                {
+                  readonly name: 'Note_userId_createdAt_idx_f726f04a';
+                  readonly prefix: 'Note_userId_createdAt_idx';
+                  readonly columns: readonly ['userId', 'createdAt'];
+                  readonly unique: false;
+                },
+                {
+                  readonly name: 'Note_userId_idx_a489d58a';
+                  readonly prefix: 'Note_userId_idx';
+                  readonly columns: readonly ['userId'];
+                  readonly unique: false;
+                },
+              ];
+              foreignKeys: readonly [
+                {
+                  readonly source: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'Note';
+                    readonly columns: readonly ['userId'];
+                  };
+                  readonly target: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'User';
+                    readonly columns: readonly ['id'];
+                  };
+                },
+                {
+                  readonly source: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'Note';
+                    readonly columns: readonly ['courseId'];
+                  };
+                  readonly target: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'Course';
+                    readonly columns: readonly ['id'];
+                  };
+                },
+              ];
+            };
             readonly Notification: {
               columns: {
                 readonly body: {
@@ -2688,6 +2892,286 @@ type ContractBase = Omit<
                   readonly target: {
                     readonly namespaceId: 'public' & NamespaceId;
                     readonly tableName: 'Coupon';
+                    readonly columns: readonly ['id'];
+                  };
+                },
+              ];
+            };
+            readonly PaymentAccount: {
+              columns: {
+                readonly accountHolder: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly accountNumber: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly bankName: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly createdAt: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly nullable: false;
+                  readonly default: { readonly kind: 'function'; readonly expression: 'now()' };
+                  readonly typeParams: { readonly precision: 3 };
+                  readonly many: false;
+                };
+                readonly displayOrder: {
+                  readonly dataType: 'pg/int4';
+                  readonly codecId: 'pg/int4@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'literal';
+                    readonly value: DefaultLiteralValue<'pg/int4@1', 0>;
+                  };
+                  readonly many: false;
+                };
+                readonly iban: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly id: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly instructions: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly isActive: {
+                  readonly dataType: 'pg/bool';
+                  readonly codecId: 'pg/bool@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'literal';
+                    readonly value: DefaultLiteralValue<'pg/bool@1', true>;
+                  };
+                  readonly many: false;
+                };
+                readonly label: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly method: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly updatedAt: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly nullable: false;
+                  readonly typeParams: { readonly precision: 3 };
+                  readonly many: false;
+                };
+                readonly walletNumber: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+              };
+              primaryKey: { readonly columns: readonly ['id'] };
+              uniques: readonly [];
+              indexes: readonly [
+                {
+                  readonly name: 'PaymentAccount_isActive_displayOrder_idx_9399faee';
+                  readonly prefix: 'PaymentAccount_isActive_displayOrder_idx';
+                  readonly columns: readonly ['isActive', 'displayOrder'];
+                  readonly unique: false;
+                },
+              ];
+              foreignKeys: readonly [];
+            };
+            readonly PaymentSubmission: {
+              columns: {
+                readonly accountSnapshot: {
+                  readonly dataType: 'pg/json';
+                  readonly codecId: 'pg/json@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly amountPkr: {
+                  readonly dataType: 'pg/int4';
+                  readonly codecId: 'pg/int4@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly createdAt: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly nullable: false;
+                  readonly default: { readonly kind: 'function'; readonly expression: 'now()' };
+                  readonly typeParams: { readonly precision: 3 };
+                  readonly many: false;
+                };
+                readonly enrollmentId: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly id: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly method: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly paymentAccountId: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly proofUrl: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly reviewNote: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly reviewStatus: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'literal';
+                    readonly value: DefaultLiteralValue<'pg/text@1', 'submitted'>;
+                  };
+                  readonly many: false;
+                };
+                readonly reviewedAt: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly nullable: true;
+                  readonly typeParams: { readonly precision: 3 };
+                  readonly many: false;
+                };
+                readonly reviewedBy: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly submittedAt: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly nullable: false;
+                  readonly default: { readonly kind: 'function'; readonly expression: 'now()' };
+                  readonly typeParams: { readonly precision: 3 };
+                  readonly many: false;
+                };
+                readonly transactionRef: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly updatedAt: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly nullable: false;
+                  readonly typeParams: { readonly precision: 3 };
+                  readonly many: false;
+                };
+              };
+              primaryKey: { readonly columns: readonly ['id'] };
+              uniques: readonly [];
+              indexes: readonly [
+                {
+                  readonly name: 'PaymentSubmission_enrollmentId_idx_ee5e79c5';
+                  readonly prefix: 'PaymentSubmission_enrollmentId_idx';
+                  readonly columns: readonly ['enrollmentId'];
+                  readonly unique: false;
+                },
+                {
+                  readonly name: 'PaymentSubmission_enrollmentId_reviewStatus_idx_2c5289df';
+                  readonly prefix: 'PaymentSubmission_enrollmentId_reviewStatus_idx';
+                  readonly columns: readonly ['enrollmentId', 'reviewStatus'];
+                  readonly unique: false;
+                },
+                {
+                  readonly name: 'PaymentSubmission_paymentAccountId_idx_6d12e2f9';
+                  readonly prefix: 'PaymentSubmission_paymentAccountId_idx';
+                  readonly columns: readonly ['paymentAccountId'];
+                  readonly unique: false;
+                },
+                {
+                  readonly name: 'PaymentSubmission_reviewStatus_submittedAt_idx_ebd06ffa';
+                  readonly prefix: 'PaymentSubmission_reviewStatus_submittedAt_idx';
+                  readonly columns: readonly ['reviewStatus', 'submittedAt'];
+                  readonly unique: false;
+                },
+                {
+                  readonly name: 'PaymentSubmission_reviewedBy_idx_0b622ca2';
+                  readonly prefix: 'PaymentSubmission_reviewedBy_idx';
+                  readonly columns: readonly ['reviewedBy'];
+                  readonly unique: false;
+                },
+              ];
+              foreignKeys: readonly [
+                {
+                  readonly source: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'PaymentSubmission';
+                    readonly columns: readonly ['enrollmentId'];
+                  };
+                  readonly target: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'Enrollment';
+                    readonly columns: readonly ['id'];
+                  };
+                },
+                {
+                  readonly source: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'PaymentSubmission';
+                    readonly columns: readonly ['paymentAccountId'];
+                  };
+                  readonly target: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'PaymentAccount';
+                    readonly columns: readonly ['id'];
+                  };
+                },
+                {
+                  readonly source: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'PaymentSubmission';
+                    readonly columns: readonly ['reviewedBy'];
+                  };
+                  readonly target: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'User';
                     readonly columns: readonly ['id'];
                   };
                 },
@@ -3662,6 +4146,78 @@ type ContractBase = Omit<
               indexes: readonly [];
               foreignKeys: readonly [];
             };
+            readonly Wishlist: {
+              columns: {
+                readonly courseId: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly createdAt: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly nullable: false;
+                  readonly default: { readonly kind: 'function'; readonly expression: 'now()' };
+                  readonly typeParams: { readonly precision: 3 };
+                  readonly many: false;
+                };
+                readonly id: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly userId: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+              };
+              primaryKey: { readonly columns: readonly ['id'] };
+              uniques: readonly [{ readonly columns: readonly ['userId', 'courseId'] }];
+              indexes: readonly [
+                {
+                  readonly name: 'Wishlist_courseId_idx_12f72d2a';
+                  readonly prefix: 'Wishlist_courseId_idx';
+                  readonly columns: readonly ['courseId'];
+                  readonly unique: false;
+                },
+                {
+                  readonly name: 'Wishlist_userId_idx_a489d58a';
+                  readonly prefix: 'Wishlist_userId_idx';
+                  readonly columns: readonly ['userId'];
+                  readonly unique: false;
+                },
+              ];
+              foreignKeys: readonly [
+                {
+                  readonly source: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'Wishlist';
+                    readonly columns: readonly ['userId'];
+                  };
+                  readonly target: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'User';
+                    readonly columns: readonly ['id'];
+                  };
+                },
+                {
+                  readonly source: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'Wishlist';
+                    readonly columns: readonly ['courseId'];
+                  };
+                  readonly target: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'Course';
+                    readonly columns: readonly ['id'];
+                  };
+                },
+              ];
+            };
           };
           readonly valueSet: {
             readonly AnnouncementType: {
@@ -3699,9 +4255,17 @@ type ContractBase = Omit<
               readonly kind: 'valueSet';
               readonly values: readonly ['paid', 'free', 'pending'];
             };
+            readonly PaymentMethod: {
+              readonly kind: 'valueSet';
+              readonly values: readonly ['bank', 'easypaisa', 'jazzcash', 'wallet', 'other'];
+            };
             readonly PaymentStatus: {
               readonly kind: 'valueSet';
               readonly values: readonly ['pending', 'paid', 'failed', 'refunded'];
+            };
+            readonly PaymentSubmissionStatus: {
+              readonly kind: 'valueSet';
+              readonly values: readonly ['submitted', 'approved', 'rejected'];
             };
             readonly QuizAttemptStatus: {
               readonly kind: 'valueSet';
@@ -3786,6 +4350,7 @@ type ContractBase = Omit<
       readonly model: 'LoginEvent';
     };
     readonly Module: { readonly namespace: 'public' & NamespaceId; readonly model: 'Module' };
+    readonly Note: { readonly namespace: 'public' & NamespaceId; readonly model: 'Note' };
     readonly Notification: {
       readonly namespace: 'public' & NamespaceId;
       readonly model: 'Notification';
@@ -3795,6 +4360,14 @@ type ContractBase = Omit<
       readonly model: 'PasswordReset';
     };
     readonly Payment: { readonly namespace: 'public' & NamespaceId; readonly model: 'Payment' };
+    readonly PaymentAccount: {
+      readonly namespace: 'public' & NamespaceId;
+      readonly model: 'PaymentAccount';
+    };
+    readonly PaymentSubmission: {
+      readonly namespace: 'public' & NamespaceId;
+      readonly model: 'PaymentSubmission';
+    };
     readonly Quiz: { readonly namespace: 'public' & NamespaceId; readonly model: 'Quiz' };
     readonly QuizAnswer: {
       readonly namespace: 'public' & NamespaceId;
@@ -3819,6 +4392,7 @@ type ContractBase = Omit<
       readonly model: 'Testimonial';
     };
     readonly User: { readonly namespace: 'public' & NamespaceId; readonly model: 'User' };
+    readonly Wishlist: { readonly namespace: 'public' & NamespaceId; readonly model: 'Wishlist' };
   };
   readonly domain: {
     readonly namespaces: {
@@ -4547,6 +5121,14 @@ type ContractBase = Omit<
                   readonly targetFields: readonly ['courseId'];
                 };
               };
+              readonly notes: {
+                readonly to: { readonly namespace: 'public' & NamespaceId; readonly model: 'Note' };
+                readonly cardinality: '1:N';
+                readonly on: {
+                  readonly localFields: readonly ['id'];
+                  readonly targetFields: readonly ['courseId'];
+                };
+              };
               readonly quizzes: {
                 readonly to: { readonly namespace: 'public' & NamespaceId; readonly model: 'Quiz' };
                 readonly cardinality: '1:N';
@@ -4559,6 +5141,17 @@ type ContractBase = Omit<
                 readonly to: {
                   readonly namespace: 'public' & NamespaceId;
                   readonly model: 'Review';
+                };
+                readonly cardinality: '1:N';
+                readonly on: {
+                  readonly localFields: readonly ['id'];
+                  readonly targetFields: readonly ['courseId'];
+                };
+              };
+              readonly wishlistEntries: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'Wishlist';
                 };
                 readonly cardinality: '1:N';
                 readonly on: {
@@ -4767,6 +5360,17 @@ type ContractBase = Omit<
                 readonly to: {
                   readonly namespace: 'public' & NamespaceId;
                   readonly model: 'LessonProgress';
+                };
+                readonly cardinality: '1:N';
+                readonly on: {
+                  readonly localFields: readonly ['id'];
+                  readonly targetFields: readonly ['enrollmentId'];
+                };
+              };
+              readonly paymentSubmissions: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'PaymentSubmission';
                 };
                 readonly cardinality: '1:N';
                 readonly on: {
@@ -5164,6 +5768,82 @@ type ContractBase = Omit<
               };
             };
           };
+          readonly Note: {
+            readonly fields: {
+              readonly content: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly courseId: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly createdAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly typeParams: { readonly precision: 3 };
+                };
+              };
+              readonly id: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly title: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly updatedAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly typeParams: { readonly precision: 3 };
+                };
+              };
+              readonly userId: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+            };
+            readonly relations: {
+              readonly course: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'Course';
+                };
+                readonly cardinality: 'N:1';
+                readonly nullable: true;
+                readonly on: {
+                  readonly localFields: readonly ['courseId'];
+                  readonly targetFields: readonly ['id'];
+                };
+              };
+              readonly user: {
+                readonly to: { readonly namespace: 'public' & NamespaceId; readonly model: 'User' };
+                readonly cardinality: 'N:1';
+                readonly nullable: false;
+                readonly on: {
+                  readonly localFields: readonly ['userId'];
+                  readonly targetFields: readonly ['id'];
+                };
+              };
+            };
+            readonly storage: {
+              readonly table: 'Note';
+              readonly namespaceId: 'public';
+              readonly fields: {
+                readonly content: { readonly column: 'content' };
+                readonly courseId: { readonly column: 'courseId' };
+                readonly createdAt: { readonly column: 'createdAt' };
+                readonly id: { readonly column: 'id' };
+                readonly title: { readonly column: 'title' };
+                readonly updatedAt: { readonly column: 'updatedAt' };
+                readonly userId: { readonly column: 'userId' };
+              };
+            };
+          };
           readonly Notification: {
             readonly fields: {
               readonly body: {
@@ -5368,6 +6048,238 @@ type ContractBase = Omit<
                 readonly provider: { readonly column: 'provider' };
                 readonly providerRef: { readonly column: 'providerRef' };
                 readonly status: { readonly column: 'status' };
+              };
+            };
+          };
+          readonly PaymentAccount: {
+            readonly fields: {
+              readonly accountHolder: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly accountNumber: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly bankName: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly createdAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly typeParams: { readonly precision: 3 };
+                };
+              };
+              readonly displayOrder: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/int4@1' };
+              };
+              readonly iban: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly id: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly instructions: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly isActive: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/bool@1' };
+              };
+              readonly label: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly method: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly updatedAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly typeParams: { readonly precision: 3 };
+                };
+              };
+              readonly walletNumber: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+            };
+            readonly relations: {
+              readonly paymentSubmissions: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'PaymentSubmission';
+                };
+                readonly cardinality: '1:N';
+                readonly on: {
+                  readonly localFields: readonly ['id'];
+                  readonly targetFields: readonly ['paymentAccountId'];
+                };
+              };
+            };
+            readonly storage: {
+              readonly table: 'PaymentAccount';
+              readonly namespaceId: 'public';
+              readonly fields: {
+                readonly accountHolder: { readonly column: 'accountHolder' };
+                readonly accountNumber: { readonly column: 'accountNumber' };
+                readonly bankName: { readonly column: 'bankName' };
+                readonly createdAt: { readonly column: 'createdAt' };
+                readonly displayOrder: { readonly column: 'displayOrder' };
+                readonly iban: { readonly column: 'iban' };
+                readonly id: { readonly column: 'id' };
+                readonly instructions: { readonly column: 'instructions' };
+                readonly isActive: { readonly column: 'isActive' };
+                readonly label: { readonly column: 'label' };
+                readonly method: { readonly column: 'method' };
+                readonly updatedAt: { readonly column: 'updatedAt' };
+                readonly walletNumber: { readonly column: 'walletNumber' };
+              };
+            };
+          };
+          readonly PaymentSubmission: {
+            readonly fields: {
+              readonly accountSnapshot: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/json@1' };
+              };
+              readonly amountPkr: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/int4@1' };
+              };
+              readonly createdAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly typeParams: { readonly precision: 3 };
+                };
+              };
+              readonly enrollmentId: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly id: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly method: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly paymentAccountId: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly proofUrl: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly reviewNote: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly reviewStatus: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly reviewedAt: {
+                readonly nullable: true;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly typeParams: { readonly precision: 3 };
+                };
+              };
+              readonly reviewedBy: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly submittedAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly typeParams: { readonly precision: 3 };
+                };
+              };
+              readonly transactionRef: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly updatedAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly typeParams: { readonly precision: 3 };
+                };
+              };
+            };
+            readonly relations: {
+              readonly enrollment: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'Enrollment';
+                };
+                readonly cardinality: 'N:1';
+                readonly nullable: false;
+                readonly on: {
+                  readonly localFields: readonly ['enrollmentId'];
+                  readonly targetFields: readonly ['id'];
+                };
+              };
+              readonly paymentAccount: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'PaymentAccount';
+                };
+                readonly cardinality: 'N:1';
+                readonly nullable: true;
+                readonly on: {
+                  readonly localFields: readonly ['paymentAccountId'];
+                  readonly targetFields: readonly ['id'];
+                };
+              };
+              readonly reviewer: {
+                readonly to: { readonly namespace: 'public' & NamespaceId; readonly model: 'User' };
+                readonly cardinality: 'N:1';
+                readonly nullable: true;
+                readonly on: {
+                  readonly localFields: readonly ['reviewedBy'];
+                  readonly targetFields: readonly ['id'];
+                };
+              };
+            };
+            readonly storage: {
+              readonly table: 'PaymentSubmission';
+              readonly namespaceId: 'public';
+              readonly fields: {
+                readonly accountSnapshot: { readonly column: 'accountSnapshot' };
+                readonly amountPkr: { readonly column: 'amountPkr' };
+                readonly createdAt: { readonly column: 'createdAt' };
+                readonly enrollmentId: { readonly column: 'enrollmentId' };
+                readonly id: { readonly column: 'id' };
+                readonly method: { readonly column: 'method' };
+                readonly paymentAccountId: { readonly column: 'paymentAccountId' };
+                readonly proofUrl: { readonly column: 'proofUrl' };
+                readonly reviewNote: { readonly column: 'reviewNote' };
+                readonly reviewStatus: { readonly column: 'reviewStatus' };
+                readonly reviewedAt: { readonly column: 'reviewedAt' };
+                readonly reviewedBy: { readonly column: 'reviewedBy' };
+                readonly submittedAt: { readonly column: 'submittedAt' };
+                readonly transactionRef: { readonly column: 'transactionRef' };
+                readonly updatedAt: { readonly column: 'updatedAt' };
               };
             };
           };
@@ -6290,6 +7202,14 @@ type ContractBase = Omit<
                   readonly targetFields: readonly ['userId'];
                 };
               };
+              readonly notes: {
+                readonly to: { readonly namespace: 'public' & NamespaceId; readonly model: 'Note' };
+                readonly cardinality: '1:N';
+                readonly on: {
+                  readonly localFields: readonly ['id'];
+                  readonly targetFields: readonly ['userId'];
+                };
+              };
               readonly notifications: {
                 readonly to: {
                   readonly namespace: 'public' & NamespaceId;
@@ -6310,6 +7230,17 @@ type ContractBase = Omit<
                 readonly on: {
                   readonly localFields: readonly ['id'];
                   readonly targetFields: readonly ['userId'];
+                };
+              };
+              readonly paymentSubmissionsReviewed: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'PaymentSubmission';
+                };
+                readonly cardinality: '1:N';
+                readonly on: {
+                  readonly localFields: readonly ['id'];
+                  readonly targetFields: readonly ['reviewedBy'];
                 };
               };
               readonly quizAttempts: {
@@ -6353,6 +7284,17 @@ type ContractBase = Omit<
                   readonly targetFields: readonly ['userId'];
                 };
               };
+              readonly wishlist: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'Wishlist';
+                };
+                readonly cardinality: '1:N';
+                readonly on: {
+                  readonly localFields: readonly ['id'];
+                  readonly targetFields: readonly ['userId'];
+                };
+              };
             };
             readonly storage: {
               readonly table: 'User';
@@ -6376,6 +7318,63 @@ type ContractBase = Omit<
                 readonly socialLinks: { readonly column: 'socialLinks' };
                 readonly status: { readonly column: 'status' };
                 readonly updatedAt: { readonly column: 'updatedAt' };
+              };
+            };
+          };
+          readonly Wishlist: {
+            readonly fields: {
+              readonly courseId: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly createdAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly typeParams: { readonly precision: 3 };
+                };
+              };
+              readonly id: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly userId: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+            };
+            readonly relations: {
+              readonly course: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'Course';
+                };
+                readonly cardinality: 'N:1';
+                readonly nullable: false;
+                readonly on: {
+                  readonly localFields: readonly ['courseId'];
+                  readonly targetFields: readonly ['id'];
+                };
+              };
+              readonly user: {
+                readonly to: { readonly namespace: 'public' & NamespaceId; readonly model: 'User' };
+                readonly cardinality: 'N:1';
+                readonly nullable: false;
+                readonly on: {
+                  readonly localFields: readonly ['userId'];
+                  readonly targetFields: readonly ['id'];
+                };
+              };
+            };
+            readonly storage: {
+              readonly table: 'Wishlist';
+              readonly namespaceId: 'public';
+              readonly fields: {
+                readonly courseId: { readonly column: 'courseId' };
+                readonly createdAt: { readonly column: 'createdAt' };
+                readonly id: { readonly column: 'id' };
+                readonly userId: { readonly column: 'userId' };
               };
             };
           };
@@ -6438,6 +7437,16 @@ type ContractBase = Omit<
               { readonly name: 'pending'; readonly value: 'pending' },
             ];
           };
+          readonly PaymentMethod: {
+            readonly codecId: 'pg/text@1';
+            readonly members: readonly [
+              { readonly name: 'bank'; readonly value: 'bank' },
+              { readonly name: 'easypaisa'; readonly value: 'easypaisa' },
+              { readonly name: 'jazzcash'; readonly value: 'jazzcash' },
+              { readonly name: 'wallet'; readonly value: 'wallet' },
+              { readonly name: 'other'; readonly value: 'other' },
+            ];
+          };
           readonly PaymentStatus: {
             readonly codecId: 'pg/text@1';
             readonly members: readonly [
@@ -6445,6 +7454,14 @@ type ContractBase = Omit<
               { readonly name: 'paid'; readonly value: 'paid' },
               { readonly name: 'failed'; readonly value: 'failed' },
               { readonly name: 'refunded'; readonly value: 'refunded' },
+            ];
+          };
+          readonly PaymentSubmissionStatus: {
+            readonly codecId: 'pg/text@1';
+            readonly members: readonly [
+              { readonly name: 'submitted'; readonly value: 'submitted' },
+              { readonly name: 'approved'; readonly value: 'approved' },
+              { readonly name: 'rejected'; readonly value: 'rejected' },
             ];
           };
           readonly QuizAttemptStatus: {
@@ -6532,11 +7549,23 @@ type ContractBase = Omit<
             { readonly name: 'free'; readonly value: 'free' },
             { readonly name: 'pending'; readonly value: 'pending' },
           ];
+          readonly PaymentMethod: readonly [
+            { readonly name: 'bank'; readonly value: 'bank' },
+            { readonly name: 'easypaisa'; readonly value: 'easypaisa' },
+            { readonly name: 'jazzcash'; readonly value: 'jazzcash' },
+            { readonly name: 'wallet'; readonly value: 'wallet' },
+            { readonly name: 'other'; readonly value: 'other' },
+          ];
           readonly PaymentStatus: readonly [
             { readonly name: 'pending'; readonly value: 'pending' },
             { readonly name: 'paid'; readonly value: 'paid' },
             { readonly name: 'failed'; readonly value: 'failed' },
             { readonly name: 'refunded'; readonly value: 'refunded' },
+          ];
+          readonly PaymentSubmissionStatus: readonly [
+            { readonly name: 'submitted'; readonly value: 'submitted' },
+            { readonly name: 'approved'; readonly value: 'approved' },
+            { readonly name: 'rejected'; readonly value: 'rejected' },
           ];
           readonly QuizAttemptStatus: readonly [
             { readonly name: 'in_progress'; readonly value: 'in_progress' },
@@ -6894,6 +7923,43 @@ type ContractBase = Omit<
             readonly params: { readonly precision: 3 };
           };
           readonly ref: {
+            readonly entry: 'Note';
+            readonly field: 'createdAt';
+            readonly namespace: 'public';
+          };
+        },
+        {
+          readonly onCreate: { readonly id: 'cuid2'; readonly kind: 'generator' };
+          readonly ref: {
+            readonly entry: 'Note';
+            readonly field: 'id';
+            readonly namespace: 'public';
+          };
+        },
+        {
+          readonly onCreate: {
+            readonly id: 'timestampNow';
+            readonly kind: 'generator';
+            readonly params: { readonly precision: 3 };
+          };
+          readonly onUpdate: {
+            readonly id: 'timestampNow';
+            readonly kind: 'generator';
+            readonly params: { readonly precision: 3 };
+          };
+          readonly ref: {
+            readonly entry: 'Note';
+            readonly field: 'updatedAt';
+            readonly namespace: 'public';
+          };
+        },
+        {
+          readonly onCreate: {
+            readonly id: 'timestampNow';
+            readonly kind: 'generator';
+            readonly params: { readonly precision: 3 };
+          };
+          readonly ref: {
             readonly entry: 'Notification';
             readonly field: 'createdAt';
             readonly namespace: 'public';
@@ -6944,6 +8010,80 @@ type ContractBase = Omit<
           readonly ref: {
             readonly entry: 'Payment';
             readonly field: 'id';
+            readonly namespace: 'public';
+          };
+        },
+        {
+          readonly onCreate: {
+            readonly id: 'timestampNow';
+            readonly kind: 'generator';
+            readonly params: { readonly precision: 3 };
+          };
+          readonly ref: {
+            readonly entry: 'PaymentAccount';
+            readonly field: 'createdAt';
+            readonly namespace: 'public';
+          };
+        },
+        {
+          readonly onCreate: { readonly id: 'cuid2'; readonly kind: 'generator' };
+          readonly ref: {
+            readonly entry: 'PaymentAccount';
+            readonly field: 'id';
+            readonly namespace: 'public';
+          };
+        },
+        {
+          readonly onCreate: {
+            readonly id: 'timestampNow';
+            readonly kind: 'generator';
+            readonly params: { readonly precision: 3 };
+          };
+          readonly onUpdate: {
+            readonly id: 'timestampNow';
+            readonly kind: 'generator';
+            readonly params: { readonly precision: 3 };
+          };
+          readonly ref: {
+            readonly entry: 'PaymentAccount';
+            readonly field: 'updatedAt';
+            readonly namespace: 'public';
+          };
+        },
+        {
+          readonly onCreate: {
+            readonly id: 'timestampNow';
+            readonly kind: 'generator';
+            readonly params: { readonly precision: 3 };
+          };
+          readonly ref: {
+            readonly entry: 'PaymentSubmission';
+            readonly field: 'createdAt';
+            readonly namespace: 'public';
+          };
+        },
+        {
+          readonly onCreate: { readonly id: 'cuid2'; readonly kind: 'generator' };
+          readonly ref: {
+            readonly entry: 'PaymentSubmission';
+            readonly field: 'id';
+            readonly namespace: 'public';
+          };
+        },
+        {
+          readonly onCreate: {
+            readonly id: 'timestampNow';
+            readonly kind: 'generator';
+            readonly params: { readonly precision: 3 };
+          };
+          readonly onUpdate: {
+            readonly id: 'timestampNow';
+            readonly kind: 'generator';
+            readonly params: { readonly precision: 3 };
+          };
+          readonly ref: {
+            readonly entry: 'PaymentSubmission';
+            readonly field: 'updatedAt';
             readonly namespace: 'public';
           };
         },
@@ -7090,6 +8230,26 @@ type ContractBase = Omit<
           readonly ref: {
             readonly entry: 'User';
             readonly field: 'updatedAt';
+            readonly namespace: 'public';
+          };
+        },
+        {
+          readonly onCreate: {
+            readonly id: 'timestampNow';
+            readonly kind: 'generator';
+            readonly params: { readonly precision: 3 };
+          };
+          readonly ref: {
+            readonly entry: 'Wishlist';
+            readonly field: 'createdAt';
+            readonly namespace: 'public';
+          };
+        },
+        {
+          readonly onCreate: { readonly id: 'cuid2'; readonly kind: 'generator' };
+          readonly ref: {
+            readonly entry: 'Wishlist';
+            readonly field: 'id';
             readonly namespace: 'public';
           };
         },

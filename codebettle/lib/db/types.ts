@@ -114,7 +114,7 @@ export interface User {
   joinedAt: string;
   /** Course ids the student is enrolled in. Populated by list/getStudents and getUserByIdWithEnrollments; undefined otherwise. */
   enrolledCourses?: string[];
-  /** No wishlist table exists in the Phase 2 contract — always [] (Phase 3). */
+  /** Populated from the Wishlist table (Phase 0/1); [] when the student has none. */
   wishlist?: string[];
 }
 
@@ -767,4 +767,154 @@ export type QuizAnswerRow = Pick<
   | 'isCorrect'
   | 'pointsAwarded'
   | 'needsManualReview'
+>;
+
+// ---------------------------------------------------------------------------
+// Phase 0/1 — Notes, Wishlist, PaymentSubmission, PaymentAccount.
+// ---------------------------------------------------------------------------
+export type PaymentMethod = 'bank' | 'easypaisa' | 'jazzcash' | 'wallet' | 'other';
+export type PaymentSubmissionStatus = 'submitted' | 'approved' | 'rejected';
+
+export const PAYMENT_METHODS: readonly PaymentMethod[] = [
+  'bank',
+  'easypaisa',
+  'jazzcash',
+  'wallet',
+  'other',
+] as const;
+
+/**
+ * A student's own note (Phase 0/1, Module 4). Replaces the hardcoded
+ * INITIAL_NOTES on the student notes page. Every read/write is scoped
+ * to one userId in the repository — a user can never see another
+ * user's notes. courseId is a loose link to a course (nullable);
+ * the note survives if the course is deleted (no cascade).
+ */
+export interface Note {
+  id: string;
+  userId: string;
+  title: string;
+  content: string;
+  courseId?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/** One wishlist entry: a student + a course (Phase 0/1, Module 4). */
+export interface WishlistItem {
+  id: string;
+  userId: string;
+  courseId: string;
+  createdAt: string;
+}
+
+/**
+ * Frozen copy of the payment account used for a submission, taken at
+ * submit time and stored on PaymentSubmission.accountSnapshot (Json).
+ * Declared as a `type` (not an `interface`) so it stays assignable to
+ * Prisma's JsonValue. Deleting or deactivating the account never
+ * damages history, because the submission keeps this copy.
+ */
+export type PaymentAccountSnapshot = {
+  label: string;
+  method: PaymentMethod;
+  accountHolder: string;
+  bankName?: string;
+  accountNumber?: string;
+  iban?: string;
+  walletNumber?: string;
+};
+
+/**
+ * A published payment account students pay into (Phase 0/1, Module 16).
+ * Only active accounts are shown to students, ordered by displayOrder.
+ * Only one of accountNumber / iban / walletNumber is expected to be set,
+ * depending on the method — the repository does not enforce which.
+ */
+export interface PaymentAccount {
+  id: string;
+  label: string;
+  method: PaymentMethod;
+  accountHolder: string;
+  bankName?: string;
+  accountNumber?: string;
+  iban?: string;
+  walletNumber?: string;
+  instructions?: string;
+  isActive: boolean;
+  displayOrder: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/**
+ * A student's manual payment submission (Phase 0/1, Module 1).
+ * Deliberately a separate model from Payment: Payment is gateway-shaped
+ * (provider/providerRef, status paid|failed|refunded) and stays untouched
+ * for future gateway use. A submission's lifecycle is
+ * submitted -> approved | rejected, recorded with reviewedBy/at/note.
+ * One pending (submitted) submission per enrolment at most.
+ */
+export interface PaymentSubmission {
+  id: string;
+  enrollmentId: string;
+  paymentAccountId?: string;
+  method: PaymentMethod;
+  amountPkr: number;
+  transactionRef: string;
+  proofUrl?: string;
+  accountSnapshot: PaymentAccountSnapshot;
+  reviewStatus: PaymentSubmissionStatus;
+  submittedAt: string;
+  reviewedBy?: string;
+  reviewedAt?: string;
+  reviewNote?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type NoteRow = Pick<
+  Models.public_Note,
+  'id' | 'userId' | 'title' | 'content' | 'courseId' | 'createdAt' | 'updatedAt'
+>;
+
+export type WishlistRow = Pick<
+  Models.public_Wishlist,
+  'id' | 'userId' | 'courseId' | 'createdAt'
+>;
+
+export type PaymentAccountRow = Pick<
+  Models.public_PaymentAccount,
+  | 'id'
+  | 'label'
+  | 'method'
+  | 'accountHolder'
+  | 'bankName'
+  | 'accountNumber'
+  | 'iban'
+  | 'walletNumber'
+  | 'instructions'
+  | 'isActive'
+  | 'displayOrder'
+  | 'createdAt'
+  | 'updatedAt'
+>;
+
+export type PaymentSubmissionRow = Pick<
+  Models.public_PaymentSubmission,
+  | 'id'
+  | 'enrollmentId'
+  | 'paymentAccountId'
+  | 'method'
+  | 'amountPkr'
+  | 'transactionRef'
+  | 'proofUrl'
+  | 'accountSnapshot'
+  | 'reviewStatus'
+  | 'submittedAt'
+  | 'reviewedBy'
+  | 'reviewedAt'
+  | 'reviewNote'
+  | 'createdAt'
+  | 'updatedAt'
 >;

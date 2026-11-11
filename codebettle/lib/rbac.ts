@@ -23,7 +23,9 @@ export type Capability =
   | 'manageCoupons'
   | 'manageSettings'
   | 'viewAuditLogs'
-  | 'viewReports';
+  | 'viewReports'
+  | 'verifyPayment'
+  | 'managePaymentAccounts';
 
 const MATRIX: Record<Capability, UserRole[]> = {
   browseCatalogue: ['student', 'instructor', 'admin'],
@@ -42,6 +44,8 @@ const MATRIX: Record<Capability, UserRole[]> = {
   manageSettings: ['admin'],
   viewAuditLogs: ['admin'],
   viewReports: ['admin'],
+  verifyPayment: ['admin'],
+  managePaymentAccounts: ['admin'],
 };
 
 /** Does this role have this capability at all (before ownership checks)? */
