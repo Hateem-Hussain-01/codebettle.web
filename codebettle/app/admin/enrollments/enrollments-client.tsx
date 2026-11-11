@@ -1,5 +1,6 @@
 'use client';
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import Link from 'next/link';
 import Button from '@/components/ui/Button';
 import Badge from '@/components/ui/Badge';
 import Input from '@/components/ui/Input';
@@ -166,7 +167,12 @@ export default function EnrollmentsClient({ students, courses }: EnrollmentsClie
           <h1 className="text-2xl font-black text-white">Enrollments</h1>
           <p className="text-muted text-sm mt-1">{total} total enrollments</p>
         </div>
-        <Button onClick={() => setIsCreateOpen(true)}><Plus className="w-4 h-4" />New Enrollment</Button>
+        <div className="flex gap-2 items-center">
+          <Link href="/admin/payments">
+            <Button variant="secondary">Payment Verifications</Button>
+          </Link>
+          <Button onClick={() => setIsCreateOpen(true)}><Plus className="w-4 h-4" />New Enrollment</Button>
+        </div>
       </FadeIn>
 
       <Input placeholder="Search by student or course..." value={search} onChange={e => setSearch(e.target.value)} icon={<Search className="w-4 h-4" />} className="max-w-sm" />

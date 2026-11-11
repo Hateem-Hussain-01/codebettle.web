@@ -135,6 +135,24 @@ export const applicationReviewSchema = z.object({
   status: z.enum(['approved', 'rejected']),
 });
 
+// ---------------------------------------------------------------------------
+// Payments (Phase 1b/1c)
+// ---------------------------------------------------------------------------
+
+export const paymentSubmissionSchema = z.object({
+  enrollmentId: z.string().min(1),
+  paymentAccountId: z.string().min(1).optional(),
+  amountPkr: z.number().int().positive(),
+  transactionRef: z.string().min(1).max(100),
+  /** Storage path returned by POST /api/student/payments/upload. */
+  proofPath: z.string().min(1).optional(),
+});
+
+export const paymentReviewSchema = z.object({
+  decision: z.enum(['approved', 'rejected']),
+  reviewNote: z.string().max(500).optional(),
+});
+
 export const certificateCreateSchema = z.object({
   studentId: z.string().min(1),
   courseId: z.string().min(1),

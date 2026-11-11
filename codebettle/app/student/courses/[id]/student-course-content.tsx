@@ -8,24 +8,34 @@ import Badge from '@/components/ui/Badge';
 import Button from '@/components/ui/Button';
 import FadeIn from '@/components/ui/FadeIn';
 import type { PublicCourse } from '@/lib/db/types';
+import PaymentModal from './payment-modal';
 
 /**
- * Student course content — Zoom link, recordings and materials (Phase 0a).
+ * Student course content — Zoom link, recordings and materials (Phase 0a,
+ * extended in Phase 1b/1d).
  *
  * The server page hands this component ONLY the public course shape
  * (toPublicCourse: no Zoom link, no recording URLs, no materials URLs).
  * The gated content is fetched from GET /api/student/courses/[id]/content,
- * which checks the session, the enrolment and that paymentStatus is
- * 'paid' or 'free' before returning anything. While payment is pending
- * no fetch is made at all — every link renders in its locked state.
+ * which checks the session, the enrolment and the paymentStatus: a
+ * 'paid'/'free' enrolment gets everything; a 'pending' enrolment gets
+ * only the first 2 lessons' URLs (Phase 1d) and the rest come back
+ * locked — the lesson rows below render those with a lock and no URL.
  * Lesson titles/descriptions/dates are public curriculum data; only the
  * recording URL and materials URLs come from the gated endpoint, mapped
  * onto the public lessons by lesson id.
+ *
+ * While payment is pending the banner offers "Complete Payment"
+ * (Phase 1b modal); once a submission is awaiting review it shows
+ * "Waiting for Approval" instead and the button is hidden, so no
+ * duplicate submission is possible while one is pending.
  */
 export interface LessonContent {
   lessonId: string;
   recordingUrl: string;
   materials: { name: string; url: string }[];
+  /** True when the lesson is withheld until payment is verified (Phase 1d). */
+  locked: boolean;
 }
 
 interface StudentCourseContentProps {
@@ -34,8 +44,14 @@ interface StudentCourseContentProps {
   schedule: PublicCourse['schedule'];
   scheduleDays: string[];
   isCompleted: boolean;
-  /** True while the enrolment payment is pending — content stays locked, no fetch is made. */
+  /** True while the enrolment payment is pending — Zoom stays locked, only the first 2 lessons unlock. */
   paymentPending: boolean;
+  /** The enrolment id — needed to submit a payment. */
+  enrollmentId: string;
+  /** Course price in PKR — shown in the payment modal, prefilled as the amount. */
+  coursePrice: number;
+  /** True when a payment submission is already awaiting admin review. */
+  hasPendingSubmission: boolean;
   /** Server-rendered sidebar (instructor card, announcements) — rendered inside the grid. */
   children: ReactNode;
 }
@@ -47,13 +63,20 @@ export default function StudentCourseContent({
   scheduleDays,
   isCompleted,
   paymentPending,
+  enrollmentId,
+  coursePrice,
+  hasPendingSubmission,
   children,
 }: StudentCourseContentProps) {
   const [content, setContent] = useState<{ zoomLink: string; lessons: LessonContent[] } | null>(null);
   const [failed, setFailed] = useState(false);
+  const [awaitingApproval, setAwaitingApproval] = useState(hasPendingSubmission);
+  const [paymentModalOpen, setPaymentModalOpen] = useState(false);
 
+  // The gated content is fetched for every enrolment (Phase 1d): a
+  // pending-payment enrolment still gets the first 2 lessons' URLs —
+  // the endpoint withholds the rest and marks them locked.
   useEffect(() => {
-    if (paymentPending) return;
     let cancelled = false;
     (async () => {
       try {
@@ -71,7 +94,7 @@ export default function StudentCourseContent({
     return () => {
       cancelled = true;
     };
-  }, [courseId, paymentPending]);
+  }, [courseId]);
 
   const byLesson = new Map((content?.lessons ?? []).map((l) => [l.lessonId, l]));
   /** null while the gated content is still loading (and not pending). */
@@ -80,15 +103,27 @@ export default function StudentCourseContent({
 
   return (
     <>
-      {/* Zoom link — withheld while payment is pending */}
+      {/* Zoom link — withheld while payment is pending. The first 2
+          lessons are still watchable (Phase 1d); the rest stay locked. */}
       {paymentPending ? (
-        <div className="bg-gradient-to-r from-yellow-500/15 to-transparent border border-yellow-500/30 rounded-xl p-4 flex flex-col sm:flex-row items-start sm:items-center gap-4">
-          <div className="w-10 h-10 rounded-xl bg-yellow-500/20 flex items-center justify-center flex-shrink-0"><Lock className="w-5 h-5 text-yellow-400" /></div>
-          <div className="flex-1">
-            <p className="text-white font-bold text-sm">Payment pending</p>
-            <p className="text-muted text-xs mt-0.5">You are enrolled, but your payment has not been confirmed yet. The Zoom link, recordings and materials unlock once an admin confirms your payment.</p>
+        awaitingApproval ? (
+          <div className="bg-gradient-to-r from-blue-500/15 to-transparent border border-blue-500/30 rounded-xl p-4 flex flex-col sm:flex-row items-start sm:items-center gap-4">
+            <div className="w-10 h-10 rounded-xl bg-blue-500/20 flex items-center justify-center flex-shrink-0"><Clock className="w-5 h-5 text-blue-400" /></div>
+            <div className="flex-1">
+              <p className="text-white font-bold text-sm">Waiting for Approval</p>
+              <p className="text-muted text-xs mt-0.5">Your payment has been submitted and is waiting for admin verification. The Zoom link and remaining recordings unlock once it is approved — the first 2 lessons are already available below.</p>
+            </div>
           </div>
-        </div>
+        ) : (
+          <div className="bg-gradient-to-r from-yellow-500/15 to-transparent border border-yellow-500/30 rounded-xl p-4 flex flex-col sm:flex-row items-start sm:items-center gap-4">
+            <div className="w-10 h-10 rounded-xl bg-yellow-500/20 flex items-center justify-center flex-shrink-0"><Lock className="w-5 h-5 text-yellow-400" /></div>
+            <div className="flex-1">
+              <p className="text-white font-bold text-sm">Payment pending</p>
+              <p className="text-muted text-xs mt-0.5">You are enrolled, but your payment has not been confirmed yet. The Zoom link and remaining recordings unlock once an admin confirms your payment — the first 2 lessons are already available below.</p>
+            </div>
+            <Button onClick={() => setPaymentModalOpen(true)} className="flex-shrink-0">Complete Payment</Button>
+          </div>
+        )
       ) : failed ? (
         <div className="bg-dark-card border border-dark-border rounded-xl p-3 flex items-center gap-3 text-muted text-sm">
           <Video className="w-4 h-4" />Could not load the class links — please refresh the page.
@@ -169,6 +204,7 @@ export default function StudentCourseContent({
                   {mod.lessons.map((ses, si) => {
                     const gated = byLesson.get(ses.id);
                     const hasRec = !!gated?.recordingUrl;
+                    const locked = !!gated?.locked;
                     const materials = gated?.materials ?? [];
                     return (
                       <div key={ses.id} className="px-5 py-4">
@@ -177,19 +213,22 @@ export default function StudentCourseContent({
                           <div className="flex-1">
                             <div className="flex items-center gap-2 flex-wrap">
                               <p className="text-white text-sm font-medium">{ses.title}</p>
-                              {hasRec ? <Badge variant="success">Recorded</Badge> : <Badge variant="muted">Pending</Badge>}
+                              {locked ? <Badge variant="muted"><Lock className="w-3 h-3" /> Locked</Badge> : hasRec ? <Badge variant="success">Recorded</Badge> : <Badge variant="muted">Pending</Badge>}
                             </div>
                             {ses.description && <p className="text-muted text-xs mt-0.5">{ses.description}</p>}
                             {ses.date && <p className="text-muted text-xs mt-0.5">{formatDateShort(ses.date)}{ses.duration ? ` · ${ses.duration}` : ''}</p>}
                           </div>
                         </div>
                         <div className="ml-10">
-                          {paymentPending || content === null ? (
+                          {content === null ? (
                             <div className="flex items-center gap-2 text-xs text-muted bg-dark-border/30 rounded-lg px-3 py-2 w-fit">
                               <Lock className="w-3.5 h-3.5" />
-                              {paymentPending
-                                ? 'Recording locked until your payment is confirmed'
-                                : 'Loading recording…'}
+                              Loading recording…
+                            </div>
+                          ) : locked ? (
+                            <div className="flex items-center gap-2 text-xs text-muted bg-dark-border/30 rounded-lg px-3 py-2 w-fit">
+                              <Lock className="w-3.5 h-3.5" />
+                              Recording locked — unlocks once your payment is confirmed
                             </div>
                           ) : hasRec ? (
                             <a href={gated.recordingUrl} target="_blank" rel="noopener noreferrer"
@@ -201,7 +240,7 @@ export default function StudentCourseContent({
                               <Lock className="w-3.5 h-3.5" />Recording will appear here after the live class
                             </div>
                           )}
-                          {!paymentPending && content !== null && materials.length > 0 && (
+                          {content !== null && !locked && materials.length > 0 && (
                             <div className="flex flex-wrap gap-2 mt-2">
                               {materials.map((mat, mi) => (
                                 <a key={mi} href={mat.url}
@@ -223,6 +262,14 @@ export default function StudentCourseContent({
 
         {children}
       </div>
+
+      <PaymentModal
+        isOpen={paymentModalOpen}
+        onClose={() => setPaymentModalOpen(false)}
+        enrollmentId={enrollmentId}
+        coursePrice={coursePrice}
+        onSubmitted={() => setAwaitingApproval(true)}
+      />
     </>
   );
 }

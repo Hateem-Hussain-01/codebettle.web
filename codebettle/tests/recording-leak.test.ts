@@ -168,14 +168,25 @@ test('content endpoint refuses a student who is not enrolled', async () => {
   assert.equal(text.includes('drive.google.com'), false);
 });
 
-test('content endpoint refuses a pending-payment enrolment', async () => {
+test('content endpoint gives a pending-payment enrolment only the first 2 lessons (Phase 1d)', async () => {
   __setTestSession(STU_PENDING);
   const [req, params] = contentReq('course-1');
   const res = await getContent(req, params);
-  assert.equal(res.status, 403);
-  const text = JSON.stringify(await res.json());
-  assert.equal(text.includes('drive.google.com'), false);
-  assert.equal(text.includes('zoom.us'), false);
+  // No longer a 403: the first 2 introductory lessons are watchable
+  // before verification; the rest stay locked and the Zoom link is withheld.
+  assert.equal(res.status, 200);
+  const body = await res.json() as {
+    paymentStatus: string; zoomLink: string;
+    lessons: { lessonId: string; recordingUrl: string; materials: { name: string; url: string }[]; locked: boolean }[];
+  };
+  assert.equal(body.paymentStatus, 'pending');
+  assert.equal(body.zoomLink, '');
+  assert.equal(body.lessons.length, 2);
+  assert.equal(body.lessons[0].locked, false);
+  assert.equal(body.lessons[0].recordingUrl, REC);
+  assert.deepEqual(body.lessons[0].materials, [{ name: 'Slides', url: MAT }]);
+  assert.equal(body.lessons[1].locked, false);
+  assert.equal(body.lessons[1].recordingUrl, '');
 });
 
 test('content endpoint returns Zoom, recordings and materials to a paid enrolment', async () => {

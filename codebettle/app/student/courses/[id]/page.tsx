@@ -2,6 +2,7 @@ import { notFound } from 'next/navigation';
 import { getSession } from '@/lib/auth';
 import { getCourseById } from '@/lib/db/courses';
 import { getEnrollmentsByStudent } from '@/lib/db/enrollments';
+import { getPendingSubmissionForEnrollment } from '@/lib/db/payments';
 import { getCourseAnnouncements } from '@/lib/db/announcements';
 import { getUserById } from '@/lib/db/users';
 import { formatDateShort } from '@/lib/utils';
@@ -29,6 +30,12 @@ export default async function StudentCourseViewPage({ params }: { params: Promis
   // materials stay locked — the student can see the course exists and
   // read announcements, but cannot join or watch anything.
   const paymentPending = enrollment.paymentStatus === 'pending';
+  // Phase 1b: whether a payment submission is already awaiting review
+  // decides the banner — "Waiting for Approval" instead of the
+  // "Complete Payment" button, so no duplicate submission is possible.
+  const pendingSubmission = paymentPending
+    ? await getPendingSubmissionForEnrollment(enrollment.id)
+    : null;
   // Only the public shape of the course is ever rendered by this page
   // (Phase 0a): no Zoom link, recording URL or materials URL in the
   // HTML. The gated content comes from the authenticated endpoint via
@@ -119,6 +126,9 @@ export default async function StudentCourseViewPage({ params }: { params: Promis
         scheduleDays={scheduleDays}
         isCompleted={course.isCompleted}
         paymentPending={paymentPending}
+        enrollmentId={enrollment.id}
+        coursePrice={course.price}
+        hasPendingSubmission={pendingSubmission !== null}
       >
         {/* Sidebar */}
         <FadeIn delay={0.1} className="space-y-4">
