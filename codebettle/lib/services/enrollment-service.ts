@@ -6,6 +6,7 @@
  * unit-testable with the fake db. Every mutation writes an audit entry.
  */
 import { createEnrollment, getEnrollmentById, isEnrolled, softDeleteEnrollment, updateEnrollment } from '../db/enrollments';
+import { listPaymentSubmissionsForEnrollment } from '../db/payments';
 import { getCertificateByCourseAndStudent } from '../db/certificates';
 import { getCourseById } from '../db/courses';
 import { validateCoupon } from '../db/coupons';
@@ -157,6 +158,27 @@ export async function updateEnrollmentService(
   if (input.amountPaid !== undefined && (!Number.isInteger(input.amountPaid) || input.amountPaid < 0)) {
     return badRequest('Amount paid must be a non-negative number');
   }
+  // Phase 1c gap fix: an enrolment for a PAID course may only be flipped
+  // to `paid` when a linked PaymentSubmission has been approved for it —
+  // flipping it with amountPaid=0 and no proof is no longer possible.
+  // Free courses are unaffected, and an enrolment that is already paid
+  // stays editable (this guards the transition INTO paid, not re-saves).
+  // When no amount is given, the approved submission's amount is used.
+  let amountPaid = input.amountPaid;
+  if (input.paymentStatus === 'paid' && existing.paymentStatus !== 'paid') {
+    const course = await getCourseById(existing.courseId);
+    if (course && !course.isFree) {
+      const approved = (await listPaymentSubmissionsForEnrollment(enrollmentId)).find(
+        (s) => s.reviewStatus === 'approved',
+      );
+      if (!approved) {
+        return badRequest(
+          'Cannot mark this enrolment as paid without an approved payment submission — verify the student’s payment first',
+        );
+      }
+      if (amountPaid === undefined) amountPaid = approved.amountPkr;
+    }
+  }
   // Marking complete stamps completedAt with today unless one is given;
   // un-completing clears it.
   let completedAt: string | null | undefined;
@@ -171,7 +193,7 @@ export async function updateEnrollmentService(
     isCompleted: input.isCompleted,
     completedAt,
     paymentStatus: input.paymentStatus,
-    amountPaid: input.amountPaid,
+    amountPaid,
     certificateEligible: input.certificateEligible,
   });
   if (!updated) return notFound('Enrollment');

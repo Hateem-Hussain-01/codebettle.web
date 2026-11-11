@@ -31,6 +31,7 @@ import type {
   Notification,
   NotificationEventKey,
   NotificationPrefs,
+  PaymentSubmission,
 } from '../db/types';
 import { deliverEmailNotification, type EmailDeliveryResult } from './email-notifications';
 
@@ -248,6 +249,55 @@ export async function onApplicationReviewed(
   } catch (error) {
     console.error('[notification-service] onApplicationReviewed failed:', error);
     return { ok: false, sent: 0, skipped: 0, failed: 0 };
+  }
+}
+
+/**
+ * A payment submission was approved. Recipient: the student.
+ * Event: 'enrollment' (reused — there is no separate `payment`
+ * notification event key; payment verification is part of the
+ * enrolment lifecycle, so it shares the enrolment toggle).
+ */
+export async function onPaymentApproved(
+  enrollment: Enrollment,
+  submission: PaymentSubmission,
+  courseTitleText: string,
+): Promise<NotifyResult> {
+  try {
+    return notifyUser(enrollment.studentId, {
+      type: 'payment',
+      event: 'enrollment',
+      title: `Payment confirmed: ${courseTitleText}`,
+      body: `Your payment of PKR ${submission.amountPkr} (ref ${submission.transactionRef}) for ${courseTitleText} has been verified. Your recordings and class materials are now unlocked.`,
+    });
+  } catch (error) {
+    return failure(error, 'onPaymentApproved');
+  }
+}
+
+/**
+ * A payment submission was rejected. Recipient: the student, with the
+ * admin's reason when one was given — and the pending block lifts, so
+ * they can submit again. Event: 'enrollment' (reused, see above).
+ */
+export async function onPaymentRejected(
+  enrollment: Enrollment,
+  submission: PaymentSubmission,
+  courseTitleText: string,
+  reason?: string,
+): Promise<NotifyResult> {
+  try {
+    const reasonText = reason?.trim()
+      ? ` Reason: ${reason.trim()}`
+      : '';
+    return notifyUser(enrollment.studentId, {
+      type: 'payment',
+      event: 'enrollment',
+      title: `Payment not verified: ${courseTitleText}`,
+      body: `Your payment submission (ref ${submission.transactionRef}) for ${courseTitleText} could not be verified.${reasonText} You can submit your payment again from the course page.`,
+    });
+  } catch (error) {
+    return failure(error, 'onPaymentRejected');
   }
 }
 

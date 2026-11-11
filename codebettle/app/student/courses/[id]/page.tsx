@@ -2,16 +2,17 @@ import { notFound } from 'next/navigation';
 import { getSession } from '@/lib/auth';
 import { getCourseById } from '@/lib/db/courses';
 import { getEnrollmentsByStudent } from '@/lib/db/enrollments';
+import { getPendingSubmissionForEnrollment } from '@/lib/db/payments';
 import { getCourseAnnouncements } from '@/lib/db/announcements';
 import { getUserById } from '@/lib/db/users';
 import { formatDateShort } from '@/lib/utils';
-import { ExternalLink, Download, Bell, BookOpen, Video, Lock, Award, XCircle, Clock, Calendar, Star } from 'lucide-react';
+import { Bell, Award, XCircle } from 'lucide-react';
 import Card from '@/components/ui/Card';
 import Badge from '@/components/ui/Badge';
-import Button from '@/components/ui/Button';
 import FadeIn from '@/components/ui/FadeIn';
-import StarRating from '@/components/ui/StarRating';
 import Link from 'next/link';
+import { toPublicCourse } from '@/lib/db/mappers';
+import StudentCourseContent from './student-course-content';
 
 const DAYS = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
 
@@ -29,6 +30,18 @@ export default async function StudentCourseViewPage({ params }: { params: Promis
   // materials stay locked — the student can see the course exists and
   // read announcements, but cannot join or watch anything.
   const paymentPending = enrollment.paymentStatus === 'pending';
+  // Phase 1b: whether a payment submission is already awaiting review
+  // decides the banner — "Waiting for Approval" instead of the
+  // "Complete Payment" button, so no duplicate submission is possible.
+  const pendingSubmission = paymentPending
+    ? await getPendingSubmissionForEnrollment(enrollment.id)
+    : null;
+  // Only the public shape of the course is ever rendered by this page
+  // (Phase 0a): no Zoom link, recording URL or materials URL in the
+  // HTML. The gated content comes from the authenticated endpoint via
+  // StudentCourseContent below. Counts (totalSessions, uploadedCount)
+  // are numbers, not links, so they stay server-side.
+  const publicCourse = toPublicCourse(course);
 
   const announcements = await getCourseAnnouncements(id);
   const instructor = await getUserById(course.instructorId);
@@ -101,133 +114,22 @@ export default async function StudentCourseViewPage({ params }: { params: Promis
       {/* ── (Instructor class review was removed in Phase 7: the field was
            never populated — no review data exists for it.) ── */}
 
-      {/* Zoom link — withheld while payment is pending */}
-      {paymentPending ? (
-        <div className="bg-gradient-to-r from-yellow-500/15 to-transparent border border-yellow-500/30 rounded-xl p-4 flex flex-col sm:flex-row items-start sm:items-center gap-4">
-          <div className="w-10 h-10 rounded-xl bg-yellow-500/20 flex items-center justify-center flex-shrink-0"><Lock className="w-5 h-5 text-yellow-400" /></div>
-          <div className="flex-1">
-            <p className="text-white font-bold text-sm">Payment pending</p>
-            <p className="text-muted text-xs mt-0.5">You are enrolled, but your payment has not been confirmed yet. The Zoom link, recordings and materials unlock once an admin confirms your payment.</p>
-          </div>
-        </div>
-      ) : course.zoomLink ? (
-        <div className="bg-gradient-to-r from-blue-500/15 to-transparent border border-blue-500/30 rounded-xl p-4 flex flex-col sm:flex-row items-start sm:items-center gap-4">
-          <div className="w-10 h-10 rounded-xl bg-blue-500/20 flex items-center justify-center flex-shrink-0"><Video className="w-5 h-5 text-blue-400" /></div>
-          <div className="flex-1">
-            <p className="text-white font-bold text-sm">Live Class — Zoom</p>
-            <p className="text-muted text-xs mt-0.5">
-              {course.schedule ? `${scheduleDays.slice(0,3).join(', ')}${scheduleDays.length > 3 ? '...' : ''} at ${course.schedule.classTime}` : 'Check announcements for class timings'}
-            </p>
-          </div>
-          {!course.isCompleted && (
-            <a href={course.zoomLink} target="_blank" rel="noopener noreferrer">
-              <Button className="bg-blue-600 hover:bg-blue-700 text-white border-0 flex-shrink-0"><ExternalLink className="w-4 h-4" />Join Live Class</Button>
-            </a>
-          )}
-          {course.isCompleted && <Badge variant="muted">Course Ended</Badge>}
-        </div>
-      ) : (
-        <div className="bg-dark-card border border-dark-border rounded-xl p-3 flex items-center gap-3 text-muted text-sm">
-          <Video className="w-4 h-4" />Zoom link not set. Contact your instructor.
-        </div>
-      )}
-
-      <div className="grid lg:grid-cols-3 gap-5">
-        {/* Sessions & Recordings */}
-        <FadeIn delay={0.05} className="lg:col-span-2 space-y-4">
-          {/* Schedule info strip */}
-          {course.schedule && (
-            <div className="bg-dark-card border border-dark-border rounded-xl p-4">
-              <h3 className="text-white font-semibold text-sm mb-3 flex items-center gap-2"><Calendar className="w-4 h-4 text-primary" />Class Schedule</h3>
-              <div className="grid sm:grid-cols-3 gap-3 text-xs">
-                <div className="bg-dark-border/30 rounded-lg p-3">
-                  <p className="text-muted mb-1">Time</p>
-                  <p className="text-white font-medium flex items-center gap-1"><Clock className="w-3 h-3" />{course.schedule.classTime}</p>
-                </div>
-                <div className="bg-dark-border/30 rounded-lg p-3">
-                  <p className="text-muted mb-1">Duration</p>
-                  <p className="text-white font-medium">{course.schedule.classDuration}</p>
-                </div>
-                <div className="bg-dark-border/30 rounded-lg p-3">
-                  <p className="text-muted mb-1">Days</p>
-                  <p className="text-white font-medium capitalize">{course.schedule.scheduleType.replace('-', ' ')}</p>
-                </div>
-              </div>
-              <div className="flex flex-wrap gap-1.5 mt-3">
-                {scheduleDays.map(day => (
-                  <span key={day} className="text-xs px-2.5 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20">{day}</span>
-                ))}
-              </div>
-              {course.schedule.notes && <p className="text-muted text-xs mt-2 italic">{course.schedule.notes}</p>}
-            </div>
-          )}
-
-          {/* Class sessions */}
-          <h2 className="text-white font-bold">Class Sessions</h2>
-          {course.modules.length === 0 ? (
-            <Card className="py-10 text-center">
-              <BookOpen className="w-10 h-10 text-muted mx-auto mb-3" />
-              <p className="text-muted text-sm">Curriculum coming soon — your instructor is setting it up.</p>
-            </Card>
-          ) : course.modules.map(mod => (
-            <Card key={mod.id} className="p-0 overflow-hidden">
-              <div className="flex items-center gap-3 px-5 py-3 bg-dark-border/30">
-                <BookOpen className="w-4 h-4 text-primary" />
-                <h3 className="font-semibold text-white text-sm">{mod.title}</h3>
-                <span className="text-xs text-muted ml-auto">{mod.lessons.filter(l => l.driveRecordingUrl).length}/{mod.lessons.length} recorded</span>
-              </div>
-              <div className="divide-y divide-dark-border">
-                {mod.lessons.map((ses, si) => {
-                  const hasRec = !!ses.driveRecordingUrl;
-                  return (
-                    <div key={ses.id} className="px-5 py-4">
-                      <div className="flex items-start gap-3 mb-3">
-                        <span className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 mt-0.5 ${hasRec ? 'bg-green-500/20 text-green-400' : 'bg-dark-border text-muted'}`}>{si + 1}</span>
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <p className="text-white text-sm font-medium">{ses.title}</p>
-                            {hasRec ? <Badge variant="success">Recorded</Badge> : <Badge variant="muted">Pending</Badge>}
-                          </div>
-                          {ses.description && <p className="text-muted text-xs mt-0.5">{ses.description}</p>}
-                          {ses.date && <p className="text-muted text-xs mt-0.5">{formatDateShort(ses.date)}{ses.duration ? ` · ${ses.duration}` : ''}</p>}
-                        </div>
-                      </div>
-                      <div className="ml-10">
-                        {hasRec ? (
-                          paymentPending ? (
-                            <div className="flex items-center gap-2 text-xs text-muted bg-dark-border/30 rounded-lg px-3 py-2 w-fit">
-                              <Lock className="w-3.5 h-3.5" />Recording locked until your payment is confirmed
-                            </div>
-                          ) : (
-                            <a href={ses.driveRecordingUrl} target="_blank" rel="noopener noreferrer"
-                              className="inline-flex items-center gap-2 text-sm font-medium text-green-400 bg-green-500/10 border border-green-500/20 hover:bg-green-500/20 rounded-lg px-4 py-2 transition-all">
-                              <ExternalLink className="w-4 h-4" />Watch Recording (Google Drive)
-                            </a>
-                          )
-                        ) : (
-                          <div className="flex items-center gap-2 text-xs text-muted bg-dark-border/30 rounded-lg px-3 py-2 w-fit">
-                            <Lock className="w-3.5 h-3.5" />Recording will appear here after the live class
-                          </div>
-                        )}
-                        {!paymentPending && ses.materials && ses.materials.length > 0 && (
-                          <div className="flex flex-wrap gap-2 mt-2">
-                            {ses.materials.map((mat, mi) => (
-                              <a key={mi} href={mat.url}
-                                className="inline-flex items-center gap-1.5 text-xs text-muted hover:text-white bg-dark-border/30 rounded-lg px-3 py-1.5 border border-dark-border">
-                                <Download className="w-3 h-3" />{mat.name}
-                              </a>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </Card>
-          ))}
-        </FadeIn>
-
+      {/* Zoom link, recordings and materials come from the gated
+          GET /api/student/courses/[id]/content endpoint (Phase 0a) —
+          this page only ever renders the public course shape, so no
+          recording/materials/Zoom URL reaches the browser for a
+          non-enrolled visitor or a pending-payment enrolment. */}
+      <StudentCourseContent
+        courseId={id}
+        modules={publicCourse.modules}
+        schedule={publicCourse.schedule}
+        scheduleDays={scheduleDays}
+        isCompleted={course.isCompleted}
+        paymentPending={paymentPending}
+        enrollmentId={enrollment.id}
+        coursePrice={course.price}
+        hasPendingSubmission={pendingSubmission !== null}
+      >
         {/* Sidebar */}
         <FadeIn delay={0.1} className="space-y-4">
           <Card>
@@ -267,7 +169,7 @@ export default async function StudentCourseViewPage({ params }: { params: Promis
             </Card>
           )}
         </FadeIn>
-      </div>
+      </StudentCourseContent>
     </div>
   );
 }

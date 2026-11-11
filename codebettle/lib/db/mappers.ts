@@ -234,16 +234,31 @@ export function toSafeUser(user: User): Omit<User, 'passwordHash'> {
 }
 
 /**
- * Public course shape: the full course minus the Zoom link. Use this for
- * every payload that reaches an anonymous visitor or a client component
- * on a public page (catalogue API, course detail API, /courses pages).
- * Enrolled students get the link from the student course page instead,
- * which checks the enrolment first.
+ * Public course shape: the full course minus the Zoom link, every lesson
+ * recording URL and every lesson materials URL. Use this for every
+ * payload that reaches an anonymous visitor or a client component on a
+ * public page (catalogue API, course detail API, /courses pages).
+ * Recordings and materials are bearer links (anyone with the URL can
+ * open them), so they must never appear in a public payload — enrolled
+ * students with a confirmed payment get them from the authenticated
+ * GET /api/student/courses/[id]/content endpoint instead.
+ * The original course is not mutated: lessons are copied with the
+ * sensitive fields blanked.
  */
 export function toPublicCourse(course: Course): PublicCourse {
   const { zoomLink: _zoomLink, ...pub } = course;
   void _zoomLink;
-  return pub;
+  return {
+    ...pub,
+    modules: pub.modules.map((mod) => ({
+      ...mod,
+      lessons: mod.lessons.map((lesson) => ({
+        ...lesson,
+        driveRecordingUrl: '',
+        materials: [],
+      })),
+    })),
+  };
 }
 
 export function mapLessonRow(row: LessonRow): Lesson {
