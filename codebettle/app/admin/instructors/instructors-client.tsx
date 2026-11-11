@@ -6,7 +6,7 @@ import Input from '@/components/ui/Input';
 import Textarea from '@/components/ui/Textarea';
 import Modal from '@/components/ui/Modal';
 import FadeIn from '@/components/ui/FadeIn';
-import { Search, Eye, Ban, CheckCircle, Trash2, Plus, Pencil } from 'lucide-react';
+import { Search, Eye, Ban, CheckCircle, Trash2, Plus, Pencil, BookOpen } from 'lucide-react';
 import { formatDateShort } from '@/lib/utils';
 import toast from 'react-hot-toast';
 import type { SafeUser } from '@/lib/db/types';
@@ -17,6 +17,7 @@ interface InstructorsClientProps {
   instructors: SafeUser[];
   courseCounts: Record<string, number>;
   coursesByInstructor: Record<string, { id: string; title: string }[]>;
+  allCourses: { id: string; title: string; instructorId: string }[];
 }
 
 /**
@@ -25,14 +26,21 @@ interface InstructorsClientProps {
  * (incl. bio/expertise), PATCH to suspend/activate, DELETE to remove.
  * Course counts and courses taught come from the server wrapper as props.
  */
-export default function InstructorsClient({ instructors: allInstructors, courseCounts, coursesByInstructor }: InstructorsClientProps) {
+export default function InstructorsClient({ instructors: allInstructors, courseCounts: initialCounts, coursesByInstructor: initialByInstructor, allCourses: initialCourses }: InstructorsClientProps) {
   const initialInstructors = allInstructors.filter(u => u.role === 'instructor');
   const [instructors, setInstructors] = useState(initialInstructors);
+  // Live copies of the server-passed maps: assigning a course updates the
+  // per-instructor count and list without a page reload.
+  const [courseCounts, setCourseCounts] = useState(initialCounts);
+  const [coursesByInstructor, setCoursesByInstructor] = useState(initialByInstructor);
+  const [courses, setCourses] = useState(initialCourses);
   const [search, setSearch] = useState('');
   const [viewTarget, setViewTarget] = useState<User | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<User | null>(null);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [assignTarget, setAssignTarget] = useState<User | null>(null);
+  const [assigningId, setAssigningId] = useState<string | null>(null);
   const [newForm, setNewForm] = useState({ name: '', email: '', password: '' });
   const [editTarget, setEditTarget] = useState<User | null>(null);
   const [editForm, setEditForm] = useState({ name: '', email: '', phone: '', bio: '', expertise: '' });
@@ -119,6 +127,47 @@ export default function InstructorsClient({ instructors: allInstructors, courseC
     toast.success('Instructor removed');
   };
 
+  /**
+   * Assign a course to the instructor picked in the "Assign Course" modal.
+   * PATCHes { instructorId } to the existing /api/admin/courses/[id]
+   * endpoint — the same one the course detail page uses. One instructor
+   * may teach many courses, so this never un-assigns their other courses;
+   * if the course belonged to someone else, it moves (their count drops).
+   */
+  const assignCourse = async (course: { id: string; title: string; instructorId: string }) => {
+    if (!assignTarget) return;
+    const target = assignTarget;
+    const previousInstructorId = course.instructorId;
+    setAssigningId(course.id);
+    try {
+      const res = await fetch(`/api/admin/courses/${course.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ instructorId: target.id }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) { toast.error(data.error || 'Could not assign course'); return; }
+      setCourses(cs => cs.map(c => c.id === course.id ? { ...c, instructorId: target.id } : c));
+      setCoursesByInstructor(prev => {
+        const next: Record<string, { id: string; title: string }[]> = {};
+        for (const [k, v] of Object.entries(prev)) next[k] = v.filter(c => c.id !== course.id);
+        next[target.id] = [...(next[target.id] ?? []), { id: course.id, title: course.title }];
+        return next;
+      });
+      setCourseCounts(prev => {
+        const next = { ...prev };
+        if (previousInstructorId && previousInstructorId !== target.id) {
+          next[previousInstructorId] = Math.max(0, (next[previousInstructorId] ?? 0) - 1);
+        }
+        next[target.id] = (next[target.id] ?? 0) + 1;
+        return next;
+      });
+      toast.success(`"${course.title}" assigned to ${target.name}`);
+    } finally {
+      setAssigningId(null);
+    }
+  };
+
   return (
     <div className="space-y-6">
       <FadeIn className="flex items-center justify-between">
@@ -164,6 +213,9 @@ export default function InstructorsClient({ instructors: allInstructors, courseC
                   <Trash2 className="w-4 h-4" />
                 </button>
               </div>
+              <Button size="sm" variant="secondary" fullWidth className="mt-2" onClick={() => setAssignTarget(inst)}>
+                <BookOpen className="w-3.5 h-3.5" />Assign Course
+              </Button>
             </FadeIn>
           );
         })}
@@ -200,6 +252,42 @@ export default function InstructorsClient({ instructors: allInstructors, courseC
             {viewTarget.phone && <p className="text-muted text-xs">Phone: <span className="text-white">{viewTarget.phone}</span></p>}
             <p className="text-muted text-xs">Joined: {formatDateShort(viewTarget.joinedAt)}</p>
             <Button variant="secondary" fullWidth onClick={() => setViewTarget(null)}>Close</Button>
+          </div>
+        )}
+      </Modal>
+
+      {/* Assign Course Modal — pick a course to assign to this instructor.
+          Courses they already teach are marked; the rest show who teaches
+          them now (assigning moves the course to this instructor). */}
+      <Modal isOpen={!!assignTarget} onClose={() => setAssignTarget(null)} title={assignTarget ? `Assign Course to ${assignTarget.name}` : 'Assign Course'}>
+        {assignTarget && (
+          <div className="space-y-2">
+            <p className="text-muted text-xs mb-2">Pick a course to assign. One instructor can teach many courses, so this never removes their other courses.</p>
+            {courses.length === 0 && <p className="text-muted text-sm text-center py-4">No courses yet.</p>}
+            <div className="space-y-2 max-h-96 overflow-y-auto pr-1">
+              {courses.map(course => {
+                const alreadyAssigned = course.instructorId === assignTarget.id;
+                const otherInstructor = !alreadyAssigned && course.instructorId
+                  ? instructors.find(i => i.id === course.instructorId)?.name
+                  : null;
+                return (
+                  <div key={course.id} className="flex items-center gap-3 bg-dark-border/20 rounded-lg px-3 py-2.5">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-white text-sm font-medium truncate">{course.title}</p>
+                      {alreadyAssigned
+                        ? <p className="text-muted text-xs">Already assigned to {assignTarget.name}</p>
+                        : otherInstructor
+                          ? <p className="text-muted text-xs">Currently taught by {otherInstructor}</p>
+                          : <p className="text-muted text-xs">No instructor yet</p>}
+                    </div>
+                    {alreadyAssigned
+                      ? <Badge variant="success">Assigned</Badge>
+                      : <Button size="sm" loading={assigningId === course.id} onClick={() => assignCourse(course)}>Assign</Button>}
+                  </div>
+                );
+              })}
+            </div>
+            <Button variant="secondary" fullWidth onClick={() => setAssignTarget(null)}>Done</Button>
           </div>
         )}
       </Modal>

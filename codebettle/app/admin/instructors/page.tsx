@@ -17,5 +17,8 @@ export default async function AdminInstructorsPage() {
     courseCounts[course.instructorId] = (courseCounts[course.instructorId] ?? 0) + 1;
     (coursesByInstructor[course.instructorId] ??= []).push({ id: course.id, title: course.title });
   }
-  return <InstructorsClient instructors={instructors} courseCounts={courseCounts} coursesByInstructor={coursesByInstructor} />;
+  // The full course list feeds the "Assign Course" picker (id + title +
+  // current instructor, so already-assigned courses can be marked).
+  const allCourses = courses.map(c => ({ id: c.id, title: c.title, instructorId: c.instructorId }));
+  return <InstructorsClient instructors={instructors} courseCounts={courseCounts} coursesByInstructor={coursesByInstructor} allCourses={allCourses} />;
 }

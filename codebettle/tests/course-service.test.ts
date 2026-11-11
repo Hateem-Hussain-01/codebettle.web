@@ -143,6 +143,24 @@ test('instructor cannot change status or instructorId; admin can', async () => {
   assert.ok('course' in adminStatus && adminStatus.course.status === 'published', JSON.stringify(adminStatus));
 });
 
+test('admin can assign two different courses to the same instructor', async () => {
+  // Seed: course-1 is taught by inst-1, course-2 by inst-2. Re-assign
+  // course-1 to inst-2, then (re-)assign course-2 to inst-2 as well.
+  // instructorId has no unique constraint (one-to-many), so both courses
+  // must end up with inst-2 — assigning the second must not fail or
+  // un-assign the first.
+  const first = await updateCourseService(ADMIN, 'course-1', { instructorId: 'inst-2' });
+  assert.ok('course' in first && first.course.instructorId === 'inst-2', JSON.stringify(first));
+
+  const second = await updateCourseService(ADMIN, 'course-2', { instructorId: 'inst-2' });
+  assert.ok('course' in second && second.course.instructorId === 'inst-2', JSON.stringify(second));
+
+  const course1 = await getCourseById('course-1');
+  const course2 = await getCourseById('course-2');
+  assert.equal(course1?.instructorId, 'inst-2');
+  assert.equal(course2?.instructorId, 'inst-2');
+});
+
 test('setCourseStatus is admin-only', async () => {
   const asInstructor = await setCourseStatus(INST1, 'course-1', 'published');
   assert.ok('error' in asInstructor && asInstructor.status === 403, JSON.stringify(asInstructor));
