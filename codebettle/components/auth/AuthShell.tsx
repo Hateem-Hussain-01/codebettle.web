@@ -3,6 +3,7 @@
 import { Suspense, useEffect, useRef, useState, type ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
 import { AnimatePresence, motion } from 'framer-motion';
+import { Award, FolderKanban, GraduationCap } from 'lucide-react';
 import AuthSocialNav from './AuthSocialNav';
 
 export type AuthMode = 'login' | 'register';
@@ -15,7 +16,7 @@ interface AuthShellProps {
 }
 
 /**
- * Shared auth shell: boxes-texture page background, the two-panel
+ * Shared auth shell: CSS grid-texture page background, the two-panel
  * sliding card (desktop) / single form + compact switch banner (mobile),
  * and the social navbar below the card.
  *
@@ -35,6 +36,29 @@ interface AuthShellProps {
  * cards — and the cards keep their opaque dark-card style so text
  * contrast is unchanged.
  */
+/** Benefit points shown on the gold overlay panel, in both modes.
+ * True to CodeBettle — no invented numbers or stats. */
+const PANEL_BENEFITS = [
+  { icon: FolderKanban, text: 'Hands-on projects in every course' },
+  { icon: GraduationCap, text: 'Learn from expert instructors' },
+  { icon: Award, text: 'Certificates on completion' },
+] as const;
+
+function PanelBenefits() {
+  return (
+    <ul className="mt-6 space-y-2.5 text-left">
+      {PANEL_BENEFITS.map(({ icon: Icon, text }) => (
+        <li key={text} className="flex items-center gap-2.5 text-sm font-semibold text-dark/85">
+          <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-dark/10">
+            <Icon className="h-4 w-4" />
+          </span>
+          {text}
+        </li>
+      ))}
+    </ul>
+  );
+}
+
 export default function AuthShell({ initialMode, loginForm, registerForm }: AuthShellProps) {
   const router = useRouter();
   const [mode, setMode] = useState<AuthMode>(initialMode);
@@ -59,18 +83,23 @@ export default function AuthShell({ initialMode, loginForm, registerForm }: Auth
   );
 
   return (
-    <div className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden bg-background px-4 py-16">
-      {/* Page background: boxes texture (tiled, subtle) + dark veil + gold glow.
+    <div className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden bg-background px-4 py-4">
+      {/* Page background: code-based grid texture (subtle) + dark veil + gold glow.
           The texture never enters the cards. */}
       <div
         aria-hidden="true"
-        className="absolute inset-0 bg-[url('/textures/auth-bg.jpg')] bg-[length:240px_240px] bg-repeat opacity-40"
+        className="absolute inset-0 opacity-40"
+        style={{
+          backgroundImage:
+            'linear-gradient(to right, rgba(255, 255, 255, 0.045) 1px, transparent 1px), linear-gradient(to bottom, rgba(255, 255, 255, 0.045) 1px, transparent 1px)',
+          backgroundSize: '60px 60px',
+        }}
       />
       <div aria-hidden="true" className="absolute inset-0 bg-gradient-to-b from-background/70 via-background/40 to-background/80" />
       <div aria-hidden="true" className="absolute top-1/4 left-1/2 h-[400px] w-[600px] -translate-x-1/2 rounded-full bg-primary/5 blur-[100px]" />
 
       {/* Mobile switch banner: the sliding overlay is desktop-only. */}
-      <div className="relative z-10 mb-4 flex w-full max-w-4xl items-center justify-between gap-3 rounded-xl border border-dark-border bg-dark-card px-4 py-3 md:hidden">
+      <div className="relative z-10 mb-3 flex w-full max-w-4xl items-center justify-between gap-3 rounded-xl border border-dark-border bg-dark-card px-4 py-2.5 md:hidden">
         <p className="text-sm text-muted">
           {mode === 'login' ? 'New to CodeBettle?' : 'Already have an account?'}
         </p>
@@ -95,7 +124,7 @@ export default function AuthShell({ initialMode, loginForm, registerForm }: Auth
             <div
               aria-hidden={mode === 'register' || undefined}
               inert={mode === 'register' || undefined}
-              className={`flex flex-col justify-center p-6 sm:p-8 ${mode === 'register' ? 'hidden md:flex' : ''}`}
+              className={`flex flex-col justify-center p-5 sm:p-6 ${mode === 'register' ? 'hidden md:flex' : ''}`}
             >
               <Suspense fallback={<div className="text-center text-muted">Loading...</div>}>
                 {loginForm}
@@ -105,7 +134,7 @@ export default function AuthShell({ initialMode, loginForm, registerForm }: Auth
             <div
               aria-hidden={mode === 'login' || undefined}
               inert={mode === 'login' || undefined}
-              className={`flex flex-col justify-center p-6 sm:p-8 ${mode === 'login' ? 'hidden md:flex' : ''}`}
+              className={`flex flex-col justify-center p-5 sm:p-6 ${mode === 'login' ? 'hidden md:flex' : ''}`}
             >
               {registerForm}
             </div>
@@ -137,10 +166,11 @@ export default function AuthShell({ initialMode, loginForm, registerForm }: Auth
                     <p className="mt-3 text-sm font-medium text-dark/75">
                       Sign in to access your account and continue where you left off.
                     </p>
+                    <PanelBenefits />
                     <button
                       type="button"
                       onClick={() => switchMode('register')}
-                      className="mt-8 cursor-pointer rounded-full border-2 border-dark/80 px-8 py-2.5 text-sm font-bold tracking-widest text-dark transition-colors hover:bg-dark hover:text-primary"
+                      className="mt-6 cursor-pointer rounded-full border-2 border-dark/80 px-8 py-2.5 text-sm font-bold tracking-widest text-dark transition-colors hover:bg-dark hover:text-primary"
                     >
                       SIGN UP
                     </button>
@@ -151,10 +181,11 @@ export default function AuthShell({ initialMode, loginForm, registerForm }: Auth
                     <p className="mt-3 text-sm font-medium text-dark/75">
                       Join us today and explore all the features we have to offer.
                     </p>
+                    <PanelBenefits />
                     <button
                       type="button"
                       onClick={() => switchMode('login')}
-                      className="mt-8 cursor-pointer rounded-full border-2 border-dark/80 px-8 py-2.5 text-sm font-bold tracking-widest text-dark transition-colors hover:bg-dark hover:text-primary"
+                      className="mt-6 cursor-pointer rounded-full border-2 border-dark/80 px-8 py-2.5 text-sm font-bold tracking-widest text-dark transition-colors hover:bg-dark hover:text-primary"
                     >
                       SIGN IN
                     </button>
@@ -167,7 +198,7 @@ export default function AuthShell({ initialMode, loginForm, registerForm }: Auth
       </motion.div>
 
       {/* Social navbar — below the card, outside it. */}
-      <div className="relative z-10 mt-8">
+      <div className="relative z-10 mt-4">
         <AuthSocialNav />
       </div>
     </div>

@@ -46,13 +46,13 @@ export default function LoginForm() {
 
   return (
     <div>
-      <div className="mb-8 text-center">
+      <div className="mb-5 text-center">
         <Link href="/" className="gradient-text text-2xl font-black">CodeBettle</Link>
-        <h1 className="mt-4 text-xl font-bold text-white">Welcome Back</h1>
+        <h1 className="mt-3 text-xl font-bold text-white">Welcome Back</h1>
         <p className="mt-1 text-sm text-muted">Sign in to continue your learning journey</p>
       </div>
 
-      <div role="tablist" aria-label="Sign in as" className="mb-6 grid grid-cols-2 gap-1 rounded-lg border border-dark-border bg-background p-1">
+      <div role="tablist" aria-label="Sign in as" className="mb-4 grid grid-cols-2 gap-1 rounded-lg border border-dark-border bg-background p-1">
         <button
           type="button"
           role="tab"
@@ -73,7 +73,7 @@ export default function LoginForm() {
         </button>
       </div>
 
-      <form onSubmit={handleLogin} className="space-y-4">
+      <form onSubmit={handleLogin} className="space-y-3">
         <Input
           label="Email Address"
           type="email"
@@ -106,20 +106,20 @@ export default function LoginForm() {
       </form>
 
       {role === 'instructor' && (
-        <p className="mt-6 text-center text-sm text-muted">
+        <p className="mt-4 text-center text-sm text-muted">
           Want to teach?{' '}
           <Link href="/become-instructor" className="font-medium text-primary hover:underline">Become an Instructor</Link>
         </p>
       )}
 
-      <p className="mt-6 flex items-center justify-center gap-1.5 text-center text-xs text-muted">
+      <p className="mt-4 flex items-center justify-center gap-1.5 text-center text-xs text-muted">
         <ShieldCheck className="h-3.5 w-3.5 text-primary" />
         Protected by secure sign-in
       </p>
 
-      <p className="mt-4 text-center text-sm text-muted">
+      <p className="mt-3 text-center text-sm text-muted">
         Don&apos;t have an account?{' '}
-        <Link href="/auth/register" className="font-medium text-primary hover:underline">Sign up free</Link>
+        <Link href="/auth/register" className="font-medium text-primary hover:underline">Sign up</Link>
       </p>
     </div>
   );
