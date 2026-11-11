@@ -5,9 +5,9 @@ import { getEnrollmentsByStudent } from '@/lib/db/enrollments';
 import { getPendingSubmissionForEnrollment } from '@/lib/db/payments';
 import { getCourseAnnouncements } from '@/lib/db/announcements';
 import { getUserById } from '@/lib/db/users';
-import { formatDateShort } from '@/lib/utils';
-import { Bell, Award, XCircle } from 'lucide-react';
+import { Award, XCircle } from 'lucide-react';
 import Card from '@/components/ui/Card';
+import TeacherAnnouncementsPanel from '@/components/student/TeacherAnnouncementsPanel';
 import Badge from '@/components/ui/Badge';
 import FadeIn from '@/components/ui/FadeIn';
 import Link from 'next/link';
@@ -45,6 +45,14 @@ export default async function StudentCourseViewPage({ params }: { params: Promis
 
   const announcements = await getCourseAnnouncements(id);
   const instructor = await getUserById(course.instructorId);
+  // Resolve announcement author names (usually the instructor) so the
+  // panel can show who each message is from. Authors that no longer
+  // resolve fall back to "Your teacher" inside the panel.
+  const authorNames: Record<string, string> = {};
+  for (const authorId of [...new Set(announcements.map((a) => a.authorId))]) {
+    const author = await getUserById(authorId);
+    if (author) authorNames[authorId] = author.name;
+  }
   const totalSessions = course.modules.reduce((a, m) => a + m.lessons.length, 0);
   const uploadedCount = course.modules.flatMap(m => m.lessons).filter(l => l.driveRecordingUrl).length;
 
@@ -154,20 +162,8 @@ export default async function StudentCourseViewPage({ params }: { params: Promis
               </div>
             </Card>
           )}
-          {announcements.length > 0 && (
-            <Card>
-              <div className="flex items-center gap-2 mb-3"><Bell className="w-4 h-4 text-primary" /><h3 className="font-semibold text-white text-sm">Announcements</h3></div>
-              <div className="space-y-3">
-                {announcements.map(ann => (
-                  <div key={ann.id} className="border-l-2 border-primary/40 pl-3">
-                    <p className="text-white text-xs font-medium">{ann.title}</p>
-                    <p className="text-muted text-xs mt-0.5 line-clamp-2">{ann.content}</p>
-                    <p className="text-muted text-xs mt-1">{formatDateShort(ann.createdAt)}</p>
-                  </div>
-                ))}
-              </div>
-            </Card>
-          )}
+          {/* Phase 3: teacher announcements — title, content, author, date. */}
+          <TeacherAnnouncementsPanel announcements={announcements} authorNames={authorNames} />
         </FadeIn>
       </StudentCourseContent>
     </div>
