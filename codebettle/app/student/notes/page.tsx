@@ -1,9 +1,10 @@
 'use client';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { StickyNote, Plus, Trash2, Edit3, Save, X } from 'lucide-react';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
 import Textarea from '@/components/ui/Textarea';
+import Select from '@/components/ui/Select';
 import Card from '@/components/ui/Card';
 import Modal from '@/components/ui/Modal';
 import FadeIn from '@/components/ui/FadeIn';
@@ -14,40 +15,90 @@ interface Note {
   id: string;
   title: string;
   content: string;
-  courseTitle: string;
+  courseId?: string;
+  courseTitle?: string;
   createdAt: string;
 }
 
-const INITIAL_NOTES: Note[] = [
-  { id: '1', title: 'React Hooks Summary', content: 'useState: local state\nuseEffect: side effects\nuseContext: shared state\nuseReducer: complex state', courseTitle: 'Complete React & Next.js Mastery', createdAt: '2024-04-01' },
-  { id: '2', title: 'NumPy Array Operations', content: 'np.array() - create array\nnp.zeros() - zeros array\nnp.reshape() - change shape\nnp.dot() - dot product', courseTitle: 'Python for Data Science & ML', createdAt: '2024-04-15' },
-];
+interface EnrolledCourse {
+  id: string;
+  title: string;
+}
 
+/**
+ * Student notes — backed by /api/student/notes (Phase 0d). Notes are
+ * the signed-in student's own, persist across reloads, and a note can
+ * optionally be linked to one of their enrolled courses.
+ */
 export default function StudentNotesPage() {
-  const [notes, setNotes] = useState<Note[]>(INITIAL_NOTES);
+  const [notes, setNotes] = useState<Note[]>([]);
+  const [courses, setCourses] = useState<EnrolledCourse[]>([]);
+  const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingNote, setEditingNote] = useState<Note | null>(null);
-  const [form, setForm] = useState({ title: '', content: '', courseTitle: '' });
+  const [form, setForm] = useState({ title: '', content: '', courseId: '' });
 
-  const openCreate = () => { setEditingNote(null); setForm({ title: '', content: '', courseTitle: '' }); setIsModalOpen(true); };
-  const openEdit = (note: Note) => { setEditingNote(note); setForm({ title: note.title, content: note.content, courseTitle: note.courseTitle }); setIsModalOpen(true); };
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await fetch('/api/student/notes');
+        if (!res.ok) throw new Error('Failed to load notes');
+        const data = (await res.json()) as { notes: Note[]; courses: EnrolledCourse[] };
+        setNotes(data.notes);
+        setCourses(data.courses);
+      } catch {
+        toast.error('Could not load your notes');
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, []);
 
-  const handleSave = () => {
+  const openCreate = () => { setEditingNote(null); setForm({ title: '', content: '', courseId: '' }); setIsModalOpen(true); };
+  const openEdit = (note: Note) => { setEditingNote(note); setForm({ title: note.title, content: note.content, courseId: note.courseId ?? '' }); setIsModalOpen(true); };
+
+  const handleSave = async () => {
     if (!form.title.trim()) { toast.error('Note title required'); return; }
-    if (editingNote) {
-      setNotes(n => n.map(note => note.id === editingNote.id ? { ...note, ...form } : note));
-      toast.success('Note updated');
-    } else {
-      const newNote: Note = { id: Date.now().toString(), ...form, createdAt: new Date().toISOString().split('T')[0] };
-      setNotes(n => [newNote, ...n]);
-      toast.success('Note created');
+    const body = { title: form.title.trim(), content: form.content, courseId: form.courseId || undefined };
+    try {
+      if (editingNote) {
+        const res = await fetch(`/api/student/notes/${editingNote.id}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ ...body, courseId: form.courseId || null }),
+        });
+        if (!res.ok) throw new Error('Failed to update note');
+        const data = (await res.json()) as { note: Note };
+        const courseTitle = courses.find((c) => c.id === data.note.courseId)?.title;
+        setNotes((n) => n.map((note) => (note.id === editingNote.id ? { ...data.note, courseTitle } : note)));
+        toast.success('Note updated');
+      } else {
+        const res = await fetch('/api/student/notes', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body),
+        });
+        if (!res.ok) throw new Error('Failed to create note');
+        const data = (await res.json()) as { note: Note };
+        const courseTitle = courses.find((c) => c.id === data.note.courseId)?.title;
+        setNotes((n) => [{ ...data.note, courseTitle }, ...n]);
+        toast.success('Note created');
+      }
+      setIsModalOpen(false);
+    } catch {
+      toast.error('Could not save note');
     }
-    setIsModalOpen(false);
   };
 
-  const handleDelete = (id: string) => {
-    setNotes(n => n.filter(note => note.id !== id));
-    toast.success('Note deleted');
+  const handleDelete = async (id: string) => {
+    try {
+      const res = await fetch(`/api/student/notes/${id}`, { method: 'DELETE' });
+      if (!res.ok) throw new Error('Failed to delete note');
+      setNotes((n) => n.filter((note) => note.id !== id));
+      toast.success('Note deleted');
+    } catch {
+      toast.error('Could not delete note');
+    }
   };
 
   return (
@@ -60,11 +111,15 @@ export default function StudentNotesPage() {
         <Button onClick={openCreate}><Plus className="w-4 h-4" />New Note</Button>
       </FadeIn>
 
-      {notes.length === 0 ? (
+      {loading ? (
+        <Card className="py-16 text-center">
+          <p className="text-muted text-sm">Loading your notes...</p>
+        </Card>
+      ) : notes.length === 0 ? (
         <Card className="py-16 text-center">
           <StickyNote className="w-12 h-12 text-muted mx-auto mb-4" />
           <p className="text-white font-semibold mb-2">No notes yet</p>
-          <p className="text-muted text-sm mb-4">Create notes to help you remember key concepts.</p>
+          <p className="text-muted text-sm mb-4">Start creating your learning notes.</p>
           <Button onClick={openCreate} size="sm"><Plus className="w-4 h-4" />Create Note</Button>
         </Card>
       ) : (
@@ -79,7 +134,7 @@ export default function StudentNotesPage() {
                   <button onClick={() => handleDelete(note.id)} className="text-muted hover:text-red-400 transition-colors p-1 cursor-pointer"><Trash2 className="w-3.5 h-3.5" /></button>
                 </div>
               </div>
-              <p className="text-xs text-primary mb-2">{note.courseTitle}</p>
+              {note.courseTitle && <p className="text-xs text-primary mb-2">{note.courseTitle}</p>}
               <p className="text-muted text-xs leading-relaxed flex-1 whitespace-pre-wrap line-clamp-4">{note.content}</p>
               <p className="text-muted text-xs mt-3">{formatDateShort(note.createdAt)}</p>
             </Card>
@@ -91,7 +146,12 @@ export default function StudentNotesPage() {
       <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={editingNote ? 'Edit Note' : 'New Note'}>
         <div className="space-y-4">
           <Input label="Title" placeholder="Note title" value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} />
-          <Input label="Course" placeholder="Course name (optional)" value={form.courseTitle} onChange={e => setForm(f => ({ ...f, courseTitle: e.target.value }))} />
+          <Select
+            label="Course (optional)"
+            value={form.courseId}
+            onChange={e => setForm(f => ({ ...f, courseId: e.target.value }))}
+            options={[{ value: '', label: 'No course' }, ...courses.map((c) => ({ value: c.id, label: c.title }))]}
+          />
           <Textarea label="Content" placeholder="Write your notes here..." value={form.content} onChange={e => setForm(f => ({ ...f, content: e.target.value }))} rows={6} />
           <div className="flex gap-3">
             <Button variant="secondary" onClick={() => setIsModalOpen(false)} fullWidth><X className="w-4 h-4" />Cancel</Button>

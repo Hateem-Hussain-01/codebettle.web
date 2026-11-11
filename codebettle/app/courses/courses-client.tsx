@@ -7,6 +7,7 @@ import FadeIn from '@/components/ui/FadeIn';
 import { Search, SlidersHorizontal } from 'lucide-react';
 import Input from '@/components/ui/Input';
 import Select from '@/components/ui/Select';
+import { useWishlist } from '@/hooks/use-wishlist';
 import type { PublicCourse } from '@/lib/db/types';
 
 const CATEGORIES = ['All', 'Web Development', 'Mobile Development', 'Data Science', 'UI/UX Design', 'DevOps', 'Programming'];
@@ -23,6 +24,9 @@ export default function CoursesClient({ courses: allCourses, instructorNames }: 
   const [level, setLevel] = useState('All');
   const [priceFilter, setPriceFilter] = useState('All');
   const [sort, setSort] = useState('popular');
+  // Signed-in students get a working heart on every card; signed-out
+  // visitors see no heart at all (Phase 0d).
+  const { wishlistedIds, signedIn, loaded, toggle } = useWishlist();
 
   const filtered = useMemo(() => {
     let result = [...allCourses];
@@ -110,6 +114,8 @@ export default function CoursesClient({ courses: allCourses, instructorNames }: 
                   course={course}
                   instructorName={instructorNames[course.instructorId] ?? 'Instructor'}
                   index={i}
+                  isWishlisted={wishlistedIds.has(course.id)}
+                  onWishlist={signedIn && loaded ? toggle : undefined}
                 />
               ))}
             </div>

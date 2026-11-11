@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { ArrowRight } from 'lucide-react';
-import CourseCard from '@/components/ui/CourseCard';
 import FadeIn from '@/components/ui/FadeIn';
+import FeaturedCoursesClient from './featured-courses-client';
 import { getFeaturedCourses } from '@/lib/db/courses';
 import { toPublicCourse } from '@/lib/db/mappers';
 import { getUserById } from '@/lib/db/users';
@@ -30,16 +30,10 @@ export default async function FeaturedCourses() {
           </Link>
         </FadeIn>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          {featured.map((course, i) => (
-            <CourseCard
-              key={course.id}
-              course={toPublicCourse(course)}
-              instructorName={instructorNames[course.instructorId] ?? 'CodeBettle Instructor'}
-              index={i}
-            />
-          ))}
-        </div>
+        <FeaturedCoursesClient
+          courses={featured.map(toPublicCourse)}
+          instructorNames={instructorNames}
+        />
 
         <div className="sm:hidden mt-8 text-center">
           <Link href="/courses" className="text-primary text-sm font-medium inline-flex items-center gap-2">
