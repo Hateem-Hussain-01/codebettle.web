@@ -52,6 +52,8 @@ import type {
   Review,
   ReviewRow,
   SocialLinks,
+  SupportRequest,
+  SupportRequestRow,
   Testimonial,
   TestimonialRow,
   User,
@@ -400,9 +402,60 @@ export function mapNotificationRow(row: NotificationRow): Notification {
     type: row.type,
     title: row.title,
     body: row.body,
+    // Phase 3 fields default for rows written before the migration
+    // (and for fake-db rows in tests that omit them).
+    category: isNotificationCategory(row.category) ? row.category : 'general',
+    announcementId: row.announcementId ?? undefined,
+    linkUrl: row.linkUrl ?? undefined,
+    requiresAcknowledge: row.requiresAcknowledge ?? false,
+    acknowledgedAt: row.acknowledgedAt ? dateToString(row.acknowledgedAt) : null,
     readAt: row.readAt ? dateToString(row.readAt) : null,
     createdAt: dateToString(row.createdAt),
   };
+}
+
+function isNotificationCategory(value: unknown): value is Notification['category'] {
+  return value === 'general' || value === 'important' || value === 'warning' || value === 'special_notice';
+}
+
+export function mapSupportRequestRow(row: SupportRequestRow): SupportRequest {
+  return {
+    id: row.id,
+    studentId: row.studentId,
+    category: isSupportRequestCategory(row.category) ? row.category : 'other',
+    subject: row.subject,
+    message: row.message,
+    courseId: row.courseId ?? undefined,
+    status: isSupportRequestStatus(row.status) ? row.status : 'new',
+    attachmentUrl: row.attachmentUrl ?? undefined,
+    adminReply: row.adminReply ?? undefined,
+    resolvedBy: row.resolvedBy ?? undefined,
+    resolvedAt: row.resolvedAt ? dateToString(row.resolvedAt) : undefined,
+    createdAt: dateToString(row.createdAt),
+    updatedAt: dateToString(row.updatedAt),
+  };
+}
+
+function isSupportRequestCategory(value: unknown): value is SupportRequest['category'] {
+  return (
+    value === 'complaints' ||
+    value === 'teacher_reviews' ||
+    value === 'feature_requests' ||
+    value === 'course_issues' ||
+    value === 'technical_problems' ||
+    value === 'general_requests' ||
+    value === 'other'
+  );
+}
+
+function isSupportRequestStatus(value: unknown): value is SupportRequest['status'] {
+  return (
+    value === 'new' ||
+    value === 'under_review' ||
+    value === 'in_progress' ||
+    value === 'resolved' ||
+    value === 'rejected'
+  );
 }
 
 export function mapReviewRow(row: ReviewRow): Review {

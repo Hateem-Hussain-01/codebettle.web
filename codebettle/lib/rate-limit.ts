@@ -58,6 +58,11 @@ export function contactRateLimitKey(ip: string): string {
   return `contact:${ip}`;
 }
 
+/** Support-request submissions: 5 per 15 minutes, keyed by IP (spam guard). */
+export function supportRequestRateLimitKey(ip: string): string {
+  return `support-request:${ip}`;
+}
+
 /** Application-file uploads: 10 per 15 minutes, keyed by IP (spam guard — files cost storage). */
 export function applicationUploadRateLimitKey(ip: string): string {
   return `application-upload:${ip}`;
