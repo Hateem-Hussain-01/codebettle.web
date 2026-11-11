@@ -1,11 +1,58 @@
 'use client';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
+import Textarea from '@/components/ui/Textarea';
+import Select from '@/components/ui/Select';
 import Card from '@/components/ui/Card';
+import Modal from '@/components/ui/Modal';
 import FadeIn from '@/components/ui/FadeIn';
-import { Save, Globe, Mail, Phone, AlertTriangle } from 'lucide-react';
+import { Save, Globe, Mail, Phone, AlertTriangle, CreditCard, Plus, Pencil, Trash2, ChevronUp, ChevronDown } from 'lucide-react';
 import toast from 'react-hot-toast';
+import type { PaymentAccount, PaymentMethod } from '@/lib/db/types';
+
+const METHOD_LABELS: Record<PaymentMethod, string> = {
+  bank: 'Bank transfer',
+  easypaisa: 'Easypaisa',
+  jazzcash: 'JazzCash',
+  wallet: 'Wallet',
+  other: 'Other',
+};
+
+const METHOD_OPTIONS = (Object.keys(METHOD_LABELS) as PaymentMethod[]).map((m) => ({
+  value: m,
+  label: METHOD_LABELS[m],
+}));
+
+interface AccountForm {
+  label: string;
+  method: PaymentMethod;
+  accountHolder: string;
+  bankName: string;
+  accountNumber: string;
+  iban: string;
+  walletNumber: string;
+  instructions: string;
+  isActive: boolean;
+  displayOrder: number;
+}
+
+const EMPTY_FORM: AccountForm = {
+  label: '',
+  method: 'bank',
+  accountHolder: '',
+  bankName: '',
+  accountNumber: '',
+  iban: '',
+  walletNumber: '',
+  instructions: '',
+  isActive: true,
+  displayOrder: 0,
+};
+
+function accountRef(account: PaymentAccount): string {
+  return account.accountNumber ?? account.iban ?? account.walletNumber ?? '—';
+}
 
 export default function AdminSettingsPage() {
   const [settings, setSettings] = useState({
@@ -27,6 +74,178 @@ export default function AdminSettingsPage() {
     await new Promise(r => setTimeout(r, 600));
     toast.success('Settings saved successfully!');
     setSaving(false);
+  };
+
+  // --- Payment Accounts Management (real backend, Phase 1e) ---
+  // Every change goes through /api/admin/payment-accounts and is verified
+  // by re-fetching the list afterwards — the saved state shown is the
+  // state read back from the server, never an optimistic local guess.
+  const [accounts, setAccounts] = useState<PaymentAccount[]>([]);
+  const [accountsLoading, setAccountsLoading] = useState(true);
+  const [accountsError, setAccountsError] = useState<string | null>(null);
+  const [formOpen, setFormOpen] = useState(false);
+  const [editing, setEditing] = useState<PaymentAccount | null>(null);
+  const [form, setForm] = useState<AccountForm>(EMPTY_FORM);
+  const [formError, setFormError] = useState<string | null>(null);
+  const [formSaving, setFormSaving] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<PaymentAccount | null>(null);
+  const [deleting, setDeleting] = useState(false);
+
+  const loadAccounts = async (): Promise<PaymentAccount[]> => {
+    setAccountsLoading(true);
+    setAccountsError(null);
+    try {
+      const res = await fetch('/api/admin/payment-accounts');
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error ?? 'Could not load payment accounts');
+      const list = (data.accounts ?? []) as PaymentAccount[];
+      setAccounts(list);
+      return list;
+    } catch (e) {
+      setAccountsError(e instanceof Error ? e.message : 'Could not load payment accounts');
+      return [];
+    } finally {
+      setAccountsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    void loadAccounts();
+  }, []);
+
+  const openAdd = () => {
+    setEditing(null);
+    setForm({ ...EMPTY_FORM, displayOrder: accounts.length });
+    setFormError(null);
+    setFormOpen(true);
+  };
+
+  const openEdit = (account: PaymentAccount) => {
+    setEditing(account);
+    setForm({
+      label: account.label,
+      method: account.method,
+      accountHolder: account.accountHolder,
+      bankName: account.bankName ?? '',
+      accountNumber: account.accountNumber ?? '',
+      iban: account.iban ?? '',
+      walletNumber: account.walletNumber ?? '',
+      instructions: account.instructions ?? '',
+      isActive: account.isActive,
+      displayOrder: account.displayOrder,
+    });
+    setFormError(null);
+    setFormOpen(true);
+  };
+
+  const saveForm = async () => {
+    if (!form.label.trim()) { setFormError('Label is required'); return; }
+    if (!form.accountHolder.trim()) { setFormError('Account holder is required'); return; }
+    if (!form.accountNumber.trim() && !form.iban.trim() && !form.walletNumber.trim()) {
+      setFormError('Provide an account number, IBAN or wallet number');
+      return;
+    }
+    setFormError(null);
+    setFormSaving(true);
+    try {
+      const payload = {
+        label: form.label.trim(),
+        method: form.method,
+        accountHolder: form.accountHolder.trim(),
+        bankName: form.bankName.trim() || undefined,
+        accountNumber: form.accountNumber.trim() || undefined,
+        iban: form.iban.trim() || undefined,
+        walletNumber: form.walletNumber.trim() || undefined,
+        instructions: form.instructions.trim() || undefined,
+        isActive: form.isActive,
+        displayOrder: form.displayOrder,
+      };
+      const res = await fetch(
+        editing ? `/api/admin/payment-accounts/${editing.id}` : '/api/admin/payment-accounts',
+        {
+          method: editing ? 'PATCH' : 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        },
+      );
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error ?? 'Could not save payment account');
+      // Read-back: re-fetch the list and confirm the saved account is there.
+      const list = await loadAccounts();
+      const saved = list.find((a) => a.id === (data.account as PaymentAccount).id);
+      if (!saved) throw new Error('Saved, but the account did not come back from the server — please reload');
+      setFormOpen(false);
+      toast.success(editing ? 'Payment account updated' : 'Payment account added');
+    } catch (e) {
+      setFormError(e instanceof Error ? e.message : 'Could not save payment account');
+    } finally {
+      setFormSaving(false);
+    }
+  };
+
+  const toggleActive = async (account: PaymentAccount) => {
+    try {
+      const res = await fetch(`/api/admin/payment-accounts/${account.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ isActive: !account.isActive }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error ?? 'Could not update payment account');
+      const list = await loadAccounts();
+      const saved = list.find((a) => a.id === account.id);
+      if (!saved || saved.isActive === account.isActive) {
+        throw new Error('The change did not persist — please reload');
+      }
+      toast.success(saved.isActive ? 'Payment account activated' : 'Payment account deactivated');
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Could not update payment account');
+    }
+  };
+
+  const moveAccount = async (account: PaymentAccount, direction: -1 | 1) => {
+    const idx = accounts.findIndex((a) => a.id === account.id);
+    const neighbour = accounts[idx + direction];
+    if (!neighbour) return;
+    try {
+      const patch = async (id: string, displayOrder: number) => {
+        const res = await fetch(`/api/admin/payment-accounts/${id}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ displayOrder }),
+        });
+        if (!res.ok) {
+          const data = await res.json().catch(() => ({}));
+          throw new Error(data.error ?? 'Could not reorder payment accounts');
+        }
+      };
+      await patch(account.id, neighbour.displayOrder);
+      await patch(neighbour.id, account.displayOrder);
+      await loadAccounts();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Could not reorder payment accounts');
+      await loadAccounts();
+    }
+  };
+
+  const confirmDelete = async () => {
+    if (!deleteTarget) return;
+    setDeleting(true);
+    try {
+      const res = await fetch(`/api/admin/payment-accounts/${deleteTarget.id}`, { method: 'DELETE' });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error ?? 'Could not delete payment account');
+      const list = await loadAccounts();
+      if (list.some((a) => a.id === deleteTarget.id)) {
+        throw new Error('The account was not deleted — please reload');
+      }
+      setDeleteTarget(null);
+      toast.success('Payment account deleted');
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Could not delete payment account');
+    } finally {
+      setDeleting(false);
+    }
   };
 
   return (
@@ -90,7 +309,132 @@ export default function AdminSettingsPage() {
       </Card>
       </FadeIn>
 
+      <FadeIn delay={0.25}>
+      <Card>
+        <div className="flex items-center justify-between mb-1">
+          <h2 className="text-white font-bold flex items-center gap-2"><CreditCard className="w-4 h-4 text-primary" />Payment Accounts Management</h2>
+          <Button size="sm" onClick={openAdd}><Plus className="w-4 h-4" />Add Account</Button>
+        </div>
+        <p className="text-muted text-sm mb-4">Receiving accounts students pay into (bank / Easypaisa / JazzCash / wallet). Only active accounts are shown to students, in display order.</p>
+        {accountsLoading && <p className="text-muted text-sm">Loading payment accounts…</p>}
+        {accountsError && (
+          <div className="flex items-center justify-between gap-3">
+            <p className="text-sm text-red-400">{accountsError}</p>
+            <Button size="sm" variant="outline" onClick={() => void loadAccounts()}>Retry</Button>
+          </div>
+        )}
+        {!accountsLoading && !accountsError && accounts.length === 0 && (
+          <p className="text-muted text-sm">No payment accounts yet. Add one so students know where to pay.</p>
+        )}
+        {!accountsLoading && !accountsError && accounts.length > 0 && (
+          <ul className="space-y-3">
+            {accounts.map((account, idx) => (
+              <li key={account.id} className={`rounded-xl border p-4 ${account.isActive ? 'border-dark-border' : 'border-dark-border opacity-60'}`}>
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="text-white font-semibold">{account.label}</span>
+                      <span className="text-xs px-2 py-0.5 rounded-full bg-dark-border text-white/80">{METHOD_LABELS[account.method]}</span>
+                      <span className={`text-xs px-2 py-0.5 rounded-full ${account.isActive ? 'bg-green-500/20 text-green-300' : 'bg-red-500/20 text-red-300'}`}>
+                        {account.isActive ? 'Active' : 'Inactive'}
+                      </span>
+                      <span className="text-xs text-muted">Order {account.displayOrder}</span>
+                    </div>
+                    <p className="text-sm text-white/80 mt-1">{account.accountHolder}{account.bankName ? ` · ${account.bankName}` : ''}</p>
+                    <p className="text-sm text-muted font-mono break-all">{accountRef(account)}</p>
+                    {account.instructions && <p className="text-sm text-muted mt-1">{account.instructions}</p>}
+                  </div>
+                  <div className="flex flex-col items-end gap-1 flex-shrink-0">
+                    <div className="flex gap-1">
+                      <button
+                        type="button"
+                        aria-label={`Move ${account.label} up`}
+                        disabled={idx === 0}
+                        onClick={() => void moveAccount(account, -1)}
+                        className="p-1.5 rounded-lg text-muted hover:text-white hover:bg-dark-border disabled:opacity-30 cursor-pointer"
+                      >
+                        <ChevronUp className="w-4 h-4" />
+                      </button>
+                      <button
+                        type="button"
+                        aria-label={`Move ${account.label} down`}
+                        disabled={idx === accounts.length - 1}
+                        onClick={() => void moveAccount(account, 1)}
+                        className="p-1.5 rounded-lg text-muted hover:text-white hover:bg-dark-border disabled:opacity-30 cursor-pointer"
+                      >
+                        <ChevronDown className="w-4 h-4" />
+                      </button>
+                      <button
+                        type="button"
+                        aria-label={`Edit ${account.label}`}
+                        onClick={() => openEdit(account)}
+                        className="p-1.5 rounded-lg text-muted hover:text-white hover:bg-dark-border cursor-pointer"
+                      >
+                        <Pencil className="w-4 h-4" />
+                      </button>
+                      <button
+                        type="button"
+                        aria-label={`Delete ${account.label}`}
+                        onClick={() => setDeleteTarget(account)}
+                        className="p-1.5 rounded-lg text-muted hover:text-red-400 hover:bg-dark-border cursor-pointer"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => void toggleActive(account)}
+                      className={`text-xs px-3 py-1.5 rounded-lg border cursor-pointer ${account.isActive ? 'border-dark-border text-white/80 hover:text-white' : 'border-green-500/50 text-green-300 hover:bg-green-500/10'}`}
+                    >
+                      {account.isActive ? 'Deactivate' : 'Activate'}
+                    </button>
+                  </div>
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
+      </Card>
+      </FadeIn>
+
       <Button onClick={handleSave} loading={saving} size="lg"><Save className="w-4 h-4" />Save Settings</Button>
+
+      <Modal isOpen={formOpen} onClose={() => setFormOpen(false)} title={editing ? 'Edit Payment Account' : 'Add Payment Account'} size="lg">
+        <div className="space-y-4">
+          <Input label="Label *" placeholder="e.g. HBL — Main account" value={form.label} onChange={e => setForm(f => ({ ...f, label: e.target.value }))} />
+          <Select label="Method *" options={METHOD_OPTIONS} value={form.method} onChange={e => setForm(f => ({ ...f, method: e.target.value as PaymentMethod }))} />
+          <Input label="Account Holder *" placeholder="e.g. CodeBettle" value={form.accountHolder} onChange={e => setForm(f => ({ ...f, accountHolder: e.target.value }))} />
+          <Input label="Bank / Service Name" placeholder="e.g. HBL" value={form.bankName} onChange={e => setForm(f => ({ ...f, bankName: e.target.value }))} />
+          <Input label="Account Number" placeholder="e.g. 12345678901234" value={form.accountNumber} onChange={e => setForm(f => ({ ...f, accountNumber: e.target.value }))} />
+          <Input label="IBAN" placeholder="e.g. PK36HABB0000001234567890" value={form.iban} onChange={e => setForm(f => ({ ...f, iban: e.target.value }))} />
+          <Input label="Wallet Number" placeholder="e.g. 03001234567" value={form.walletNumber} onChange={e => setForm(f => ({ ...f, walletNumber: e.target.value }))} />
+          <Textarea label="Payment Instructions" placeholder="e.g. Send the fee and share the transaction ID" rows={3} value={form.instructions} onChange={e => setForm(f => ({ ...f, instructions: e.target.value }))} />
+          <div className="grid grid-cols-2 gap-4">
+            <Input label="Display Order" type="number" value={String(form.displayOrder)} onChange={e => setForm(f => ({ ...f, displayOrder: Number(e.target.value) || 0 }))} />
+            <label className="flex items-end gap-2 pb-2.5 cursor-pointer">
+              <input type="checkbox" checked={form.isActive} onChange={e => setForm(f => ({ ...f, isActive: e.target.checked }))} className="w-4 h-4 accent-yellow-400" />
+              <span className="text-sm text-white/80">Active (shown to students)</span>
+            </label>
+          </div>
+          <p className="text-xs text-muted">At least one of account number, IBAN or wallet number is required.</p>
+          {formError && <p className="text-sm text-red-400">{formError}</p>}
+          <div className="flex justify-end gap-2">
+            <Button variant="outline" onClick={() => setFormOpen(false)}>Cancel</Button>
+            <Button onClick={() => void saveForm()} loading={formSaving}>{editing ? 'Save Changes' : 'Add Account'}</Button>
+          </div>
+        </div>
+      </Modal>
+
+      <Modal isOpen={deleteTarget !== null} onClose={() => setDeleteTarget(null)} title="Delete Payment Account">
+        <p className="text-sm text-white/80">
+          Delete <span className="font-semibold text-white">{deleteTarget?.label}</span>?
+          Past payment submissions keep their saved copy of this account, so payment history is not affected.
+        </p>
+        <div className="flex justify-end gap-2 mt-6">
+          <Button variant="outline" onClick={() => setDeleteTarget(null)}>Cancel</Button>
+          <Button onClick={() => void confirmDelete()} loading={deleting}>Delete</Button>
+        </div>
+      </Modal>
     </div>
   );
 }

@@ -265,3 +265,52 @@ export const quizSubmitSchema = z.object({
     }),
   ),
 });
+
+// ---------------------------------------------------------------------------
+// Payment accounts (Phase 1e, Module 16)
+// ---------------------------------------------------------------------------
+
+export const paymentMethods = ['bank', 'easypaisa', 'jazzcash', 'wallet', 'other'] as const;
+
+/**
+ * Receiving-account details (bank / Easypaisa / JazzCash / wallet) that
+ * students pay into. These are account numbers and holder names, not
+ * secrets — but writes are admin-only (managePaymentAccounts).
+ * At least one of accountNumber / iban / walletNumber must be present.
+ */
+const paymentAccountRefPresent = (d: {
+  accountNumber?: string | null;
+  iban?: string | null;
+  walletNumber?: string | null;
+}): boolean =>
+  [d.accountNumber, d.iban, d.walletNumber].some((v) => (v ?? '').trim() !== '');
+
+export const paymentAccountCreateSchema = z
+  .object({
+    label: z.string().min(1),
+    method: z.enum(paymentMethods),
+    accountHolder: z.string().min(1),
+    bankName: z.string().optional(),
+    accountNumber: z.string().optional(),
+    iban: z.string().optional(),
+    walletNumber: z.string().optional(),
+    instructions: z.string().optional(),
+    isActive: z.boolean().optional(),
+    displayOrder: z.number().int().optional(),
+  })
+  .refine(paymentAccountRefPresent, {
+    message: 'Provide an account number, IBAN or wallet number',
+  });
+
+export const paymentAccountUpdateSchema = z.object({
+  label: z.string().min(1).optional(),
+  method: z.enum(paymentMethods).optional(),
+  accountHolder: z.string().min(1).optional(),
+  bankName: z.string().nullable().optional(),
+  accountNumber: z.string().nullable().optional(),
+  iban: z.string().nullable().optional(),
+  walletNumber: z.string().nullable().optional(),
+  instructions: z.string().nullable().optional(),
+  isActive: z.boolean().optional(),
+  displayOrder: z.number().int().optional(),
+});
