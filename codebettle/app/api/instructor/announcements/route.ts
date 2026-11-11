@@ -22,26 +22,34 @@ const instructorAnnouncementSchema = z.object({
 export async function POST(request: NextRequest) {
   const auth = await requireRoles(['instructor']);
   if ('error' in auth) return auth.error;
-  const body = await readJson(request);
-  const parsed = instructorAnnouncementSchema.safeParse(body);
-  if (!parsed.success) return invalidBody('Title, content and course are required');
-  const { title, content, courseId } = parsed.data;
-  const course = await getCourseById(courseId);
-  if (!course) return NextResponse.json({ error: 'Course not found' }, { status: 404 });
-  if (course.instructorId !== auth.session.id) {
-    return NextResponse.json({ error: 'You can only announce to your own courses' }, { status: 403 });
-  }
-  const announcement = await createAnnouncement({
-    title,
-    content,
-    type: 'course',
-    courseId,
-    authorId: auth.session.id,
-  });
+  // Phase 0b: the whole handler body is wrapped so a database/validation
+  // failure returns a parseable JSON 500 instead of Next's HTML error
+  // page (which the client could not parse and which surfaced as a
+  // crash/logout in the announcement flow).
   try {
-    await onAnnouncementPublished(announcement);
+    const body = await readJson(request);
+    const parsed = instructorAnnouncementSchema.safeParse(body);
+    if (!parsed.success) return invalidBody('Title, content and course are required');
+    const { title, content, courseId } = parsed.data;
+    const course = await getCourseById(courseId);
+    if (!course) return NextResponse.json({ error: 'Course not found' }, { status: 404 });
+    if (course.instructorId !== auth.session.id) {
+      return NextResponse.json({ error: 'You can only announce to your own courses' }, { status: 403 });
+    }
+    const announcement = await createAnnouncement({
+      title,
+      content,
+      type: 'course',
+      courseId,
+      authorId: auth.session.id,
+    });
+    try {
+      await onAnnouncementPublished(announcement);
+    } catch {
+      // Notifications are in-app and best-effort; the announcement stands.
+    }
+    return NextResponse.json({ announcement }, { status: 201 });
   } catch {
-    // Notifications are in-app and best-effort; the announcement stands.
+    return NextResponse.json({ error: 'Failed to create announcement' }, { status: 500 });
   }
-  return NextResponse.json({ announcement }, { status: 201 });
 }

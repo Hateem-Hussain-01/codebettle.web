@@ -165,7 +165,7 @@ export default function CourseDetailClient({ course, instructor, reviews, slug, 
                     <Button fullWidth size="lg" neon onClick={handleEnroll} disabled={enrolling} className="mb-3">
                       {enrolled ? 'Continue Learning' : enrolling ? 'Enrolling…' : course.isFree ? 'Enroll for Free' : 'Enroll Now'}
                     </Button>
-                    <p className="text-muted text-xs text-center">30-day money-back guarantee</p>
+                    <p className="text-muted text-xs text-center">Join {course.enrolledCount.toLocaleString()} students learning with CodeBettle</p>
                     <div className="mt-4 pt-4 border-t border-dark-border space-y-2 text-xs text-muted">
                       <p className="flex items-center gap-2"><CheckCircle className="w-3.5 h-3.5 text-primary" />Lifetime access to recordings</p>
                       <p className="flex items-center gap-2"><CheckCircle className="w-3.5 h-3.5 text-primary" />Downloadable materials</p>
