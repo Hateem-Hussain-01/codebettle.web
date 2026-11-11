@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { requireAdmin } from '@/lib/api-helpers';
+import { requireAdminArea } from '@/lib/api-helpers';
 import { getApplicationById } from '@/lib/db/applications';
 import { createApplicationFileSignedUrl } from '@/lib/services/application-storage';
 
@@ -11,7 +11,7 @@ import { createApplicationFileSignedUrl } from '@/lib/services/application-stora
  * storage path, not a public URL, so it must go through here.
  */
 export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const auth = await requireAdmin();
+  const auth = await requireAdminArea('applications');
   if ('error' in auth) return auth.error;
   const { id } = await params;
   const kind = request.nextUrl.searchParams.get('kind');

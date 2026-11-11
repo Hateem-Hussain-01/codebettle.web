@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { invalidBody, readJson, requireAdmin, serviceError } from '@/lib/api-helpers';
+import { invalidBody, readJson, requireAdminArea, serviceError } from '@/lib/api-helpers';
 import { applicationReviewSchema } from '@/lib/api-schemas';
 import { reviewApplicationService } from '@/lib/services/application-service';
 
@@ -10,7 +10,7 @@ import { reviewApplicationService } from '@/lib/services/application-service';
  * lib/services/application-service.ts.
  */
 export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const auth = await requireAdmin();
+  const auth = await requireAdminArea('applications');
   if ('error' in auth) return auth.error;
   const { id } = await params;
 
