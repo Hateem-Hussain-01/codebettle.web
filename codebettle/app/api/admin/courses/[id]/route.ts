@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { invalidBody, readJson, requireAdmin, serviceError } from '@/lib/api-helpers';
+import { invalidBody, readJson, requireAdminArea, serviceError } from '@/lib/api-helpers';
 import { courseUpdateSchema } from '@/lib/api-schemas';
 import { deleteCourseService, updateCourseService } from '@/lib/services/course-service';
 
@@ -10,7 +10,7 @@ import { deleteCourseService, updateCourseService } from '@/lib/services/course-
  * Business logic lives in lib/services/course-service.ts.
  */
 export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const auth = await requireAdmin();
+  const auth = await requireAdminArea('courses');
   if ('error' in auth) return auth.error;
   const { id } = await params;
 
@@ -29,7 +29,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
 }
 
 export async function DELETE(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const auth = await requireAdmin();
+  const auth = await requireAdminArea('courses');
   if ('error' in auth) return auth.error;
   const { id } = await params;
 

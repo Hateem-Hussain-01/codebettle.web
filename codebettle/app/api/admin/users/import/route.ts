@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
-import { invalidBody, readJson, requireAdmin, serviceError } from '@/lib/api-helpers';
+import { invalidBody, readJson, requireAdminAreas, serviceError } from '@/lib/api-helpers';
 import {
   importUsers,
   previewUserImport,
@@ -34,7 +34,7 @@ const importSchema = z.object({
 });
 
 export async function POST(request: NextRequest) {
-  const auth = await requireAdmin();
+  const auth = await requireAdminAreas(['students', 'instructors']);
   if ('error' in auth) return auth.error;
 
   const body = await readJson(request);

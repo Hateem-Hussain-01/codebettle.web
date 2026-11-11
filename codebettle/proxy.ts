@@ -43,6 +43,13 @@ export function proxy(request: NextRequest) {
   const requestHeaders = new Headers(request.headers);
   requestHeaders.set('x-nonce', nonce);
   requestHeaders.set('Content-Security-Policy', csp);
+  // Item G: the requested path, for the admin layout's per-area guard.
+  // The layout reads it via headers() and redirects a restricted admin
+  // away from areas they were not granted. Prefetch requests skip this
+  // proxy (see matcher) — the layout treats a missing header as "cannot
+  // tell" and skips the redirect; dynamic admin pages are not prefetched
+  // (no loading.tsx), so a prefetch can never smuggle a denied page in.
+  requestHeaders.set('x-pathname', pathname);
 
   const response = NextResponse.next({
     request: { headers: requestHeaders },

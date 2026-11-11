@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { requireAdmin, serviceError } from '@/lib/api-helpers';
+import { requireAdminArea, serviceError } from '@/lib/api-helpers';
 import {
   getAdminOverview,
   getCourseReport,
@@ -15,7 +15,7 @@ import {
  * Unknown course/student -> 404; bad dates -> 400; non-admin -> 403.
  */
 export async function GET(request: NextRequest) {
-  const auth = await requireAdmin();
+  const auth = await requireAdminArea('reports');
   if ('error' in auth) return auth.error;
   const params = request.nextUrl.searchParams;
   const range = parseDateRange({

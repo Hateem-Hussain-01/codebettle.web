@@ -11,6 +11,9 @@
  * models — the shapes a plain Prisma query returns (no relations loaded).
  */
 import type { Models } from '../../src/prisma/contract.d';
+import type { AdminPermissions } from '../admin-access';
+
+export type { AdminPermissions } from '../admin-access';
 
 export type UserRole = 'student' | 'instructor' | 'admin';
 export type UserStatus = 'active' | 'suspended';
@@ -100,6 +103,13 @@ export interface User {
   socialLinks?: SocialLinks;
   /** Null in the DB (or absent) means defaults: inApp on, email off, all events on. */
   notificationPrefs?: NotificationPrefs;
+  /**
+   * Per-area admin permissions (Item G). Stored as a nullable Json column
+   * (`User.adminPermissions`); NULL / undefined means a FULL admin — every
+   * area granted, including future areas. A map grants only the areas set
+   * to `true`. Only meaningful when role is `admin`.
+   */
+  adminPermissions?: AdminPermissions;
   status: UserStatus;
   joinedAt: string;
   /** Course ids the student is enrolled in. Populated by list/getStudents and getUserByIdWithEnrollments; undefined otherwise. */
@@ -292,6 +302,14 @@ export interface InstructorApplication {
   experience?: string;
   /** Free-text answer to "Why do you want to teach?" (nullable column, Phase 3). */
   message?: string;
+  /** Storage path of the uploaded CV in the private `application-files` bucket (e.g. `cvs/<uuid>.pdf`). */
+  cvUrl?: string;
+  /** Applicant's LinkedIn profile URL. */
+  linkedinUrl?: string;
+  /** Applicant's GitHub profile URL. */
+  githubUrl?: string;
+  /** Storage path of the uploaded demo lecture recording in the private `application-files` bucket (e.g. `demos/<uuid>.mp4`). */
+  demoRecordingUrl?: string;
   status: ApplicationStatus;
   reviewedBy?: string;
   createdAt: string;
@@ -366,6 +384,7 @@ export type UserRow = Pick<
   | 'expertise'
   | 'socialLinks'
   | 'notificationPrefs'
+  | 'adminPermissions'
   | 'status'
   | 'joinedAt'
   | 'deletedAt'
@@ -480,7 +499,7 @@ export type BlogPostRow = Pick<
 
 export type ApplicationRow = Pick<
   Models.public_InstructorApplication,
-  'id' | 'name' | 'email' | 'phone' | 'expertise' | 'experience' | 'message' | 'status' | 'reviewedBy' | 'createdAt'
+  'id' | 'name' | 'email' | 'phone' | 'expertise' | 'experience' | 'message' | 'cvUrl' | 'linkedinUrl' | 'githubUrl' | 'demoRecordingUrl' | 'status' | 'reviewedBy' | 'createdAt'
 >;
 
 export type SessionRow = Pick<

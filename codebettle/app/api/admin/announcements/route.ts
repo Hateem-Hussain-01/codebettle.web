@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { invalidBody, readJson, requireRoles, serviceError } from '@/lib/api-helpers';
+import { invalidBody, readJson, requireAdminArea, serviceError } from '@/lib/api-helpers';
 import { z } from 'zod';
 import { createAnnouncement, listAnnouncements } from '@/lib/db/announcements';
 import { onAnnouncementPublished } from '@/lib/services/notification-service';
@@ -23,14 +23,14 @@ const announcementCreateSchema = z.object({
 });
 
 export async function GET() {
-  const auth = await requireRoles(['admin']);
+  const auth = await requireAdminArea('announcements');
   if ('error' in auth) return auth.error;
   const announcements = await listAnnouncements();
   return NextResponse.json({ announcements });
 }
 
 export async function POST(request: NextRequest) {
-  const auth = await requireRoles(['admin']);
+  const auth = await requireAdminArea('announcements');
   if ('error' in auth) return auth.error;
   const body = await readJson(request);
   if (body === null) return invalidBody();

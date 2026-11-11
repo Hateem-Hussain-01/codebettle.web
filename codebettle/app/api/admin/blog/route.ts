@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { invalidBody, readJson, requireRoles, serviceError } from '@/lib/api-helpers';
+import { invalidBody, readJson, requireRoles, serviceError, adminAreaError } from '@/lib/api-helpers';
 import { blogCreateSchema } from '@/lib/api-schemas';
 import { createBlogPostService } from '@/lib/services/blog-service';
 
@@ -11,6 +11,8 @@ import { createBlogPostService } from '@/lib/services/blog-service';
 export async function POST(request: NextRequest) {
   const auth = await requireRoles(['admin', 'instructor']);
   if ('error' in auth) return auth.error;
+  const areaError = adminAreaError(auth.session, 'blog');
+  if (areaError) return areaError;
 
   const body = await readJson(request);
   if (body === null) return invalidBody();

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { invalidBody, readJson, requireAdmin, serviceError } from '@/lib/api-helpers';
+import { invalidBody, readJson, requireAdminArea, serviceError } from '@/lib/api-helpers';
 import { courseCreateSchema, courseCategories, courseLevels, courseStatuses } from '@/lib/api-schemas';
 import { listCourses } from '@/lib/db/courses';
 import { createCourseService } from '@/lib/services/course-service';
@@ -17,7 +17,7 @@ function asEnum<T extends readonly string[]>(value: string | null, allowed: T): 
 }
 
 export async function GET(request: NextRequest) {
-  const auth = await requireAdmin();
+  const auth = await requireAdminArea('courses');
   if ('error' in auth) return auth.error;
   const params = request.nextUrl.searchParams;
   const page = await listCourses({
@@ -38,7 +38,7 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
-  const auth = await requireAdmin();
+  const auth = await requireAdminArea('courses');
   if ('error' in auth) return auth.error;
 
   const body = await readJson(request);
