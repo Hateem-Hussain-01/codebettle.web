@@ -6,26 +6,34 @@
  *
  * Mechanism (see also lib/auth.ts `getSession` and the
  * `/api/admin/view-as` route):
- * - An admin mints a SHORT-LIVED (15 minute) signed token for ONE
- *   teacher. The token is `base64url(payload).hex-hmac`, where the
- *   payload is `{ a: adminId, t: teacherId, e: expiresAtMs }`.
+ * - An admin mints a signed token for ONE teacher. The token is
+ *   `base64url(payload).hex-hmac`, where the payload is
+ *   `{ a: adminId, t: teacherId }` — there is deliberately NO expiry:
+ *   the session lasts until the admin clicks Exit, signs out, or
+ *   closes the browser (the cookie is a browser-session cookie).
+ *   Tokens minted before the expiry was removed still carry `e`
+ *   (expiresAtMs) and are still honoured until that instant, then
+ *   rejected — the expiry check below only runs when `e` is present.
  * - The signature is HMAC-SHA256 over the payload with a server-side
  *   secret. The secret is `VIEW_AS_SECRET` (or `SESSION_SECRET` when
  *   set); when neither is configured the secret is a random value
  *   generated once per server process — tokens then stop working on
- *   restart, which is safe for a 15-minute token but means a stable
+ *   restart, which is safe for a viewing session but means a stable
  *   `VIEW_AS_SECRET` should be set in production (same place as the
  *   other server secrets, never committed, never in a NEXT_PUBLIC_
  *   variable).
  * - The token travels as an httpOnly, same-site cookie (`cb_view_as`)
  *   set by the mint route — never in a URL (URLs leak into logs and
- *   history) and never stored in the database (nothing to revoke: the
- *   15-minute expiry is the revocation).
+ *   history) and never stored in the database. Ending the session is
+ *   explicit: Exit (the exit route clears the cookie), logout, or
+ *   closing the browser — there is no silent timeout.
  * - Verification is server-side only: `lib/auth.ts` re-checks the
- *   signature, the expiry, that the admin in the token is the admin
- *   holding the session, and that the teacher still exists, is still
- *   a teacher (flag or legacy role) and is active. A forged, expired
- *   or replayed token (different admin's session) verifies as null.
+ *   signature, that the admin in the token is the admin holding the
+ *   session, and that the teacher still exists, is still a teacher
+ *   (flag or legacy role) and is active. A forged or replayed token
+ *   (different admin's session) verifies as null. A revoked teacher
+ *   loses view-as immediately because the flag is re-checked on
+ *   every request.
  * - The token carries NO password material and never creates, resets
  *   or exposes the teacher's password. It also never touches the
  *   session-revocation paths: the admin's own session stays intact
@@ -36,16 +44,17 @@ import { createHmac, randomBytes, timingSafeEqual } from 'node:crypto';
 /** Name of the httpOnly cookie carrying the view-as token. */
 export const VIEW_AS_COOKIE = 'cb_view_as';
 
-/** A view-as token lives 15 minutes — long enough to inspect a portal, short enough to limit exposure. */
-export const VIEW_AS_TTL_MS = 15 * 60 * 1000;
-
 export interface ViewAsPayload {
   /** Admin who minted the token. */
   adminId: string;
   /** Teacher whose portal is being viewed. */
   teacherId: string;
-  /** Epoch ms after which the token is dead. */
-  expiresAt: number;
+  /**
+   * Legacy only: epoch ms after which the token is dead. Tokens minted
+   * before the expiry was removed carry this; new tokens omit it and
+   * never expire (the session ends on Exit / logout / browser close).
+   */
+  expiresAt?: number;
 }
 
 let fallbackSecret: Buffer | null = null;
@@ -78,21 +87,19 @@ function base64urlDecode(input: string): string | null {
   }
 }
 
-/** Mint a signed token for `adminId` to view `teacherId`'s portal. */
+/** Mint a signed token for `adminId` to view `teacherId`'s portal. No expiry: the session ends on Exit / logout / browser close. */
 export function mintViewAsToken(
   adminId: string,
   teacherId: string,
-  nowMs: number = Date.now(),
   secret: Buffer = resolveViewAsSecret(),
-): { token: string; expiresAt: number } {
-  const expiresAt = nowMs + VIEW_AS_TTL_MS;
-  const payload: ViewAsPayload = { adminId, teacherId, expiresAt };
+): { token: string } {
+  const payload: ViewAsPayload = { adminId, teacherId };
   const encoded = base64urlEncode(JSON.stringify(payload));
   const signature = createHmac('sha256', secret).update(encoded).digest('hex');
-  return { token: `${encoded}.${signature}`, expiresAt };
+  return { token: `${encoded}.${signature}` };
 }
 
-/** Verify a token. Returns the payload, or null when forged, malformed or expired. */
+/** Verify a token. Returns the payload, or null when forged, malformed or (for legacy tokens carrying an expiry) expired. */
 export function verifyViewAsToken(
   token: string | undefined | null,
   nowMs: number = Date.now(),
@@ -121,11 +128,14 @@ export function verifyViewAsToken(
     payload === null ||
     typeof (payload as ViewAsPayload).adminId !== 'string' ||
     typeof (payload as ViewAsPayload).teacherId !== 'string' ||
-    typeof (payload as ViewAsPayload).expiresAt !== 'number'
+    ((payload as ViewAsPayload).expiresAt !== undefined &&
+      typeof (payload as ViewAsPayload).expiresAt !== 'number')
   ) {
     return null;
   }
   const parsed = payload as ViewAsPayload;
-  if (parsed.expiresAt <= nowMs) return null;
+  // Legacy tokens minted before the expiry was removed still carry an
+  // expiry — honour it. New tokens carry none and never expire.
+  if (parsed.expiresAt !== undefined && parsed.expiresAt <= nowMs) return null;
   return parsed;
 }

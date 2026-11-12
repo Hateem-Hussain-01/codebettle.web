@@ -2,11 +2,18 @@ import { NextRequest, NextResponse } from 'next/server';
 import { invalidBody, readJson, requireAdminAreas, serviceError } from '@/lib/api-helpers';
 import { viewAsSchema } from '@/lib/api-schemas';
 import { startViewAs } from '@/lib/services/recruitment-service';
-import { VIEW_AS_COOKIE, VIEW_AS_TTL_MS } from '@/lib/view-as';
+import { VIEW_AS_COOKIE } from '@/lib/view-as';
 
 /**
- * POST /api/admin/view-as — mint a short-lived (15 min) signed token
- * to view ONE teacher's portal, and set it as an httpOnly cookie.
+ * POST /api/admin/view-as — mint a signed token to view ONE teacher's
+ * portal, and set it as an httpOnly cookie.
+ *
+ * No expiry: the viewing session lasts until the admin clicks Exit
+ * (POST /api/admin/view-as/exit), signs out, or closes the browser —
+ * the cookie is a browser-session cookie (no max-age attribute). The token is
+ * re-validated on every request (signature, admin match, teacher
+ * still a teacher and active), so a revoked teacher loses view-as
+ * immediately.
  *
  * Teacher Portals ONLY: the service refuses students (and the
  * session overlay in lib/auth.ts re-checks the teacher flag on every
@@ -18,7 +25,9 @@ import { VIEW_AS_COOKIE, VIEW_AS_TTL_MS } from '@/lib/view-as';
  * back (POST /api/admin/view-as/exit).
  */
 export async function POST(request: NextRequest) {
-  const auth = await requireAdminAreas(['applications', 'instructors']);
+  // Entry point is the Instructors page — the Applications page no
+  // longer mints view-as tokens.
+  const auth = await requireAdminAreas(['instructors']);
   if ('error' in auth) return auth.error;
   const body = await readJson(request);
   if (body === null) return invalidBody();
@@ -36,7 +45,8 @@ export async function POST(request: NextRequest) {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
     sameSite: 'lax',
-    maxAge: Math.floor(VIEW_AS_TTL_MS / 1000),
+    // No max-age attribute: a browser-session cookie — the viewing session ends
+    // on Exit, logout, or closing the browser, never on a timer.
     path: '/',
   });
   return response;

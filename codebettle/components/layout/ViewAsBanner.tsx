@@ -22,7 +22,8 @@ export default function ViewAsBanner({ adminName }: { adminName: string }) {
       // The cookie clear is best-effort from here — navigate anyway;
       // the admin layout redirects back if the cookie is still set.
     } finally {
-      window.location.href = '/admin/applications';
+      // View-as starts from the Instructors page — return there.
+      window.location.href = '/admin/instructors';
     }
   };
 

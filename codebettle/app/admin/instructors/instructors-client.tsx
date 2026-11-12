@@ -38,6 +38,7 @@ export default function InstructorsClient({ instructors: allInstructors, courseC
   const [courses, setCourses] = useState(initialCourses);
   const [search, setSearch] = useState('');
   const [viewTarget, setViewTarget] = useState<User | null>(null);
+  const [switchingId, setSwitchingId] = useState<string | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<User | null>(null);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -130,6 +131,29 @@ export default function InstructorsClient({ instructors: allInstructors, courseC
   };
 
   /**
+   * Admin-assisted view-as: open the teacher's actual Teacher Portal,
+   * view-only. No time limit — the session lasts until the admin
+   * clicks Exit in the banner, signs out, or closes the browser.
+   * Suspended teachers never get the button (the service refuses
+   * them), so this only ever fires for active accounts.
+   */
+  const handleSwitchToTeacherPortal = async (teacherId: string) => {
+    setSwitchingId(teacherId);
+    try {
+      const res = await fetch('/api/admin/view-as', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ teacherId }),
+      });
+      const data = await res.json();
+      if (!res.ok) { toast.error(data.error || 'Could not open the teacher portal'); return; }
+      window.location.href = '/instructor/dashboard';
+    } finally {
+      setSwitchingId(null);
+    }
+  };
+
+  /**
    * Assign a course to the instructor picked in the "Assign Course" modal.
    * PATCHes { instructorId } to the existing /api/admin/courses/[id]
    * endpoint — the same one the course detail page uses. One instructor
@@ -218,6 +242,11 @@ export default function InstructorsClient({ instructors: allInstructors, courseC
               <Button size="sm" variant="secondary" fullWidth className="mt-2" onClick={() => setAssignTarget(inst)}>
                 <BookOpen className="w-3.5 h-3.5" />Assign Course
               </Button>
+              {inst.status === 'active' && (
+                <Button size="sm" variant="secondary" fullWidth className="mt-2" onClick={() => handleSwitchToTeacherPortal(inst.id)} loading={switchingId === inst.id}>
+                  <Eye className="w-3.5 h-3.5" />Switch to Teacher Portal
+                </Button>
+              )}
             </FadeIn>
           );
         })}

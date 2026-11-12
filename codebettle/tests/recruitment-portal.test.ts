@@ -11,8 +11,9 @@
  * - Onboarding sets the teacher flag WITHOUT creating a new account
  *   or changing the password (same id, same hash, same user count).
  * - Admin-assisted access is view-only + audit-logged + cannot open
- *   a student portal (token verify rejects forged/expired tokens,
- *   startViewAs refuses students, assertNotViewAs blocks mutations).
+ *   a student portal (token verify rejects forged tokens and honours
+ *   legacy expiry, startViewAs refuses students, assertNotViewAs
+ *   blocks mutations).
  * - Custom stage CRUD works (create / rename / reorder / delete, and
  *   history survives a stage delete).
  * - Duplicate rule: one pending application at a time; a decided
@@ -53,9 +54,17 @@ import {
   startViewAs,
   updateStageService,
 } from '../lib/services/recruitment-service';
-import { mintViewAsToken, verifyViewAsToken } from '../lib/view-as';
+import { mintViewAsToken, resolveViewAsSecret, verifyViewAsToken } from '../lib/view-as';
+import { createHmac } from 'node:crypto';
 import { listNotificationsForUser } from '../lib/db/notifications';
 import type { SessionUser } from '../lib/services/auth-service';
+
+/** Build a pre-removal-format view-as token (payload carries an expiry) to prove legacy expiry is still honoured. */
+function mintLegacyViewAsToken(adminId: string, teacherId: string, expiresAt: number): string {
+  const encoded = Buffer.from(JSON.stringify({ adminId, teacherId, expiresAt }), 'utf8').toString('base64url');
+  const signature = createHmac('sha256', resolveViewAsSecret()).update(encoded).digest('hex');
+  return `${encoded}.${signature}`;
+}
 
 const HASH = '$2b$12$dummyhashdummyhashdummyhashdummyhashdummyhashdummyha';
 
@@ -407,18 +416,24 @@ test('custom stages reject terminal names and duplicate names (case-insensitive)
 // Admin-assisted view-as
 // ---------------------------------------------------------------------------
 
-test('view-as tokens verify, and forged or expired tokens fail', () => {
-  const { token, expiresAt } = mintViewAsToken('admin-1', 'teacher-1', 1_000_000);
+test('view-as tokens verify with no expiry, and forged or legacy-expired tokens fail', () => {
+  const { token } = mintViewAsToken('admin-1', 'teacher-1');
   const payload = verifyViewAsToken(token, 1_000_100);
   assert.ok(payload);
   assert.equal(payload.adminId, 'admin-1');
   assert.equal(payload.teacherId, 'teacher-1');
-  assert.equal(payload.expiresAt, expiresAt);
+  // New tokens carry no expiry at all.
+  assert.equal(payload.expiresAt, undefined);
+
+  // No 15-minute limit: the same token still verifies a year later.
+  assert.ok(verifyViewAsToken(token, 1_000_100 + 365 * 24 * 60 * 60 * 1000));
 
   // Tampered payload.
   assert.equal(verifyViewAsToken(`${token.slice(0, 10)}x${token.slice(11)}`, 1_000_100), null);
-  // Expired.
-  assert.equal(verifyViewAsToken(token, expiresAt + 1), null);
+  // Legacy token minted WITH an expiry (pre-removal format) still expires.
+  const legacy = mintLegacyViewAsToken('admin-1', 'teacher-1', 1_000_000);
+  assert.ok(verifyViewAsToken(legacy, 999_999));
+  assert.equal(verifyViewAsToken(legacy, 1_000_001), null);
   // Garbage.
   assert.equal(verifyViewAsToken('not-a-token'), null);
   assert.equal(verifyViewAsToken(null), null);
