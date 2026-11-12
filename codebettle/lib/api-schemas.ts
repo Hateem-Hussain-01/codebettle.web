@@ -446,3 +446,23 @@ export const socialLinkUpdateSchema = z.object({
   displayOrder: z.number().int().optional(),
   isEnabled: z.boolean().optional(),
 });
+
+// ---------------------------------------------------------------------------
+// Site settings (Admin Settings persistence fix)
+// ---------------------------------------------------------------------------
+
+/**
+ * Partial update of the six site-wide settings on the Admin Settings
+ * page. Every field is optional — PATCH accepts any subset — but a
+ * field that IS present must be a non-empty string (and a valid email
+ * for contactEmail). Rejects unknown-shape input at the route, before
+ * the service ever sees it.
+ */
+export const settingsUpdateSchema = z.object({
+  siteName: z.string().min(1).optional(),
+  siteDescription: z.string().min(1).optional(),
+  contactEmail: z.string().email().optional(),
+  phone: z.string().min(1).optional(),
+  address: z.string().min(1).optional(),
+  maintenanceMode: z.boolean().optional(),
+});

@@ -23,9 +23,9 @@ import type {
 } from '@prisma/orm-postgres/contract/types';
 
 export type StorageHash =
-  StorageHashBase<'0af7fadc85431fbf0451e1d9a675ab1ed1182c04701562503f386d75ad3f16be'>;
+  StorageHashBase<'010b9bc72427f1b2d35d978cf7efa835570f71df252aca6e8027a8d6c18df023'>;
 export type ExecutionHash =
-  ExecutionHashBase<'d742767ac0816cc20b46ff412f9ac438d9362600d07f034aabeba9afd79091af'>;
+  ExecutionHashBase<'67b5ac48cddfa323043b0f23a573a25fa0a3d5b31c32799505176ecb8d2a1a8e'>;
 export type ProfileHash =
   ProfileHashBase<'3916f444a8a17ad749191acf9e08dad97d1a327b88c2f1d45d12f240296aa8b2'>;
 
@@ -1059,6 +1059,12 @@ export namespace Models {
     user: public_User;
     readonly [RelationKeys]?: 'user';
   };
+  export type public_SiteSetting = {
+    key: FieldOutputTypes['public']['SiteSetting']['key'];
+    updatedAt: FieldOutputTypes['public']['SiteSetting']['updatedAt'];
+    value: FieldOutputTypes['public']['SiteSetting']['value'];
+    readonly [RelationKeys]?: never;
+  };
   export type public_SocialLink = {
     createdAt: FieldOutputTypes['public']['SocialLink']['createdAt'];
     displayOrder: FieldOutputTypes['public']['SocialLink']['displayOrder'];
@@ -1221,6 +1227,7 @@ export declare const models: {
     QuizQuestion: Models.public_QuizQuestion;
     Review: Models.public_Review;
     Session: Models.public_Session;
+    SiteSetting: Models.public_SiteSetting;
     SocialLink: Models.public_SocialLink;
     SupportRequest: Models.public_SupportRequest;
     Testimonial: Models.public_Testimonial;
@@ -4781,6 +4788,33 @@ type ContractBase = Omit<
                 },
               ];
             };
+            readonly SiteSetting: {
+              columns: {
+                readonly key: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly updatedAt: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly nullable: false;
+                  readonly typeParams: { readonly precision: 3 };
+                  readonly many: false;
+                };
+                readonly value: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+              };
+              primaryKey: { readonly columns: readonly ['key'] };
+              uniques: readonly [];
+              indexes: readonly [];
+              foreignKeys: readonly [];
+            };
             readonly SocialLink: {
               columns: {
                 readonly createdAt: {
@@ -5485,6 +5519,10 @@ type ContractBase = Omit<
     };
     readonly Review: { readonly namespace: 'public' & NamespaceId; readonly model: 'Review' };
     readonly Session: { readonly namespace: 'public' & NamespaceId; readonly model: 'Session' };
+    readonly SiteSetting: {
+      readonly namespace: 'public' & NamespaceId;
+      readonly model: 'SiteSetting';
+    };
     readonly SocialLink: {
       readonly namespace: 'public' & NamespaceId;
       readonly model: 'SocialLink';
@@ -8638,6 +8676,36 @@ type ContractBase = Omit<
               };
             };
           };
+          readonly SiteSetting: {
+            readonly fields: {
+              readonly key: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly updatedAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly typeParams: { readonly precision: 3 };
+                };
+              };
+              readonly value: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+            };
+            readonly relations: Record<string, never>;
+            readonly storage: {
+              readonly table: 'SiteSetting';
+              readonly namespaceId: 'public';
+              readonly fields: {
+                readonly key: { readonly column: 'key' };
+                readonly updatedAt: { readonly column: 'updatedAt' };
+                readonly value: { readonly column: 'value' };
+              };
+            };
+          };
           readonly SocialLink: {
             readonly fields: {
               readonly createdAt: {
@@ -10297,6 +10365,23 @@ type ContractBase = Omit<
           readonly ref: {
             readonly entry: 'Session';
             readonly field: 'createdAt';
+            readonly namespace: 'public';
+          };
+        },
+        {
+          readonly onCreate: {
+            readonly id: 'timestampNow';
+            readonly kind: 'generator';
+            readonly params: { readonly precision: 3 };
+          };
+          readonly onUpdate: {
+            readonly id: 'timestampNow';
+            readonly kind: 'generator';
+            readonly params: { readonly precision: 3 };
+          };
+          readonly ref: {
+            readonly entry: 'SiteSetting';
+            readonly field: 'updatedAt';
             readonly namespace: 'public';
           };
         },

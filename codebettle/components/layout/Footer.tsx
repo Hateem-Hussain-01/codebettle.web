@@ -1,9 +1,10 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { createContext, useContext, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Mail, Phone, MapPin } from 'lucide-react';
 import { SocialPlatformIcon } from '@/components/auth/BrandIcons';
+import type { SiteSettings } from '@/lib/services/settings-service';
 import {
   CONTACT_ADDRESS,
   CONTACT_EMAIL,
@@ -35,8 +36,51 @@ import {
  * Contact details: phone +92 305 5261893 (the 305 number), email
  * info@codebettle.com (the address already in the footer). No
  * X slot and no YouTube link — neither is theirs.
+ *
+ * Settings (Settings fix): the footer shows the admin-managed site
+ * settings (site name, contact email/phone/address) when they are
+ * available, and the lib/social.ts constants above when they are
+ * not. The settings arrive through SiteSettingsContext, provided by
+ * the root layout (app/layout.tsx), which reads them server-side
+ * with getSiteSettings() — the footer itself never touches the
+ * database, and no page that renders the footer needs to change:
+ * the provider sits above every page, so all 15 footer usages get
+ * the settings for free. When no provider is present (or a field
+ * is missing) the CONTACT_* constants render, so the footer is
+ * byte-identical to today until an admin saves a value.
+ * (Type-only import of SiteSettings: no service code — and no
+ * Prisma — ever reaches the client bundle.)
  */
+const SiteSettingsContext = createContext<SiteSettings | null>(null);
+
+/** Provided by the root layout around every page (see app/layout.tsx). */
+export function SiteSettingsProvider({
+  settings,
+  children,
+}: {
+  settings: SiteSettings;
+  children: React.ReactNode;
+}) {
+  return <SiteSettingsContext.Provider value={settings}>{children}</SiteSettingsContext.Provider>;
+}
+
+/** Admin-managed settings, or null when no provider is present. */
+export function useSiteSettings(): SiteSettings | null {
+  return useContext(SiteSettingsContext);
+}
+
 export default function Footer() {
+  const settings = useSiteSettings();
+  // Settings values with the verified hardcoded fallbacks — identical
+  // to today until an admin saves a different value.
+  const siteName = settings?.siteName ?? 'CodeBettle';
+  const contactEmail = settings?.contactEmail ?? CONTACT_EMAIL;
+  const contactPhone = settings?.phone ?? CONTACT_PHONE;
+  const contactPhoneLink = settings
+    ? `tel:${settings.phone.replace(/\s+/g, '')}`
+    : CONTACT_PHONE_LINK;
+  const contactAddress = settings?.address ?? CONTACT_ADDRESS;
+
   const [links, setLinks] = useState<ResolvedSocialLink[]>(() => defaultSocialLinks());
 
   useEffect(() => {
@@ -64,7 +108,7 @@ export default function Footer() {
           {/* Brand */}
           <div className="lg:col-span-1">
             <div className="flex items-center gap-2 mb-4">
-              <span className="text-2xl font-black gradient-text">CodeBettle</span>
+              <span className="text-2xl font-black gradient-text">{siteName}</span>
             </div>
             <p className="text-muted text-sm leading-relaxed mb-6">
               Pakistan&apos;s premier digital institute. We empower students and professionals with industry-relevant tech skills through expert-led courses.
@@ -76,7 +120,7 @@ export default function Footer() {
                   href={link.url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  aria-label={`CodeBettle on ${link.label}`}
+                  aria-label={`${siteName} on ${link.label}`}
                   title={link.label}
                   className="w-9 h-9 rounded-lg bg-dark-border flex items-center justify-center text-muted hover:text-primary-text hover:bg-primary/10 transition-all"
                 >
@@ -110,15 +154,15 @@ export default function Footer() {
           <div>
             <h4 className="text-foreground font-semibold mb-4">Contact</h4>
             <ul className="space-y-3">
-              <li className="flex items-center gap-3 text-muted text-sm"><Mail className="w-4 h-4 text-primary-text flex-shrink-0" /><a href={`mailto:${CONTACT_EMAIL}`} className="hover:text-primary-text transition-colors">{CONTACT_EMAIL}</a></li>
-              <li className="flex items-center gap-3 text-muted text-sm"><Phone className="w-4 h-4 text-primary-text flex-shrink-0" /><a href={CONTACT_PHONE_LINK} className="hover:text-primary-text transition-colors">{CONTACT_PHONE}</a></li>
-              <li className="flex items-start gap-3 text-muted text-sm"><MapPin className="w-4 h-4 text-primary-text flex-shrink-0 mt-0.5" />{CONTACT_ADDRESS}</li>
+              <li className="flex items-center gap-3 text-muted text-sm"><Mail className="w-4 h-4 text-primary-text flex-shrink-0" /><a href={`mailto:${contactEmail}`} className="hover:text-primary-text transition-colors">{contactEmail}</a></li>
+              <li className="flex items-center gap-3 text-muted text-sm"><Phone className="w-4 h-4 text-primary-text flex-shrink-0" /><a href={contactPhoneLink} className="hover:text-primary-text transition-colors">{contactPhone}</a></li>
+              <li className="flex items-start gap-3 text-muted text-sm"><MapPin className="w-4 h-4 text-primary-text flex-shrink-0 mt-0.5" />{contactAddress}</li>
             </ul>
           </div>
         </div>
 
         <div className="mt-12 pt-8 border-t border-dark-border flex flex-col sm:flex-row items-center justify-between gap-4">
-          <p className="text-muted text-sm">© {new Date().getFullYear()} CodeBettle. All rights reserved.</p>
+          <p className="text-muted text-sm">© {new Date().getFullYear()} {siteName}. All rights reserved.</p>
           <div className="flex items-center gap-6">
             <Link href="/privacy" className="text-muted text-sm hover:text-primary-text transition-colors">Privacy Policy</Link>
             <Link href="/terms" className="text-muted text-sm hover:text-primary-text transition-colors">Terms of Service</Link>

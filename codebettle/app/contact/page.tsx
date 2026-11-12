@@ -1,6 +1,6 @@
 'use client';
 import Navbar from '@/components/layout/Navbar';
-import Footer from '@/components/layout/Footer';
+import Footer, { useSiteSettings } from '@/components/layout/Footer';
 import FadeIn from '@/components/ui/FadeIn';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
@@ -8,8 +8,21 @@ import Textarea from '@/components/ui/Textarea';
 import { Mail, Phone, MapPin, Send } from 'lucide-react';
 import { useState } from 'react';
 import toast from 'react-hot-toast';
+import { CONTACT_ADDRESS, CONTACT_EMAIL, CONTACT_PHONE } from '@/lib/social';
 
 export default function ContactPage() {
+  // Settings fix: contact details come from the admin-managed site
+  // settings (provided by the root layout, see
+  // components/layout/Footer.tsx), falling back to the verified
+  // lib/social.ts constants — identical to today until an admin
+  // saves a value. NOTE: the fallback phone is the verified
+  // +92 305 5261893, replacing the old '+92 300 1234567'
+  // placeholder that was hardcoded here.
+  const settings = useSiteSettings();
+  const contactEmail = settings?.contactEmail ?? CONTACT_EMAIL;
+  const contactPhone = settings?.phone ?? CONTACT_PHONE;
+  const contactAddress = settings?.address ?? CONTACT_ADDRESS;
+
   const [loading, setLoading] = useState(false);
   const [form, setForm] = useState({ name: '', email: '', subject: '', message: '' });
 
@@ -57,9 +70,9 @@ export default function ContactPage() {
             <FadeIn className="lg:col-span-2 space-y-6">
               <h2 className="text-xl font-bold text-foreground">Contact Information</h2>
               {[
-                { icon: <Mail className="w-5 h-5" />, label: 'Email', value: 'info@codebettle.com' },
-                { icon: <Phone className="w-5 h-5" />, label: 'Phone', value: '+92 300 1234567' },
-                { icon: <MapPin className="w-5 h-5" />, label: 'Address', value: 'Lahore, Punjab, Pakistan' },
+                { icon: <Mail className="w-5 h-5" />, label: 'Email', value: contactEmail },
+                { icon: <Phone className="w-5 h-5" />, label: 'Phone', value: contactPhone },
+                { icon: <MapPin className="w-5 h-5" />, label: 'Address', value: contactAddress },
               ].map((item, i) => (
                 <FadeIn key={item.label} delay={i * 0.08} className="flex items-start gap-4">
                   <div className="w-10 h-10 rounded-lg bg-primary/10 text-primary-text flex items-center justify-center flex-shrink-0">{item.icon}</div>

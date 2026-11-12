@@ -280,7 +280,9 @@ test('Footer: real links from the shared source, 305 phone, no dead links, no X/
   assert.doesNotMatch(footer, /twitter/i);
   assert.doesNotMatch(footer, /300 1234567/);
   assert.match(footer, /SocialPlatformIcon/);
-  assert.match(footer, /aria-label=\{`CodeBettle on \$\{link\.label\}`\}/);
+  // aria-label uses the admin-managed site name (falls back to
+  // 'CodeBettle' when no settings exist) — Settings fix.
+  assert.match(footer, /aria-label=\{`\$\{siteName\} on \$\{link\.label\}`\}/);
 });
 
 test('Footer contact constants: 305 phone and info@ email in the shared source', () => {

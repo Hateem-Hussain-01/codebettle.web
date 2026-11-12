@@ -140,6 +140,10 @@
       "model": "Session",
       "namespace": "public"
     },
+    "SiteSetting": {
+      "model": "SiteSetting",
+      "namespace": "public"
+    },
     "SocialLink": {
       "model": "SocialLink",
       "namespace": "public"
@@ -5665,6 +5669,50 @@
               },
               "namespaceId": "public",
               "table": "Session"
+            }
+          },
+          "SiteSetting": {
+            "fields": {
+              "key": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "updatedAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "precision": 3
+                  }
+                }
+              },
+              "value": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              }
+            },
+            "relations": {},
+            "storage": {
+              "fields": {
+                "key": {
+                  "column": "key"
+                },
+                "updatedAt": {
+                  "column": "updatedAt"
+                },
+                "value": {
+                  "column": "value"
+                }
+              },
+              "namespaceId": "public",
+              "table": "SiteSetting"
             }
           },
           "SocialLink": {
@@ -11249,6 +11297,36 @@
               },
               "uniques": []
             },
+            "SiteSetting": {
+              "columns": {
+                "key": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                },
+                "updatedAt": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "dataType": "pg/timestamptz",
+                  "nullable": false,
+                  "typeParams": {
+                    "precision": 3
+                  }
+                },
+                "value": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                }
+              },
+              "foreignKeys": [],
+              "indexes": [],
+              "primaryKey": {
+                "columns": [
+                  "key"
+                ]
+              },
+              "uniques": []
+            },
             "SocialLink": {
               "columns": {
                 "createdAt": {
@@ -12011,10 +12089,10 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "0af7fadc85431fbf0451e1d9a675ab1ed1182c04701562503f386d75ad3f16be"
+    "storageHash": "010b9bc72427f1b2d35d978cf7efa835570f71df252aca6e8027a8d6c18df023"
   },
   "execution": {
-    "executionHash": "d742767ac0816cc20b46ff412f9ac438d9362600d07f034aabeba9afd79091af",
+    "executionHash": "67b5ac48cddfa323043b0f23a573a25fa0a3d5b31c32799505176ecb8d2a1a8e",
     "mutations": {
       "defaults": [
         {
@@ -12905,6 +12983,27 @@
           "ref": {
             "entry": "Session",
             "field": "createdAt",
+            "namespace": "public"
+          }
+        },
+        {
+          "onCreate": {
+            "id": "timestampNow",
+            "kind": "generator",
+            "params": {
+              "precision": 3
+            }
+          },
+          "onUpdate": {
+            "id": "timestampNow",
+            "kind": "generator",
+            "params": {
+              "precision": 3
+            }
+          },
+          "ref": {
+            "entry": "SiteSetting",
+            "field": "updatedAt",
             "namespace": "public"
           }
         },

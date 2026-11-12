@@ -4,14 +4,31 @@ import './globals.css';
 import { Toaster } from 'react-hot-toast';
 import { MotionConfig } from 'framer-motion';
 import { ThemeProvider } from '@/components/theme/ThemeProvider';
+import { SiteSettingsProvider } from '@/components/layout/Footer';
 import { THEME_COOKIE, THEME_SCRIPT, parseThemeCookie } from '@/lib/theme';
+import { getSiteSettings } from '@/lib/services/settings-service';
 
-export const metadata: Metadata = {
-  metadataBase: new URL('https://codebettle-web.vercel.app'),
-  title: 'CodeBettle — Learn to Code, Build Your Future',
-  description: 'CodeBettle is a premier digital institute offering expert-led courses in web development, mobile development, data science, UI/UX design, and more.',
-  keywords: ['coding courses', 'programming', 'web development', 'Pakistan', 'online learning'],
-};
+/**
+ * Settings fix: metadata comes from the admin-managed site settings
+ * (site name + description). getSiteSettings() NEVER throws — on any
+ * DB error (table missing before the migration runs, DB unreachable)
+ * it returns the defaults, so with no rows saved this renders
+ * byte-identical to the old static metadata. The layout is already
+ * dynamically rendered (cookies()/headers() below), so
+ * generateMetadata runs per request at runtime, not at build time;
+ * and importing the service opens no DB connection at build time
+ * (the client is lazy — see lib/db/client.ts), so the build stays
+ * green with no database present.
+ */
+export async function generateMetadata(): Promise<Metadata> {
+  const settings = await getSiteSettings();
+  return {
+    metadataBase: new URL('https://codebettle-web.vercel.app'),
+    title: `${settings.siteName} — Learn to Code, Build Your Future`,
+    description: settings.siteDescription,
+    keywords: ['coding courses', 'programming', 'web development', 'Pakistan', 'online learning'],
+  };
+}
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   // Module 6 — theme. A returning visitor's saved cookie sets
@@ -23,6 +40,12 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   // Reading cookies()/headers() opts the layout into dynamic rendering
   // — every page route is already dynamic via the proxy (nonce CSP).
   const theme = parseThemeCookie((await cookies()).get(THEME_COOKIE)?.value);
+  // Settings fix: the admin-managed site settings are read once here
+  // (server-side, never throws — defaults on any DB error) and handed
+  // to every page through SiteSettingsProvider, so client components
+  // such as the Footer and the contact page can show them without
+  // touching the database themselves (see Footer.tsx).
+  const settings = await getSiteSettings();
   // x-nonce is set by proxy.ts (one fresh nonce per request, the same
   // one in the CSP header). Without it the inline theme script would
   // be blocked by the nonce CSP (Phase 7, SEC-09). If the header is
@@ -46,7 +69,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
             preference (transform/layout animations off when preferred).
             CSS animations are handled by the media query in globals.css.
           */}
-          <MotionConfig reducedMotion="user">{children}</MotionConfig>
+          <MotionConfig reducedMotion="user"><SiteSettingsProvider settings={settings}>{children}</SiteSettingsProvider></MotionConfig>
         </ThemeProvider>
         <Toaster
           position="top-right"
