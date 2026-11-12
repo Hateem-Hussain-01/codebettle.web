@@ -38,6 +38,15 @@ let fake: FakeDb;
 const ORIGINAL_KEY = process.env.RESEND_API_KEY;
 
 const FULL: SessionUser = { id: 'admin-full', name: 'Admin', email: 'admin-full@example.com', role: 'admin' };
+// Phase 5, Module 23: the access-management routes are gated on the
+// official administrators now, not just any full admin.
+const OFFICIAL: SessionUser = {
+  id: 'official-1',
+  name: 'Muhammad Hateem Hussain',
+  email: 'mhateemjutt1412@gmail.com',
+  role: 'admin',
+  isAdmin: true,
+};
 const RESTRICTED: SessionUser = {
   id: 'restricted-1',
   name: 'Restricted',
@@ -81,6 +90,7 @@ test.beforeEach(() => {
   __setDbClient(fake.asClient());
   delete process.env.RESEND_API_KEY;
   seedUser('admin-full', 'admin');
+  seedUser('official-1', 'admin', { email: 'mhateemjutt1412@gmail.com', isAdmin: true });
   seedUser('teacher-1', 'instructor', { isTeacher: true });
   seedUser('student-1', 'student');
   seedUser('restricted-1', 'student', { isAdmin: true, adminPermissions: { courses: true } });
@@ -287,7 +297,7 @@ test('Case A: inviting an existing email is a 409; the direct grant preserves th
   assert.equal(result.status, 409);
   assert.match(result.error, /already exists/);
 
-  const granted = await updateAdminAccess('admin-full', 'teacher-1', {
+  const granted = await updateAdminAccess('official-1', 'teacher-1', {
     permissions: { courses: true },
   });
   assert.ok(!('error' in granted));
@@ -297,8 +307,8 @@ test('Case A: inviting an existing email is a 409; the direct grant preserves th
 });
 
 test('revoke does not delete the teacher account/data', async () => {
-  await updateAdminAccess('admin-full', 'teacher-1', { permissions: { courses: true } });
-  const revoked = await revokeAdminAccess('admin-full', 'teacher-1');
+  await updateAdminAccess('official-1', 'teacher-1', { permissions: { courses: true } });
+  const revoked = await revokeAdminAccess('official-1', 'teacher-1');
   assert.ok(!('error' in revoked));
   assert.equal(revoked.user.isAdmin, false);
   assert.equal(revoked.user.isTeacher, true);
@@ -376,7 +386,7 @@ test('non-full-admin cannot create invitations (service)', async () => {
   assert.equal(listed.status, 403);
 });
 
-test('invitation routes: 401 unauthenticated, 403 restricted admin, 201 full admin; list hides the token hash', async () => {
+test('invitation routes: 401 unauthenticated, 403 restricted admin, 403 non-official full admin, 201 official; list hides the token hash', async () => {
   const { GET, POST } = await import('../app/api/admin/access/invitations/route');
 
   __setTestSession(null);
@@ -401,7 +411,19 @@ test('invitation routes: 401 unauthenticated, 403 restricted admin, 201 full adm
     403,
   );
 
+  // Phase 5, Module 23: a non-official full admin is no longer enough.
   __setTestSession(FULL);
+  assert.equal((await GET()).status, 403);
+  assert.equal(
+    (await POST(jsonReq('http://localhost/api/admin/access/invitations', 'POST', {
+      firstName: 'Nadia',
+      lastName: 'Khan',
+      email: 'nadia@example.com',
+    }))).status,
+    403,
+  );
+
+  __setTestSession(OFFICIAL);
   const res = await POST(
     jsonReq('http://localhost/api/admin/access/invitations', 'POST', {
       firstName: 'Nadia',
@@ -428,7 +450,7 @@ test('DELETE route revokes an unused invitation; resend route mints a fresh link
   const { DELETE } = await import('../app/api/admin/access/invitations/[id]/route');
   const { POST: resend } = await import('../app/api/admin/access/invitations/[id]/resend/route');
 
-  __setTestSession(FULL);
+  __setTestSession(OFFICIAL);
   const created = await POST(
     jsonReq('http://localhost/api/admin/access/invitations', 'POST', {
       firstName: 'Nadia',
@@ -447,7 +469,7 @@ test('DELETE route revokes an unused invitation; resend route mints a fresh link
     403,
   );
 
-  __setTestSession(FULL);
+  __setTestSession(OFFICIAL);
   const resent = await resend(
     jsonReq(`http://localhost/api/admin/access/invitations/${id}/resend`, 'POST'),
     { params: Promise.resolve({ id }) },

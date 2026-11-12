@@ -84,6 +84,9 @@ test.beforeEach(() => {
   fake = createFakeDb();
   __setDbClient(fake.asClient());
   seedUser('admin-full', 'admin');
+  // Phase 5: the admin-access service is official-only now — service
+  // calls below act as the official administrator.
+  seedUser('official-1', 'admin', { email: 'mhateemjutt1412@gmail.com', isAdmin: true });
   seedUser('teacher-1', 'instructor', { isTeacher: true });
   seedUser('teacher-admin', 'instructor', { isTeacher: true, isAdmin: true });
   seedUser('student-1', 'student');
@@ -160,6 +163,7 @@ test('toSessionUser carries both flags into the session', () => {
     role: 'instructor',
     isAdmin: true,
     isTeacher: true,
+    canViewAuditLog: false,
     status: 'active',
     joinedAt: '2024-01-01',
   });
@@ -211,7 +215,7 @@ test('guards: adminPermissions NULL = full admin still holds (flag admin, no res
 // ---------------------------------------------------------------------------
 
 test('grant: granting admin to a teacher preserves the teacher flag and primary role', async () => {
-  const result = await updateAdminAccess('admin-full', 'teacher-1', {
+  const result = await updateAdminAccess('official-1', 'teacher-1', {
     permissions: { courses: true },
   });
   assert.ok(!('error' in result));
@@ -222,8 +226,8 @@ test('grant: granting admin to a teacher preserves the teacher flag and primary 
 });
 
 test('revoke: revoking admin from a teacher restores the INSTRUCTOR role (not student)', async () => {
-  await updateAdminAccess('admin-full', 'teacher-1', { permissions: { courses: true } });
-  const result = await revokeAdminAccess('admin-full', 'teacher-1');
+  await updateAdminAccess('official-1', 'teacher-1', { permissions: { courses: true } });
+  const result = await revokeAdminAccess('official-1', 'teacher-1');
   assert.ok(!('error' in result));
   assert.equal(result.user.isAdmin, false);
   assert.equal(result.user.isTeacher, true);
@@ -236,13 +240,13 @@ test('revoke: revoking admin from a teacher restores the INSTRUCTOR role (not st
 });
 
 test('revoke: revoking admin from a plain admin restores the student role', async () => {
-  const result = await revokeAdminAccess('admin-full', 'teacher-admin');
+  const result = await revokeAdminAccess('official-1', 'teacher-admin');
   // teacher-admin is a teacher+admin, so it restores to instructor…
   assert.ok(!('error' in result));
   assert.equal(result.user.role, 'instructor');
 
   seedUser('plain-admin', 'admin', { isAdmin: true });
-  const plain = await revokeAdminAccess('admin-full', 'plain-admin');
+  const plain = await revokeAdminAccess('official-1', 'plain-admin');
   assert.ok(!('error' in plain));
   assert.equal(plain.user.role, 'student');
   assert.equal(plain.user.isAdmin, false);

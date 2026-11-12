@@ -16,6 +16,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getSession, type SessionUser } from './auth';
 import { hasAdminArea, hasAnyAdminArea, isFullAdmin, type AdminAreaKey } from './admin-access';
 import { hasAdminCapability, hasTeacherCapability } from './rbac';
+import { isSuperAdmin } from './super-admin';
+import { logAudit } from './db/audit';
 import type { UserRole } from './db/types';
 
 /**
@@ -127,6 +129,81 @@ export async function requireFullAdmin(): Promise<
   if (!session) return { error: NextResponse.json({ error: 'Not signed in' }, { status: 401 }) };
   if (!hasAdminCapability(session) || !isFullAdmin(session.adminPermissions)) {
     return { error: NextResponse.json({ error: 'Full admin access required' }, { status: 403 }) };
+  }
+  return { session };
+}
+
+/**
+ * Official-admin gate (Phase 5, Module 23): the session must exist AND
+ * belong to one of the two official administrators (isSuperAdmin in
+ * lib/super-admin.ts — the email allowlist, never a label). Same
+ * 401/403 shape as requireFullAdmin. The 403 message is deliberately
+ * neutral: the concept exists only as access control, never as a label.
+ */
+export async function requireSuperAdmin(): Promise<
+  { session: SessionUser } | { error: NextResponse }
+> {
+  const session = await getRequestSession();
+  if (!session) return { error: NextResponse.json({ error: 'Not signed in' }, { status: 401 }) };
+  if (!isSuperAdmin(session)) {
+    return {
+      error: NextResponse.json(
+        { error: 'Access restricted to authorized administrators' },
+        { status: 403 },
+      ),
+    };
+  }
+  return { session };
+}
+
+/**
+ * Write an 'admin.audit.view-denied' AuditLog entry for a signed-in
+ * user refused somewhere on the audit surface. Best-effort by design:
+ * any failure (including no session at all) is swallowed — denial
+ * logging must never break the 403 response it accompanies. Callers
+ * that already hold the session pass it; otherwise the session is
+ * re-read. The detail names the endpoint, except for the audit log
+ * itself, which uses the plain "view the audit log" wording.
+ */
+export async function logDeniedAuditAttempt(
+  endpoint: string,
+  session?: SessionUser | null,
+): Promise<void> {
+  try {
+    const user = session ?? (await getRequestSession());
+    if (!user) return;
+    await logAudit({
+      actorId: user.id,
+      action: 'admin.audit.view-denied',
+      entity: 'audit_log',
+      detail:
+        endpoint === 'GET /api/admin/audit'
+          ? `${user.email} attempted to view the audit log without access`
+          : `${user.email} attempted to access ${endpoint} without access`,
+    });
+  } catch {
+    // Denial logging must never break the 403 response.
+  }
+}
+
+/**
+ * Audit-log gate (Phase 5, Module 23): the session must exist, hold
+ * admin capability, AND be an official administrator or carry the
+ * explicit canViewAuditLog grant. A signed-in user denied here gets a
+ * denial AuditLog entry FIRST (via logDeniedAuditAttempt above) and
+ * then the 403 — the entry is written before the error is returned.
+ */
+export async function requireAuditLogAccess(
+  endpoint = 'GET /api/admin/audit',
+): Promise<{ session: SessionUser } | { error: NextResponse }> {
+  const session = await getRequestSession();
+  if (!session) return { error: NextResponse.json({ error: 'Not signed in' }, { status: 401 }) };
+  if (
+    !hasAdminCapability(session) ||
+    (!isSuperAdmin(session) && session.canViewAuditLog !== true)
+  ) {
+    await logDeniedAuditAttempt(endpoint, session);
+    return { error: NextResponse.json({ error: 'Audit log access is not granted' }, { status: 403 }) };
   }
   return { session };
 }
