@@ -49,6 +49,7 @@ export default async function StudentCoursesPage() {
                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent" />
                 {enrollment.isCompleted && (
                   <div className="absolute top-3 right-3">
+                    {/* Theme audit: fixed green chip — white text stays readable on green-500 in both themes. */}
                     <span className="text-xs font-bold px-2.5 py-1 bg-green-500 text-white rounded-full flex items-center gap-1">
                       <Award className="w-3 h-3" /> Completed
                     </span>

@@ -374,7 +374,7 @@ export default function AdminAccessClient() {
                 type="checkbox"
                 checked={inviteIsTeacher}
                 onChange={(e) => setInviteIsTeacher(e.target.checked)}
-                className="accent-[#F5C518]"
+                className="accent-primary"
               />
               <span className="text-sm text-foreground">Also a teacher (keeps the instructor portal alongside admin)</span>
             </label>
@@ -406,7 +406,7 @@ export default function AdminAccessClient() {
                     type="checkbox"
                     checked={inviteChecks[area.key]}
                     onChange={(e) => setInviteChecks((c) => ({ ...c, [area.key]: e.target.checked }))}
-                    className="mt-1 accent-[#F5C518]"
+                    className="mt-1 accent-primary"
                   />
                   <span>
                     <span className="block text-sm font-medium text-foreground">{area.label}</span>
@@ -542,7 +542,7 @@ export default function AdminAccessClient() {
                         type="checkbox"
                         checked={checks[area.key]}
                         onChange={(e) => setChecks((c) => ({ ...c, [area.key]: e.target.checked }))}
-                        className="mt-1 accent-[#F5C518]"
+                        className="mt-1 accent-primary"
                       />
                       <span>
                         <span className="block text-sm font-medium text-foreground">{area.label}</span>

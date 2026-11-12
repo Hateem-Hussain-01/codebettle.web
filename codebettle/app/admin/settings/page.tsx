@@ -563,6 +563,8 @@ export default function AdminSettingsPage() {
           <div className="flex-1">
             <h2 className="text-foreground font-bold mb-1">Maintenance Mode</h2>
             <p className="text-muted text-sm mb-4">When enabled, visitors will see a maintenance page. Only admins can access the site.</p>
+            {/* Theme audit: the switch track (yellow-400) and knob (bg-white)
+                are fixed in both themes — standard switch look, readable on white too. */}
             <label className="flex items-center gap-3 cursor-pointer">
               <div
                 onClick={() => setSettings(s => ({ ...s, maintenanceMode: !s.maintenanceMode }))}

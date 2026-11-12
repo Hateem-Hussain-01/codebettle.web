@@ -90,6 +90,7 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
                     <Download className="w-3.5 h-3.5" /> View / download PDF
                   </a>
                 </div>
+                {/* Theme audit: bg-white is intentional — embedded PDF pages render white. */}
                 <iframe
                   src={post.pdfUrl}
                   title={`PDF for ${post.title}`}

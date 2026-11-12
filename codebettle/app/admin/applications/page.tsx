@@ -470,10 +470,10 @@ export default function AdminApplicationsPage() {
         <a href={app.githubUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-xs text-primary-text hover:underline">GitHub<ExternalLink className="w-3 h-3" /></a>
       )}
       {app.cvUrl && (
-        <button onClick={() => openApplicationFile(app.id, 'cv')} disabled={openingFile === `${app.id}:cv`} className="inline-flex items-center gap-1 text-xs bg-dark-border hover:bg-primary hover:text-black text-foreground rounded-md px-2 py-1 cursor-pointer disabled:opacity-50 transition-colors"><FileText className="w-3.5 h-3.5" />{openingFile === `${app.id}:cv` ? 'Opening…' : 'View CV'}</button>
+        <button onClick={() => openApplicationFile(app.id, 'cv')} disabled={openingFile === `${app.id}:cv`} className="inline-flex items-center gap-1 text-xs bg-dark-border hover:bg-primary hover:text-ink text-foreground rounded-md px-2 py-1 cursor-pointer disabled:opacity-50 transition-colors"><FileText className="w-3.5 h-3.5" />{openingFile === `${app.id}:cv` ? 'Opening…' : 'View CV'}</button>
       )}
       {app.demoRecordingUrl && (
-        <button onClick={() => openApplicationFile(app.id, 'demo')} disabled={openingFile === `${app.id}:demo`} className="inline-flex items-center gap-1 text-xs bg-dark-border hover:bg-primary hover:text-black text-foreground rounded-md px-2 py-1 cursor-pointer disabled:opacity-50 transition-colors"><Video className="w-3.5 h-3.5" />{openingFile === `${app.id}:demo` ? 'Opening…' : 'Watch Demo Lecture'}</button>
+        <button onClick={() => openApplicationFile(app.id, 'demo')} disabled={openingFile === `${app.id}:demo`} className="inline-flex items-center gap-1 text-xs bg-dark-border hover:bg-primary hover:text-ink text-foreground rounded-md px-2 py-1 cursor-pointer disabled:opacity-50 transition-colors"><Video className="w-3.5 h-3.5" />{openingFile === `${app.id}:demo` ? 'Opening…' : 'Watch Demo Lecture'}</button>
       )}
     </div>
   );
@@ -530,7 +530,7 @@ export default function AdminApplicationsPage() {
           <button
             key={f}
             onClick={() => setStatusFilter(f)}
-            className={`px-3 py-1.5 rounded-md text-xs font-medium capitalize cursor-pointer transition-colors ${statusFilter === f ? 'bg-primary text-black' : 'text-muted hover:text-foreground'}`}
+            className={`px-3 py-1.5 rounded-md text-xs font-medium capitalize cursor-pointer transition-colors ${statusFilter === f ? 'bg-primary text-ink' : 'text-muted hover:text-foreground'}`}
           >
             {f}
           </button>

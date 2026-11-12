@@ -23,6 +23,7 @@ export default function Modal({ isOpen, onClose, title, children, size = 'md' }:
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      {/* Theme audit: dark scrim behind the modal — stays dark in both themes. */}
       <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={onClose} />
       <div className={`relative w-full ${sizes[size]} bg-dark-card border border-dark-border rounded-2xl elev-3 flex flex-col max-h-[90vh]`}>
         {title && (
