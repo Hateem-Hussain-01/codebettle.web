@@ -1,10 +1,12 @@
 import { redirect } from 'next/navigation';
 import { headers } from 'next/headers';
 import { getSession } from '@/lib/auth';
-import { ADMIN_AREAS, areaForAdminPath, firstGrantedArea, hasAdminArea, isFullAdmin } from '@/lib/admin-access';
+import { ADMIN_AREAS, areaForAdminPath, firstGrantedArea, hasAdminArea } from '@/lib/admin-access';
 import { hasAdminCapability } from '@/lib/rbac';
+import { isSuperAdmin } from '@/lib/super-admin';
+import { canSeeAuditLog } from '@/components/audit/audit-helpers';
 import PortalLayout from '@/components/layout/PortalLayout';
-import { LayoutDashboard, BookOpen, Users, GraduationCap, ClipboardList, Tag, Bell, FileText, Newspaper, BarChart2, Award, Settings, UserCheck, Mail, Megaphone, MessageSquare, ShieldCheck } from 'lucide-react';
+import { LayoutDashboard, BookOpen, Users, GraduationCap, ClipboardList, Tag, Bell, FileText, Newspaper, BarChart2, Award, Settings, UserCheck, Mail, Megaphone, MessageSquare, ShieldCheck, ScrollText } from 'lucide-react';
 
 const NAV_ICONS = {
   dashboard: <LayoutDashboard className="w-5 h-5" />,
@@ -34,12 +36,19 @@ const NAV_ICONS = {
  * /admin/access applies on the target's very next request.
  *
  * - Sidebar: only the areas the admin was granted are shown. Full admins
- *   (no restriction) see everything, plus "Admin Access".
+ *   (no restriction) see everything, plus "Admin Access" when they are
+ *   authorized administrators. The "Audit Log" item is shown after
+ *   "Reports" to authorized administrators and to admins granted audit
+ *   viewing (session.canViewAuditLog) — it is not an ADMIN_AREAS entry,
+ *   because it is not grantable through /admin/access.
  * - Page guard: the requested path comes from the `x-pathname` header
  *   set in proxy.ts. A restricted admin opening an area they were not
  *   granted is redirected to the first area they do have (or home when
- *   they have none). /admin/access is full-admin only. This is the
- *   server-side enforcement — hiding nav items alone would not be.
+ *   they have none). /admin/access is restricted to authorized
+ *   administrators (isSuperAdmin), not merely full admins, and
+ *   /admin/audit* requires admin capability AND (authorized
+ *   administrator OR canViewAuditLog). This is the server-side
+ *   enforcement — hiding nav items alone would not be.
  *   When the header is absent (prefetch), the redirect is skipped;
  *   dynamic admin pages are never prefetched, and the API routes have
  *   their own per-area guards (lib/api-helpers requireAdminArea).
@@ -55,12 +64,28 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   if (!session || !hasAdminCapability(session)) redirect('/auth/login');
 
   const permissions = session.adminPermissions;
-  const fullAdmin = isFullAdmin(permissions);
+  // Phase 5, Module 23: audit access — authorized administrators, plus
+  // admins explicitly granted audit viewing (canViewAuditLog, carried on
+  // the session by Worker A). The audit nav item and guard below use
+  // the same rule as the audit page itself.
+  const authorizedAdmin = isSuperAdmin(session);
+  const canViewAuditLog = session.canViewAuditLog === true;
+  const showAuditNav = canSeeAuditLog({ isAuthorizedAdmin: authorizedAdmin, canViewAuditLog });
 
   const navItems = ADMIN_AREAS.filter((area) => hasAdminArea(permissions, area.key)).map(
     (area) => ({ href: area.href, label: area.label, icon: NAV_ICONS[area.key] }),
   );
-  if (fullAdmin) {
+  if (showAuditNav) {
+    const auditItem = {
+      href: '/admin/audit',
+      label: 'Audit Log',
+      icon: <ScrollText className="w-5 h-5" />,
+    };
+    const reportsIdx = navItems.findIndex((item) => item.href === '/admin/reports');
+    if (reportsIdx >= 0) navItems.splice(reportsIdx + 1, 0, auditItem);
+    else navItems.push(auditItem);
+  }
+  if (authorizedAdmin) {
     navItems.push({
       href: '/admin/access',
       label: 'Admin Access',
@@ -72,7 +97,11 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   if (pathname) {
     const area = areaForAdminPath(pathname);
     if (area === 'access') {
-      if (!fullAdmin) redirect(firstGrantedArea(permissions)?.href ?? '/');
+      // /admin/access is authorized-administrator only — a full admin
+      // who is not one of them is redirected, same as any denied area.
+      if (!authorizedAdmin) redirect(firstGrantedArea(permissions)?.href ?? '/');
+    } else if (pathname === '/admin/audit' || pathname.startsWith('/admin/audit/')) {
+      if (!showAuditNav) redirect(firstGrantedArea(permissions)?.href ?? '/');
     } else if (area !== null) {
       if (!hasAdminArea(permissions, area)) {
         redirect(firstGrantedArea(permissions)?.href ?? '/');
