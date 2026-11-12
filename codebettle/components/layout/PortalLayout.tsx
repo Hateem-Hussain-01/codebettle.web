@@ -159,6 +159,7 @@ export default function PortalLayout({ user, navItems, children, portalName }: P
       <AnimatePresence>
         {sidebarOpen && (
           <>
+            {/* Theme audit: dark scrim over the page behind the mobile sidebar — stays dark in both themes. */}
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 lg:hidden" onClick={() => setSidebarOpen(false)} />
             <motion.aside initial={{ x: -280 }} animate={{ x: 0 }} exit={{ x: -280 }} transition={{ type: 'spring', damping: 30 }} className="fixed left-0 top-0 h-full w-72 bg-dark-card border-r border-dark-border z-50 lg:hidden">
               <Sidebar user={user} navItems={navItems} pathname={pathname} portalName={portalName} mobile onClose={() => setSidebarOpen(false)} />

@@ -182,6 +182,7 @@ export default function TeacherMessagePopup({ messages: propMessages, heading = 
         aria-label={heading}
         data-teacher-message-popup
       >
+        {/* Theme audit: dark scrim behind the popup — stays dark in both themes. */}
         <div
           className="absolute inset-0 bg-black/70 backdrop-blur-sm"
           onClick={() => {
@@ -227,7 +228,7 @@ export default function TeacherMessagePopup({ messages: propMessages, heading = 
               <button
                 onClick={() => void dismiss(current)}
                 disabled={busy}
-                className="flex-1 bg-primary text-black font-semibold text-sm px-4 py-2.5 rounded-lg hover:opacity-90 transition-opacity disabled:opacity-50 cursor-pointer"
+                className="flex-1 bg-primary text-ink font-semibold text-sm px-4 py-2.5 rounded-lg hover:opacity-90 transition-opacity disabled:opacity-50 cursor-pointer"
               >
                 {busy ? 'Closing…' : requiresAck ? 'Acknowledge' : 'Got it'}
               </button>

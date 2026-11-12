@@ -13,6 +13,10 @@ const MONTH_DATA = [
   { month: 'May', enrollments: 112 }, { month: 'Jun', enrollments: 134 },
 ];
 
+// Theme audit: these are data colours for the pie slices and legend dots
+// (colour swatches, not text) — readable on a dark or a white card. The
+// axis stroke #6B7280 equals --color-muted in both themes, and the bar
+// fill #F5C518 is brand gold in both themes. Left as literals on purpose.
 const CATEGORY_DATA = [
   { name: 'Web Dev', value: 35, color: '#3B82F6' },
   { name: 'Mobile', value: 22, color: '#8B5CF6' },

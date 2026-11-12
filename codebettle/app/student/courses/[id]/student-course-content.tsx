@@ -143,6 +143,7 @@ export default function StudentCourseContent({
           </div>
           {!isCompleted && (
             <a href={content.zoomLink} target="_blank" rel="noopener noreferrer">
+              {/* Theme audit: fixed brand-blue button — white text stays readable on blue in both themes. */}
               <Button className="bg-blue-600 hover:bg-blue-700 text-white border-0 flex-shrink-0"><ExternalLink className="w-4 h-4" />Join Live Class</Button>
             </a>
           )}

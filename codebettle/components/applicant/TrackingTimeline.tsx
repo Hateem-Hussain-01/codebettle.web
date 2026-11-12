@@ -65,7 +65,7 @@ export default function TrackingTimeline({ tracking }: { tracking: TrackingViewS
         <ol className="space-y-3">
           {completedStages.map((stage) => (
             <li key={stage} className="flex items-center gap-3">
-              <span className="w-6 h-6 rounded-full bg-primary text-black flex items-center justify-center flex-shrink-0">
+              <span className="w-6 h-6 rounded-full bg-primary text-ink flex items-center justify-center flex-shrink-0">
                 <Check className="w-3.5 h-3.5" />
               </span>
               <span className="text-foreground text-sm">{stage}</span>
