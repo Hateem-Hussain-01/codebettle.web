@@ -35,7 +35,7 @@ export default async function InstructorNotificationsPage({
         preferences ?? {
           inApp: true,
           email: false,
-          events: { enrollment: true, completion: true, certificate: true, application: true, announcement: true },
+          events: { enrollment: true, completion: true, certificate: true, application: true, announcement: true, support_request: true, request_update: true },
         }
       }
     />

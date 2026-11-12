@@ -154,7 +154,7 @@ test('preferences: GET returns defaults; PUT rejects unknown keys and non-boolea
     preferences: {
       inApp: true,
       email: false,
-      events: { enrollment: true, completion: true, certificate: true, application: true, announcement: true },
+      events: { enrollment: true, completion: true, certificate: true, application: true, announcement: true, support_request: true, request_update: true },
     },
   });
 

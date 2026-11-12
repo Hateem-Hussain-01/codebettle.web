@@ -17,6 +17,14 @@ export interface CreateNotificationInput {
   type: string;
   title: string;
   body: string;
+  /** Phase 3: general | important | warning | special_notice (default general). */
+  category?: string;
+  /** Phase 3: the Announcement this row was fanned out from. */
+  announcementId?: string;
+  /** Phase 3: optional deep link. */
+  linkUrl?: string;
+  /** Phase 3: true when the user must acknowledge this notification. */
+  requiresAcknowledge?: boolean;
 }
 
 export async function createNotification(input: CreateNotificationInput): Promise<Notification> {
@@ -25,6 +33,10 @@ export async function createNotification(input: CreateNotificationInput): Promis
     type: input.type,
     title: input.title,
     body: input.body,
+    category: input.category ?? 'general',
+    announcementId: input.announcementId ?? null,
+    linkUrl: input.linkUrl ?? null,
+    requiresAcknowledge: input.requiresAcknowledge ?? false,
   });
   return mapNotificationRow(row);
 }
@@ -32,6 +44,16 @@ export async function createNotification(input: CreateNotificationInput): Promis
 export interface ListNotificationsOptions {
   page?: string | string[];
   limit?: string | string[];
+  /** Filter by notification type (e.g. 'announcement'). */
+  type?: string;
+  /** Phase 3: filter by category (general | important | warning | special_notice). */
+  category?: string;
+  /**
+   * Phase 3: when true, return ONLY unread notifications with
+   * requiresAcknowledge=true, oldest first (the login acknowledge
+   * popup). Unread count is unaffected.
+   */
+  pending?: boolean;
 }
 
 /** The user's notifications, newest first, paginated. */
@@ -40,13 +62,19 @@ export async function listNotificationsForUser(
   opts: ListNotificationsOptions = {},
 ): Promise<Page<Notification>> {
   const params = parsePageParams({ page: opts.page, limit: opts.limit });
-  const query = getDb().orm.public.Notification.where({ userId });
+  let query = getDb().orm.public.Notification.where({ userId });
+  if (opts.type) query = query.where({ type: opts.type });
+  if (opts.category) query = query.where({ category: opts.category });
+  if (opts.pending) {
+    query = query
+      .where((n) => n.readAt.isNull())
+      .where((n) => n.requiresAcknowledge.eq(true));
+  }
   const total = (await query.all()).length;
-  const rows = await query
-    .orderBy((n) => n.createdAt.desc())
-    .limit(params.limit)
-    .offset(params.offset)
-    .all();
+  const ordered = opts.pending
+    ? query.orderBy((n) => n.createdAt.asc())
+    : query.orderBy((n) => n.createdAt.desc());
+  const rows = await ordered.limit(params.limit).offset(params.offset).all();
   return toPage(rows.map(mapNotificationRow), total, params);
 }
 
@@ -102,4 +130,37 @@ export async function deleteNotification(userId: string, id: string): Promise<bo
     .orm.public.Notification.where({ id, userId })
     .delete();
   return row !== null;
+}
+
+/**
+ * Acknowledge one notification (Phase 3). Only the owner's row; null
+ * when not found / not own. Idempotent: acknowledging again returns
+ * the same row with the original acknowledgedAt — the first
+ * acknowledgement is never overwritten. Sets readAt too when it is
+ * still null (acknowledging implies reading).
+ */
+export async function acknowledgeNotification(
+  userId: string,
+  id: string,
+): Promise<Notification | null> {
+  const existing = await getNotificationForUser(userId, id);
+  if (!existing) return null;
+  if (existing.acknowledgedAt) return existing;
+  const now = new Date();
+  const row = await getDb()
+    .orm.public.Notification.where({ id, userId })
+    .update({ acknowledgedAt: now, readAt: now });
+  if (!row) return existing;
+  return mapNotificationRow(row);
+}
+
+/** Every notification row fanned out from one announcement (receipts). */
+export async function listNotificationsByAnnouncement(
+  announcementId: string,
+): Promise<Notification[]> {
+  const rows = await getDb()
+    .orm.public.Notification.where({ announcementId })
+    .orderBy((n) => n.createdAt.asc())
+    .all();
+  return rows.map(mapNotificationRow);
 }

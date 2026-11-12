@@ -181,6 +181,8 @@ model User {
   quizAttempts       QuizAttempt[]      @relation("QuizAttempts")
   notes              Note[]
   wishlist           Wishlist[]
+  supportRequests    SupportRequest[]   @relation("SupportRequestStudent")
+  supportRequestsResolved SupportRequest[] @relation("SupportRequestResolver")
   paymentSubmissionsReviewed PaymentSubmission[] @relation("PaymentSubmissionReviewer")
   invitationsSent    Invitation[]            @relation("InvitationInviter")
   stageHistory       ApplicationStageHistory[] @relation("StageHistoryActor")
@@ -225,6 +227,7 @@ model Course {
   quizzes         Quiz[]
   notes           Note[]
   wishlistEntries Wishlist[]
+  supportRequests SupportRequest[]
 }
 
 model Module {
@@ -564,8 +567,26 @@ model Announcement {
   author    User             @relation("AnnouncementAuthor", fields: [authorId], references: [id])
   isActive  Boolean          @default(true)
   createdAt DateTime         @default(now()) @onCreate(now())
+
+  notifications Notification[]
 }
 
+// Phase 3 models (23-module plan, Module 7 — notifications & requests).
+//
+// - Notification gains: `category` (general|important|warning|
+//   special_notice — stored as String like `type`, no Prisma enum),
+//   `announcementId` (FK to Announcement, for receipt aggregation;
+//   SetNull so deleting an announcement never deletes notifications),
+//   `linkUrl`, `requiresAcknowledge` + `acknowledgedAt` (the
+//   acknowledge gate for important / special-notice broadcasts).
+//   One row per recipient is kept; `readAt` stays per-row.
+// - SupportRequest is a NEW model on purpose: ContactMessage stays the
+//   anonymous public inbox and is never overloaded. A support request
+//   is always owned by one authenticated student (studentId from the
+//   session, never the body), optionally linked to a course the student
+//   is enrolled in. `category` / `status` are Strings (slugs — see
+//   SUPPORT_REQUEST_CATEGORIES / SUPPORT_REQUEST_STATUSES in
+//   lib/db/types.ts), not Prisma enums, matching Notification.type.
 model Notification {
   id        String    @id @onCreate(cuid(2))
   userId    String
@@ -573,10 +594,39 @@ model Notification {
   type      String
   title     String
   body      String
+  category  String    @default("general")
+  announcementId String?
+  announcement Announcement? @relation(fields: [announcementId], references: [id], onDelete: SetNull)
+  linkUrl   String?
+  requiresAcknowledge Boolean @default(false)
+  acknowledgedAt DateTime?
   readAt    DateTime?
   createdAt DateTime  @default(now()) @onCreate(now())
 
   @@index([userId, readAt])
+  @@index([announcementId])
+}
+
+model SupportRequest {
+  id           String   @id @onCreate(cuid(2))
+  studentId    String
+  student      User     @relation("SupportRequestStudent", fields: [studentId], references: [id], onDelete: Cascade)
+  category     String
+  subject      String
+  message      String
+  courseId     String?
+  course       Course?  @relation(fields: [courseId], references: [id])
+  status       String   @default("new")
+  attachmentUrl String?
+  adminReply   String?
+  resolvedBy   String?
+  resolver     User?    @relation("SupportRequestResolver", fields: [resolvedBy], references: [id])
+  resolvedAt   DateTime?
+  createdAt    DateTime @default(now()) @onCreate(now())
+  updatedAt    temporal.UpdatedAt
+
+  @@index([studentId, createdAt])
+  @@index([status, createdAt])
 }
 
 model InstructorApplication {

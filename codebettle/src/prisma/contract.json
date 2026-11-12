@@ -132,6 +132,10 @@
       "model": "Session",
       "namespace": "public"
     },
+    "SupportRequest": {
+      "model": "SupportRequest",
+      "namespace": "public"
+    },
     "Testimonial": {
       "model": "Testimonial",
       "namespace": "public"
@@ -533,6 +537,21 @@
                 },
                 "to": {
                   "model": "Course",
+                  "namespace": "public"
+                }
+              },
+              "notifications": {
+                "cardinality": "1:N",
+                "on": {
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "announcementId"
+                  ]
+                },
+                "to": {
+                  "model": "Notification",
                   "namespace": "public"
                 }
               }
@@ -2029,6 +2048,21 @@
                   "namespace": "public"
                 }
               },
+              "supportRequests": {
+                "cardinality": "1:N",
+                "on": {
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "courseId"
+                  ]
+                },
+                "to": {
+                  "model": "SupportRequest",
+                  "namespace": "public"
+                }
+              },
               "wishlistEntries": {
                 "cardinality": "1:N",
                 "on": {
@@ -3402,7 +3436,31 @@
           },
           "Notification": {
             "fields": {
+              "acknowledgedAt": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "precision": 3
+                  }
+                }
+              },
+              "announcementId": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
               "body": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "category": {
                 "nullable": false,
                 "type": {
                   "codecId": "pg/text@1",
@@ -3426,6 +3484,13 @@
                   "kind": "scalar"
                 }
               },
+              "linkUrl": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
               "readAt": {
                 "nullable": true,
                 "type": {
@@ -3434,6 +3499,13 @@
                   "typeParams": {
                     "precision": 3
                   }
+                }
+              },
+              "requiresAcknowledge": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/bool@1",
+                  "kind": "scalar"
                 }
               },
               "title": {
@@ -3459,6 +3531,22 @@
               }
             },
             "relations": {
+              "announcement": {
+                "cardinality": "N:1",
+                "nullable": true,
+                "on": {
+                  "localFields": [
+                    "announcementId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "Announcement",
+                  "namespace": "public"
+                }
+              },
               "user": {
                 "cardinality": "N:1",
                 "nullable": false,
@@ -3478,8 +3566,17 @@
             },
             "storage": {
               "fields": {
+                "acknowledgedAt": {
+                  "column": "acknowledgedAt"
+                },
+                "announcementId": {
+                  "column": "announcementId"
+                },
                 "body": {
                   "column": "body"
+                },
+                "category": {
+                  "column": "category"
                 },
                 "createdAt": {
                   "column": "createdAt"
@@ -3487,8 +3584,14 @@
                 "id": {
                   "column": "id"
                 },
+                "linkUrl": {
+                  "column": "linkUrl"
+                },
                 "readAt": {
                   "column": "readAt"
+                },
+                "requiresAcknowledge": {
+                  "column": "requiresAcknowledge"
                 },
                 "title": {
                   "column": "title"
@@ -5286,6 +5389,205 @@
               "table": "Session"
             }
           },
+          "SupportRequest": {
+            "fields": {
+              "adminReply": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "attachmentUrl": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "category": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "courseId": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "createdAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "precision": 3
+                  }
+                }
+              },
+              "id": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "message": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "resolvedAt": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "precision": 3
+                  }
+                }
+              },
+              "resolvedBy": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "status": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "studentId": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "subject": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "updatedAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "precision": 3
+                  }
+                }
+              }
+            },
+            "relations": {
+              "course": {
+                "cardinality": "N:1",
+                "nullable": true,
+                "on": {
+                  "localFields": [
+                    "courseId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "Course",
+                  "namespace": "public"
+                }
+              },
+              "resolver": {
+                "cardinality": "N:1",
+                "nullable": true,
+                "on": {
+                  "localFields": [
+                    "resolvedBy"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "User",
+                  "namespace": "public"
+                }
+              },
+              "student": {
+                "cardinality": "N:1",
+                "nullable": false,
+                "on": {
+                  "localFields": [
+                    "studentId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "User",
+                  "namespace": "public"
+                }
+              }
+            },
+            "storage": {
+              "fields": {
+                "adminReply": {
+                  "column": "adminReply"
+                },
+                "attachmentUrl": {
+                  "column": "attachmentUrl"
+                },
+                "category": {
+                  "column": "category"
+                },
+                "courseId": {
+                  "column": "courseId"
+                },
+                "createdAt": {
+                  "column": "createdAt"
+                },
+                "id": {
+                  "column": "id"
+                },
+                "message": {
+                  "column": "message"
+                },
+                "resolvedAt": {
+                  "column": "resolvedAt"
+                },
+                "resolvedBy": {
+                  "column": "resolvedBy"
+                },
+                "status": {
+                  "column": "status"
+                },
+                "studentId": {
+                  "column": "studentId"
+                },
+                "subject": {
+                  "column": "subject"
+                },
+                "updatedAt": {
+                  "column": "updatedAt"
+                }
+              },
+              "namespaceId": "public",
+              "table": "SupportRequest"
+            }
+          },
           "Testimonial": {
             "fields": {
               "comment": {
@@ -5856,6 +6158,36 @@
                 },
                 "to": {
                   "model": "ApplicationStageHistory",
+                  "namespace": "public"
+                }
+              },
+              "supportRequests": {
+                "cardinality": "1:N",
+                "on": {
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "studentId"
+                  ]
+                },
+                "to": {
+                  "model": "SupportRequest",
+                  "namespace": "public"
+                }
+              },
+              "supportRequestsResolved": {
+                "cardinality": "1:N",
+                "on": {
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "resolvedBy"
+                  ]
+                },
+                "to": {
+                  "model": "SupportRequest",
                   "namespace": "public"
                 }
               },
@@ -8493,9 +8825,31 @@
             },
             "Notification": {
               "columns": {
+                "acknowledgedAt": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "dataType": "pg/timestamptz",
+                  "nullable": true,
+                  "typeParams": {
+                    "precision": 3
+                  }
+                },
+                "announcementId": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": true
+                },
                 "body": {
                   "codecId": "pg/text@1",
                   "dataType": "pg/text",
+                  "nullable": false
+                },
+                "category": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "default": {
+                    "kind": "literal",
+                    "value": "general"
+                  },
                   "nullable": false
                 },
                 "createdAt": {
@@ -8515,6 +8869,11 @@
                   "dataType": "pg/text",
                   "nullable": false
                 },
+                "linkUrl": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": true
+                },
                 "readAt": {
                   "codecId": "pg/timestamptz-date@1",
                   "dataType": "pg/timestamptz",
@@ -8522,6 +8881,15 @@
                   "typeParams": {
                     "precision": 3
                   }
+                },
+                "requiresAcknowledge": {
+                  "codecId": "pg/bool@1",
+                  "dataType": "pg/bool",
+                  "default": {
+                    "kind": "literal",
+                    "value": false
+                  },
+                  "nullable": false
                 },
                 "title": {
                   "codecId": "pg/text@1",
@@ -8559,9 +8927,37 @@
                     "namespaceId": "public",
                     "tableName": "User"
                   }
+                },
+                {
+                  "index": {
+                    "name": "Notification_announcementId_idx_4871551d"
+                  },
+                  "onDelete": "setNull",
+                  "source": {
+                    "columns": [
+                      "announcementId"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "Notification"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "Announcement"
+                  }
                 }
               ],
               "indexes": [
+                {
+                  "columns": [
+                    "announcementId"
+                  ],
+                  "name": "Notification_announcementId_idx_4871551d",
+                  "prefix": "Notification_announcementId_idx",
+                  "unique": false
+                },
                 {
                   "columns": [
                     "userId"
@@ -10204,6 +10600,202 @@
               },
               "uniques": []
             },
+            "SupportRequest": {
+              "columns": {
+                "adminReply": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": true
+                },
+                "attachmentUrl": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": true
+                },
+                "category": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                },
+                "courseId": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": true
+                },
+                "createdAt": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "dataType": "pg/timestamptz",
+                  "default": {
+                    "expression": "now()",
+                    "kind": "function"
+                  },
+                  "nullable": false,
+                  "typeParams": {
+                    "precision": 3
+                  }
+                },
+                "id": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                },
+                "message": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                },
+                "resolvedAt": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "dataType": "pg/timestamptz",
+                  "nullable": true,
+                  "typeParams": {
+                    "precision": 3
+                  }
+                },
+                "resolvedBy": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": true
+                },
+                "status": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "default": {
+                    "kind": "literal",
+                    "value": "new"
+                  },
+                  "nullable": false
+                },
+                "studentId": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                },
+                "subject": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                },
+                "updatedAt": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "dataType": "pg/timestamptz",
+                  "nullable": false,
+                  "typeParams": {
+                    "precision": 3
+                  }
+                }
+              },
+              "foreignKeys": [
+                {
+                  "index": {
+                    "name": "SupportRequest_studentId_idx_bf255322"
+                  },
+                  "onDelete": "cascade",
+                  "source": {
+                    "columns": [
+                      "studentId"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "SupportRequest"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "User"
+                  }
+                },
+                {
+                  "index": {
+                    "name": "SupportRequest_courseId_idx_12f72d2a"
+                  },
+                  "source": {
+                    "columns": [
+                      "courseId"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "SupportRequest"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "Course"
+                  }
+                },
+                {
+                  "index": {
+                    "name": "SupportRequest_resolvedBy_idx_c347fa19"
+                  },
+                  "source": {
+                    "columns": [
+                      "resolvedBy"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "SupportRequest"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "User"
+                  }
+                }
+              ],
+              "indexes": [
+                {
+                  "columns": [
+                    "courseId"
+                  ],
+                  "name": "SupportRequest_courseId_idx_12f72d2a",
+                  "prefix": "SupportRequest_courseId_idx",
+                  "unique": false
+                },
+                {
+                  "columns": [
+                    "resolvedBy"
+                  ],
+                  "name": "SupportRequest_resolvedBy_idx_c347fa19",
+                  "prefix": "SupportRequest_resolvedBy_idx",
+                  "unique": false
+                },
+                {
+                  "columns": [
+                    "status",
+                    "createdAt"
+                  ],
+                  "name": "SupportRequest_status_createdAt_idx_58610442",
+                  "prefix": "SupportRequest_status_createdAt_idx",
+                  "unique": false
+                },
+                {
+                  "columns": [
+                    "studentId",
+                    "createdAt"
+                  ],
+                  "name": "SupportRequest_studentId_createdAt_idx_1ad1933f",
+                  "prefix": "SupportRequest_studentId_createdAt_idx",
+                  "unique": false
+                },
+                {
+                  "columns": [
+                    "studentId"
+                  ],
+                  "name": "SupportRequest_studentId_idx_bf255322",
+                  "prefix": "SupportRequest_studentId_idx",
+                  "unique": false
+                }
+              ],
+              "primaryKey": {
+                "columns": [
+                  "id"
+                ]
+              },
+              "uniques": []
+            },
             "Testimonial": {
               "columns": {
                 "comment": {
@@ -10686,10 +11278,10 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "42aad708af3193e0ea06469d9a5a88bc76e34dcf4f80501c9dbb887f1055e82c"
+    "storageHash": "5d3d3fbbf7948669f2c81cb05cdd04211ad22ae00755295f422550e07cba1902"
   },
   "execution": {
-    "executionHash": "7607bc3e626d84697ce4d117f51f6b008eb4ccf52e498ec8c63e46cd55b78c7b",
+    "executionHash": "eb89b0b36153aa46b04db3a264d14b4a4f858fe1a2eaf06f1e4ac7e4a70e4574",
     "mutations": {
       "defaults": [
         {
@@ -11509,6 +12101,52 @@
           "ref": {
             "entry": "Session",
             "field": "createdAt",
+            "namespace": "public"
+          }
+        },
+        {
+          "onCreate": {
+            "id": "timestampNow",
+            "kind": "generator",
+            "params": {
+              "precision": 3
+            }
+          },
+          "ref": {
+            "entry": "SupportRequest",
+            "field": "createdAt",
+            "namespace": "public"
+          }
+        },
+        {
+          "onCreate": {
+            "id": "cuid2",
+            "kind": "generator"
+          },
+          "ref": {
+            "entry": "SupportRequest",
+            "field": "id",
+            "namespace": "public"
+          }
+        },
+        {
+          "onCreate": {
+            "id": "timestampNow",
+            "kind": "generator",
+            "params": {
+              "precision": 3
+            }
+          },
+          "onUpdate": {
+            "id": "timestampNow",
+            "kind": "generator",
+            "params": {
+              "precision": 3
+            }
+          },
+          "ref": {
+            "entry": "SupportRequest",
+            "field": "updatedAt",
             "namespace": "public"
           }
         },

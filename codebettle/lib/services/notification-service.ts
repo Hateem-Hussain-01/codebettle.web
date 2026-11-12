@@ -15,6 +15,12 @@
  * called only when prefs.email is true AND the event is allowed, and a
  * hook failure never blocks the in-app notification.
  *
+ * Phase 3 exception (judgment call, see the Phase 3 report):
+ * important / special_notice notifications BYPASS the per-event toggle
+ * — they must reach everyone, otherwise the acknowledge gate is
+ * meaningless. The bypass skips ONLY the event-toggle check: inApp off
+ * still means no in-app row, and email still follows prefs.email.
+ *
  * Wiring (coordinator): the event helpers below are exported for the
  * call sites — see the hook call-site list in the Phase 4 report. This
  * file does NOT call into enrollment/application/certificate code.
@@ -29,12 +35,18 @@ import type {
   Enrollment,
   InstructorApplication,
   Notification,
+  NotificationCategory,
   NotificationEventKey,
   NotificationPrefs,
   PaymentSubmission,
+  SupportRequest,
+} from '../db/types';
+import {
+  PREFS_BYPASS_CATEGORIES,
+  SUPPORT_REQUEST_CATEGORY_LABELS,
 } from '../db/types';
 import { deliverEmailNotification, type EmailDeliveryResult } from './email-notifications';
-import { hasAdminCapability } from '../rbac';
+import { hasAdminCapability, hasTeacherCapability } from '../rbac';
 
 export interface NotifyInput {
   type: string;
@@ -42,6 +54,14 @@ export interface NotifyInput {
   body: string;
   /** Prefs event key this notification belongs to. */
   event: NotificationEventKey;
+  /** Phase 3: general | important | warning | special_notice (default general). */
+  category?: NotificationCategory;
+  /** Phase 3: the Announcement this row was fanned out from. */
+  announcementId?: string;
+  /** Phase 3: optional deep link. */
+  linkUrl?: string;
+  /** Phase 3: true when the user must acknowledge this notification. */
+  requiresAcknowledge?: boolean;
 }
 
 export type NotifyResult =
@@ -71,12 +91,18 @@ function eventAllowed(prefs: NotificationPrefs, event: NotificationEventKey): bo
  * Notify one user. Reads their prefs first; skips (no row, no email)
  * when the event toggle is off, or when both in-app and email are off.
  * When inApp is off but email is on, the email hook is still attempted.
+ *
+ * Phase 3: an important / special_notice category BYPASSES the
+ * per-event toggle check (see the file header) — the toggle is the
+ * only thing skipped; inApp off still means no row is created.
  */
 export async function notifyUser(userId: string, input: NotifyInput): Promise<NotifyResult> {
   try {
     const prefs = await getUserNotificationPrefs(userId);
     if (!prefs) return { ok: false, reason: 'user-not-found' };
-    if (!eventAllowed(prefs, input.event)) {
+    const category = input.category ?? 'general';
+    const bypassesPrefs = (PREFS_BYPASS_CATEGORIES as readonly string[]).includes(category);
+    if (!bypassesPrefs && !eventAllowed(prefs, input.event)) {
       return { ok: true, skipped: true, reason: 'event-disabled' };
     }
 
@@ -105,6 +131,10 @@ export async function notifyUser(userId: string, input: NotifyInput): Promise<No
       type: input.type,
       title: input.title,
       body: input.body,
+      category,
+      announcementId: input.announcementId,
+      linkUrl: input.linkUrl,
+      requiresAcknowledge: input.requiresAcknowledge ?? false,
     });
     return { ok: true, notification, email };
   } catch (error) {
@@ -405,5 +435,129 @@ export async function onAnnouncementPublished(announcement: Announcement): Promi
   } catch (error) {
     console.error('[notification-service] onAnnouncementPublished failed:', error);
     return { ok: false, sent: 0, skipped: 0, failed: 0 };
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Admin broadcast sends (Phase 3, Module 7).
+//
+// POST /api/admin/notifications calls sendAdminNotification. One
+// Notification row is created per recipient (the same one-row-per-
+// recipient shape as every other notification); the fan-out is N
+// sequential notifyUser calls via notifyUsers — acceptable at this
+// scale, and each recipient's prefs are still honoured, except that
+// important / special_notice categories bypass the per-event toggle
+// (see notifyUser). A broadcast failure never throws: the summary
+// counts sent / skipped / failed instead.
+// ---------------------------------------------------------------------------
+
+export type AdminSendTarget =
+  | { type: 'all' }
+  | { type: 'role'; role: 'student' | 'instructor' | 'admin' }
+  | { type: 'user'; userId: string }
+  | { type: 'course'; courseId: string };
+
+export interface SendAdminNotificationInput {
+  title: string;
+  body: string;
+  category: NotificationCategory;
+  target: AdminSendTarget;
+  requiresAcknowledge?: boolean;
+  linkUrl?: string;
+}
+
+export async function sendAdminNotification(
+  input: SendAdminNotificationInput,
+): Promise<NotifySummary> {
+  try {
+    const notifyInput: NotifyInput = {
+      type: 'announcement',
+      event: 'announcement',
+      title: input.title,
+      body: input.body,
+      category: input.category,
+      linkUrl: input.linkUrl,
+      requiresAcknowledge: input.requiresAcknowledge ?? false,
+    };
+    if (input.target.type === 'course') {
+      return notifyEnrolledStudents(input.target.courseId, notifyInput);
+    }
+    if (input.target.type === 'user') {
+      const user = await getUserById(input.target.userId);
+      if (!user) return { ok: false, sent: 0, skipped: 0, failed: 1 };
+      const result = await notifyUser(input.target.userId, notifyInput);
+      if (!result.ok) return { ok: false, sent: 0, skipped: 0, failed: 1 };
+      if ('skipped' in result && result.skipped) return { ok: true, sent: 0, skipped: 1, failed: 0 };
+      return { ok: true, sent: 1, skipped: 0, failed: 0 };
+    }
+    const users = await getAllUsers();
+    const ids =
+      input.target.type === 'all'
+        ? users.map((u) => u.id)
+        : input.target.role === 'student'
+          ? users.filter((u) => u.role === 'student').map((u) => u.id)
+          : input.target.role === 'instructor'
+            ? users.filter((u) => hasTeacherCapability(u)).map((u) => u.id)
+            : users.filter((u) => hasAdminCapability(u)).map((u) => u.id);
+    return notifyUsers(ids, notifyInput);
+  } catch (error) {
+    console.error('[notification-service] sendAdminNotification failed:', error);
+    return { ok: false, sent: 0, skipped: 0, failed: 0 };
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Support-request hooks (Phase 3, Module 7). Best-effort, like every
+// other hook here: a notification failure never blocks the request
+// itself. The email hook stays inert until Resend is configured.
+// ---------------------------------------------------------------------------
+
+/** A student filed a support request. Recipients: every admin. */
+export async function onSupportRequestCreated(
+  request: SupportRequest,
+  studentName?: string,
+): Promise<NotifySummary> {
+  try {
+    const who = studentName?.trim() ? ` from ${studentName.trim()}` : '';
+    const label = SUPPORT_REQUEST_CATEGORY_LABELS[request.category] ?? request.category;
+    return notifyAdmins({
+      type: 'support_request',
+      event: 'support_request',
+      title: `New support request: ${request.subject}`,
+      body: `${label}${who}: ${request.subject}`,
+    });
+  } catch (error) {
+    console.error('[notification-service] onSupportRequestCreated failed:', error);
+    return { ok: false, sent: 0, skipped: 0, failed: 0 };
+  }
+}
+
+/**
+ * A support request changed status (or got an admin reply).
+ * Recipient: the student who filed it.
+ */
+export async function onSupportRequestStatusChanged(
+  request: SupportRequest,
+): Promise<NotifyResult> {
+  try {
+    const statusText =
+      request.status === 'resolved'
+        ? 'resolved'
+        : request.status === 'rejected'
+          ? 'closed without action'
+          : request.status === 'in_progress'
+            ? 'being worked on'
+            : 'under review';
+    const reply = request.adminReply?.trim()
+      ? ` Our reply: ${request.adminReply.trim()}`
+      : '';
+    return notifyUser(request.studentId, {
+      type: 'request_update',
+      event: 'request_update',
+      title: `Update on your request: ${request.subject}`,
+      body: `Your support request “${request.subject}” is now ${statusText}.${reply}`,
+    });
+  } catch (error) {
+    return failure(error, 'onSupportRequestStatusChanged');
   }
 }

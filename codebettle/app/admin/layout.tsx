@@ -4,7 +4,7 @@ import { getSession } from '@/lib/auth';
 import { ADMIN_AREAS, areaForAdminPath, firstGrantedArea, hasAdminArea, isFullAdmin } from '@/lib/admin-access';
 import { hasAdminCapability } from '@/lib/rbac';
 import PortalLayout from '@/components/layout/PortalLayout';
-import { LayoutDashboard, BookOpen, Users, GraduationCap, ClipboardList, Tag, Bell, FileText, Newspaper, BarChart2, Award, Settings, UserCheck, Mail, ShieldCheck } from 'lucide-react';
+import { LayoutDashboard, BookOpen, Users, GraduationCap, ClipboardList, Tag, Bell, FileText, Newspaper, BarChart2, Award, Settings, UserCheck, Mail, Megaphone, MessageSquare, ShieldCheck } from 'lucide-react';
 
 const NAV_ICONS = {
   dashboard: <LayoutDashboard className="w-5 h-5" />,
@@ -15,7 +15,9 @@ const NAV_ICONS = {
   coupons: <Tag className="w-5 h-5" />,
   announcements: <Bell className="w-5 h-5" />,
   messages: <Mail className="w-5 h-5" />,
+  requests: <MessageSquare className="w-5 h-5" />,
   notifications: <Bell className="w-5 h-5" />,
+  communications: <Megaphone className="w-5 h-5" />,
   blog: <Newspaper className="w-5 h-5" />,
   content: <FileText className="w-5 h-5" />,
   reports: <BarChart2 className="w-5 h-5" />,

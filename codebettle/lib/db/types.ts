@@ -55,7 +55,9 @@ export type NotificationEventKey =
   | 'completion'
   | 'certificate'
   | 'application'
-  | 'announcement';
+  | 'announcement'
+  | 'support_request'
+  | 'request_update';
 
 export type NotificationPrefs = {
   inApp: boolean;
@@ -66,6 +68,8 @@ export type NotificationPrefs = {
     certificate: boolean;
     application: boolean;
     announcement: boolean;
+    support_request: boolean;
+    request_update: boolean;
   };
 };
 
@@ -75,6 +79,8 @@ export const NOTIFICATION_EVENT_KEYS: readonly NotificationEventKey[] = [
   'certificate',
   'application',
   'announcement',
+  'support_request',
+  'request_update',
 ] as const;
 
 /** Defaults applied when the stored prefs are NULL (or a field is missing). */
@@ -87,7 +93,38 @@ export const DEFAULT_NOTIFICATION_PREFS: NotificationPrefs = {
     certificate: true,
     application: true,
     announcement: true,
+    support_request: true,
+    request_update: true,
   },
+};
+
+/**
+ * Notification category (Phase 3). Stored as a String on the
+ * Notification row, like `type` — no Prisma enum, matching the
+ * codebase pattern. IMPORTANT / SPECIAL NOTICE bypass the per-event
+ * prefs toggle (see lib/services/notification-service.ts): they must
+ * reach everyone, otherwise the acknowledge gate is meaningless.
+ */
+export type NotificationCategory = 'general' | 'important' | 'warning' | 'special_notice';
+
+export const NOTIFICATION_CATEGORIES: readonly NotificationCategory[] = [
+  'general',
+  'important',
+  'warning',
+  'special_notice',
+] as const;
+
+/** Categories that bypass the per-event notification-prefs toggle. */
+export const PREFS_BYPASS_CATEGORIES: readonly NotificationCategory[] = [
+  'important',
+  'special_notice',
+] as const;
+
+export const NOTIFICATION_CATEGORY_LABELS: Record<NotificationCategory, string> = {
+  general: 'General',
+  important: 'Important',
+  warning: 'Warning',
+  special_notice: 'Special notice',
 };
 
 export interface User {
@@ -380,6 +417,16 @@ export interface Notification {
   type: string;
   title: string;
   body: string;
+  /** Phase 3: general | important | warning | special_notice. */
+  category: NotificationCategory;
+  /** Phase 3: the Announcement this row was fanned out from (receipts). Nullable like readAt — the DB column is nullable. */
+  announcementId?: string | null;
+  /** Phase 3: optional deep link the notification points to. */
+  linkUrl?: string;
+  /** Phase 3: true when the user must acknowledge this notification. */
+  requiresAcknowledge: boolean;
+  /** Phase 3: when the user acknowledged it (null until then). */
+  acknowledgedAt?: string | null;
   readAt?: string | null;
   createdAt: string;
 }
@@ -542,7 +589,18 @@ export type PasswordResetRow = Pick<
 
 export type NotificationRow = Pick<
   Models.public_Notification,
-  'id' | 'userId' | 'type' | 'title' | 'body' | 'readAt' | 'createdAt'
+  | 'id'
+  | 'userId'
+  | 'type'
+  | 'title'
+  | 'body'
+  | 'category'
+  | 'announcementId'
+  | 'linkUrl'
+  | 'requiresAcknowledge'
+  | 'acknowledgedAt'
+  | 'readAt'
+  | 'createdAt'
 >;
 
 // ---------------------------------------------------------------------------
@@ -1054,4 +1112,107 @@ export type InvitationRow = Pick<
   | 'usedAt'
   | 'invitedById'
   | 'createdAt'
+>;
+
+// ---------------------------------------------------------------------------
+// Phase 3 — Notifications & Requests (Module 7): support requests.
+// ---------------------------------------------------------------------------
+
+/**
+ * Support-request category slugs (Phase 3). Stored as the slug value in
+ * the DB (String, like Notification.type — no Prisma enum); the display
+ * label is the map below. ContactMessage stays the anonymous public
+ * inbox and is never overloaded with these.
+ */
+export type SupportRequestCategory =
+  | 'complaints'
+  | 'teacher_reviews'
+  | 'feature_requests'
+  | 'course_issues'
+  | 'technical_problems'
+  | 'general_requests'
+  | 'other';
+
+export const SUPPORT_REQUEST_CATEGORIES: readonly SupportRequestCategory[] = [
+  'complaints',
+  'teacher_reviews',
+  'feature_requests',
+  'course_issues',
+  'technical_problems',
+  'general_requests',
+  'other',
+] as const;
+
+export const SUPPORT_REQUEST_CATEGORY_LABELS: Record<SupportRequestCategory, string> = {
+  complaints: 'Complaints',
+  teacher_reviews: 'Teacher reviews',
+  feature_requests: 'Feature requests',
+  course_issues: 'Course issues',
+  technical_problems: 'Technical problems',
+  general_requests: 'General requests',
+  other: 'Other',
+};
+
+/** Support-request lifecycle: new -> under_review -> in_progress -> resolved | rejected. */
+export type SupportRequestStatus =
+  | 'new'
+  | 'under_review'
+  | 'in_progress'
+  | 'resolved'
+  | 'rejected';
+
+export const SUPPORT_REQUEST_STATUSES: readonly SupportRequestStatus[] = [
+  'new',
+  'under_review',
+  'in_progress',
+  'resolved',
+  'rejected',
+] as const;
+
+/** Statuses that close a request (resolvedBy / resolvedAt are set). */
+export const SUPPORT_REQUEST_TERMINAL_STATUSES: readonly SupportRequestStatus[] = [
+  'resolved',
+  'rejected',
+] as const;
+
+/**
+ * A student's support request (Phase 3). Always owned by one
+ * authenticated student (studentId comes from the session, never the
+ * request body). `courseId` is set only for a course the student is
+ * enrolled in. `attachmentUrl` is the private-bucket storage PATH
+ * (e.g. `support-requests/<uuid>.pdf`) in the `application-files`
+ * bucket — never a public URL; admins open it via a signed-URL
+ * endpoint. `adminReply` is the admin's visible reply to the student.
+ */
+export interface SupportRequest {
+  id: string;
+  studentId: string;
+  category: SupportRequestCategory;
+  subject: string;
+  message: string;
+  courseId?: string;
+  status: SupportRequestStatus;
+  attachmentUrl?: string;
+  adminReply?: string;
+  resolvedBy?: string;
+  resolvedAt?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type SupportRequestRow = Pick<
+  Models.public_SupportRequest,
+  | 'id'
+  | 'studentId'
+  | 'category'
+  | 'subject'
+  | 'message'
+  | 'courseId'
+  | 'status'
+  | 'attachmentUrl'
+  | 'adminReply'
+  | 'resolvedBy'
+  | 'resolvedAt'
+  | 'createdAt'
+  | 'updatedAt'
 >;
