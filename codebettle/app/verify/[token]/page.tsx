@@ -32,8 +32,8 @@ export default async function VerifyCertificatePage({ params }: { params: Promis
       <main className="min-h-screen bg-background pt-16">
         <div className="max-w-xl mx-auto px-4 sm:px-6 py-16">
           <FadeIn className="text-center mb-8">
-            <Award className="w-12 h-12 text-primary mx-auto mb-3" />
-            <h1 className="text-3xl font-black text-white">Verify Certificate</h1>
+            <Award className="w-12 h-12 text-primary-text mx-auto mb-3" />
+            <h1 className="text-3xl font-black text-foreground">Verify Certificate</h1>
             <p className="text-muted mt-2 text-sm">Check that a CodeBettle certificate is genuine.</p>
           </FadeIn>
 
@@ -42,24 +42,24 @@ export default async function VerifyCertificatePage({ params }: { params: Promis
             <Card className="border-primary/30">
               <div className="flex items-center gap-2 mb-5">
                 <BadgeCheck className="w-6 h-6 text-green-400" />
-                <h2 className="text-white font-bold">Verified — this certificate is genuine</h2>
+                <h2 className="text-foreground font-bold">Verified — this certificate is genuine</h2>
               </div>
               <dl className="space-y-3 text-sm">
                 <div className="flex justify-between gap-4">
                   <dt className="text-muted">Awarded to</dt>
-                  <dd className="text-white font-medium text-right">{student?.name ?? 'Unknown student'}</dd>
+                  <dd className="text-foreground font-medium text-right">{student?.name ?? 'Unknown student'}</dd>
                 </div>
                 <div className="flex justify-between gap-4">
                   <dt className="text-muted">Course</dt>
-                  <dd className="text-white font-medium text-right">{course?.title ?? 'Unknown course'}</dd>
+                  <dd className="text-foreground font-medium text-right">{course?.title ?? 'Unknown course'}</dd>
                 </div>
                 <div className="flex justify-between gap-4">
                   <dt className="text-muted">Certificate no.</dt>
-                  <dd className="text-white font-medium text-right">{certificate.certificateNumber}</dd>
+                  <dd className="text-foreground font-medium text-right">{certificate.certificateNumber}</dd>
                 </div>
                 <div className="flex justify-between gap-4">
                   <dt className="text-muted">Issued</dt>
-                  <dd className="text-white font-medium text-right">{formatDate(certificate.issuedAt)}</dd>
+                  <dd className="text-foreground font-medium text-right">{formatDate(certificate.issuedAt)}</dd>
                 </div>
               </dl>
             </Card>
@@ -67,7 +67,7 @@ export default async function VerifyCertificatePage({ params }: { params: Promis
             <Card className="border-red-500/30">
               <div className="flex items-center gap-2 mb-3">
                 <XCircle className="w-6 h-6 text-red-400" />
-                <h2 className="text-white font-bold">Certificate not found</h2>
+                <h2 className="text-foreground font-bold">Certificate not found</h2>
               </div>
               <p className="text-muted text-sm">
                 No certificate matches this verification token. Check the token

@@ -11,7 +11,7 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
   ({ label, error, icon, className, ...props }, ref) => {
     return (
       <div className="flex flex-col gap-1.5">
-        {label && <label className="text-sm font-medium text-white/80">{label}</label>}
+        {label && <label className="text-sm font-medium text-foreground/80">{label}</label>}
         <div className="relative">
           {icon && (
             <div className="absolute left-3 top-1/2 -translate-y-1/2 text-muted pointer-events-none">
@@ -21,7 +21,7 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
           <input
             ref={ref}
             className={cn(
-              'w-full bg-dark-card border border-dark-border rounded-lg px-4 py-2.5 text-sm text-white placeholder-muted',
+              'w-full bg-dark-card border border-dark-border rounded-lg px-4 py-2.5 text-sm text-foreground placeholder-muted',
               'focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all',
               'disabled:opacity-50 disabled:cursor-not-allowed',
               icon ? 'pl-10' : '',

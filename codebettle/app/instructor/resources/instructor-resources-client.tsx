@@ -39,7 +39,7 @@ export default function InstructorResourcesClient({ courses: myCourses }: Instru
     <div className="space-y-6">
       <FadeIn className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-black text-white">Resource Library</h1>
+          <h1 className="text-2xl font-black text-foreground">Resource Library</h1>
           <p className="text-muted text-sm mt-1">{resources.length} file{resources.length !== 1 ? 's' : ''}</p>
         </div>
         <Button onClick={() => setIsOpen(true)}><Plus className="w-4 h-4" />Add Resource</Button>
@@ -48,7 +48,7 @@ export default function InstructorResourcesClient({ courses: myCourses }: Instru
       {resources.length === 0 ? (
         <Card className="py-16 text-center">
           <FolderOpen className="w-12 h-12 text-muted mx-auto mb-4" />
-          <p className="text-white font-semibold mb-2">No resources yet</p>
+          <p className="text-foreground font-semibold mb-2">No resources yet</p>
           <p className="text-muted text-sm mb-4">Upload PDFs, slides, and materials for your students.</p>
           <Button size="sm" onClick={() => setIsOpen(true)}><Plus className="w-4 h-4" />Add Resource</Button>
         </Card>
@@ -61,11 +61,11 @@ export default function InstructorResourcesClient({ courses: myCourses }: Instru
               <Card hover className="flex items-center gap-4">
                 <div className="w-10 h-10 rounded-lg bg-blue-400/10 text-blue-400 flex items-center justify-center flex-shrink-0"><FileText className="w-5 h-5" /></div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-white font-medium text-sm truncate">{res.name}</p>
+                  <p className="text-foreground font-medium text-sm truncate">{res.name}</p>
                   <p className="text-muted text-xs">{course?.title} · {res.type} · {res.size}</p>
                 </div>
                 <div className="flex items-center gap-2 flex-shrink-0">
-                  <button className="text-muted hover:text-primary transition-colors cursor-pointer"><Download className="w-4 h-4" /></button>
+                  <button className="text-muted hover:text-primary-text transition-colors cursor-pointer"><Download className="w-4 h-4" /></button>
                   <button onClick={() => { setResources(r => r.filter(r2 => r2.id !== res.id)); toast.success('Deleted'); }} className="text-muted hover:text-red-400 cursor-pointer"><Trash2 className="w-4 h-4" /></button>
                 </div>
               </Card>

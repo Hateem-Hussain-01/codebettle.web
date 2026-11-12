@@ -543,6 +543,7 @@ export function mapQuizQuestionRow(row: QuizQuestionRow, options: QuizOptionRow[
     difficulty: row.difficulty ?? undefined,
     correctText: row.correctText ?? undefined,
     acceptedAnswers: [...(row.acceptedAnswers ?? [])],
+    explanation: row.explanation ?? undefined,
     needsReview: row.needsReview,
     reviewNote: row.reviewNote ?? undefined,
     options: options.map(mapQuizOptionRow),

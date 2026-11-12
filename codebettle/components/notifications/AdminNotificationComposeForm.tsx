@@ -173,8 +173,8 @@ export default function AdminNotificationComposeForm({ courses }: ComposeFormPro
     <div className="space-y-6 max-w-2xl">
       {result && (
         <Card className="p-4 border-primary/40">
-          <p className="flex items-center gap-2 text-white font-semibold text-sm">
-            <CheckCircle2 className="w-5 h-5 text-primary" />
+          <p className="flex items-center gap-2 text-foreground font-semibold text-sm">
+            <CheckCircle2 className="w-5 h-5 text-primary-text" />
             Notification sent
           </p>
           <p className="text-muted text-sm mt-1">
@@ -225,16 +225,16 @@ export default function AdminNotificationComposeForm({ courses }: ComposeFormPro
 
         {form.targetType === 'user' && (
           <div className="flex flex-col gap-1.5">
-            <label className="text-sm font-medium text-white/80">User (search by name)</label>
+            <label className="text-sm font-medium text-foreground/80">User (search by name)</label>
             {pickedUser ? (
               <div className="flex items-center justify-between bg-dark-card border border-dark-border rounded-lg px-4 py-2.5">
-                <span className="text-sm text-white">
+                <span className="text-sm text-foreground">
                   {pickedUser.name} <span className="text-muted">({pickedUser.email})</span>
                 </span>
                 <button
                   type="button"
                   aria-label="Clear selected user"
-                  className="text-muted hover:text-white cursor-pointer"
+                  className="text-muted hover:text-foreground cursor-pointer"
                   onClick={() => {
                     setPickedUser(null);
                     setForm((f) => ({ ...f, userId: '' }));
@@ -253,7 +253,7 @@ export default function AdminNotificationComposeForm({ courses }: ComposeFormPro
                     placeholder="Type at least 2 letters of the student's name…"
                     value={userQuery}
                     onChange={(e) => setUserQuery(e.target.value)}
-                    className="w-full bg-dark-card border border-dark-border rounded-lg pl-9 pr-4 py-2.5 text-sm text-white focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary"
+                    className="w-full bg-dark-card border border-dark-border rounded-lg pl-9 pr-4 py-2.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary"
                   />
                 </div>
                 {userSearchState === 'searching' && <p className="text-muted text-xs">Searching…</p>}
@@ -281,7 +281,7 @@ export default function AdminNotificationComposeForm({ courses }: ComposeFormPro
                             setUserResults([]);
                           }}
                         >
-                          <span className="text-sm text-white">{u.name}</span>
+                          <span className="text-sm text-foreground">{u.name}</span>
                           <span className="text-xs text-muted block">{u.email}</span>
                         </button>
                       </li>
@@ -302,7 +302,7 @@ export default function AdminNotificationComposeForm({ courses }: ComposeFormPro
           />
         )}
 
-        <label className="flex items-center gap-2 text-sm text-white cursor-pointer">
+        <label className="flex items-center gap-2 text-sm text-foreground cursor-pointer">
           <input
             type="checkbox"
             checked={form.requiresAcknowledge}

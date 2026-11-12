@@ -48,7 +48,7 @@ export default function LoginForm() {
     <div>
       <div className="mb-5 text-center">
         <Link href="/" className="gradient-text text-2xl font-black">CodeBettle</Link>
-        <h1 className="mt-3 text-xl font-bold text-white">Welcome Back</h1>
+        <h1 className="mt-3 text-xl font-bold text-foreground">Welcome Back</h1>
         <p className="mt-1 text-sm text-muted">Sign in to continue your learning journey</p>
       </div>
 
@@ -58,7 +58,7 @@ export default function LoginForm() {
           role="tab"
           aria-selected={role === 'student'}
           onClick={() => setRole('student')}
-          className={`cursor-pointer rounded-md px-3 py-2 text-sm font-semibold transition-colors ${role === 'student' ? 'bg-primary text-dark' : 'text-muted hover:text-white'}`}
+          className={`cursor-pointer rounded-md px-3 py-2 text-sm font-semibold transition-colors ${role === 'student' ? 'bg-primary text-ink' : 'text-muted hover:text-foreground'}`}
         >
           Student
         </button>
@@ -67,7 +67,7 @@ export default function LoginForm() {
           role="tab"
           aria-selected={role === 'instructor'}
           onClick={() => setRole('instructor')}
-          className={`cursor-pointer rounded-md px-3 py-2 text-sm font-semibold transition-colors ${role === 'instructor' ? 'bg-primary text-dark' : 'text-muted hover:text-white'}`}
+          className={`cursor-pointer rounded-md px-3 py-2 text-sm font-semibold transition-colors ${role === 'instructor' ? 'bg-primary text-ink' : 'text-muted hover:text-foreground'}`}
         >
           Instructor
         </button>
@@ -95,12 +95,12 @@ export default function LoginForm() {
             icon={<Lock className="h-4 w-4" />}
             required
           />
-          <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-8 cursor-pointer text-muted hover:text-white">
+          <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-8 cursor-pointer text-muted hover:text-foreground">
             {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
           </button>
         </div>
         <p className="text-right text-sm">
-          <Link href="/auth/reset" className="text-primary hover:underline font-medium">Forgot password?</Link>
+          <Link href="/auth/reset" className="text-primary-text hover:underline font-medium">Forgot password?</Link>
         </p>
         <Button type="submit" fullWidth size="lg" loading={loading}>Sign In</Button>
       </form>
@@ -108,18 +108,18 @@ export default function LoginForm() {
       {role === 'instructor' && (
         <p className="mt-4 text-center text-sm text-muted">
           Want to teach?{' '}
-          <Link href="/become-instructor" className="font-medium text-primary hover:underline">Become an Instructor</Link>
+          <Link href="/become-instructor" className="font-medium text-primary-text hover:underline">Become an Instructor</Link>
         </p>
       )}
 
       <p className="mt-4 flex items-center justify-center gap-1.5 text-center text-xs text-muted">
-        <ShieldCheck className="h-3.5 w-3.5 text-primary" />
+        <ShieldCheck className="h-3.5 w-3.5 text-primary-text" />
         Protected by secure sign-in
       </p>
 
       <p className="mt-3 text-center text-sm text-muted">
         Don&apos;t have an account?{' '}
-        <Link href="/auth/register" className="font-medium text-primary hover:underline">Sign up</Link>
+        <Link href="/auth/register" className="font-medium text-primary-text hover:underline">Sign up</Link>
       </p>
     </div>
   );

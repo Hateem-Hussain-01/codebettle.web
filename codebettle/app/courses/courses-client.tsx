@@ -51,7 +51,7 @@ export default function CoursesClient({ courses: allCourses, instructorNames }: 
         {/* Header */}
         <div className="bg-dark-card border-b border-dark-border py-12">
           <FadeIn className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <h1 className="text-3xl sm:text-4xl font-black text-white mb-2">
+            <h1 className="text-3xl sm:text-4xl font-black text-foreground mb-2">
               All <span className="gradient-text">Courses</span>
             </h1>
             <p className="text-muted">Explore {allCourses.length} expert-led courses across {CATEGORIES.length - 1} categories</p>
@@ -122,7 +122,7 @@ export default function CoursesClient({ courses: allCourses, instructorNames }: 
           ) : (
             <div className="text-center py-24">
               <SlidersHorizontal className="w-12 h-12 text-muted mx-auto mb-4" />
-              <p className="text-white font-semibold mb-2">No courses found</p>
+              <p className="text-foreground font-semibold mb-2">No courses found</p>
               <p className="text-muted text-sm">Try adjusting your filters or search term</p>
             </div>
           )}

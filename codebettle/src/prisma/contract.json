@@ -132,6 +132,10 @@
       "model": "Session",
       "namespace": "public"
     },
+    "SocialLink": {
+      "model": "SocialLink",
+      "namespace": "public"
+    },
     "SupportRequest": {
       "model": "SupportRequest",
       "namespace": "public"
@@ -5001,6 +5005,13 @@
                   "plane": "domain"
                 }
               },
+              "explanation": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
               "id": {
                 "nullable": false,
                 "type": {
@@ -5129,6 +5140,9 @@
                 },
                 "difficulty": {
                   "column": "difficulty"
+                },
+                "explanation": {
+                  "column": "explanation"
                 },
                 "id": {
                   "column": "id"
@@ -5387,6 +5401,93 @@
               },
               "namespaceId": "public",
               "table": "Session"
+            }
+          },
+          "SocialLink": {
+            "fields": {
+              "createdAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "precision": 3
+                  }
+                }
+              },
+              "displayOrder": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
+              "id": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "isEnabled": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/bool@1",
+                  "kind": "scalar"
+                }
+              },
+              "name": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "updatedAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "precision": 3
+                  }
+                }
+              },
+              "url": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              }
+            },
+            "relations": {},
+            "storage": {
+              "fields": {
+                "createdAt": {
+                  "column": "createdAt"
+                },
+                "displayOrder": {
+                  "column": "displayOrder"
+                },
+                "id": {
+                  "column": "id"
+                },
+                "isEnabled": {
+                  "column": "isEnabled"
+                },
+                "name": {
+                  "column": "name"
+                },
+                "updatedAt": {
+                  "column": "updatedAt"
+                },
+                "url": {
+                  "column": "url"
+                }
+              },
+              "namespaceId": "public",
+              "table": "SocialLink"
             }
           },
           "SupportRequest": {
@@ -10271,6 +10372,11 @@
                     "plane": "storage"
                   }
                 },
+                "explanation": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": true
+                },
                 "id": {
                   "codecId": "pg/text@1",
                   "dataType": "pg/text",
@@ -10590,6 +10696,81 @@
                   ],
                   "name": "Session_userId_idx_a489d58a",
                   "prefix": "Session_userId_idx",
+                  "unique": false
+                }
+              ],
+              "primaryKey": {
+                "columns": [
+                  "id"
+                ]
+              },
+              "uniques": []
+            },
+            "SocialLink": {
+              "columns": {
+                "createdAt": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "dataType": "pg/timestamptz",
+                  "default": {
+                    "expression": "now()",
+                    "kind": "function"
+                  },
+                  "nullable": false,
+                  "typeParams": {
+                    "precision": 3
+                  }
+                },
+                "displayOrder": {
+                  "codecId": "pg/int4@1",
+                  "dataType": "pg/int4",
+                  "default": {
+                    "kind": "literal",
+                    "value": 0
+                  },
+                  "nullable": false
+                },
+                "id": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                },
+                "isEnabled": {
+                  "codecId": "pg/bool@1",
+                  "dataType": "pg/bool",
+                  "default": {
+                    "kind": "literal",
+                    "value": true
+                  },
+                  "nullable": false
+                },
+                "name": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                },
+                "updatedAt": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "dataType": "pg/timestamptz",
+                  "nullable": false,
+                  "typeParams": {
+                    "precision": 3
+                  }
+                },
+                "url": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                }
+              },
+              "foreignKeys": [],
+              "indexes": [
+                {
+                  "columns": [
+                    "isEnabled",
+                    "displayOrder"
+                  ],
+                  "name": "SocialLink_isEnabled_displayOrder_idx_858b3c85",
+                  "prefix": "SocialLink_isEnabled_displayOrder_idx",
                   "unique": false
                 }
               ],
@@ -11278,10 +11459,10 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "5d3d3fbbf7948669f2c81cb05cdd04211ad22ae00755295f422550e07cba1902"
+    "storageHash": "354f04bc914218afbaecf1860816c3eb17265df49166f0e49a2bdea59c846cba"
   },
   "execution": {
-    "executionHash": "eb89b0b36153aa46b04db3a264d14b4a4f858fe1a2eaf06f1e4ac7e4a70e4574",
+    "executionHash": "d8dedd49153c74bc46848ff157274826b9693ff2b12fe3a18c9b0cd948a537f3",
     "mutations": {
       "defaults": [
         {
@@ -12101,6 +12282,52 @@
           "ref": {
             "entry": "Session",
             "field": "createdAt",
+            "namespace": "public"
+          }
+        },
+        {
+          "onCreate": {
+            "id": "timestampNow",
+            "kind": "generator",
+            "params": {
+              "precision": 3
+            }
+          },
+          "ref": {
+            "entry": "SocialLink",
+            "field": "createdAt",
+            "namespace": "public"
+          }
+        },
+        {
+          "onCreate": {
+            "id": "cuid2",
+            "kind": "generator"
+          },
+          "ref": {
+            "entry": "SocialLink",
+            "field": "id",
+            "namespace": "public"
+          }
+        },
+        {
+          "onCreate": {
+            "id": "timestampNow",
+            "kind": "generator",
+            "params": {
+              "precision": 3
+            }
+          },
+          "onUpdate": {
+            "id": "timestampNow",
+            "kind": "generator",
+            "params": {
+              "precision": 3
+            }
+          },
+          "ref": {
+            "entry": "SocialLink",
+            "field": "updatedAt",
             "namespace": "public"
           }
         },

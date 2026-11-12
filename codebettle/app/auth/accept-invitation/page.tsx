@@ -91,7 +91,7 @@ function AcceptInvitationForm() {
     <div className="bg-dark-card border border-dark-border rounded-2xl p-8">
       <div className="text-center mb-8">
         <Link href="/" className="text-2xl font-black gradient-text">CodeBettle</Link>
-        <h1 className="text-xl font-bold text-white mt-4">
+        <h1 className="text-xl font-bold text-foreground mt-4">
           {accepted ? 'Welcome to CodeBettle!' : 'Accept your invitation'}
         </h1>
         <p className="text-muted text-sm mt-1">
@@ -106,7 +106,7 @@ function AcceptInvitationForm() {
       {!loadingPreview && !accepted && previewError && (
         <div className="text-center">
           <ShieldAlert className="w-12 h-12 text-red-400 mx-auto" />
-          <h2 className="text-lg font-bold text-white mt-4">This invitation link doesn&apos;t work</h2>
+          <h2 className="text-lg font-bold text-foreground mt-4">This invitation link doesn&apos;t work</h2>
           <p className="text-muted text-sm mt-2">{previewError}</p>
           <p className="text-muted text-sm mt-2">
             Invitation links expire after 7 days and can only be used once.
@@ -142,7 +142,7 @@ function AcceptInvitationForm() {
               icon={<Lock className="w-4 h-4" />}
               required
             />
-            <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-8 text-muted hover:text-white cursor-pointer">
+            <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-8 text-muted hover:text-foreground cursor-pointer">
               {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
             </button>
           </div>
@@ -162,8 +162,8 @@ function AcceptInvitationForm() {
 
       {accepted && (
         <div className="text-center">
-          <CheckCircle2 className="w-12 h-12 text-primary mx-auto" />
-          <h2 className="text-lg font-bold text-white mt-4">Your account is ready!</h2>
+          <CheckCircle2 className="w-12 h-12 text-primary-text mx-auto" />
+          <h2 className="text-lg font-bold text-foreground mt-4">Your account is ready!</h2>
           <p className="text-muted text-sm mt-2">
             Your password is set and your admin access is active.
             Taking you to sign in…
@@ -177,7 +177,7 @@ function AcceptInvitationForm() {
       {!accepted && (
         <p className="text-center text-sm text-muted mt-6">
           Already have an account?{' '}
-          <Link href="/auth/login" className="text-primary hover:underline font-medium">Back to Sign In</Link>
+          <Link href="/auth/login" className="text-primary-text hover:underline font-medium">Back to Sign In</Link>
         </p>
       )}
     </div>

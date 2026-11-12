@@ -8,6 +8,7 @@ import { cn } from '@/lib/utils';
 import { getPortalSwitch, portalFromPathname } from '@/lib/portal-switch';
 import LoginNotificationPopup from '@/components/notifications/LoginNotificationPopup';
 import NotificationBadge from '@/components/notifications/NotificationBadge';
+import ThemeToggle from '@/components/theme/ThemeToggle';
 import type { SessionUser } from '@/lib/auth';
 
 interface NavItem {
@@ -56,7 +57,7 @@ function Sidebar({
       <div className="px-4 py-5 border-b border-dark-border flex items-center justify-between">
         <Link href="/" className="text-xl font-black gradient-text">CodeBettle</Link>
         {mobile && (
-          <button onClick={onClose} aria-label="Close menu" className="text-muted hover:text-white">
+          <button onClick={onClose} aria-label="Close menu" className="text-muted hover:text-foreground">
             <X className="w-5 h-5" />
           </button>
         )}
@@ -67,7 +68,7 @@ function Sidebar({
         <div className="flex items-center gap-3">
           <img src={user.avatar || `https://api.dicebear.com/7.x/initials/svg?seed=${user.name}`} alt={user.name} className="w-9 h-9 rounded-full object-cover border-2 border-primary/40" />
           <div className="min-w-0">
-            <p className="text-sm font-medium text-white truncate">{user.name}</p>
+            <p className="text-sm font-medium text-foreground truncate">{user.name}</p>
             <p className="text-xs text-muted capitalize">{portalName}</p>
           </div>
         </div>
@@ -84,12 +85,12 @@ function Sidebar({
               onClick={() => mobile && onClose()}
               className={cn(
                 'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all group',
-                isActive ? 'bg-primary/10 text-primary border border-primary/20' : 'text-muted hover:text-white hover:bg-dark-border'
+                isActive ? 'bg-primary/10 text-primary-text border border-primary/20' : 'text-muted hover:text-foreground hover:bg-dark-border'
               )}
             >
-              <span className={cn('w-5 h-5 flex-shrink-0', isActive ? 'text-primary' : 'text-muted group-hover:text-white')}>{item.icon}</span>
+              <span className={cn('w-5 h-5 flex-shrink-0', isActive ? 'text-primary-text' : 'text-muted group-hover:text-foreground')}>{item.icon}</span>
               {item.label}
-              {isActive && <ChevronRight className="w-4 h-4 ml-auto text-primary" />}
+              {isActive && <ChevronRight className="w-4 h-4 ml-auto text-primary-text" />}
             </Link>
           );
         })}
@@ -154,7 +155,7 @@ export default function PortalLayout({ user, navItems, children, portalName }: P
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
         {/* Top bar */}
         <header className="h-14 flex items-center justify-between px-4 sm:px-6 border-b border-dark-border bg-dark-card/50 backdrop-blur-sm flex-shrink-0">
-          <button onClick={() => setSidebarOpen(true)} aria-label="Open menu" className="lg:hidden text-muted hover:text-white p-1 rounded cursor-pointer">
+          <button onClick={() => setSidebarOpen(true)} aria-label="Open menu" className="lg:hidden text-muted hover:text-foreground p-1 rounded cursor-pointer">
             <Menu className="w-5 h-5" />
           </button>
           <div className="flex-1 lg:flex-none" />
@@ -169,12 +170,14 @@ export default function PortalLayout({ user, navItems, children, portalName }: P
                 href={switchTarget.href}
                 aria-label={switchTarget.label}
                 title={switchTarget.label}
-                className="flex items-center gap-2 px-2.5 py-2 rounded-lg text-sm font-medium text-muted hover:text-white hover:bg-dark-border border border-dark-border hover:border-primary/40 transition-colors cursor-pointer"
+                className="flex items-center gap-2 px-2.5 py-2 rounded-lg text-sm font-medium text-muted hover:text-foreground hover:bg-dark-border border border-dark-border hover:border-primary/40 transition-colors cursor-pointer"
               >
-                <ArrowLeftRight className="w-4 h-4 text-primary" />
+                <ArrowLeftRight className="w-4 h-4 text-primary-text" />
                 <span className="hidden sm:inline">{switchTarget.label}</span>
               </Link>
             )}
+            {/* Module 6 — light/dark theme toggle (cookie preference). */}
+            <ThemeToggle />
             {/* The bell used to be a dead button (no action at all). It is
                 now a link to the portal notifications page, with a real
                 unread-count badge (Phase 3, NotificationBadge — the fetch
@@ -182,7 +185,7 @@ export default function PortalLayout({ user, navItems, children, portalName }: P
                 logout fetch). The badge is display-only: nothing here
                 enforces access — the notifications page and its API
                 enforce ownership server-side. */}
-            <Link href={`/${portalSlug}/notifications`} aria-label="Notifications" className="relative text-muted hover:text-white transition-colors p-2 rounded-lg hover:bg-dark-border cursor-pointer">
+            <Link href={`/${portalSlug}/notifications`} aria-label="Notifications" className="relative text-muted hover:text-foreground transition-colors p-2 rounded-lg hover:bg-dark-border cursor-pointer">
               <Bell className="w-5 h-5" />
               <NotificationBadge />
             </Link>

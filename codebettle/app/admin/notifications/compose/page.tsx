@@ -29,7 +29,7 @@ export default async function AdminComposeNotificationPage() {
   return (
     <div className="space-y-6">
       <FadeIn>
-        <h1 className="text-2xl font-black text-white">Compose Notification</h1>
+        <h1 className="text-2xl font-black text-foreground">Compose Notification</h1>
         <p className="text-muted text-sm mt-1">
           Send an in-app notification to all users, a role, one user, or a course&apos;s enrolled students.
         </p>

@@ -29,8 +29,8 @@ export default function VerifyLookupPage() {
       <main className="min-h-screen bg-background pt-16">
         <div className="max-w-xl mx-auto px-4 sm:px-6 py-16">
           <FadeIn className="text-center mb-8">
-            <Award className="w-12 h-12 text-primary mx-auto mb-3" />
-            <h1 className="text-3xl font-black text-white">Verify Certificate</h1>
+            <Award className="w-12 h-12 text-primary-text mx-auto mb-3" />
+            <h1 className="text-3xl font-black text-foreground">Verify Certificate</h1>
             <p className="text-muted mt-2 text-sm">Enter the verification token printed on a CodeBettle certificate.</p>
           </FadeIn>
           <FadeIn delay={0.08}>

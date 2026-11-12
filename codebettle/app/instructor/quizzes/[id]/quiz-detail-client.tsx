@@ -1,8 +1,8 @@
 'use client';
-import { useRef, useState } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { AlertTriangle, BarChart2, CheckCircle2, Plus, Trash2, Upload } from 'lucide-react';
+import { AlertTriangle, BarChart2, Copy, FileText, Plus, Trash2 } from 'lucide-react';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
 import Textarea from '@/components/ui/Textarea';
@@ -11,6 +11,11 @@ import Card from '@/components/ui/Card';
 import Badge from '@/components/ui/Badge';
 import FadeIn from '@/components/ui/FadeIn';
 import type { Quiz, QuizQuestion, QuizQuestionType } from '@/lib/db/types';
+import {
+  QUIZ_AI_PROMPT,
+  QUIZ_TEXT_FORMAT_RULES,
+  QUIZ_TEXT_IMPORT_SAMPLE,
+} from '@/lib/services/quiz-text-format';
 import toast from 'react-hot-toast';
 
 const TYPE_LABELS: Record<QuizQuestionType, string> = {
@@ -33,6 +38,8 @@ interface EditableQuestion {
   topic?: string;
   correctText?: string;
   acceptedAnswers?: string[];
+  explanation?: string;
+  /** Parser flag, shown as a warning — the teacher cannot set it, and it never blocks publishing. */
   needsReview?: boolean;
   reviewNote?: string;
   options: { text: string; isCorrect?: boolean }[];
@@ -46,6 +53,7 @@ function toEditable(q: QuizQuestion): EditableQuestion {
     topic: q.topic,
     correctText: q.correctText,
     acceptedAnswers: q.acceptedAnswers,
+    explanation: q.explanation,
     needsReview: q.needsReview,
     reviewNote: q.reviewNote,
     options: q.options.map((o) => ({ text: o.text, isCorrect: o.isCorrect })),
@@ -67,7 +75,8 @@ export default function QuizDetailClient({ quiz: initial }: { quiz: Quiz }) {
   const [quiz, setQuiz] = useState(initial);
   const [questions, setQuestions] = useState<EditableQuestion[]>(initial.questions?.map(toEditable) ?? []);
   const [saving, setSaving] = useState(false);
-  const [uploading, setUploading] = useState(false);
+  const [importing, setImporting] = useState(false);
+  const [importText, setImportText] = useState('');
   const [meta, setMeta] = useState({
     title: quiz.title,
     description: quiz.description ?? '',
@@ -78,10 +87,9 @@ export default function QuizDetailClient({ quiz: initial }: { quiz: Quiz }) {
     showResultsToStudents: quiz.showResultsToStudents,
     showCorrectAnswers: quiz.showCorrectAnswers,
   });
-  const fileRef = useRef<HTMLInputElement>(null);
 
   const isDraft = quiz.status === 'draft';
-  const unreviewedCount = questions.filter((q) => q.needsReview).length;
+  const flaggedCount = questions.filter((q) => q.needsReview).length;
 
   async function patchQuiz(body: Record<string, unknown>) {
     const res = await fetch(`/api/instructor/quizzes/${quiz.id}`, {
@@ -117,51 +125,78 @@ export default function QuizDetailClient({ quiz: initial }: { quiz: Quiz }) {
     }
   };
 
-  const handleUpload = async (file: File) => {
-    setUploading(true);
+  const copyText = async (text: string, label: string) => {
     try {
-      const form = new FormData();
-      form.append('file', file);
-      const res = await fetch(`/api/instructor/quizzes/${quiz.id}/upload`, { method: 'POST', body: form });
+      await navigator.clipboard.writeText(text);
+      toast.success(`${label} copied`);
+    } catch {
+      toast.error('Could not copy — select the text and copy it manually');
+    }
+  };
+
+  const handleImportText = async () => {
+    if (!importText.trim()) {
+      toast.error('Paste the quiz text first');
+      return;
+    }
+    setImporting(true);
+    try {
+      const res = await fetch(`/api/instructor/quizzes/${quiz.id}/import-text`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text: importText }),
+      });
       const data = await res.json();
       if (!res.ok) {
-        toast.error(data.error ?? 'Could not import the PDF');
+        toast.error(data.error ?? 'Could not import the quiz text');
         return;
       }
       setQuiz(data.quiz);
       setQuestions(data.quiz.questions?.map(toEditable) ?? []);
-      if (data.parsed.isScanned) {
-        toast.error('The PDF has no readable text (scanned image). Add questions manually below.');
-      } else if (data.parsed.warnings > 0) {
-        toast.success(`Imported ${data.parsed.questions} questions with ${data.parsed.warnings} warnings — review them below.`);
+      setImportText('');
+      if (data.parsed.warnings > 0) {
+        toast.success(
+          `Imported ${data.parsed.questions} questions with ${data.parsed.warnings} warnings — check the flagged questions below.`,
+        );
       } else {
-        toast.success(`Imported ${data.parsed.questions} questions. Review them, then publish.`);
+        toast.success(`Imported ${data.parsed.questions} questions. Publish when ready.`);
       }
     } finally {
-      setUploading(false);
+      setImporting(false);
     }
   };
 
-  const saveReview = async () => {
+  const saveQuestions = async () => {
     if (questions.some((q) => !q.prompt.trim())) {
       toast.error('Every question needs a prompt');
       return;
     }
     setSaving(true);
     try {
-      const res = await fetch(`/api/instructor/quizzes/${quiz.id}/review`, {
+      const res = await fetch(`/api/instructor/quizzes/${quiz.id}/questions`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ questions }),
+        body: JSON.stringify({
+          questions: questions.map((q) => ({
+            type: q.type,
+            prompt: q.prompt,
+            points: q.points,
+            topic: q.topic,
+            correctText: q.correctText,
+            acceptedAnswers: q.acceptedAnswers,
+            explanation: q.explanation,
+            options: q.options,
+          })),
+        }),
       });
       const data = await res.json();
       if (!res.ok) {
-        toast.error(data.error ?? 'Could not save the review');
+        toast.error(data.error ?? 'Could not save the questions');
         return;
       }
       setQuiz(data.quiz);
       setQuestions(data.quiz.questions?.map(toEditable) ?? []);
-      toast.success('Review saved');
+      toast.success('Questions saved');
     } finally {
       setSaving(false);
     }
@@ -213,7 +248,7 @@ export default function QuizDetailClient({ quiz: initial }: { quiz: Quiz }) {
           <h1 className="text-2xl font-black text-white">{quiz.title}</h1>
           <p className="text-muted text-sm mt-1">
             {questions.length} question{questions.length !== 1 ? 's' : ''}
-            {unreviewedCount > 0 && ` · ${unreviewedCount} need${unreviewedCount === 1 ? 's' : ''} review`}
+            {flaggedCount > 0 && ` · ${flaggedCount} flagged — check the notes on those questions`}
           </p>
         </div>
         <div className="flex gap-2">
@@ -299,32 +334,61 @@ export default function QuizDetailClient({ quiz: initial }: { quiz: Quiz }) {
       </Card>
       </FadeIn>
 
-      {/* PDF import */}
+      {/* Text import */}
       {isDraft && (
         <FadeIn delay={0.08}>
         <Card className="p-5">
-          <h2 className="text-white font-bold mb-2">Import from PDF</h2>
+          <h2 className="text-white font-bold mb-2">Import from text</h2>
           <p className="text-muted text-sm mb-4">
-            Generate the quiz PDF with any AI tool (ChatGPT, Claude, Gemini…), following the{' '}
-            <a href="/api/quizzes/sample" download className="text-primary underline">
-              sample template
-            </a>
-            , then upload it here. Uncertain parses are flagged for your review below — nothing is guessed.
+            Copy the prompt below, fill in the [BRACKETS], and give it to any AI tool (ChatGPT, Claude, Gemini…).
+            Paste the text it gives you into the box below and import it — the quiz is created from that text.
+            Anything unclear is flagged below instead of guessed.
           </p>
-          <input
-            ref={fileRef}
-            type="file"
-            accept="application/pdf"
-            className="hidden"
-            onChange={(e) => {
-              const file = e.target.files?.[0];
-              if (file) void handleUpload(file);
-              e.target.value = '';
-            }}
+
+          <div className="mb-4">
+            <div className="flex items-center justify-between mb-2">
+              <h3 className="text-white font-semibold text-sm">Ready-made AI prompt</h3>
+              <Button variant="outline" size="sm" onClick={() => void copyText(QUIZ_AI_PROMPT, 'Prompt')}>
+                <Copy className="w-4 h-4 mr-1" /> Copy prompt
+              </Button>
+            </div>
+            <pre className="text-xs text-muted whitespace-pre-wrap bg-dark-card rounded-lg p-3 max-h-64 overflow-y-auto">
+              {QUIZ_AI_PROMPT}
+            </pre>
+          </div>
+
+          <div className="mb-4">
+            <div className="flex items-center justify-between mb-2">
+              <h3 className="text-white font-semibold text-sm">Sample format</h3>
+              <Button variant="outline" size="sm" onClick={() => void copyText(QUIZ_TEXT_IMPORT_SAMPLE, 'Sample')}>
+                <Copy className="w-4 h-4 mr-1" /> Copy sample
+              </Button>
+            </div>
+            <ul className="text-muted text-sm space-y-1 mb-2">
+              {QUIZ_TEXT_FORMAT_RULES.map((rule) => (
+                <li key={rule}>• {rule}</li>
+              ))}
+            </ul>
+            <pre className="text-xs text-muted whitespace-pre-wrap bg-dark-card rounded-lg p-3 max-h-64 overflow-y-auto">
+              {QUIZ_TEXT_IMPORT_SAMPLE}
+            </pre>
+          </div>
+
+          <Textarea
+            label="Paste the quiz text here"
+            value={importText}
+            onChange={(e) => setImportText(e.target.value)}
+            placeholder={'Question 1: What is the capital of France?\nA. London\nB. Paris\nC. Berlin\nD. Madrid\nCorrect Answer: B\nExplanation: Paris is the capital of France.'}
+            rows={10}
           />
-          <Button variant="outline" onClick={() => fileRef.current?.click()} disabled={uploading}>
-            <Upload className="w-4 h-4 mr-2" /> {uploading ? 'Importing…' : 'Upload quiz PDF'}
-          </Button>
+          <div className="flex justify-end mt-3">
+            <Button onClick={() => void handleImportText()} disabled={importing || !importText.trim()}>
+              <FileText className="w-4 h-4 mr-2" /> {importing ? 'Importing…' : 'Import quiz text'}
+            </Button>
+          </div>
+          <p className="text-muted text-xs mt-2">
+            Importing replaces the questions below with the ones from the pasted text.
+          </p>
           {quiz.parseWarnings && quiz.parseWarnings.length > 0 && (
             <div className="mt-4 space-y-1">
               {quiz.parseWarnings.map((w, i) => (
@@ -338,11 +402,11 @@ export default function QuizDetailClient({ quiz: initial }: { quiz: Quiz }) {
         </FadeIn>
       )}
 
-      {/* Review editor */}
+      {/* Questions */}
       <FadeIn delay={0.1}>
       <Card className="p-5">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-white font-bold">Questions — review before publish</h2>
+          <h2 className="text-white font-bold">Questions</h2>
           {isDraft && (
             <Button
               variant="outline"
@@ -355,7 +419,7 @@ export default function QuizDetailClient({ quiz: initial }: { quiz: Quiz }) {
         </div>
         {questions.length === 0 ? (
           <p className="text-muted text-sm">
-            No questions yet. Upload a quiz PDF above, or add a question manually.
+            No questions yet. Paste quiz text above, or add a question manually.
           </p>
         ) : (
           <div className="space-y-5">
@@ -364,12 +428,8 @@ export default function QuizDetailClient({ quiz: initial }: { quiz: Quiz }) {
                 <div className="flex items-center justify-between gap-3 mb-3">
                   <span className="text-white font-semibold text-sm">Q{qi + 1}</span>
                   <div className="flex items-center gap-2">
-                    {q.needsReview ? (
-                      <Badge variant="warning">Needs review</Badge>
-                    ) : (
-                      <Badge variant="success">
-                        <CheckCircle2 className="w-3 h-3 mr-1" /> Reviewed
-                      </Badge>
+                    {q.needsReview && (
+                      <Badge variant="warning">Needs attention</Badge>
                     )}
                     {isDraft && (
                       <button
@@ -412,6 +472,15 @@ export default function QuizDetailClient({ quiz: initial }: { quiz: Quiz }) {
                       onChange={(e) => updateQuestion(qi, { points: Number(e.target.value) || 1 })}
                     />
                   </div>
+                </div>
+                <div className="mt-3">
+                  <Input
+                    label="Explanation (shown to you only, not to students)"
+                    value={q.explanation ?? ''}
+                    disabled={!isDraft}
+                    onChange={(e) => updateQuestion(qi, { explanation: e.target.value })}
+                    placeholder="Why is this the correct answer?"
+                  />
                 </div>
 
                 {q.type === 'fill_blank' ? (
@@ -478,23 +547,14 @@ export default function QuizDetailClient({ quiz: initial }: { quiz: Quiz }) {
                     )}
                   </div>
                 )}
-                <label className="flex items-center gap-2 text-xs text-muted mt-3">
-                  <input
-                    type="checkbox"
-                    checked={q.needsReview ?? false}
-                    disabled={!isDraft}
-                    onChange={(e) => updateQuestion(qi, { needsReview: e.target.checked })}
-                  />
-                  Flag as needing review
-                </label>
               </div>
             ))}
           </div>
         )}
         {isDraft && questions.length > 0 && (
           <div className="flex justify-end mt-4">
-            <Button onClick={saveReview} disabled={saving}>
-              {saving ? 'Saving…' : 'Save review'}
+            <Button onClick={saveQuestions} disabled={saving}>
+              {saving ? 'Saving…' : 'Save questions'}
             </Button>
           </div>
         )}
@@ -507,7 +567,7 @@ export default function QuizDetailClient({ quiz: initial }: { quiz: Quiz }) {
           <Button
             neon
             onClick={() => void doAction('publish')}
-            disabled={saving || questions.length === 0 || unreviewedCount > 0}
+            disabled={saving || questions.length === 0}
           >
             Publish quiz
           </Button>
@@ -531,10 +591,10 @@ export default function QuizDetailClient({ quiz: initial }: { quiz: Quiz }) {
       {isDraft && questions.length === 0 && (
         <p className="text-muted text-sm">Add at least one question before publishing.</p>
       )}
-      {isDraft && unreviewedCount > 0 && (
+      {isDraft && flaggedCount > 0 && (
         <p className="text-amber-400 text-sm">
-          {unreviewedCount} question{unreviewedCount !== 1 ? 's' : ''} still need{unreviewedCount === 1 ? 's' : ''}{' '}
-          review — fix the flagged items and save the review before publishing.
+          {flaggedCount} question{flaggedCount !== 1 ? 's' : ''} flagged above — fix the notes before publishing so
+          every question can be graded.
         </p>
       )}
     </div>

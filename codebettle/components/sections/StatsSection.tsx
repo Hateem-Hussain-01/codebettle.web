@@ -4,7 +4,7 @@ import { useRef, useEffect, useState } from 'react';
 import { Users, BookOpen, Award, Star } from 'lucide-react';
 
 const stats = [
-  { icon: <Users className="w-8 h-8" />, value: 1500, suffix: '+', label: 'Active Students', color: 'text-primary' },
+  { icon: <Users className="w-8 h-8" />, value: 1500, suffix: '+', label: 'Active Students', color: 'text-primary-text' },
   { icon: <BookOpen className="w-8 h-8" />, value: 8, suffix: '+', label: 'Expert Courses', color: 'text-blue-400' },
   { icon: <Award className="w-8 h-8" />, value: 300, suffix: '+', label: 'Certificates Issued', color: 'text-green-400' },
   { icon: <Star className="w-8 h-8" />, value: 4.8, suffix: '', label: 'Average Rating', color: 'text-yellow-400', decimal: true },

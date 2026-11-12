@@ -666,6 +666,8 @@ export interface QuizQuestion {
   correctText?: string;
   /** SERVER-SIDE ONLY (fill-in-the-blank alternates). Never send to a student. */
   acceptedAnswers: string[];
+  /** Teacher-facing explanation from the text import. Never send to a student. */
+  explanation?: string;
   needsReview: boolean;
   reviewNote?: string;
   options: QuizOption[];
@@ -809,6 +811,7 @@ export type QuizQuestionRow = Pick<
   | 'difficulty'
   | 'correctText'
   | 'acceptedAnswers'
+  | 'explanation'
   | 'needsReview'
   | 'reviewNote'
 >;
@@ -924,6 +927,25 @@ export interface PaymentAccount {
 }
 
 /**
+ * An admin-managed footer social icon (Phase 4, Module 7).
+ * ONLY two things are required per icon: Icon Name (e.g. LinkedIn)
+ * and Icon Link (the profile URL). The icon itself is auto-fetched
+ * from the name (resolvePlatformKey in lib/social.ts) — there is no
+ * image upload. Only enabled icons are shown in the footer, in
+ * displayOrder. While no rows exist, the footer falls back to the
+ * hardcoded defaults in lib/social.ts.
+ */
+export interface SocialLink {
+  id: string;
+  name: string;
+  url: string;
+  displayOrder: number;
+  isEnabled: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/**
  * A student's manual payment submission (Phase 0/1, Module 1).
  * Deliberately a separate model from Payment: Payment is gateway-shaped
  * (provider/providerRef, status paid|failed|refunded) and stays untouched
@@ -993,6 +1015,11 @@ export type PaymentSubmissionRow = Pick<
   | 'reviewNote'
   | 'createdAt'
   | 'updatedAt'
+>;
+
+export type SocialLinkRow = Pick<
+  Models.public_SocialLink,
+  'id' | 'name' | 'url' | 'displayOrder' | 'isEnabled' | 'createdAt' | 'updatedAt'
 >;
 
 // ---------------------------------------------------------------------------

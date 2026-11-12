@@ -109,11 +109,11 @@ export default function StudentsImportClient() {
   return (
     <div className="space-y-6">
       <FadeIn className="flex items-center gap-3">
-        <Link href="/admin/students" className="text-muted hover:text-primary transition-colors">
+        <Link href="/admin/students" className="text-muted hover:text-primary-text transition-colors">
           <ArrowLeft className="w-5 h-5" />
         </Link>
         <div>
-          <h1 className="text-2xl font-black text-white">Import Users (CSV)</h1>
+          <h1 className="text-2xl font-black text-foreground">Import Users (CSV)</h1>
           <p className="text-muted text-sm mt-1">
             Columns: name, email, role, phone (phone optional). Role must be student or instructor — admin accounts are never importable.
           </p>
@@ -154,7 +154,7 @@ export default function StudentsImportClient() {
       {preview && (
         <div className="bg-dark-card border border-dark-border rounded-xl overflow-hidden">
           <div className="flex items-center justify-between gap-3 flex-wrap px-4 py-3 border-b border-dark-border">
-            <p className="text-sm text-white font-medium">
+            <p className="text-sm text-foreground font-medium">
               Preview: {preview.totalRows} rows •{' '}
               <span className="text-green-400">{preview.validCount} valid</span> •{' '}
               <span className="text-red-400">{preview.invalidCount} invalid</span>
@@ -176,7 +176,7 @@ export default function StudentsImportClient() {
                 {preview.valid.map(row => (
                   <tr key={`valid-${row.line}-${row.email}`} className="border-b border-dark-border/40 last:border-0">
                     <td className="py-3 px-4 text-muted text-xs">{row.line ?? ''}</td>
-                    <td className="py-3 px-4 text-white text-xs font-medium">{row.name}</td>
+                    <td className="py-3 px-4 text-foreground text-xs font-medium">{row.name}</td>
                     <td className="py-3 px-4 text-muted text-xs">{row.email}</td>
                     <td className="py-3 px-4 text-muted text-xs">{row.role}</td>
                     <td className="py-3 px-4 text-muted text-xs">{row.phone ?? ''}</td>
@@ -186,7 +186,7 @@ export default function StudentsImportClient() {
                 {preview.invalid.map(row => (
                   <tr key={`invalid-${row.line}`} className="border-b border-dark-border/40 last:border-0 bg-red-500/5">
                     <td className="py-3 px-4 text-muted text-xs">{row.line}</td>
-                    <td className="py-3 px-4 text-white text-xs font-medium">{row.row.name || '—'}</td>
+                    <td className="py-3 px-4 text-foreground text-xs font-medium">{row.row.name || '—'}</td>
                     <td className="py-3 px-4 text-muted text-xs">{row.row.email || '—'}</td>
                     <td className="py-3 px-4 text-muted text-xs">{row.row.role || '—'}</td>
                     <td className="py-3 px-4 text-muted text-xs">{row.row.phone || ''}</td>

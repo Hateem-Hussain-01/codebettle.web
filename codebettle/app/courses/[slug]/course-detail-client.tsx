@@ -5,6 +5,7 @@ import Footer from '@/components/layout/Footer';
 import Button from '@/components/ui/Button';
 import Badge from '@/components/ui/Badge';
 import StarRating from '@/components/ui/StarRating';
+import CourseThumbnail from '@/components/ui/CourseThumbnail';
 import Input from '@/components/ui/Input';
 import type { PublicCourse, Review, SafeUser } from '@/lib/db/types';
 import { formatPrice, getLevelColor, getCategoryColor, formatDate, getTotalLessonsCount, getCourseDuration } from '@/lib/utils';
@@ -122,12 +123,12 @@ export default function CourseDetailClient({ course, instructor, reviews, slug, 
             <div className="grid lg:grid-cols-3 gap-10">
               <FadeIn className="lg:col-span-2">
                 <span className={`text-xs font-medium px-2.5 py-0.5 rounded-full ${getCategoryColor(course.category)}`}>{course.category}</span>
-                <h1 className="text-3xl sm:text-4xl font-black text-white mt-3 mb-4">{course.title}</h1>
+                <h1 className="text-3xl sm:text-4xl font-black text-foreground mt-3 mb-4">{course.title}</h1>
                 <p className="text-muted text-lg mb-6">{course.description}</p>
                 <div className="flex flex-wrap items-center gap-4 text-sm mb-6">
                   <div className="flex items-center gap-1.5">
                     <StarRating rating={course.rating} size="sm" />
-                    <span className="text-primary font-bold">{course.rating}</span>
+                    <span className="text-primary-text font-bold">{course.rating}</span>
                     <span className="text-muted">({course.reviewCount} reviews)</span>
                   </div>
                   <span className="flex items-center gap-1.5 text-muted"><Users className="w-4 h-4" />{course.enrolledCount.toLocaleString()} students</span>
@@ -138,7 +139,7 @@ export default function CourseDetailClient({ course, instructor, reviews, slug, 
                   {instructor && (
                     <div className="flex items-center gap-2">
                       <img src={instructor.avatar} alt={instructor.name} className="w-8 h-8 rounded-full border border-primary/30" />
-                      <span className="text-sm text-muted">by <span className="text-primary font-medium">{instructor.name}</span></span>
+                      <span className="text-sm text-muted">by <span className="text-primary-text font-medium">{instructor.name}</span></span>
                     </div>
                   )}
                   <Badge variant={course.level === 'beginner' ? 'success' : course.level === 'intermediate' ? 'info' : 'danger'}>
@@ -150,10 +151,10 @@ export default function CourseDetailClient({ course, instructor, reviews, slug, 
               {/* Enrollment card */}
               <div className="lg:col-span-1">
                 <div className="bg-surface border border-dark-border rounded-xl overflow-hidden sticky top-20">
-                  <img src={course.thumbnail} alt={course.title} className="w-full h-44 object-cover" />
+                  <CourseThumbnail src={course.thumbnail} alt={course.title} className="w-full h-44 object-cover" />
                   <div className="p-5">
                     <div className="flex items-center gap-3 mb-4">
-                      <span className={`text-3xl font-black ${course.isFree ? 'text-green-400' : 'text-primary'}`}>
+                      <span className={`text-3xl font-black ${course.isFree ? 'text-green-400' : 'text-primary-text'}`}>
                         {formatPrice(discountedPrice)}
                       </span>
                       {appliedCoupon && !course.isFree && (
@@ -171,15 +172,15 @@ export default function CourseDetailClient({ course, instructor, reviews, slug, 
                     </Button>
                     {signedIn && loaded && (
                       <Button fullWidth variant="outline" onClick={() => toggle(course.id)} className="mb-3">
-                        <Heart className={`w-4 h-4 ${isWishlisted ? 'fill-primary text-primary' : ''}`} />
+                        <Heart className={`w-4 h-4 ${isWishlisted ? 'fill-primary-text text-primary-text' : ''}`} />
                         {isWishlisted ? 'Saved to Wishlist' : 'Add to Wishlist'}
                       </Button>
                     )}
                     <p className="text-muted text-xs text-center">Join {course.enrolledCount.toLocaleString()} students learning with CodeBettle</p>
                     <div className="mt-4 pt-4 border-t border-dark-border space-y-2 text-xs text-muted">
-                      <p className="flex items-center gap-2"><CheckCircle className="w-3.5 h-3.5 text-primary" />Lifetime access to recordings</p>
-                      <p className="flex items-center gap-2"><CheckCircle className="w-3.5 h-3.5 text-primary" />Downloadable materials</p>
-                      <p className="flex items-center gap-2"><Award className="w-3.5 h-3.5 text-primary" />Certificate of completion</p>
+                      <p className="flex items-center gap-2"><CheckCircle className="w-3.5 h-3.5 text-primary-text" />Lifetime access to recordings</p>
+                      <p className="flex items-center gap-2"><CheckCircle className="w-3.5 h-3.5 text-primary-text" />Downloadable materials</p>
+                      <p className="flex items-center gap-2"><Award className="w-3.5 h-3.5 text-primary-text" />Certificate of completion</p>
                     </div>
                   </div>
                 </div>
@@ -194,11 +195,11 @@ export default function CourseDetailClient({ course, instructor, reviews, slug, 
               {/* What you'll learn */}
               <FadeIn>
               <section>
-                <h2 className="text-xl font-bold text-white mb-4">What You'll Learn</h2>
+                <h2 className="text-xl font-bold text-foreground mb-4">What You'll Learn</h2>
                 <div className="bg-dark-card border border-dark-border rounded-xl p-5 grid sm:grid-cols-2 gap-3">
                   {course.whatYouLearn.map(item => (
                     <p key={item} className="flex items-start gap-2 text-sm text-muted">
-                      <CheckCircle className="w-4 h-4 text-primary flex-shrink-0 mt-0.5" />{item}
+                      <CheckCircle className="w-4 h-4 text-primary-text flex-shrink-0 mt-0.5" />{item}
                     </p>
                   ))}
                 </div>
@@ -208,7 +209,7 @@ export default function CourseDetailClient({ course, instructor, reviews, slug, 
               {/* Curriculum */}
               <FadeIn delay={0.05}>
               <section>
-                <h2 className="text-xl font-bold text-white mb-4">Course Curriculum</h2>
+                <h2 className="text-xl font-bold text-foreground mb-4">Course Curriculum</h2>
                 <div className="space-y-3">
                   {course.modules.map(mod => (
                     <div key={mod.id} className="bg-dark-card border border-dark-border rounded-xl overflow-hidden">
@@ -217,8 +218,8 @@ export default function CourseDetailClient({ course, instructor, reviews, slug, 
                         className="flex items-center justify-between w-full px-5 py-4 hover:bg-dark-border/30 transition-colors cursor-pointer"
                       >
                         <div className="flex items-center gap-3">
-                          <BookOpen className="w-4 h-4 text-primary" />
-                          <span className="font-semibold text-white text-sm">{mod.title}</span>
+                          <BookOpen className="w-4 h-4 text-primary-text" />
+                          <span className="font-semibold text-foreground text-sm">{mod.title}</span>
                           <span className="text-xs text-muted">({mod.lessons.length} lessons)</span>
                         </div>
                         {openModules[mod.id] ? <ChevronUp className="w-4 h-4 text-muted" /> : <ChevronDown className="w-4 h-4 text-muted" />}
@@ -227,9 +228,9 @@ export default function CourseDetailClient({ course, instructor, reviews, slug, 
                         <div className="border-t border-dark-border">
                           {mod.lessons.map((lesson, li) => (
                             <div key={lesson.id} className="flex items-center gap-3 px-5 py-3 text-sm border-b border-dark-border/50 last:border-0">
-                              <span className="w-6 h-6 rounded-full bg-primary/10 text-primary flex items-center justify-center text-xs flex-shrink-0">{li + 1}</span>
+                              <span className="w-6 h-6 rounded-full bg-primary/10 text-primary-text flex items-center justify-center text-xs flex-shrink-0">{li + 1}</span>
                               <div className="flex-1">
-                                <p className="text-white">{lesson.title}</p>
+                                <p className="text-foreground">{lesson.title}</p>
                                 <p className="text-xs text-muted">{lesson.description}</p>
                               </div>
                               <span className="text-xs text-muted">{lesson.duration}</span>
@@ -247,12 +248,12 @@ export default function CourseDetailClient({ course, instructor, reviews, slug, 
               {reviews.length > 0 && (
                 <FadeIn delay={0.05}>
                 <section>
-                  <h2 className="text-xl font-bold text-white mb-4">Student Reviews</h2>
+                  <h2 className="text-xl font-bold text-foreground mb-4">Student Reviews</h2>
                   <div className="space-y-4">
                     {reviews.map(review => (
                       <div key={review.id} className="bg-dark-card border border-dark-border rounded-xl p-4">
                         <div className="flex items-center gap-3 mb-2">
-                          <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-primary text-xs font-bold">{review.studentId.slice(-2).toUpperCase()}</div>
+                          <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-primary-text text-xs font-bold">{review.studentId.slice(-2).toUpperCase()}</div>
                           <div>
                             <StarRating rating={review.rating} size="sm" />
                             <p className="text-xs text-muted">{formatDate(review.createdAt)}</p>
@@ -271,11 +272,11 @@ export default function CourseDetailClient({ course, instructor, reviews, slug, 
             {instructor && (
               <div className="lg:col-span-1">
                 <div className="bg-dark-card border border-dark-border rounded-xl p-5 sticky top-20">
-                  <h3 className="font-bold text-white mb-4">About the Instructor</h3>
+                  <h3 className="font-bold text-foreground mb-4">About the Instructor</h3>
                   <div className="flex items-center gap-3 mb-4">
                     <img src={instructor.avatar} alt={instructor.name} className="w-14 h-14 rounded-full border-2 border-primary/30" />
                     <div>
-                      <p className="font-semibold text-white">{instructor.name}</p>
+                      <p className="font-semibold text-foreground">{instructor.name}</p>
                       <p className="text-xs text-muted">{instructor.expertise?.slice(0, 2).join(' & ')}</p>
                     </div>
                   </div>
@@ -283,7 +284,7 @@ export default function CourseDetailClient({ course, instructor, reviews, slug, 
                   {instructor.expertise && (
                     <div className="flex flex-wrap gap-1.5 mt-4">
                       {instructor.expertise.map(e => (
-                        <span key={e} className="text-xs px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20">{e}</span>
+                        <span key={e} className="text-xs px-2 py-0.5 rounded-full bg-primary/10 text-primary-text border border-primary/20">{e}</span>
                       ))}
                     </div>
                   )}

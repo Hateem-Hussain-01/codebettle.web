@@ -110,7 +110,7 @@ export default function AnnouncementsClient({ announcements: allAnnouncements }:
     <div className="space-y-6">
       <FadeIn className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-black text-white">Announcements</h1>
+          <h1 className="text-2xl font-black text-foreground">Announcements</h1>
           <p className="text-muted text-sm mt-1">Site-wide announcements visible to all users</p>
         </div>
         <Button onClick={() => void openCreate()}><Plus className="w-4 h-4" />New Announcement</Button>
@@ -119,7 +119,7 @@ export default function AnnouncementsClient({ announcements: allAnnouncements }:
       {list.length === 0 ? (
         <Card className="py-16 text-center">
           <Bell className="w-12 h-12 text-muted mx-auto mb-4" />
-          <p className="text-white font-semibold mb-2">No announcements</p>
+          <p className="text-foreground font-semibold mb-2">No announcements</p>
           <Button size="sm" onClick={() => void openCreate()}>Create First Announcement</Button>
         </Card>
       ) : (
@@ -127,10 +127,10 @@ export default function AnnouncementsClient({ announcements: allAnnouncements }:
           {list.map((ann, i) => (
             <FadeIn key={ann.id} delay={Math.min(i, 4) * 0.05}>
             <Card hover className="flex items-start gap-4">
-              <div className="w-10 h-10 rounded-lg bg-primary/10 text-primary flex items-center justify-center flex-shrink-0"><Bell className="w-5 h-5" /></div>
+              <div className="w-10 h-10 rounded-lg bg-primary/10 text-primary-text flex items-center justify-center flex-shrink-0"><Bell className="w-5 h-5" /></div>
               <div className="flex-1">
                 <div className="flex items-center justify-between gap-2">
-                  <p className="text-white font-semibold text-sm">{ann.title}</p>
+                  <p className="text-foreground font-semibold text-sm">{ann.title}</p>
                   <div className="flex items-center gap-2">
                     <Badge variant={ann.isActive ? 'success' : 'muted'}>{ann.isActive ? 'Active' : 'Inactive'}</Badge>
                     <button onClick={() => handleDelete(ann)} className="text-muted hover:text-red-400 cursor-pointer"><Trash2 className="w-4 h-4" /></button>

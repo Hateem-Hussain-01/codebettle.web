@@ -70,7 +70,7 @@ export default function RequestsClient({
     <div className="space-y-6">
       <FadeIn className="flex items-center justify-between flex-wrap gap-3">
         <div>
-          <h1 className="text-2xl font-black text-white">Student Requests</h1>
+          <h1 className="text-2xl font-black text-foreground">Student Requests</h1>
           <p className="text-muted text-sm mt-1">
             Support requests from students ({total} total{newCount > 0 ? ` — ${newCount} new on this page` : ''})
           </p>
@@ -133,7 +133,7 @@ export default function RequestsClient({
       {initialRequests.length === 0 ? (
         <Card className="py-16 text-center">
           <Inbox className="w-10 h-10 text-muted mx-auto mb-3" />
-          <p className="text-white font-medium">No requests{statusFilter || categoryFilter || search ? ' match these filters' : ' yet'}</p>
+          <p className="text-foreground font-medium">No requests{statusFilter || categoryFilter || search ? ' match these filters' : ' yet'}</p>
           <p className="text-muted text-sm mt-1">Student support requests will appear here.</p>
         </Card>
       ) : (
@@ -145,7 +145,7 @@ export default function RequestsClient({
                 <div className="flex items-start gap-3">
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <p className="text-white font-medium text-sm">{req.studentName}</p>
+                      <p className="text-foreground font-medium text-sm">{req.studentName}</p>
                       <span className="text-muted text-xs">{req.studentEmail}</span>
                       <span className="text-muted text-xs ml-auto">{formatDateShort(req.createdAt)}</span>
                     </div>
@@ -153,7 +153,7 @@ export default function RequestsClient({
                       {requestCategoryLabel(req.category)}
                       {req.courseTitle ? ` · ${req.courseTitle}` : ''}
                     </p>
-                    <p className="text-white/90 text-sm mt-1.5 truncate">{req.subject}</p>
+                    <p className="text-foreground/90 text-sm mt-1.5 truncate">{req.subject}</p>
                     <p className="text-muted text-sm mt-0.5 line-clamp-2">{req.message}</p>
                   </div>
                   <Badge variant={REQUEST_STATUS_BADGE[req.status as RequestStatus] ?? 'muted'}>

@@ -34,7 +34,7 @@ export interface NotificationsClientProps {
 
 const TYPE_STYLES: Record<string, string> = {
   announcement: 'bg-blue-400/10 text-blue-400',
-  certificate: 'bg-primary/10 text-primary',
+  certificate: 'bg-primary/10 text-primary-text',
   completion: 'bg-green-400/10 text-green-400',
   enrollment: 'bg-blue-400/10 text-blue-400',
   application: 'bg-purple-400/10 text-purple-400',
@@ -198,7 +198,7 @@ export default function NotificationsClient({
     <div className="space-y-6">
       <FadeIn className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-black text-white">Notifications</h1>
+          <h1 className="text-2xl font-black text-foreground">Notifications</h1>
           <p className="text-muted text-sm mt-1">{unread} unread notification{unread !== 1 ? 's' : ''}</p>
         </div>
         <div className="flex items-center gap-2">
@@ -228,8 +228,8 @@ export default function NotificationsClient({
 
       {showPrefs && (
         <Card className="p-4 space-y-3">
-          <p className="text-white font-semibold text-sm">Notification preferences</p>
-          <label className="flex items-center gap-2 text-sm text-white cursor-pointer">
+          <p className="text-foreground font-semibold text-sm">Notification preferences</p>
+          <label className="flex items-center gap-2 text-sm text-foreground cursor-pointer">
             <input
               type="checkbox"
               checked={preferences.inApp}
@@ -238,7 +238,7 @@ export default function NotificationsClient({
             />
             In-app notifications
           </label>
-          <label className="flex items-center gap-2 text-sm text-white cursor-pointer">
+          <label className="flex items-center gap-2 text-sm text-foreground cursor-pointer">
             <input
               type="checkbox"
               checked={preferences.email}
@@ -250,7 +250,7 @@ export default function NotificationsClient({
           <p className="text-muted text-xs">Email delivery is not configured yet — turning email on has no effect until Resend is connected.</p>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
             {EVENT_LABELS.map(({ key, label }) => (
-              <label key={key} className="flex items-center gap-2 text-sm text-white cursor-pointer">
+              <label key={key} className="flex items-center gap-2 text-sm text-foreground cursor-pointer">
                 <input
                   type="checkbox"
                   checked={preferences.events[key]}
@@ -269,7 +269,7 @@ export default function NotificationsClient({
       {notifications.length === 0 ? (
         <Card className="py-16 text-center">
           <Bell className="w-12 h-12 text-muted mx-auto mb-4" />
-          <p className="text-white font-semibold">
+          <p className="text-foreground font-semibold">
             {typeFilter || categoryFilter ? 'No notifications match these filters' : 'No notifications'}
           </p>
         </Card>
@@ -290,7 +290,7 @@ export default function NotificationsClient({
                 </div>
                 <div className="flex-1">
                   <div className="flex items-start justify-between gap-2">
-                    <p className={`text-sm font-medium ${isRead ? 'text-muted' : 'text-white'}`}>{notif.title}</p>
+                    <p className={`text-sm font-medium ${isRead ? 'text-muted' : 'text-foreground'}`}>{notif.title}</p>
                     <button
                       onClick={(e) => {
                         e.stopPropagation();

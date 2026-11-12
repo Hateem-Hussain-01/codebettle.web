@@ -53,7 +53,7 @@ export default function CouponsClient({ initialCoupons }: CouponsClientProps) {
     <div className="space-y-6">
       <FadeIn className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-black text-white">Coupon Codes</h1>
+          <h1 className="text-2xl font-black text-foreground">Coupon Codes</h1>
           <p className="text-muted text-sm mt-1">{couponList.length} coupon{couponList.length !== 1 ? 's' : ''}</p>
         </div>
         <Button onClick={() => setIsOpen(true)}><Plus className="w-4 h-4" />Create Coupon</Button>
@@ -74,11 +74,11 @@ export default function CouponsClient({ initialCoupons }: CouponsClientProps) {
                 <tr key={coupon.id} className="border-b border-dark-border/40 last:border-0 hover:bg-dark-border/10">
                   <td className="py-3 px-4">
                     <div className="flex items-center gap-2">
-                      <Tag className="w-4 h-4 text-primary" />
-                      <span className="text-primary font-mono font-bold text-sm">{coupon.code}</span>
+                      <Tag className="w-4 h-4 text-primary-text" />
+                      <span className="text-primary-text font-mono font-bold text-sm">{coupon.code}</span>
                     </div>
                   </td>
-                  <td className="py-3 px-4 text-white text-xs font-medium">
+                  <td className="py-3 px-4 text-foreground text-xs font-medium">
                     {coupon.type === 'percentage' ? `${coupon.value}% off` : `PKR ${coupon.value} off`}
                   </td>
                   <td className="py-3 px-4 text-muted text-xs">{coupon.usedCount} / {coupon.maxUses}</td>

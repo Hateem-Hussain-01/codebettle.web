@@ -4,6 +4,9 @@
   --color-primary: #F5C518;
   --color-primary-dark: #C9A000;
   --color-primary-light: #FDE68A;
+  /* Module 6 — split tokens (see the light-mode block below). */
+  --color-primary-text: #F5C518;
+  --color-ink: #111111;
   --color-dark: #111111;
   --color-dark-card: #1C1C1C;
   --color-dark-border: #2A2A2A;
@@ -17,6 +20,80 @@
 
 * {
   scroll-behavior: smooth;
+}
+
+/* ------------------------------------------------------------------ */
+/* Module 6 — light/dark theme (Phase 4).                              */
+/*                                                                     */
+/* Dark is the default: the values in @theme above are the dark       */
+/* theme. Light mode flips the SAME tokens under                       */
+/* [data-theme="light"], so every token utility (bg-dark-card,         */
+/* text-foreground, border-dark-border, bg-primary, bg-surface …)     */
+/* follows the theme with no per-component change. The attribute is   */
+/* set on <html> by the pre-hydration script (lib/theme.ts) and by    */
+/* the root layout when a theme cookie exists.                         */
+/*                                                                     */
+/* Two tokens are split because one value served two roles:            */
+/*  --color-primary-text — gold TEXT on light backgrounds. Bright      */
+/*    gold #F5C518 on white is 1.63:1 (unreadable), so light mode      */
+/*    uses dark gold #8A6D00 (4.92:1 on white, WCAG AA). Buttons       */
+/*    keep bright-gold --color-primary with dark text (11.58:1).       */
+/*    `text-primary` was converted to `text-primary-text` across the   */
+/*    app; bg, border and ring utilities still use --color-primary.    */
+/*  --color-ink — text/accents that must stay near-black in BOTH      */
+/*    themes (text on gold buttons, the gold auth panel). --color-     */
+/*    dark is a SURFACE token and lightens in light mode, so           */
+/*    `text-dark` was converted to `text-ink`.                         */
+/*                                                                     */
+/* Semantic -300/-400 text colours (status chips, icons, trends)      */
+/* are remapped to darker shades in light mode so they stay readable  */
+/* on white — all ≥ 4.8:1 (WCAG AA for normal text). This remaps the  */
+/* Tailwind palette variables themselves, so background and border     */
+/* tints built on them darken consistently too.                        */
+/* ------------------------------------------------------------------ */
+[data-theme="light"] {
+  --color-primary: #F5C518;
+  --color-primary-dark: #C9A000;
+  --color-primary-light: #FEF3C7;
+  --color-primary-text: #8A6D00;
+  --color-ink: #111111;
+  --color-dark: #FFFFFF;
+  --color-dark-card: #FFFFFF;
+  --color-dark-border: #E5E7EB;
+  --color-muted: #6B7280;
+  --color-background: #FFFFFF;
+  --color-surface: #F5F5F4;
+  --color-foreground: #111111;
+
+  /* Elevation: same layering, much softer — black shadows read far
+     heavier on white than on near-black. */
+  --shadow-elev-1: 0 1px 2px rgba(0, 0, 0, 0.08), 0 2px 8px rgba(0, 0, 0, 0.06);
+  --shadow-elev-2: 0 4px 12px rgba(0, 0, 0, 0.10), 0 12px 32px rgba(0, 0, 0, 0.08);
+  --shadow-elev-3: 0 8px 24px rgba(0, 0, 0, 0.12), 0 24px 64px rgba(0, 0, 0, 0.10);
+
+  /* Semantic text colours: -400 -> -700/-600 shades (ratios on white). */
+  --color-red-300: #B91C1C;    /* 6.47:1 */
+  --color-red-400: #DC2626;    /* 4.83:1 */
+  --color-green-300: #15803D;  /* 5.02:1 */
+  --color-green-400: #15803D;  /* 5.02:1 */
+  --color-blue-400: #1D4ED8;   /* 6.70:1 */
+  --color-yellow-400: #A16207; /* 4.92:1 */
+  --color-amber-400: #92400E;  /* 7.09:1 */
+  --color-purple-400: #7E22CE; /* 6.98:1 */
+  --color-pink-400: #BE185D;   /* 6.04:1 */
+  --color-orange-400: #C2410C; /* 5.18:1 */
+  --color-cyan-400: #0E7490;   /* 5.36:1 */
+  --color-gray-400: #4B5563;   /* 7.56:1 */
+}
+
+/* Light-mode helpers that hardcode dark colours (see below). */
+[data-theme="light"] .glass-card {
+  background: rgba(255, 255, 255, 0.85);
+  border: 1px solid rgba(138, 109, 0, 0.2);
+}
+
+[data-theme="light"] ::-webkit-scrollbar-track {
+  background: #F1F1F1;
 }
 
 body {

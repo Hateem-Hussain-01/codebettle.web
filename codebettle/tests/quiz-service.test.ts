@@ -1,7 +1,8 @@
 /**
- * Quiz service tests (Phase 5) — RBAC, review-before-publish gating,
- * PDF import, attempt lifecycle, server-side timing, grading through
- * the service, result visibility, and analytics. Runs on the fake db.
+ * Quiz service tests (Phase 5, text import in Phase 4 Module 8) — RBAC,
+ * text import, publish gating (validity only, no review step),
+ * attempt lifecycle, server-side timing, grading through the service,
+ * result visibility, and analytics. Runs on the fake db.
  */
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -11,17 +12,16 @@ import {
   createQuizForTeacher,
   getQuizAnalytics,
   getQuizForTeacher,
-  importQuizPdf,
+  importQuizText,
   listAvailableQuizzes,
   publishQuiz,
-  saveQuizReview,
+  saveQuizQuestions,
   startAttempt,
   submitAttempt,
-  type ReviewQuestionInput,
+  type QuestionInput,
 } from '../lib/services/quiz-service';
-import { generateSampleQuizPdf } from '../lib/services/quiz-sample-pdf';
+import { QUIZ_TEXT_IMPORT_SAMPLE } from '../lib/services/quiz-text-format';
 import type { Actor } from '../lib/services/errors';
-import type { SupabaseClient } from '@supabase/supabase-js';
 
 const D = (s: string) => new Date(s);
 const T0 = D('2026-01-10T10:00:00.000Z');
@@ -66,20 +66,12 @@ function seedBase() {
   ]);
 }
 
-const mockStorage = {
-  storage: {
-    from: () => ({
-      upload: async () => ({ data: { path: 'quizzes/mock.pdf' }, error: null }),
-      getPublicUrl: () => ({ data: { publicUrl: 'https://example.com/quizzes/mock.pdf' } }),
-    }),
-  },
-} as unknown as SupabaseClient;
-
-const THREE_QUESTIONS: ReviewQuestionInput[] = [
+const THREE_QUESTIONS: QuestionInput[] = [
   {
     type: 'mcq',
     prompt: 'What is 2 + 2?',
     points: 2,
+    explanation: '2 + 2 is 4.',
     options: [
       { text: '3', isCorrect: false },
       { text: '4', isCorrect: true },
@@ -91,6 +83,7 @@ const THREE_QUESTIONS: ReviewQuestionInput[] = [
     prompt: 'The chemical symbol for water is ______.',
     points: 3,
     correctText: 'H2O',
+    explanation: 'H stands for hydrogen and O for oxygen.',
     options: [],
   },
   {
@@ -116,7 +109,7 @@ async function makePublishedQuiz(actor: Actor = INST1, overrides: Record<string,
     ...overrides,
   });
   assert.ok('quiz' in created, JSON.stringify(created));
-  const saved = await saveQuizReview(actor, created.quiz.id, THREE_QUESTIONS);
+  const saved = await saveQuizQuestions(actor, created.quiz.id, THREE_QUESTIONS);
   assert.ok('quiz' in saved, JSON.stringify(saved));
   const published = await publishQuiz(actor, created.quiz.id);
   assert.ok('quiz' in published, JSON.stringify(published));
@@ -161,75 +154,129 @@ test('invalid settings are rejected (time limit, attempts, pass mark)', async ()
   }
 });
 
-test('PDF import parses the sample template into 11 reviewed questions', async () => {
+test('text import parses the sample format into 3 clean questions with explanations', async () => {
   const created = await createQuizForTeacher(INST1, { courseId: 'course-1', title: 'Imported' });
   assert.ok('quiz' in created);
-  const pdf = generateSampleQuizPdf();
-  const imported = await importQuizPdf(
-    INST1,
-    created.quiz.id,
-    { name: 'quiz.pdf', type: 'application/pdf', size: pdf.length, arrayBuffer: pdf },
-    { storageClient: mockStorage },
-  );
+  const imported = await importQuizText(INST1, created.quiz.id, QUIZ_TEXT_IMPORT_SAMPLE);
   assert.ok('quiz' in imported, JSON.stringify(imported));
-  assert.equal(imported.parsed.questions, 11);
+  assert.equal(imported.parsed.questions, 3);
   assert.equal(imported.parsed.warnings, 0);
-  assert.equal(imported.parsed.isScanned, false);
-  assert.equal(imported.quiz.questions?.length, 11);
+  assert.equal(imported.parsed.flagged, 0);
+  assert.equal(imported.quiz.questions?.length, 3);
   assert.ok(imported.quiz.questions?.every((q) => !q.needsReview));
-  assert.equal(imported.quiz.pdfStoragePath, 'quizzes/mock.pdf');
-  // A fully reviewed import can publish straight away.
+  assert.equal(imported.quiz.questions?.[0].explanation, 'Paris is the capital of France.');
+  assert.equal(imported.quiz.questions?.[1].correctText, 'H2O');
+  // No PDF is stored any more.
+  assert.equal(imported.quiz.pdfUrl, undefined);
+  assert.equal(imported.quiz.pdfStoragePath, undefined);
+  // A clean import can publish straight away — no review step.
   const published = await publishQuiz(INST1, created.quiz.id);
   assert.ok('quiz' in published, JSON.stringify(published));
 });
 
-test('PDF import rejects a non-PDF and a non-draft quiz', async () => {
+test('text import flags an incomplete question but still imports it; publish is blocked until the key is fixed', async () => {
   const created = await createQuizForTeacher(INST1, { courseId: 'course-1', title: 'Imported' });
   assert.ok('quiz' in created);
-  const notPdf = await importQuizPdf(
+  const imported = await importQuizText(
     INST1,
     created.quiz.id,
-    { name: 'quiz.txt', type: 'text/plain', size: 10, arrayBuffer: Buffer.from('hello') },
-    { storageClient: mockStorage },
+    `Question 1: What is 2 + 2?
+A. 3
+B. 4
+C. 5
+D. 6
+Explanation: Simple addition.
+`,
   );
-  assert.ok('error' in notPdf && notPdf.status === 400);
+  assert.ok('quiz' in imported, JSON.stringify(imported));
+  assert.equal(imported.parsed.questions, 1);
+  // Two warnings: no "Correct Answer:" line, and no correct option marked.
+  assert.equal(imported.parsed.warnings, 2);
+  assert.equal(imported.parsed.flagged, 1);
+  assert.equal(imported.quiz.questions?.[0].needsReview, true);
+  assert.equal(imported.quiz.parseWarnings?.length, 2);
+
+  // Publish is blocked: the question has no correct answer to grade.
+  const blocked = await publishQuiz(INST1, created.quiz.id);
+  assert.ok('error' in blocked && blocked.status === 400 && blocked.error.includes('no correct option'));
+
+  // Fix the key by saving the questions, then publish works.
+  const fixed = await saveQuizQuestions(INST1, created.quiz.id, [
+    {
+      type: 'mcq',
+      prompt: 'What is 2 + 2?',
+      points: 1,
+      explanation: 'Simple addition.',
+      options: [
+        { text: '3', isCorrect: false },
+        { text: '4', isCorrect: true },
+        { text: '5', isCorrect: false },
+        { text: '6', isCorrect: false },
+      ],
+    },
+  ]);
+  assert.ok('quiz' in fixed);
+  assert.equal(fixed.quiz.questions?.[0].needsReview, false);
+  const published = await publishQuiz(INST1, created.quiz.id);
+  assert.ok('quiz' in published, JSON.stringify(published));
+});
+
+test('text import rejects an empty paste, garbage text without wiping questions, and a non-draft quiz', async () => {
+  const created = await createQuizForTeacher(INST1, { courseId: 'course-1', title: 'Imported' });
+  assert.ok('quiz' in created);
+  const empty = await importQuizText(INST1, created.quiz.id, '   ');
+  assert.ok('error' in empty && empty.status === 400);
+
+  // Seed real questions, then paste garbage: the 400 must not wipe them.
+  const saved = await saveQuizQuestions(INST1, created.quiz.id, THREE_QUESTIONS);
+  assert.ok('quiz' in saved);
+  const garbage = await importQuizText(INST1, created.quiz.id, 'This is a document about cats.');
+  assert.ok('error' in garbage && garbage.status === 400);
+  const kept = await getQuizForTeacher(INST1, created.quiz.id);
+  assert.ok('quiz' in kept);
+  assert.equal(kept.quiz.questions?.length, 3);
+
   const quiz = await makePublishedQuiz();
-  const published = await importQuizPdf(
-    INST1,
-    quiz.id,
-    { name: 'quiz.pdf', type: 'application/pdf', size: 100, arrayBuffer: generateSampleQuizPdf() },
-    { storageClient: mockStorage },
-  );
+  const published = await importQuizText(INST1, quiz.id, QUIZ_TEXT_IMPORT_SAMPLE);
   assert.ok('error' in published && published.status === 400);
 });
 
-test('publish is blocked with no questions and with unreviewed questions', async () => {
+test('publish is blocked with no questions; a flagged question with a valid key does NOT block publishing', async () => {
   const created = await createQuizForTeacher(INST1, { courseId: 'course-1', title: 'Empty' });
   assert.ok('quiz' in created);
   const empty = await publishQuiz(INST1, created.quiz.id);
   assert.ok('error' in empty && empty.status === 400 && empty.error.includes('at least one question'));
 
-  const unreviewed: ReviewQuestionInput[] = [
-    { type: 'mcq', prompt: 'No key set', points: 1, options: [{ text: 'A' }, { text: 'B' }] },
-  ];
-  const saved = await saveQuizReview(INST1, created.quiz.id, unreviewed);
-  assert.ok('quiz' in saved);
-  assert.equal(saved.quiz.questions?.[0].needsReview, true);
-  const blocked = await publishQuiz(INST1, created.quiz.id);
-  assert.ok('error' in blocked && blocked.status === 400 && blocked.error.includes('needs review'));
+  // Fill-in-the-blank with no blank marker is flagged by the parser
+  // (needsReview) but has a correct answer — there is no review step,
+  // so it publishes.
+  const imported = await importQuizText(
+    INST1,
+    created.quiz.id,
+    `Question 1: What is the chemical symbol for water?
+Correct Answer: H2O
+Explanation: Water is H2O.
+`,
+  );
+  assert.ok('quiz' in imported, JSON.stringify(imported));
+  assert.equal(imported.quiz.questions?.[0].needsReview, true);
+  const published = await publishQuiz(INST1, created.quiz.id);
+  assert.ok('quiz' in published, JSON.stringify(published));
 });
 
-test('review save forces needsReview back on when the key is missing, then publish succeeds once fixed', async () => {
+test('question save forces the flag back on when the key is missing, then publish succeeds once fixed', async () => {
   const created = await createQuizForTeacher(INST1, { courseId: 'course-1', title: 'Fix me' });
   assert.ok('quiz' in created);
-  // Teacher claims it is reviewed, but the MCQ has no correct option.
-  const saved = await saveQuizReview(INST1, created.quiz.id, [
-    { type: 'mcq', prompt: 'Pick', points: 1, needsReview: false, options: [{ text: 'A' }, { text: 'B' }] },
+  // Teacher saves an MCQ with no correct option.
+  const saved = await saveQuizQuestions(INST1, created.quiz.id, [
+    { type: 'mcq', prompt: 'Pick', points: 1, options: [{ text: 'A' }, { text: 'B' }] },
   ]);
   assert.ok('quiz' in saved);
   assert.equal(saved.quiz.questions?.[0].needsReview, true);
+  const blocked = await publishQuiz(INST1, created.quiz.id);
+  assert.ok('error' in blocked && blocked.status === 400 && blocked.error.includes('no correct option'));
   // Fix the key, then publish works.
-  const fixed = await saveQuizReview(INST1, created.quiz.id, [
+  const fixed = await saveQuizQuestions(INST1, created.quiz.id, [
     { type: 'mcq', prompt: 'Pick', points: 1, options: [{ text: 'A', isCorrect: true }, { text: 'B' }] },
   ]);
   assert.ok('quiz' in fixed);
@@ -256,7 +303,7 @@ test('student start: resume returns the same attempt, and the payload has no ans
 test('student cannot start a quiz for a course they are not enrolled in', async () => {
   const created = await createQuizForTeacher(INST2, { courseId: 'course-2', title: 'Flutter quiz' });
   assert.ok('quiz' in created);
-  await saveQuizReview(INST2, created.quiz.id, THREE_QUESTIONS);
+  await saveQuizQuestions(INST2, created.quiz.id, THREE_QUESTIONS);
   await publishQuiz(INST2, created.quiz.id);
   const started = await startAttempt(STU1, created.quiz.id, T0);
   assert.ok('error' in started && started.status === 403);
@@ -269,7 +316,7 @@ test('availability window is enforced', async () => {
     availableFrom: new Date(T0.getTime() + 60_000).toISOString(),
   });
   assert.ok('quiz' in future);
-  await saveQuizReview(INST1, future.quiz.id, THREE_QUESTIONS);
+  await saveQuizQuestions(INST1, future.quiz.id, THREE_QUESTIONS);
   await publishQuiz(INST1, future.quiz.id);
   const early = await startAttempt(STU1, future.quiz.id, T0);
   assert.ok('error' in early && early.status === 400 && early.error.includes('not available yet'));
@@ -280,7 +327,7 @@ test('availability window is enforced', async () => {
     availableUntil: new Date(T0.getTime() - 60_000).toISOString(),
   });
   assert.ok('quiz' in past);
-  await saveQuizReview(INST1, past.quiz.id, THREE_QUESTIONS);
+  await saveQuizQuestions(INST1, past.quiz.id, THREE_QUESTIONS);
   await publishQuiz(INST1, past.quiz.id);
   const late = await startAttempt(STU1, past.quiz.id, T0);
   assert.ok('error' in late && late.status === 400 && late.error.includes('no longer available'));

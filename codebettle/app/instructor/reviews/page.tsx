@@ -39,7 +39,7 @@ export default async function InstructorReviewsPage() {
     <div className="space-y-6">
       <FadeIn className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-black text-white">Reviews</h1>
+          <h1 className="text-2xl font-black text-foreground">Reviews</h1>
           <p className="text-muted text-sm mt-1">{allReviews.length} review{allReviews.length !== 1 ? 's' : ''} • Avg: {avgRating} ⭐</p>
         </div>
       </FadeIn>
@@ -47,7 +47,7 @@ export default async function InstructorReviewsPage() {
       {allReviews.length === 0 ? (
         <Card className="py-16 text-center">
           <Star className="w-12 h-12 text-muted mx-auto mb-4" />
-          <p className="text-white font-semibold">No reviews yet</p>
+          <p className="text-foreground font-semibold">No reviews yet</p>
           <p className="text-muted text-sm mt-1">Reviews will appear here once students rate your courses.</p>
         </Card>
       ) : (
@@ -62,8 +62,8 @@ export default async function InstructorReviewsPage() {
                   <div className="flex-1">
                     <div className="flex items-start justify-between gap-2">
                       <div>
-                        <p className="text-white font-medium text-sm">{student?.name || 'Student'}</p>
-                        <p className="text-primary text-xs">{review.course.title}</p>
+                        <p className="text-foreground font-medium text-sm">{student?.name || 'Student'}</p>
+                        <p className="text-primary-text text-xs">{review.course.title}</p>
                       </div>
                       <div className="flex-shrink-0">
                         <StarRating rating={review.rating} size="sm" />

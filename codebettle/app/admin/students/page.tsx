@@ -213,7 +213,7 @@ export default function AdminStudentsPage() {
     <div className="space-y-6">
       <FadeIn className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-black text-white">Students</h1>
+          <h1 className="text-2xl font-black text-foreground">Students</h1>
           <p className="text-muted text-sm mt-1">{total} total • {students.filter(s => s.status === 'active').length} active on this page</p>
         </div>
         <div className="flex items-center gap-2">
@@ -231,7 +231,7 @@ export default function AdminStudentsPage() {
             <button
               key={f}
               onClick={() => setStatusFilter(f)}
-              className={`px-3 py-1.5 rounded-md text-xs font-medium capitalize cursor-pointer transition-colors ${statusFilter === f ? 'bg-primary text-black' : 'text-muted hover:text-white'}`}
+              className={`px-3 py-1.5 rounded-md text-xs font-medium capitalize cursor-pointer transition-colors ${statusFilter === f ? 'bg-primary text-black' : 'text-muted hover:text-foreground'}`}
             >
               {f}
             </button>
@@ -267,7 +267,7 @@ export default function AdminStudentsPage() {
                       <td className="py-3 px-4">
                         <div className="flex items-center gap-2">
                           <img src={student.avatar || ''} alt={student.name} className="w-8 h-8 rounded-full" />
-                          <span className="text-white text-xs font-medium">{student.name}</span>
+                          <span className="text-foreground text-xs font-medium">{student.name}</span>
                         </div>
                       </td>
                       <td className="py-3 px-4 text-muted text-xs">{student.email}</td>
@@ -278,8 +278,8 @@ export default function AdminStudentsPage() {
                       </td>
                       <td className="py-3 px-4">
                         <div className="flex items-center gap-1">
-                          <button onClick={() => setViewTarget(student)} className="text-muted hover:text-primary transition-colors p-1 cursor-pointer"><Eye className="w-4 h-4" /></button>
-                          <button onClick={() => openEdit(student)} className="text-muted hover:text-primary transition-colors p-1 cursor-pointer"><Pencil className="w-4 h-4" /></button>
+                          <button onClick={() => setViewTarget(student)} className="text-muted hover:text-primary-text transition-colors p-1 cursor-pointer"><Eye className="w-4 h-4" /></button>
+                          <button onClick={() => openEdit(student)} className="text-muted hover:text-primary-text transition-colors p-1 cursor-pointer"><Pencil className="w-4 h-4" /></button>
                           <button onClick={() => toggleStatus(student)} className={`p-1 cursor-pointer transition-colors ${student.status === 'active' ? 'text-muted hover:text-yellow-400' : 'text-muted hover:text-green-400'}`}>
                             {student.status === 'active' ? <Ban className="w-4 h-4" /> : <CheckCircle className="w-4 h-4" />}
                           </button>
@@ -299,7 +299,7 @@ export default function AdminStudentsPage() {
               <select
                 value={limit}
                 onChange={e => changeLimit(Number(e.target.value))}
-                className="bg-dark-card border border-dark-border rounded-lg px-2 py-1.5 text-white text-xs cursor-pointer"
+                className="bg-dark-card border border-dark-border rounded-lg px-2 py-1.5 text-foreground text-xs cursor-pointer"
               >
                 {PAGE_LIMITS.map(n => <option key={n} value={n}>{n}</option>)}
               </select>
@@ -321,27 +321,27 @@ export default function AdminStudentsPage() {
             <div className="flex items-center gap-4">
               <img src={viewTarget.avatar || ''} alt={viewTarget.name} className="w-16 h-16 rounded-full border-2 border-primary/30" />
               <div>
-                <p className="text-white font-bold">{viewTarget.name}</p>
+                <p className="text-foreground font-bold">{viewTarget.name}</p>
                 <p className="text-muted text-sm">{viewTarget.email}</p>
                 <Badge variant={viewTarget.status === 'active' ? 'success' : 'danger'} className="mt-1">{viewTarget.status}</Badge>
               </div>
             </div>
             <div className="grid grid-cols-2 gap-3 text-sm">
-              <div><p className="text-muted text-xs">Joined</p><p className="text-white">{formatDateShort(viewTarget.joinedAt)}</p></div>
-              <div><p className="text-muted text-xs">Enrolled Courses</p><p className="text-white">{viewTarget.enrolledCourses?.length || 0}</p></div>
-              {viewTarget.phone && <div><p className="text-muted text-xs">Phone</p><p className="text-white">{viewTarget.phone}</p></div>}
-              {viewTarget.bio && <div className="col-span-2"><p className="text-muted text-xs">Bio</p><p className="text-white">{viewTarget.bio}</p></div>}
+              <div><p className="text-muted text-xs">Joined</p><p className="text-foreground">{formatDateShort(viewTarget.joinedAt)}</p></div>
+              <div><p className="text-muted text-xs">Enrolled Courses</p><p className="text-foreground">{viewTarget.enrolledCourses?.length || 0}</p></div>
+              {viewTarget.phone && <div><p className="text-muted text-xs">Phone</p><p className="text-foreground">{viewTarget.phone}</p></div>}
+              {viewTarget.bio && <div className="col-span-2"><p className="text-muted text-xs">Bio</p><p className="text-foreground">{viewTarget.bio}</p></div>}
             </div>
 
             <div>
-              <p className="text-white font-semibold text-sm mb-2">Enrolments</p>
+              <p className="text-foreground font-semibold text-sm mb-2">Enrolments</p>
               {detailLoading && <p className="text-muted text-xs">Loading enrolments…</p>}
               {!detailLoading && detail && detail.enrollments.length === 0 && <p className="text-muted text-xs">No enrolments yet.</p>}
               {!detailLoading && detail && detail.enrollments.length > 0 && (
                 <ul className="space-y-2">
                   {detail.enrollments.map(e => (
                     <li key={e.id} className="flex items-center justify-between gap-3 bg-dark-border/20 rounded-lg px-3 py-2 text-xs">
-                      <span className="text-white font-medium">{e.courseTitle}</span>
+                      <span className="text-foreground font-medium">{e.courseTitle}</span>
                       <span className="text-muted">{e.completedLessons.length} lessons done</span>
                       <Badge variant={e.isCompleted ? 'success' : 'warning'}>{e.isCompleted ? 'Completed' : 'In progress'}</Badge>
                     </li>
@@ -351,14 +351,14 @@ export default function AdminStudentsPage() {
             </div>
 
             <div>
-              <p className="text-white font-semibold text-sm mb-2">Certificates</p>
+              <p className="text-foreground font-semibold text-sm mb-2">Certificates</p>
               {detailLoading && <p className="text-muted text-xs">Loading certificates…</p>}
               {!detailLoading && detail && detail.certificates.length === 0 && <p className="text-muted text-xs">No certificates yet.</p>}
               {!detailLoading && detail && detail.certificates.length > 0 && (
                 <ul className="space-y-2">
                   {detail.certificates.map(c => (
                     <li key={c.id} className="flex items-center justify-between gap-3 bg-dark-border/20 rounded-lg px-3 py-2 text-xs">
-                      <span className="text-white font-medium">{c.courseTitle}</span>
+                      <span className="text-foreground font-medium">{c.courseTitle}</span>
                       <span className="text-muted">{c.certificateNumber}</span>
                       <span className="text-muted">{formatDateShort(c.issuedAt)}</span>
                     </li>
@@ -404,7 +404,7 @@ export default function AdminStudentsPage() {
 
       {/* Delete Modal */}
       <Modal isOpen={!!deleteTarget} onClose={() => setDeleteTarget(null)} title="Delete Student" size="sm">
-        <p className="text-muted text-sm mb-2">Delete <span className="text-white font-medium">{deleteTarget?.name}</span>?</p>
+        <p className="text-muted text-sm mb-2">Delete <span className="text-foreground font-medium">{deleteTarget?.name}</span>?</p>
         <p className="text-muted text-xs mb-6">This will permanently remove their account and all enrollment data.</p>
         <div className="flex gap-3">
           <Button variant="secondary" fullWidth onClick={() => setDeleteTarget(null)}>Cancel</Button>

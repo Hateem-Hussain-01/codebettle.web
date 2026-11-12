@@ -56,7 +56,7 @@ export default function HeroSection() {
       {FLOATING_ICONS.map((item, i) => (
         <motion.div
           key={i}
-          className={`absolute ${item.style} w-12 h-12 rounded-xl glass-card flex items-center justify-center text-primary hidden lg:flex`}
+          className={`absolute ${item.style} w-12 h-12 rounded-xl glass-card flex items-center justify-center text-primary-text hidden lg:flex`}
           animate={{ y: [0, -12, 0] }}
           transition={{ duration: 3, repeat: Infinity, delay: item.delay, ease: 'easeInOut' }}
         >
@@ -66,7 +66,7 @@ export default function HeroSection() {
 
       <div className="relative z-10 max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center py-32">
         <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}>
-          <span className="inline-flex items-center gap-2 text-xs font-semibold px-4 py-2 rounded-full border border-primary/30 bg-primary/10 text-primary mb-8">
+          <span className="inline-flex items-center gap-2 text-xs font-semibold px-4 py-2 rounded-full border border-primary/30 bg-primary/10 text-primary-text mb-8">
             <span className="w-2 h-2 bg-primary rounded-full animate-pulse" />
             Pakistan's #1 Digital Institute
           </span>
@@ -76,7 +76,7 @@ export default function HeroSection() {
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.1 }}
-          className="text-4xl sm:text-5xl lg:text-7xl font-black text-white leading-tight mb-6"
+          className="text-4xl sm:text-5xl lg:text-7xl font-black text-foreground leading-tight mb-6"
         >
           Become a{' '}
           <span className="relative">

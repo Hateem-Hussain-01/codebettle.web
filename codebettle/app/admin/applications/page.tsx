@@ -380,31 +380,31 @@ export default function AdminApplicationsPage() {
         {detail && (
           <>
             <div>
-              <h3 className="text-white text-sm font-semibold mb-2">Stage history {detail.currentStageName ? `— current: ${detail.currentStageName}` : ''}</h3>
+              <h3 className="text-foreground text-sm font-semibold mb-2">Stage history {detail.currentStageName ? `— current: ${detail.currentStageName}` : ''}</h3>
               {detail.history.length === 0 ? (
                 <p className="text-muted text-xs">No stage moves yet.</p>
               ) : (
                 <ol className="space-y-1.5">
                   {detail.history.map((h) => (
                     <li key={h.id} className="text-xs text-muted">
-                      <span className="text-white">{h.stageName}</span> — {h.action.replaceAll('_', ' ')}
+                      <span className="text-foreground">{h.stageName}</span> — {h.action.replaceAll('_', ' ')}
                       {h.note ? ` — “${h.note}”` : ''} · {formatDateShort(h.createdAt)}
                     </li>
                   ))}
                 </ol>
               )}
-              {app.whyGoodFit && <p className="text-muted text-xs mt-3"><span className="text-white">Why a good fit:</span> {app.whyGoodFit}</p>}
-              {app.additionalInfo && <p className="text-muted text-xs mt-1"><span className="text-white">Additional info:</span> {app.additionalInfo}</p>}
+              {app.whyGoodFit && <p className="text-muted text-xs mt-3"><span className="text-foreground">Why a good fit:</span> {app.whyGoodFit}</p>}
+              {app.additionalInfo && <p className="text-muted text-xs mt-1"><span className="text-foreground">Additional info:</span> {app.additionalInfo}</p>}
             </div>
             <div>
-              <h3 className="text-white text-sm font-semibold mb-2">Internal notes <span className="text-muted font-normal">(admin-only — applicants never see these)</span></h3>
+              <h3 className="text-foreground text-sm font-semibold mb-2">Internal notes <span className="text-muted font-normal">(admin-only — applicants never see these)</span></h3>
               {detail.notes.length === 0 ? (
                 <p className="text-muted text-xs">No notes yet.</p>
               ) : (
                 <ul className="space-y-1.5">
                   {detail.notes.map((n) => (
                     <li key={n.id} className="text-xs text-muted">
-                      <span className="text-white">{n.body}</span> · {formatDateShort(n.createdAt)}
+                      <span className="text-foreground">{n.body}</span> · {formatDateShort(n.createdAt)}
                     </li>
                   ))}
                 </ul>
@@ -423,16 +423,16 @@ export default function AdminApplicationsPage() {
   const renderLinks = (app: Application) => (
     <div className="flex flex-wrap items-center gap-2 mt-3">
       {app.linkedinUrl && (
-        <a href={app.linkedinUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-xs text-primary hover:underline"><LinkedInIcon className="w-3.5 h-3.5" />LinkedIn<ExternalLink className="w-3 h-3" /></a>
+        <a href={app.linkedinUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-xs text-primary-text hover:underline"><LinkedInIcon className="w-3.5 h-3.5" />LinkedIn<ExternalLink className="w-3 h-3" /></a>
       )}
       {app.githubUrl && (
-        <a href={app.githubUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-xs text-primary hover:underline">GitHub<ExternalLink className="w-3 h-3" /></a>
+        <a href={app.githubUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-xs text-primary-text hover:underline">GitHub<ExternalLink className="w-3 h-3" /></a>
       )}
       {app.cvUrl && (
-        <button onClick={() => openApplicationFile(app.id, 'cv')} disabled={openingFile === `${app.id}:cv`} className="inline-flex items-center gap-1 text-xs bg-dark-border hover:bg-primary hover:text-black text-white rounded-md px-2 py-1 cursor-pointer disabled:opacity-50 transition-colors"><FileText className="w-3.5 h-3.5" />{openingFile === `${app.id}:cv` ? 'Opening…' : 'View CV'}</button>
+        <button onClick={() => openApplicationFile(app.id, 'cv')} disabled={openingFile === `${app.id}:cv`} className="inline-flex items-center gap-1 text-xs bg-dark-border hover:bg-primary hover:text-black text-foreground rounded-md px-2 py-1 cursor-pointer disabled:opacity-50 transition-colors"><FileText className="w-3.5 h-3.5" />{openingFile === `${app.id}:cv` ? 'Opening…' : 'View CV'}</button>
       )}
       {app.demoRecordingUrl && (
-        <button onClick={() => openApplicationFile(app.id, 'demo')} disabled={openingFile === `${app.id}:demo`} className="inline-flex items-center gap-1 text-xs bg-dark-border hover:bg-primary hover:text-black text-white rounded-md px-2 py-1 cursor-pointer disabled:opacity-50 transition-colors"><Video className="w-3.5 h-3.5" />{openingFile === `${app.id}:demo` ? 'Opening…' : 'Watch Demo Lecture'}</button>
+        <button onClick={() => openApplicationFile(app.id, 'demo')} disabled={openingFile === `${app.id}:demo`} className="inline-flex items-center gap-1 text-xs bg-dark-border hover:bg-primary hover:text-black text-foreground rounded-md px-2 py-1 cursor-pointer disabled:opacity-50 transition-colors"><Video className="w-3.5 h-3.5" />{openingFile === `${app.id}:demo` ? 'Opening…' : 'Watch Demo Lecture'}</button>
       )}
     </div>
   );
@@ -440,14 +440,14 @@ export default function AdminApplicationsPage() {
   return (
     <div className="space-y-6">
       <FadeIn>
-        <h1 className="text-2xl font-black text-white">Instructor Applications</h1>
+        <h1 className="text-2xl font-black text-foreground">Instructor Applications</h1>
         <p className="text-muted text-sm mt-1">{total} total · {apps.filter(a => a.status === 'approved').length} approved on this page</p>
       </FadeIn>
 
       {/* Pipeline stages — admin-managed (Module 20). */}
       <FadeIn delay={0.03}>
         <Card>
-          <h2 className="text-white font-semibold mb-1">Recruitment pipeline</h2>
+          <h2 className="text-foreground font-semibold mb-1">Recruitment pipeline</h2>
           <p className="text-muted text-xs mb-3">Applicants see only their current stage, completed stages and the next step — never this full list. Deleting a stage keeps its history (the stage name stays on past entries).</p>
           {stages.length === 0 ? (
             <p className="text-muted text-sm">Loading stages…</p>
@@ -465,10 +465,10 @@ export default function AdminApplicationsPage() {
                     </>
                   ) : (
                     <>
-                      <span className="text-white flex-1">{stage.name}{stage.instructions ? <span className="text-muted text-xs block">{stage.instructions}</span> : null}</span>
-                      <button onClick={() => handleMoveStage(stage, -1)} disabled={i === 0} aria-label={`Move ${stage.name} up`} className="text-muted hover:text-white disabled:opacity-30 cursor-pointer"><ArrowUp className="w-4 h-4" /></button>
-                      <button onClick={() => handleMoveStage(stage, 1)} disabled={i === stages.length - 1} aria-label={`Move ${stage.name} down`} className="text-muted hover:text-white disabled:opacity-30 cursor-pointer"><ArrowDown className="w-4 h-4" /></button>
-                      <button onClick={() => setEditingStage(stage)} aria-label={`Edit ${stage.name}`} className="text-muted hover:text-white cursor-pointer"><Pencil className="w-4 h-4" /></button>
+                      <span className="text-foreground flex-1">{stage.name}{stage.instructions ? <span className="text-muted text-xs block">{stage.instructions}</span> : null}</span>
+                      <button onClick={() => handleMoveStage(stage, -1)} disabled={i === 0} aria-label={`Move ${stage.name} up`} className="text-muted hover:text-foreground disabled:opacity-30 cursor-pointer"><ArrowUp className="w-4 h-4" /></button>
+                      <button onClick={() => handleMoveStage(stage, 1)} disabled={i === stages.length - 1} aria-label={`Move ${stage.name} down`} className="text-muted hover:text-foreground disabled:opacity-30 cursor-pointer"><ArrowDown className="w-4 h-4" /></button>
+                      <button onClick={() => setEditingStage(stage)} aria-label={`Edit ${stage.name}`} className="text-muted hover:text-foreground cursor-pointer"><Pencil className="w-4 h-4" /></button>
                       <button onClick={() => handleDeleteStage(stage)} aria-label={`Delete ${stage.name}`} className="text-muted hover:text-red-400 cursor-pointer"><Trash2 className="w-4 h-4" /></button>
                     </>
                   )}
@@ -489,7 +489,7 @@ export default function AdminApplicationsPage() {
           <button
             key={f}
             onClick={() => setStatusFilter(f)}
-            className={`px-3 py-1.5 rounded-md text-xs font-medium capitalize cursor-pointer transition-colors ${statusFilter === f ? 'bg-primary text-black' : 'text-muted hover:text-white'}`}
+            className={`px-3 py-1.5 rounded-md text-xs font-medium capitalize cursor-pointer transition-colors ${statusFilter === f ? 'bg-primary text-black' : 'text-muted hover:text-foreground'}`}
           >
             {f}
           </button>
@@ -510,7 +510,7 @@ export default function AdminApplicationsPage() {
       {!loading && !loadError && pending.length > 0 && (
         <FadeIn delay={0.08}>
         <div>
-          <h2 className="text-white font-semibold mb-3 flex items-center gap-2"><UserCheck className="w-4 h-4 text-primary" />Pending Review ({pending.length})</h2>
+          <h2 className="text-foreground font-semibold mb-3 flex items-center gap-2"><UserCheck className="w-4 h-4 text-primary-text" />Pending Review ({pending.length})</h2>
           <div className="space-y-4">
             {pending.map((app, i) => (
               <FadeIn key={app.id} delay={Math.min(i, 3) * 0.05}>
@@ -518,14 +518,14 @@ export default function AdminApplicationsPage() {
                 <div className="flex items-start justify-between gap-4 flex-wrap">
                   <div className="flex-1">
                     <div className="flex items-center gap-3 mb-2">
-                      <div className="w-10 h-10 rounded-full bg-primary/20 text-primary flex items-center justify-center font-bold text-sm">{app.name.charAt(0)}</div>
+                      <div className="w-10 h-10 rounded-full bg-primary/20 text-primary-text flex items-center justify-center font-bold text-sm">{app.name.charAt(0)}</div>
                       <div>
-                        <p className="text-white font-semibold text-sm">{app.name}</p>
+                        <p className="text-foreground font-semibold text-sm">{app.name}</p>
                         <p className="text-muted text-xs">{app.email}{app.phone ? ` · ${app.phone}` : ''}</p>
                       </div>
                     </div>
-                    {app.expertise && <p className="text-muted text-xs mb-1"><span className="text-white">Expertise:</span> {app.expertise}</p>}
-                    {app.experience && <p className="text-muted text-xs mb-2"><span className="text-white">Experience:</span> {app.experience}</p>}
+                    {app.expertise && <p className="text-muted text-xs mb-1"><span className="text-foreground">Expertise:</span> {app.expertise}</p>}
+                    {app.experience && <p className="text-muted text-xs mb-2"><span className="text-foreground">Experience:</span> {app.experience}</p>}
                     {app.message && <p className="text-muted text-xs italic">"{app.message}"</p>}
                     {renderLinks(app)}
                     <p className="text-muted text-xs mt-2">Submitted {formatDateShort(app.createdAt)}</p>
@@ -536,7 +536,7 @@ export default function AdminApplicationsPage() {
                         value={assignStageId[app.id] ?? ''}
                         onChange={(e) => setAssignStageId((m) => ({ ...m, [app.id]: e.target.value }))}
                         aria-label="Move to stage"
-                        className="bg-dark-card border border-dark-border rounded-md px-2 py-1.5 text-xs text-white cursor-pointer"
+                        className="bg-dark-card border border-dark-border rounded-md px-2 py-1.5 text-xs text-foreground cursor-pointer"
                       >
                         <option value="">Move to stage…</option>
                         {assignableStages.map((s) => (
@@ -544,7 +544,7 @@ export default function AdminApplicationsPage() {
                         ))}
                       </select>
                       <Button size="sm" variant="secondary" onClick={() => handleAssignStage(app.id)} loading={assigningId === app.id}>Assign stage</Button>
-                      <button onClick={() => toggleDetail(app.id)} className="inline-flex items-center gap-1 text-xs text-primary hover:underline cursor-pointer">
+                      <button onClick={() => toggleDetail(app.id)} className="inline-flex items-center gap-1 text-xs text-primary-text hover:underline cursor-pointer">
                         {expandedId === app.id ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
                         {expandedId === app.id ? 'Hide details' : 'History & notes'}
                       </button>
@@ -575,7 +575,7 @@ export default function AdminApplicationsPage() {
       {!loading && !loadError && reviewed.length > 0 && (
         <FadeIn delay={0.1}>
         <div>
-          <h2 className="text-white font-semibold mb-3">Reviewed ({reviewed.length})</h2>
+          <h2 className="text-foreground font-semibold mb-3">Reviewed ({reviewed.length})</h2>
           <div className="space-y-3">
             {reviewed.map((app, i) => (
               <FadeIn key={app.id} delay={Math.min(i, 3) * 0.05}>
@@ -583,11 +583,11 @@ export default function AdminApplicationsPage() {
                 <div className="flex items-center gap-4 flex-wrap">
                   <div className="w-9 h-9 rounded-full bg-dark-border text-muted flex items-center justify-center font-bold text-sm">{app.name.charAt(0)}</div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-white text-sm font-medium">{app.name}</p>
+                    <p className="text-foreground text-sm font-medium">{app.name}</p>
                     <p className="text-muted text-xs">{app.email} · {app.expertise}</p>
                     {renderLinks(app)}
                     {app.reviewedBy && <p className="text-muted text-xs mt-0.5">Reviewed by {app.reviewedByName ?? app.reviewedBy}</p>}
-                    <button onClick={() => toggleDetail(app.id)} className="inline-flex items-center gap-1 text-xs text-primary hover:underline cursor-pointer mt-1">
+                    <button onClick={() => toggleDetail(app.id)} className="inline-flex items-center gap-1 text-xs text-primary-text hover:underline cursor-pointer mt-1">
                       {expandedId === app.id ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
                       {expandedId === app.id ? 'Hide details' : 'History & notes'}
                     </button>

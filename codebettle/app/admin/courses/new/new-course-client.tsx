@@ -7,6 +7,8 @@ import Textarea from '@/components/ui/Textarea';
 import Select from '@/components/ui/Select';
 import Card from '@/components/ui/Card';
 import FadeIn from '@/components/ui/FadeIn';
+import CourseThumbnailUploader from '@/components/ui/CourseThumbnailUploader';
+import { isValidThumbnailUrl } from '@/lib/thumbnail';
 import { Save, ArrowLeft, Video, Plus, Trash2, ChevronDown, ChevronUp, X, Calendar, Clock, Info } from 'lucide-react';
 import Link from 'next/link';
 import toast from 'react-hot-toast';
@@ -32,6 +34,7 @@ export default function NewCourseClient({ instructors: allInstructors }: NewCour
   const router = useRouter();
   const instructors = allInstructors.filter(i => i.status === 'active');
   const [saving, setSaving] = useState(false);
+  const [thumbnailUploading, setThumbnailUploading] = useState(false);
   const [showCurriculum, setShowCurriculum] = useState(false);
 
   const [form, setForm] = useState({
@@ -91,10 +94,15 @@ export default function NewCourseClient({ instructors: allInstructors }: NewCour
     if (!form.title.trim()) { toast.error('Course title is required'); return; }
     if (!form.instructorId) { toast.error('Please assign an instructor'); return; }
     if (!form.zoomLink.trim()) { toast.error('Zoom link is required'); return; }
+    if (thumbnailUploading) { toast.error('Wait for the thumbnail upload to finish'); return; }
+    // The thumbnail is required at create and comes from the upload
+    // control above — no silent stock-image fallback. The uploaded URL
+    // is a https Supabase Storage URL; anything else is rejected here.
+    if (!isValidThumbnailUrl(form.thumbnail)) { toast.error('Upload a course thumbnail image first'); return; }
     setSaving(true);
     try {
       // The create API requires description, longDescription and thumbnail,
-      // so the form's optional fields fall back to the title / default image.
+      // so the form's optional fields fall back to the title.
       const slug = form.title.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
       const res = await fetch('/api/admin/courses', {
         method: 'POST',
@@ -104,7 +112,7 @@ export default function NewCourseClient({ instructors: allInstructors }: NewCour
           title: form.title,
           description: form.description.trim() || form.title,
           longDescription: form.longDescription.trim() || form.description.trim() || form.title,
-          thumbnail: form.thumbnail.trim() || 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=800&q=80',
+          thumbnail: form.thumbnail.trim(),
           category: form.category,
           level: form.level,
           price: form.isFree ? 0 : Math.floor(Number(form.price) || 0),
@@ -213,7 +221,15 @@ export default function NewCourseClient({ instructors: allInstructors }: NewCour
           <Input label="Course Title *" placeholder="e.g., Complete React & Next.js Course" value={form.title} onChange={set('title')} />
           <Textarea label="Short Description" placeholder="Shown on course cards (1–2 sentences)" value={form.description} onChange={set('description')} rows={2} />
           <Textarea label="Full Description" placeholder="Detailed course overview" value={form.longDescription} onChange={set('longDescription')} rows={4} />
-          <Input label="Thumbnail URL" placeholder="https://images.unsplash.com/..." value={form.thumbnail} onChange={set('thumbnail')} />
+          <div>
+            <label className="text-sm font-medium text-white/80 block mb-2">Thumbnail *</label>
+            <CourseThumbnailUploader
+              uploadUrl="/api/admin/courses/thumbnail-upload"
+              initialUrl={form.thumbnail}
+              onUploaded={(url) => setForm(f => ({ ...f, thumbnail: url }))}
+              onUploadingChange={setThumbnailUploading}
+            />
+          </div>
           <div className="grid sm:grid-cols-3 gap-4">
             <Select label="Category" value={form.category} onChange={set('category')} options={['Web Development','Mobile Development','Data Science','UI/UX Design','DevOps','Programming'].map(c => ({ value: c, label: c }))} />
             <Select label="Level" value={form.level} onChange={set('level')} options={[{ value: 'beginner', label: 'Beginner' }, { value: 'intermediate', label: 'Intermediate' }, { value: 'advanced', label: 'Advanced' }]} />

@@ -17,10 +17,10 @@ export default function CTABanner() {
           whileInView={{ opacity: 1, scale: 1 }}
           viewport={{ once: true }}
         >
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-primary/20 border border-primary/30 text-primary mb-6">
+          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-primary/20 border border-primary/30 text-primary-text mb-6">
             <GraduationCap className="w-8 h-8" />
           </div>
-          <h2 className="text-3xl sm:text-5xl font-black text-white mb-6">
+          <h2 className="text-3xl sm:text-5xl font-black text-foreground mb-6">
             Ready to Start Your <span className="gradient-text">Coding Journey?</span>
           </h2>
           <p className="text-muted text-lg mb-10 max-w-2xl mx-auto">

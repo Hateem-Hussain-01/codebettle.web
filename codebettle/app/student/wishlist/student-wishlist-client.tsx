@@ -65,14 +65,14 @@ export default function StudentWishlistClient({ initialItems, courses: initialCo
   return (
     <div className="space-y-6">
       <FadeIn>
-        <h1 className="text-2xl font-black text-white">My Wishlist</h1>
+        <h1 className="text-2xl font-black text-foreground">My Wishlist</h1>
         <p className="text-muted text-sm mt-1">{wishlisted.length} saved course{wishlisted.length !== 1 ? 's' : ''}</p>
       </FadeIn>
 
       {wishlisted.length === 0 ? (
         <Card className="py-16 text-center">
           <Heart className="w-12 h-12 text-muted mx-auto mb-4" />
-          <p className="text-white font-semibold mb-2">Your wishlist is empty</p>
+          <p className="text-foreground font-semibold mb-2">Your wishlist is empty</p>
           <p className="text-muted text-sm mb-4">Start adding courses you are interested in.</p>
           <Link href="/courses">
             <Button size="sm"><Plus className="w-4 h-4" />Add to Wishlist</Button>

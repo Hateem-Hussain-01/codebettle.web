@@ -1,16 +1,25 @@
 /**
- * Quiz service (Phase 5).
+ * Quiz service (Phase 5, text import in Phase 4 Module 8).
  *
- * Owns the quiz workflow rules: teacher ownership, review-before-
- * publish gating, PDF import, attempt lifecycle, server-side timing,
- * grading, and analytics. No Next.js imports — unit-testable with the
- * fake db. Audit entries are written best-effort (a logging failure
- * never blocks the quiz action).
+ * Owns the quiz workflow rules: teacher ownership, text import,
+ * question editing, publish gating, attempt lifecycle, server-side
+ * timing, grading, and analytics. No Next.js imports — unit-testable
+ * with the fake db. Audit entries are written best-effort (a logging
+ * failure never blocks the quiz action).
+ *
+ * There is NO review/approval step: the teacher pastes AI-generated
+ * quiz text (or adds questions manually) and publishes directly to
+ * students. Publish is gated only on validity — a draft with at least
+ * one question, where every question has a usable answer key (so a
+ * published quiz can actually be graded). Parser flags (needsReview)
+ * are advisory only: they surface in the editor as warnings, they
+ * never block publishing.
  *
  * Answer-key security: the service NEVER returns a full Quiz (with key)
  * to a student. Student-facing functions return toPublicQuiz() shapes
  * only, and submit results honour the quiz's showResultsToStudents /
- * showCorrectAnswers settings.
+ * showCorrectAnswers settings. Explanations are teacher-facing only
+ * and are never sent to students either.
  */
 import { logAudit } from '../db/audit';
 import { getCourseById, getCoursesByInstructor } from '../db/courses';
@@ -51,9 +60,7 @@ import { requiredSelectionCount, QUIZ_QUESTION_TYPES } from '../db/types';
 import { badRequest, forbidden, notFound, type Actor, type ServiceError } from './errors';
 import { hasAdminCapability, hasTeacherCapability } from '../rbac';
 import { gradeAttempt } from './quiz-grading';
-import { parseQuizPdf, MAX_QUIZ_PDF_BYTES, type ParsedQuestion } from './quiz-parser';
-import { uploadQuizPdf, type QuizPdfFile } from './quiz-storage';
-import type { SupabaseClient } from '@supabase/supabase-js';
+import { parseQuizTextImport, MAX_QUIZ_TEXT_IMPORT_CHARS, type ParsedQuestion } from './quiz-parser';
 
 type Result<T> = T | ServiceError;
 
@@ -145,59 +152,58 @@ export async function listQuizzesForTeacher(actor: Actor): Promise<Result<{ quiz
 }
 
 // ---------------------------------------------------------------------------
-// Teacher / admin: PDF import
+// Teacher / admin: text import (Module 8)
 // ---------------------------------------------------------------------------
 
-export async function importQuizPdf(
+export async function importQuizText(
   actor: Actor,
   quizId: string,
-  file: QuizPdfFile,
-  options?: { storageClient?: SupabaseClient },
-): Promise<Result<{ quiz: Quiz; parsed: { questions: number; warnings: number; isScanned: boolean } }>> {
+  text: string,
+): Promise<Result<{ quiz: Quiz; parsed: { questions: number; warnings: number; flagged: number } }>> {
   const loaded = await loadQuizForManagement(actor, quizId);
   if ('error' in loaded) return loaded;
   const { quiz } = loaded;
-  if (quiz.status !== 'draft') return badRequest('Only draft quizzes can import a PDF');
-  if (file.size > MAX_QUIZ_PDF_BYTES) return badRequest('PDF must be 10 MB or smaller');
-  if (file.type !== 'application/pdf') return badRequest('Only PDF files are allowed');
-
-  const bytes = typeof file.arrayBuffer === 'function' ? await file.arrayBuffer() : file.arrayBuffer;
-  const body = Buffer.isBuffer(bytes) ? bytes : Buffer.from(bytes);
-  if (body.byteLength < 4 || body.subarray(0, 4).toString('latin1') !== '%PDF') {
-    return badRequest('The uploaded file is not a PDF');
+  if (quiz.status !== 'draft') return badRequest('Only draft quizzes can import quiz text');
+  if (typeof text !== 'string' || !text.trim()) return badRequest('Paste the quiz text first');
+  if (text.length > MAX_QUIZ_TEXT_IMPORT_CHARS) {
+    return badRequest(
+      `Quiz text must be ${MAX_QUIZ_TEXT_IMPORT_CHARS.toLocaleString('en-US')} characters or fewer`,
+    );
   }
 
-  // Store the original PDF first, then parse it. If parsing finds
-  // nothing, the quiz keeps the stored PDF and zero questions — the
-  // teacher adds questions manually in review.
-  const stored = await uploadQuizPdf({ ...file, arrayBuffer: body }, options?.storageClient);
-  const parsed = await parseQuizPdf(body);
+  const parsed = parseQuizTextImport(text);
+  // A paste with zero usable questions must not wipe the questions the
+  // teacher already has — reject it and show the first error instead.
+  if (parsed.questions.length === 0) {
+    const firstError = parsed.warnings.find((w) => w.severity === 'error') ?? parsed.warnings[0];
+    return badRequest(firstError?.message ?? 'No questions were found in the pasted text');
+  }
   const questions: QuizQuestionInput[] = parsed.questions.map((q: ParsedQuestion) => ({
     type: q.type,
     prompt: q.prompt,
     points: q.points,
     correctText: q.correctText,
     acceptedAnswers: q.acceptedAnswers,
+    explanation: q.explanation,
     needsReview: q.needsReview,
     reviewNote: q.reviewNote,
     options: q.options.map((o) => ({ text: o.text, isCorrect: o.isCorrect })),
   }));
   await replaceQuizQuestions(quizId, questions);
   const updated = await updateQuiz(quizId, {
-    pdfUrl: stored.url,
-    pdfStoragePath: stored.path,
     parseWarnings: parsed.warnings.length > 0 ? parsed.warnings : null,
   });
   if (!updated) return notFound('Quiz');
-  await audit(actor.id, 'quiz.import', quizId, `${parsed.questions.length} questions parsed, ${parsed.warnings.length} warnings`);
-  return { quiz: updated, parsed: { questions: parsed.questions.length, warnings: parsed.warnings.length, isScanned: parsed.isScanned } };
+  const flagged = parsed.questions.filter((q) => q.needsReview).length;
+  await audit(actor.id, 'quiz.import-text', quizId, `${parsed.questions.length} questions parsed, ${parsed.warnings.length} warnings`);
+  return { quiz: updated, parsed: { questions: parsed.questions.length, warnings: parsed.warnings.length, flagged } };
 }
 
 // ---------------------------------------------------------------------------
-// Teacher / admin: review edits + publish gating
+// Teacher / admin: question editing + publish gating
 // ---------------------------------------------------------------------------
 
-export interface ReviewQuestionInput {
+export interface QuestionInput {
   type: QuizQuestionType;
   prompt: string;
   points: number;
@@ -205,19 +211,20 @@ export interface ReviewQuestionInput {
   difficulty?: Quiz['difficulty'];
   correctText?: string;
   acceptedAnswers?: string[];
-  needsReview?: boolean;
-  reviewNote?: string;
+  explanation?: string;
   options: Array<{ text: string; isCorrect?: boolean }>;
 }
 
 /**
- * Validate one review-edited question and decide whether it still needs
- * review. A teacher may save a question that still needs review — the
- * publish gate (not the save) is what blocks it. But a question cannot
- * be marked reviewed while its answer key is missing or wrong: the flag
- * is forced back on with a note, so review state can never lie.
+ * Validate one edited question and decide whether it is still flagged.
+ * A teacher may save a question that is flagged — the publish gate
+ * (not the save) is what blocks it. But a question cannot be saved
+ * unflagged while its answer key is missing or wrong: the flag is
+ * forced back on with a note, so the flag can never lie. The flag is
+ * advisory only (see publishBlockers): it marks questions the teacher
+ * should look at, it is not an approval step.
  */
-export function validateReviewQuestion(input: ReviewQuestionInput, index: number): { input: QuizQuestionInput } | ServiceError {
+export function validateQuizQuestion(input: QuestionInput, index: number): { input: QuizQuestionInput } | ServiceError {
   if (!QUIZ_QUESTION_TYPES.includes(input.type)) return badRequest(`Question ${index + 1}: unknown type "${input.type}"`);
   if (!input.prompt.trim()) return badRequest(`Question ${index + 1}: prompt is required`);
   if (!Number.isInteger(input.points) || input.points < 1) {
@@ -235,8 +242,8 @@ export function validateReviewQuestion(input: ReviewQuestionInput, index: number
     return badRequest(`Question ${index + 1}: fill-in-the-blank questions have no options`);
   }
 
-  let needsReview = input.needsReview ?? false;
-  let reviewNote = input.reviewNote;
+  let needsReview = false;
+  let reviewNote: string | undefined;
   if (isOptionType) {
     const correct = (input.options ?? []).filter((o) => o.isCorrect).length;
     if (correct === 0) {
@@ -265,6 +272,7 @@ export function validateReviewQuestion(input: ReviewQuestionInput, index: number
       difficulty: input.difficulty,
       correctText: input.correctText?.trim() || undefined,
       acceptedAnswers: (input.acceptedAnswers ?? []).map((a) => a.trim()).filter(Boolean),
+      explanation: input.explanation?.trim() || undefined,
       needsReview,
       reviewNote,
       options: (input.options ?? []).map((o) => ({ text: o.text.trim(), isCorrect: o.isCorrect ?? false })),
@@ -272,35 +280,64 @@ export function validateReviewQuestion(input: ReviewQuestionInput, index: number
   };
 }
 
-export async function saveQuizReview(
+export async function saveQuizQuestions(
   actor: Actor,
   quizId: string,
-  questions: ReviewQuestionInput[],
+  questions: QuestionInput[],
 ): Promise<Result<{ quiz: Quiz }>> {
   const loaded = await loadQuizForManagement(actor, quizId);
   if ('error' in loaded) return loaded;
   if (loaded.quiz.status !== 'draft') return badRequest('Only draft quizzes can be edited');
   const validated: QuizQuestionInput[] = [];
   for (let i = 0; i < questions.length; i++) {
-    const result = validateReviewQuestion(questions[i], i);
+    const result = validateQuizQuestion(questions[i], i);
     if ('error' in result) return result;
     validated.push(result.input);
   }
   await replaceQuizQuestions(quizId, validated);
   const updated = await getQuizById(quizId);
   if (!updated) return notFound('Quiz');
-  await audit(actor.id, 'quiz.review', quizId, `${validated.length} questions saved in review`);
+  await audit(actor.id, 'quiz.questions', quizId, `${validated.length} questions saved`);
   return { quiz: updated };
 }
 
-/** Publish blockers: every question must be reviewed and keyed. */
+/**
+ * Publish blockers — validity only, NOT a review gate. There is no
+ * review/approval step: the teacher publishes directly. The only
+ * things that block publishing are a quiz that is not a draft, a quiz
+ * with no questions, and a question whose answer key is missing or
+ * wrong (a published quiz with no correct answer cannot be graded, so
+ * its students could never score on that question). Parser flags
+ * (needsReview) never block publishing.
+ */
 export function publishBlockers(quiz: Quiz): string[] {
   const blockers: string[] = [];
   if (quiz.status !== 'draft') blockers.push('Only a draft quiz can be published');
   const questions = quiz.questions ?? [];
   if (questions.length === 0) blockers.push('Add at least one question before publishing');
   for (const q of questions) {
-    if (q.needsReview) blockers.push(`Q${q.position} still needs review${q.reviewNote ? `: ${q.reviewNote}` : ''}`);
+    if (q.type === 'fill_blank') {
+      if (!q.correctText?.trim()) blockers.push(`Q${q.position} has no correct answer — add the answer before publishing`);
+      continue;
+    }
+    if (q.options.length < 2) {
+      blockers.push(`Q${q.position} needs at least 2 options before publishing`);
+      continue;
+    }
+    const correct = q.options.filter((o) => o.isCorrect).length;
+    if (q.type === 'mcq' && correct !== 1) {
+      blockers.push(
+        correct === 0
+          ? `Q${q.position} has no correct option — mark the correct option before publishing`
+          : `Q${q.position} has more than one correct option — an MCQ needs exactly one`,
+      );
+    } else if (q.type === 'choose_two' && correct !== 2) {
+      blockers.push(`Q${q.position} is Choose Two but has ${correct} correct option(s) — exactly 2 are needed before publishing`);
+    } else if (q.type === 'choose_three' && correct !== 3) {
+      blockers.push(`Q${q.position} is Choose Three but has ${correct} correct option(s) — exactly 3 are needed before publishing`);
+    } else if (q.type === 'checkbox' && correct === 0) {
+      blockers.push(`Q${q.position} has no correct option — mark the correct option(s) before publishing`);
+    }
   }
   return blockers;
 }

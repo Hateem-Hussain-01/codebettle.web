@@ -2,9 +2,12 @@
  * Quiz repository (Phase 5, Prisma-backed).
  *
  * Quizzes belong to a course and are created by the course's instructor
- * (or an admin). Drafts carry parsed questions from an uploaded PDF;
- * a quiz is only published after the teacher reviews every question
- * (enforced in lib/services/quiz-service.ts, not here).
+ * (or an admin). Drafts carry questions pasted as text or added
+ * manually; publishing is gated on validity in
+ * lib/services/quiz-service.ts, not here (there is no review step).
+ *
+ * The retired PDF workflow's columns (Quiz.pdfUrl / pdfStoragePath)
+ * are kept nullable for historical rows; nothing writes them any more.
  *
  * Answer-key material (QuizOption.isCorrect, QuizQuestion.correctText /
  * acceptedAnswers) lives in these rows. The repository returns the full
@@ -223,13 +226,15 @@ export interface QuizQuestionInput {
   difficulty?: CourseLevel;
   correctText?: string;
   acceptedAnswers?: string[];
+  /** Teacher-facing explanation (Module 8 text import). Never sent to students. */
+  explanation?: string;
   needsReview?: boolean;
   reviewNote?: string;
   options: Array<{ text: string; isCorrect?: boolean }>;
 }
 
 /**
- * Replace a quiz's questions wholesale (review edits, re-parse).
+ * Replace a quiz's questions wholesale (question edits, text re-import).
  * Deletes existing options + questions first (the real DB cascades
  * options, the test fake does not — explicit deletes keep both honest),
  * then inserts the new set at contiguous 1-based positions.
@@ -253,6 +258,7 @@ export async function replaceQuizQuestions(quizId: string, questions: QuizQuesti
       difficulty: input.difficulty ?? null,
       correctText: input.correctText ?? null,
       acceptedAnswers: input.acceptedAnswers ?? [],
+      explanation: input.explanation ?? null,
       needsReview: input.needsReview ?? false,
       reviewNote: input.reviewNote ?? null,
     });
@@ -269,14 +275,6 @@ export async function replaceQuizQuestions(quizId: string, questions: QuizQuesti
     created.push(mapQuizQuestionRow(row, optionRows));
   }
   return created;
-}
-
-/** Mark one question reviewed (clears needsReview + note). */
-export async function markQuestionReviewed(questionId: string): Promise<boolean> {
-  const row = await getDb()
-    .orm.public.QuizQuestion.where({ id: questionId })
-    .update({ needsReview: false, reviewNote: null });
-  return row !== null;
 }
 
 // ---------------------------------------------------------------------------

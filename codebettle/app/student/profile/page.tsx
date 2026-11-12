@@ -160,7 +160,7 @@ export default function StudentProfilePage() {
   return (
     <div className="space-y-6 max-w-2xl">
       <div>
-        <h1 className="text-2xl font-black text-white">My Profile</h1>
+        <h1 className="text-2xl font-black text-foreground">My Profile</h1>
         <p className="text-muted text-sm mt-1">Manage your account details</p>
       </div>
 
@@ -179,7 +179,7 @@ export default function StudentProfilePage() {
               disabled={uploading}
               aria-label="Change profile photo"
               title="Change profile photo"
-              className="absolute -bottom-1 -right-1 w-7 h-7 rounded-full bg-primary text-dark flex items-center justify-center hover:bg-primary-dark transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+              className="absolute -bottom-1 -right-1 w-7 h-7 rounded-full bg-primary text-ink flex items-center justify-center hover:bg-primary-dark transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <Camera className="w-3.5 h-3.5" />
             </button>
@@ -192,7 +192,7 @@ export default function StudentProfilePage() {
             />
           </div>
           <div>
-            <p className="text-white font-semibold">{profile.name}</p>
+            <p className="text-foreground font-semibold">{profile.name}</p>
             <p className="text-muted text-sm">{profile.email}</p>
             <span className="text-xs px-2.5 py-0.5 rounded-full bg-blue-400/10 text-blue-400 border border-blue-400/20 mt-1 inline-block">Student</span>
           </div>
@@ -202,7 +202,7 @@ export default function StudentProfilePage() {
 
       {/* Profile Form */}
       <Card>
-        <h2 className="text-white font-bold mb-4 flex items-center gap-2"><User className="w-4 h-4 text-primary" />Personal Info</h2>
+        <h2 className="text-foreground font-bold mb-4 flex items-center gap-2"><User className="w-4 h-4 text-primary-text" />Personal Info</h2>
         <div className="space-y-4">
           <Input label="Full Name" value={profile.name} onChange={e => setProfile(p => ({ ...p, name: e.target.value }))} icon={<User className="w-4 h-4" />} />
           <Input label="Email Address" type="email" value={profile.email} disabled title="Email is your login — it cannot be changed here" icon={<Mail className="w-4 h-4" />} />
@@ -214,7 +214,7 @@ export default function StudentProfilePage() {
 
       {/* Change Password */}
       <Card>
-        <h2 className="text-white font-bold mb-4 flex items-center gap-2"><Lock className="w-4 h-4 text-primary" />Change Password</h2>
+        <h2 className="text-foreground font-bold mb-4 flex items-center gap-2"><Lock className="w-4 h-4 text-primary-text" />Change Password</h2>
         <form onSubmit={handleChangePassword} className="space-y-4">
           <Input label="Current Password" type="password" placeholder="••••••••" value={passwords.current} onChange={e => setPasswords(p => ({ ...p, current: e.target.value }))} required />
           <Input label="New Password" type="password" placeholder="Min. 8 characters" value={passwords.new} onChange={e => setPasswords(p => ({ ...p, new: e.target.value }))} required />

@@ -194,8 +194,8 @@ export default function ApplicantNewPage() {
     return (
       <div className="space-y-6 max-w-2xl">
         <Card className="text-center py-10">
-          <CheckCircle className="w-12 h-12 text-primary mx-auto mb-4" />
-          <h1 className="text-2xl font-black text-white mb-2">Application submitted!</h1>
+          <CheckCircle className="w-12 h-12 text-primary-text mx-auto mb-4" />
+          <h1 className="text-2xl font-black text-foreground mb-2">Application submitted!</h1>
           <p className="text-muted text-sm mb-6">We will review it and contact you within 3–5 business days. You can track every step from here.</p>
           <Button onClick={() => router.push(`/applicant/track/${submittedId}`)}>Track My Application</Button>
         </Card>
@@ -206,7 +206,7 @@ export default function ApplicantNewPage() {
   return (
     <div className="space-y-6 max-w-2xl">
       <FadeIn>
-        <h1 className="text-2xl font-black text-white">New Application</h1>
+        <h1 className="text-2xl font-black text-foreground">New Application</h1>
         <p className="text-muted text-sm mt-1">Apply to teach at CodeBettle. Filed under your account — one application can be pending at a time.</p>
       </FadeIn>
 
@@ -232,30 +232,30 @@ export default function ApplicantNewPage() {
 
         <Card className="space-y-4">
           <div>
-            <label className="text-white text-sm font-medium block mb-2">CV *</label>
+            <label className="text-foreground text-sm font-medium block mb-2">CV *</label>
             {cvFile ? (
-              <p className="text-sm text-white flex items-center gap-2">
-                <FileText className="w-4 h-4 text-primary" /> {cvFile.name} ({formatFileSize(cvFile.size)})
-                <button type="button" onClick={() => setCvFile(null)} aria-label="Remove CV" className="text-muted hover:text-white cursor-pointer"><X className="w-4 h-4" /></button>
+              <p className="text-sm text-foreground flex items-center gap-2">
+                <FileText className="w-4 h-4 text-primary-text" /> {cvFile.name} ({formatFileSize(cvFile.size)})
+                <button type="button" onClick={() => setCvFile(null)} aria-label="Remove CV" className="text-muted hover:text-foreground cursor-pointer"><X className="w-4 h-4" /></button>
               </p>
             ) : (
               <label className="flex items-center gap-2 text-sm text-muted border border-dashed border-dark-border rounded-lg px-3 py-2.5 cursor-pointer hover:border-primary/50">
-                <Upload className="w-4 h-4 text-primary" /> Upload your CV (PDF, DOC, DOCX — max 5 MB)
+                <Upload className="w-4 h-4 text-primary-text" /> Upload your CV (PDF, DOC, DOCX — max 5 MB)
                 <input type="file" accept=".pdf,.doc,.docx" className="hidden" onChange={(e) => pickCv(e.target.files?.[0])} />
               </label>
             )}
             {cvError && <p className="text-red-400 text-xs mt-1">{cvError}</p>}
           </div>
           <div>
-            <label className="text-white text-sm font-medium block mb-2">Demo lecture recording *</label>
+            <label className="text-foreground text-sm font-medium block mb-2">Demo lecture recording *</label>
             {demoFile ? (
-              <p className="text-sm text-white flex items-center gap-2">
-                <Video className="w-4 h-4 text-primary" /> {demoFile.name} ({formatFileSize(demoFile.size)})
-                <button type="button" onClick={() => setDemoFile(null)} aria-label="Remove demo recording" className="text-muted hover:text-white cursor-pointer"><X className="w-4 h-4" /></button>
+              <p className="text-sm text-foreground flex items-center gap-2">
+                <Video className="w-4 h-4 text-primary-text" /> {demoFile.name} ({formatFileSize(demoFile.size)})
+                <button type="button" onClick={() => setDemoFile(null)} aria-label="Remove demo recording" className="text-muted hover:text-foreground cursor-pointer"><X className="w-4 h-4" /></button>
               </p>
             ) : (
               <label className="flex items-center gap-2 text-sm text-muted border border-dashed border-dark-border rounded-lg px-3 py-2.5 cursor-pointer hover:border-primary/50">
-                <Upload className="w-4 h-4 text-primary" /> Upload a short demo lecture (MP4, WebM, MOV — max 100 MB)
+                <Upload className="w-4 h-4 text-primary-text" /> Upload a short demo lecture (MP4, WebM, MOV — max 100 MB)
                 <input type="file" accept=".mp4,.webm,.mov" className="hidden" onChange={(e) => pickDemo(e.target.files?.[0])} />
               </label>
             )}

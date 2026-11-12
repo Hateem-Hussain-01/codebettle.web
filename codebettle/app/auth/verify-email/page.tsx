@@ -32,8 +32,8 @@ export default async function VerifyEmailPage({
       <main className="min-h-screen bg-background pt-16">
         <div className="max-w-xl mx-auto px-4 sm:px-6 py-16">
           <div className="text-center mb-8">
-            <MailCheck className="w-12 h-12 text-primary mx-auto mb-3" />
-            <h1 className="text-3xl font-black text-white">Verify your email</h1>
+            <MailCheck className="w-12 h-12 text-primary-text mx-auto mb-3" />
+            <h1 className="text-3xl font-black text-foreground">Verify your email</h1>
             <p className="text-muted mt-2 text-sm">
               Confirming your CodeBettle email address.
             </p>
@@ -43,7 +43,7 @@ export default async function VerifyEmailPage({
             <Card className="border-primary/30">
               <div className="flex items-center gap-2 mb-3">
                 <BadgeCheck className="w-6 h-6 text-green-400" />
-                <h2 className="text-white font-bold">Your email is verified</h2>
+                <h2 className="text-foreground font-bold">Your email is verified</h2>
               </div>
               <p className="text-muted text-sm">
                 Thanks — your email address is confirmed and your account is
@@ -59,7 +59,7 @@ export default async function VerifyEmailPage({
             <Card className="border-red-500/30">
               <div className="flex items-center gap-2 mb-3">
                 <XCircle className="w-6 h-6 text-red-400" />
-                <h2 className="text-white font-bold">This link didn&apos;t work</h2>
+                <h2 className="text-foreground font-bold">This link didn&apos;t work</h2>
               </div>
               <p className="text-muted text-sm">
                 {'error' in result

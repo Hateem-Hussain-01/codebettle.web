@@ -150,13 +150,13 @@ export default function StudentRequestsClient({ enrolledCourses }: StudentReques
   return (
     <div className="space-y-6">
       <FadeIn>
-        <h1 className="text-2xl font-black text-white">Student Support</h1>
+        <h1 className="text-2xl font-black text-foreground">Student Support</h1>
         <p className="text-muted text-sm mt-1">Contact the admin team — complaints, feedback, course issues or anything else.</p>
       </FadeIn>
 
       <FadeIn delay={0.05}>
         <Card>
-          <h2 className="font-semibold text-white mb-4">New request</h2>
+          <h2 className="font-semibold text-foreground mb-4">New request</h2>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="grid sm:grid-cols-2 gap-4">
               <Select
@@ -193,8 +193,8 @@ export default function StudentRequestsClient({ enrolledCourses }: StudentReques
               required
             />
             <div className="flex flex-col gap-1.5">
-              <label className="text-sm font-medium text-white/80">Attachment (optional, max 5 MB)</label>
-              <label className="flex items-center gap-2 w-full bg-dark-card border border-dark-border rounded-lg px-4 py-2.5 text-sm text-muted hover:text-white hover:border-primary/40 transition-colors cursor-pointer">
+              <label className="text-sm font-medium text-foreground/80">Attachment (optional, max 5 MB)</label>
+              <label className="flex items-center gap-2 w-full bg-dark-card border border-dark-border rounded-lg px-4 py-2.5 text-sm text-muted hover:text-foreground hover:border-primary/40 transition-colors cursor-pointer">
                 <Paperclip className="w-4 h-4 flex-shrink-0" />
                 <span className="truncate">{file ? file.name : 'PDF, Word, JPG or PNG'}</span>
                 <input
@@ -205,7 +205,7 @@ export default function StudentRequestsClient({ enrolledCourses }: StudentReques
                 />
               </label>
               {file && (
-                <button type="button" onClick={() => setFile(null)} className="text-xs text-muted hover:text-white text-left w-fit cursor-pointer">
+                <button type="button" onClick={() => setFile(null)} className="text-xs text-muted hover:text-foreground text-left w-fit cursor-pointer">
                   Remove attachment
                 </button>
               )}
@@ -219,18 +219,18 @@ export default function StudentRequestsClient({ enrolledCourses }: StudentReques
       </FadeIn>
 
       <FadeIn delay={0.1}>
-        <h2 className="font-semibold text-white mb-3">My requests ({total})</h2>
+        <h2 className="font-semibold text-foreground mb-3">My requests ({total})</h2>
         {loadingList ? (
           <Card className="py-10 text-center"><p className="text-muted text-sm">Loading your requests…</p></Card>
         ) : listError ? (
           <Card className="py-10 text-center">
-            <p className="text-white font-medium">Could not load your requests</p>
+            <p className="text-foreground font-medium">Could not load your requests</p>
             <p className="text-muted text-sm mt-1">Please refresh the page and try again.</p>
           </Card>
         ) : requests.length === 0 ? (
           <Card className="py-16 text-center">
             <Inbox className="w-10 h-10 text-muted mx-auto mb-3" />
-            <p className="text-white font-medium">No requests yet</p>
+            <p className="text-foreground font-medium">No requests yet</p>
             <p className="text-muted text-sm mt-1">Send your first request using the form above.</p>
           </Card>
         ) : (
@@ -239,7 +239,7 @@ export default function StudentRequestsClient({ enrolledCourses }: StudentReques
               <Card key={req.id}>
                 <div className="flex items-start justify-between gap-2 flex-wrap">
                   <div className="min-w-0">
-                    <p className="text-white font-medium text-sm">{req.subject}</p>
+                    <p className="text-foreground font-medium text-sm">{req.subject}</p>
                     <p className="text-muted text-xs mt-0.5">
                       {requestCategoryLabel(req.category)}
                       {req.courseTitle ? ` · ${req.courseTitle}` : ''} · {formatDateShort(req.createdAt)}
@@ -252,8 +252,8 @@ export default function StudentRequestsClient({ enrolledCourses }: StudentReques
                 <p className="text-muted text-sm mt-2 whitespace-pre-line">{req.message}</p>
                 {req.adminReply && (
                   <div className="mt-3 rounded-lg bg-primary/5 border border-primary/20 p-3">
-                    <p className="text-primary text-xs font-semibold">Reply from admin</p>
-                    <p className="text-white/90 text-sm mt-1 whitespace-pre-line">{req.adminReply}</p>
+                    <p className="text-primary-text text-xs font-semibold">Reply from admin</p>
+                    <p className="text-foreground/90 text-sm mt-1 whitespace-pre-line">{req.adminReply}</p>
                   </div>
                 )}
               </Card>

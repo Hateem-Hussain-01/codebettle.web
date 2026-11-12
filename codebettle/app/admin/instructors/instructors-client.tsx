@@ -174,7 +174,7 @@ export default function InstructorsClient({ instructors: allInstructors, courseC
     <div className="space-y-6">
       <FadeIn className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-black text-white">Instructors</h1>
+          <h1 className="text-2xl font-black text-foreground">Instructors</h1>
           <p className="text-muted text-sm mt-1">{instructors.length} instructor{instructors.length !== 1 ? 's' : ''}</p>
         </div>
         <Button onClick={() => setIsCreateOpen(true)}><Plus className="w-4 h-4" />Add Instructor</Button>
@@ -192,20 +192,20 @@ export default function InstructorsClient({ instructors: allInstructors, courseC
               <div className="flex items-start gap-3 mb-3">
                 <img src={inst.avatar || ''} alt={inst.name} className="w-12 h-12 rounded-full border-2 border-primary/20" />
                 <div className="flex-1 min-w-0">
-                  <p className="text-white font-semibold text-sm">{inst.name}</p>
+                  <p className="text-foreground font-semibold text-sm">{inst.name}</p>
                   <p className="text-muted text-xs truncate">{inst.email}</p>
                   <Badge variant={inst.status === 'active' ? 'success' : 'danger'} className="mt-1">{inst.status}</Badge>
                 </div>
               </div>
               {inst.expertise && (
                 <div className="flex flex-wrap gap-1 mb-3">
-                  {inst.expertise.slice(0, 3).map(e => <span key={e} className="text-xs px-2 py-0.5 rounded-full bg-primary/10 text-primary">{e}</span>)}
+                  {inst.expertise.slice(0, 3).map(e => <span key={e} className="text-xs px-2 py-0.5 rounded-full bg-primary/10 text-primary-text">{e}</span>)}
                 </div>
               )}
               <p className="text-muted text-xs mb-4">{courseCount} course{courseCount !== 1 ? 's' : ''} • Joined {formatDateShort(inst.joinedAt)}</p>
               <div className="flex items-center gap-2">
                 <Button size="sm" variant="secondary" className="flex-1" onClick={() => setViewTarget(inst)}><Eye className="w-3.5 h-3.5" />View</Button>
-                <button onClick={() => openEdit(inst)} className="p-2 rounded-lg border border-dark-border text-muted hover:text-primary hover:border-primary/30 transition-all cursor-pointer">
+                <button onClick={() => openEdit(inst)} className="p-2 rounded-lg border border-dark-border text-muted hover:text-primary-text hover:border-primary/30 transition-all cursor-pointer">
                   <Pencil className="w-4 h-4" />
                 </button>
                 <button onClick={() => toggleStatus(inst)} className={`p-2 rounded-lg border transition-all cursor-pointer ${inst.status === 'active' ? 'border-yellow-500/30 text-yellow-400 hover:bg-yellow-500/10' : 'border-green-500/30 text-green-400 hover:bg-green-500/10'}`}>
@@ -229,7 +229,7 @@ export default function InstructorsClient({ instructors: allInstructors, courseC
             <div className="flex items-center gap-4">
               <img src={viewTarget.avatar || ''} alt={viewTarget.name} className="w-16 h-16 rounded-full border-2 border-primary/30" />
               <div>
-                <p className="text-white font-bold">{viewTarget.name}</p>
+                <p className="text-foreground font-bold">{viewTarget.name}</p>
                 <p className="text-muted text-sm">{viewTarget.email}</p>
                 <Badge variant={viewTarget.status === 'active' ? 'success' : 'danger'} className="mt-1">{viewTarget.status}</Badge>
               </div>
@@ -237,21 +237,21 @@ export default function InstructorsClient({ instructors: allInstructors, courseC
             {viewTarget.bio && <p className="text-muted text-sm">{viewTarget.bio}</p>}
             {viewTarget.expertise && (
               <div className="flex flex-wrap gap-1.5">
-                {viewTarget.expertise.map(e => <span key={e} className="text-xs px-2.5 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20">{e}</span>)}
+                {viewTarget.expertise.map(e => <span key={e} className="text-xs px-2.5 py-0.5 rounded-full bg-primary/10 text-primary-text border border-primary/20">{e}</span>)}
               </div>
             )}
             <div>
-              <p className="text-white font-semibold text-sm mb-2">Courses Taught</p>
+              <p className="text-foreground font-semibold text-sm mb-2">Courses Taught</p>
               {(coursesByInstructor[viewTarget.id] ?? []).length === 0 && (
                 <p className="text-muted text-xs">No courses yet.</p>
               )}
               <ul className="space-y-2">
                 {(coursesByInstructor[viewTarget.id] ?? []).map(c => (
-                  <li key={c.id} className="bg-dark-border/20 rounded-lg px-3 py-2 text-xs text-white font-medium">{c.title}</li>
+                  <li key={c.id} className="bg-dark-border/20 rounded-lg px-3 py-2 text-xs text-foreground font-medium">{c.title}</li>
                 ))}
               </ul>
             </div>
-            {viewTarget.phone && <p className="text-muted text-xs">Phone: <span className="text-white">{viewTarget.phone}</span></p>}
+            {viewTarget.phone && <p className="text-muted text-xs">Phone: <span className="text-foreground">{viewTarget.phone}</span></p>}
             <p className="text-muted text-xs">Joined: {formatDateShort(viewTarget.joinedAt)}</p>
             <Button variant="secondary" fullWidth onClick={() => setViewTarget(null)}>Close</Button>
           </div>
@@ -275,7 +275,7 @@ export default function InstructorsClient({ instructors: allInstructors, courseC
                 return (
                   <div key={course.id} className="flex items-center gap-3 bg-dark-border/20 rounded-lg px-3 py-2.5">
                     <div className="flex-1 min-w-0">
-                      <p className="text-white text-sm font-medium truncate">{course.title}</p>
+                      <p className="text-foreground text-sm font-medium truncate">{course.title}</p>
                       {alreadyAssigned
                         ? <p className="text-muted text-xs">Already assigned to {assignTarget.name}</p>
                         : otherInstructor
@@ -327,7 +327,7 @@ export default function InstructorsClient({ instructors: allInstructors, courseC
 
       {/* Delete Modal */}
       <Modal isOpen={!!deleteTarget} onClose={() => setDeleteTarget(null)} title="Remove Instructor" size="sm">
-        <p className="text-muted text-sm mb-2">Remove <span className="text-white font-medium">{deleteTarget?.name}</span>?</p>
+        <p className="text-muted text-sm mb-2">Remove <span className="text-foreground font-medium">{deleteTarget?.name}</span>?</p>
         <p className="text-muted text-xs mb-6">This will permanently remove their account. Their courses keep their references.</p>
         <div className="flex gap-3">
           <Button variant="secondary" fullWidth onClick={() => setDeleteTarget(null)}>Cancel</Button>

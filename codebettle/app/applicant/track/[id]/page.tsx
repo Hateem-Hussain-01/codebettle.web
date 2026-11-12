@@ -51,13 +51,13 @@ export default function ApplicantTrackPage() {
   return (
     <div className="space-y-6">
       <FadeIn>
-        <h1 className="text-2xl font-black text-white">Track My Application</h1>
+        <h1 className="text-2xl font-black text-foreground">Track My Application</h1>
         <p className="text-muted text-sm mt-1">Your current stage, what is done, and what comes next — nothing beyond that.</p>
       </FadeIn>
       {loading && <p className="text-muted text-sm">Loading…</p>}
       {!loading && notFound && (
         <p className="text-muted text-sm">
-          Application not found. <Link href="/applicant/application" className="text-primary hover:underline">Back to my applications</Link>
+          Application not found. <Link href="/applicant/application" className="text-primary-text hover:underline">Back to my applications</Link>
         </p>
       )}
       {!loading && !notFound && tracking && <TrackingTimeline tracking={tracking} />}

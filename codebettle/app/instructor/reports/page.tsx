@@ -28,7 +28,7 @@ export default async function InstructorReportsPage({
   if ('error' in reportResult) {
     return (
       <div className="space-y-6">
-        <h1 className="text-2xl font-black text-white">Reports</h1>
+        <h1 className="text-2xl font-black text-foreground">Reports</h1>
         <Card>
           <p className="text-muted text-sm">{reportResult.error}</p>
         </Card>
@@ -43,13 +43,13 @@ export default async function InstructorReportsPage({
   return (
     <div className="space-y-6">
       <FadeIn>
-        <h1 className="text-2xl font-black text-white">Reports</h1>
+        <h1 className="text-2xl font-black text-foreground">Reports</h1>
         <p className="text-muted text-sm mt-1">Your courses at a glance · {rangeLabel}</p>
       </FadeIn>
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {[
-          { label: 'My Courses', value: report.totalCourses, icon: <BookOpen className="w-6 h-6" />, color: 'text-primary bg-primary/10' },
+          { label: 'My Courses', value: report.totalCourses, icon: <BookOpen className="w-6 h-6" />, color: 'text-primary-text bg-primary/10' },
           { label: 'Total Enrollments', value: report.enrollments, icon: <Users className="w-6 h-6" />, color: 'text-blue-400 bg-blue-400/10' },
           { label: 'Completion Rate', value: `${report.completionRate}%`, icon: <BarChart2 className="w-6 h-6" />, color: 'text-green-400 bg-green-400/10' },
           { label: 'Total Revenue', value: `PKR ${report.revenue.toLocaleString()}`, icon: <DollarSign className="w-6 h-6" />, color: 'text-purple-400 bg-purple-400/10' },
@@ -59,7 +59,7 @@ export default async function InstructorReportsPage({
             <div className="flex items-center gap-3">
               <div className={`w-11 h-11 rounded-xl flex items-center justify-center ${s.color}`}>{s.icon}</div>
               <div>
-                <p className="text-xl font-black text-white">{s.value}</p>
+                <p className="text-xl font-black text-foreground">{s.value}</p>
                 <p className="text-muted text-xs">{s.label}</p>
               </div>
             </div>
@@ -70,7 +70,7 @@ export default async function InstructorReportsPage({
 
       <FadeIn delay={0.1}>
       <Card>
-        <h2 className="text-white font-bold mb-4">Per-course breakdown</h2>
+        <h2 className="text-foreground font-bold mb-4">Per-course breakdown</h2>
         {report.courses.length === 0 ? (
           <p className="text-muted text-sm text-center py-8">No courses yet</p>
         ) : (
@@ -89,15 +89,15 @@ export default async function InstructorReportsPage({
                 {report.courses.map(c => (
                   <tr key={c.courseId} className="border-b border-dark-border last:border-0">
                     <td className="py-3 pr-4">
-                      <p className="text-white font-medium">{c.courseTitle}</p>
+                      <p className="text-foreground font-medium">{c.courseTitle}</p>
                       <p className="text-muted text-xs">{c.status}</p>
                     </td>
-                    <td className="py-3 pr-4 text-white">{c.enrollments}</td>
-                    <td className="py-3 pr-4 text-white">
+                    <td className="py-3 pr-4 text-foreground">{c.enrollments}</td>
+                    <td className="py-3 pr-4 text-foreground">
                       {c.completions} ({c.completionRate}%)
                     </td>
-                    <td className="py-3 pr-4 text-white">PKR {c.revenue.toLocaleString()}</td>
-                    <td className="py-3 text-white">
+                    <td className="py-3 pr-4 text-foreground">PKR {c.revenue.toLocaleString()}</td>
+                    <td className="py-3 text-foreground">
                       <span className="inline-flex items-center gap-1">
                         <Star className="w-3.5 h-3.5 text-yellow-400" />
                         {c.averageRating === null ? '—' : `${c.averageRating} (${c.reviewCount})`}

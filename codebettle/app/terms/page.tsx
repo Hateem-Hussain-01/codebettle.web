@@ -80,7 +80,7 @@ export default async function TermsPage() {
       <main className="min-h-screen bg-background pt-16">
         <div className="py-16 bg-dark-card border-b border-dark-border">
           <FadeIn className="max-w-3xl mx-auto px-4">
-            <h1 className="text-4xl font-black text-white">Terms of Service</h1>
+            <h1 className="text-4xl font-black text-foreground">Terms of Service</h1>
             <p className="text-muted text-sm mt-2">Last updated: 9 November 2026</p>
             <p className="text-muted leading-relaxed mt-4">
               These terms govern your use of the CodeBettle platform. If you do not
@@ -93,7 +93,7 @@ export default async function TermsPage() {
           {SECTIONS.map((section, i) => (
             <FadeIn key={section.title} delay={Math.min(i, 3) * 0.05}>
             <section>
-              <h2 className="text-xl font-bold text-white mb-3">{section.title}</h2>
+              <h2 className="text-xl font-bold text-foreground mb-3">{section.title}</h2>
               {section.body.map((paragraph) => (
                 <p key={paragraph.slice(0, 32)} className="text-muted leading-relaxed mb-3">
                   {paragraph}

@@ -113,14 +113,14 @@ export default function LoginNotificationPopup() {
                 <div className="flex items-start gap-3 min-w-0">
                   <div
                     className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${
-                      isWarning ? 'bg-red-400/10 text-red-400' : 'bg-primary/10 text-primary'
+                      isWarning ? 'bg-red-400/10 text-red-400' : 'bg-primary/10 text-primary-text'
                     }`}
                   >
                     {isWarning ? <AlertTriangle className="w-5 h-5" /> : <Megaphone className="w-5 h-5" />}
                   </div>
                   <div className="min-w-0">
-                    <p className="text-primary text-xs font-semibold uppercase tracking-wide">{heading}</p>
-                    <p className="text-white font-bold text-base leading-snug mt-0.5">{current.title}</p>
+                    <p className="text-primary-text text-xs font-semibold uppercase tracking-wide">{heading}</p>
+                    <p className="text-foreground font-bold text-base leading-snug mt-0.5">{current.title}</p>
                     <p className="text-muted text-xs mt-1">
                       {current.senderName?.trim() || 'CodeBettle Admin'} ·{' '}
                       {formatNotificationDateTime(current.createdAt)}
@@ -134,14 +134,14 @@ export default function LoginNotificationPopup() {
                 )}
               </div>
 
-              <p className="text-white/85 text-sm mt-3 whitespace-pre-wrap">{current.body}</p>
+              <p className="text-foreground/85 text-sm mt-3 whitespace-pre-wrap">{current.body}</p>
 
               {current.linkUrl && (
                 <a
                   href={current.linkUrl}
                   target="_blank"
                   rel="noreferrer"
-                  className="inline-block text-primary text-sm mt-2 hover:underline"
+                  className="inline-block text-primary-text text-sm mt-2 hover:underline"
                 >
                   Open link
                 </a>
@@ -150,7 +150,7 @@ export default function LoginNotificationPopup() {
               <div className="flex items-center justify-between gap-3 mt-4">
                 <div className="text-xs text-muted">
                   {mustAcknowledge ? (
-                    <span className="flex items-center gap-1.5 text-primary">
+                    <span className="flex items-center gap-1.5 text-primary-text">
                       <Check className="w-3.5 h-3.5" />
                       Please acknowledge to continue
                     </span>

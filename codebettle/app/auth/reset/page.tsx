@@ -77,7 +77,7 @@ function ResetForm() {
     <div className="bg-dark-card border border-dark-border rounded-2xl p-8">
       <div className="text-center mb-8">
         <Link href="/" className="text-2xl font-black gradient-text">CodeBettle</Link>
-        <h1 className="text-xl font-bold text-white mt-4">
+        <h1 className="text-xl font-bold text-foreground mt-4">
           {token ? 'Set a new password' : 'Forgot your password?'}
         </h1>
         <p className="text-muted text-sm mt-1">
@@ -90,8 +90,8 @@ function ResetForm() {
       {token ? (
         resetDone ? (
           <div className="text-center">
-            <CheckCircle2 className="w-12 h-12 text-primary mx-auto" />
-            <h2 className="text-lg font-bold text-white mt-4">Password updated!</h2>
+            <CheckCircle2 className="w-12 h-12 text-primary-text mx-auto" />
+            <h2 className="text-lg font-bold text-foreground mt-4">Password updated!</h2>
             <p className="text-muted text-sm mt-2">
               Your password has been changed. You can now sign in with your new password.
             </p>
@@ -112,7 +112,7 @@ function ResetForm() {
                 icon={<Lock className="w-4 h-4" />}
                 required
               />
-              <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-8 text-muted hover:text-white cursor-pointer">
+              <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-8 text-muted hover:text-foreground cursor-pointer">
                 {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
               </button>
             </div>
@@ -131,10 +131,10 @@ function ResetForm() {
         )
       ) : requested ? (
         <div className="text-center">
-          <MailCheck className="w-12 h-12 text-primary mx-auto" />
-          <h2 className="text-lg font-bold text-white mt-4">Check your inbox</h2>
+          <MailCheck className="w-12 h-12 text-primary-text mx-auto" />
+          <h2 className="text-lg font-bold text-foreground mt-4">Check your inbox</h2>
           <p className="text-muted text-sm mt-2">
-            If an account exists for <span className="text-white font-medium">{email}</span>, a reset link has been sent.
+            If an account exists for <span className="text-foreground font-medium">{email}</span>, a reset link has been sent.
             The link expires after 60 minutes.
           </p>
           <p className="text-muted text-xs mt-2">Didn&apos;t get it? Check your spam folder.</p>
@@ -157,7 +157,7 @@ function ResetForm() {
 
       <p className="text-center text-sm text-muted mt-6">
         Remembered your password?{' '}
-        <Link href="/auth/login" className="text-primary hover:underline font-medium">Back to Sign In</Link>
+        <Link href="/auth/login" className="text-primary-text hover:underline font-medium">Back to Sign In</Link>
       </p>
     </div>
   );
