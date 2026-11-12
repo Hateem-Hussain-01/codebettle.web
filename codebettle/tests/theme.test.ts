@@ -1,9 +1,14 @@
-// Module 6 — light/dark theme (Phase 4).
+// Module 6 — light/dark theme (Phase 4; three-mode model, theme-selector fix).
 //
 // Static + unit tests for the theme mechanism. They do not render
 // pixels — see RUNBOOK.md Phase 6 for how the live site is checked
 // visually. The conversion guard at the bottom fails if a new
 // hardcoded dark-only text colour is added to a file Worker A owns.
+//
+// Three modes: 'dark' / 'light' (explicit) and 'system' ("Default",
+// follow the device/OS preference live). The old binary toggle
+// (`toggleTheme`) is gone — the menu's setPreference replaces it,
+// so there is no toggle test to keep.
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync, readdirSync, statSync } from 'node:fs';
@@ -11,11 +16,12 @@ import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
   THEME_COOKIE,
+  THEME_PREFERENCES,
   THEME_SCRIPT,
   parseThemeCookie,
+  parseThemePreference,
   resolveTheme,
   themeCookieString,
-  toggleTheme,
 } from '../lib/theme';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -25,68 +31,95 @@ const read = (rel: string) => readFileSync(join(root, rel), 'utf8');
 // Cookie / theme helpers (lib/theme.ts)
 // ---------------------------------------------------------------------------
 
-test('theme cookie: only exactly light/dark parse; anything else is ignored', () => {
+test('theme preference parsing: dark/light/system parse; anything else is ignored', () => {
+  assert.deepEqual(THEME_PREFERENCES, ['dark', 'light', 'system']);
+  assert.equal(parseThemePreference('dark'), 'dark');
+  assert.equal(parseThemePreference('light'), 'light');
+  assert.equal(parseThemePreference('system'), 'system');
+  assert.equal(parseThemePreference('Light'), null);
+  assert.equal(parseThemePreference('SYSTEM'), null);
+  assert.equal(parseThemePreference(''), null);
+  assert.equal(parseThemePreference(null), null);
+  assert.equal(parseThemePreference(undefined), null);
+  assert.equal(parseThemePreference('dark; Path=/'), null);
+  assert.equal(parseThemePreference('bogus'), null);
+});
+
+test('theme cookie parsing (explicit theme only): system is NOT a theme', () => {
+  // Legacy 'dark'/'light' cookies keep working exactly as before.
   assert.equal(parseThemeCookie('light'), 'light');
   assert.equal(parseThemeCookie('dark'), 'dark');
+  // 'system' parses to null — the server layout renders NO data-theme
+  // attribute for it and the pre-hydration script resolves the device.
+  assert.equal(parseThemeCookie('system'), null);
   assert.equal(parseThemeCookie('Light'), null);
   assert.equal(parseThemeCookie(''), null);
   assert.equal(parseThemeCookie(null), null);
   assert.equal(parseThemeCookie(undefined), null);
   assert.equal(parseThemeCookie('dark; Path=/'), null);
+  assert.equal(parseThemeCookie('bogus'), null);
 });
 
-test('theme resolution: saved cookie wins, otherwise the device preference', () => {
+test('theme resolution: explicit preference wins, system follows the device', () => {
   assert.equal(resolveTheme('dark', false), 'dark');
   assert.equal(resolveTheme('light', true), 'light');
+  assert.equal(resolveTheme('system', true), 'dark');
+  assert.equal(resolveTheme('system', false), 'light');
   assert.equal(resolveTheme(null, true), 'dark');
   assert.equal(resolveTheme(null, false), 'light');
-  assert.equal(resolveTheme('bogus', true), 'dark');
+  assert.equal(resolveTheme(undefined, true), 'dark');
   assert.equal(resolveTheme(undefined, false), 'light');
 });
 
-test('theme toggle flips dark <-> light', () => {
-  assert.equal(toggleTheme('dark'), 'light');
-  assert.equal(toggleTheme('light'), 'dark');
-});
-
-test('theme cookie string: path-wide, one year, Lax, name cb-theme', () => {
+test('theme cookie string: path-wide, one year, Lax, name cb-theme, all three values', () => {
   assert.equal(themeCookieString('dark'), 'cb-theme=dark; Path=/; Max-Age=31536000; SameSite=Lax');
   assert.equal(themeCookieString('light'), 'cb-theme=light; Path=/; Max-Age=31536000; SameSite=Lax');
+  assert.equal(themeCookieString('system'), 'cb-theme=system; Path=/; Max-Age=31536000; SameSite=Lax');
   assert.equal(THEME_COOKIE, 'cb-theme');
 });
 
-test('pre-hydration script: cookie first, device fallback, sets data-theme', () => {
-  assert.match(THEME_SCRIPT, /cb-theme=\(light\|dark\)/);
+test('pre-hydration script: cookie first, device fallback, sets data-theme + colorScheme', () => {
+  assert.match(THEME_SCRIPT, /cb-theme=\(light\|dark\|system\)/);
   assert.match(THEME_SCRIPT, /prefers-color-scheme: dark/);
   assert.match(THEME_SCRIPT, /setAttribute\('data-theme'/);
+  assert.match(THEME_SCRIPT, /style\.colorScheme=t/);
+  assert.match(THEME_SCRIPT, /m\[1\]!=='system'/, 'a system cookie falls through to the device');
   assert.equal(THEME_SCRIPT.includes('</script>'), false, 'script must not contain a closing tag');
   assert.equal(THEME_SCRIPT.includes('eval'), false, 'no eval in the theme script');
 });
 
 // The script runs in a real browser before hydration. Execute it here
 // against fake document/window objects to prove the branching works.
-function runThemeScript(cookie: string, prefersDark: boolean): string | null {
+function runThemeScript(cookie: string, prefersDark: boolean): { theme: string | null; colorScheme: string } {
   let theme: string | null = null;
+  const style: { colorScheme: string } = { colorScheme: '' };
   const documentFake = {
     cookie,
-    documentElement: { setAttribute: (_k: string, v: string) => { theme = v; } },
+    documentElement: { setAttribute: (_k: string, v: string) => { theme = v; }, style },
   };
   const windowFake = {
     matchMedia: (_q: string) => ({ matches: prefersDark }),
   };
   const fn = new Function('document', 'window', THEME_SCRIPT);
   fn(documentFake, windowFake);
-  return theme;
+  return { theme, colorScheme: style.colorScheme };
 }
 
-test('pre-hydration script behaviour: cookie wins, else device, else dark', () => {
-  assert.equal(runThemeScript('cb-theme=dark', false), 'dark');
-  assert.equal(runThemeScript('cb-theme=light', true), 'light');
-  assert.equal(runThemeScript('foo=bar; cb-theme=light', true), 'light');
-  assert.equal(runThemeScript('', true), 'dark');
-  assert.equal(runThemeScript('', false), 'light');
-  assert.equal(runThemeScript('cb-theme=bogus', true), 'dark');
-  assert.equal(runThemeScript('cb-theme=bogus', false), 'light');
+test('pre-hydration script behaviour: explicit cookie wins, system/garbage/no cookie follow the device', () => {
+  // Legacy explicit cookies still win over the device.
+  assert.deepEqual(runThemeScript('cb-theme=dark', false), { theme: 'dark', colorScheme: 'dark' });
+  assert.deepEqual(runThemeScript('cb-theme=light', true), { theme: 'light', colorScheme: 'light' });
+  assert.deepEqual(runThemeScript('foo=bar; cb-theme=light', true), { theme: 'light', colorScheme: 'light' });
+  // 'system' cookie: NOT an explicit theme — the device decides.
+  assert.deepEqual(runThemeScript('cb-theme=system', true), { theme: 'dark', colorScheme: 'dark' });
+  assert.deepEqual(runThemeScript('cb-theme=system', false), { theme: 'light', colorScheme: 'light' });
+  assert.deepEqual(runThemeScript('foo=bar; cb-theme=system', false), { theme: 'light', colorScheme: 'light' });
+  // No cookie at all: the device decides.
+  assert.deepEqual(runThemeScript('', true), { theme: 'dark', colorScheme: 'dark' });
+  assert.deepEqual(runThemeScript('', false), { theme: 'light', colorScheme: 'light' });
+  // Garbage cookie: treated as no cookie — the device decides.
+  assert.deepEqual(runThemeScript('cb-theme=bogus', true), { theme: 'dark', colorScheme: 'dark' });
+  assert.deepEqual(runThemeScript('cb-theme=bogus', false), { theme: 'light', colorScheme: 'light' });
 });
 
 // ---------------------------------------------------------------------------
@@ -145,6 +178,30 @@ test('light tokens: elevation shadows soften, glass-card + scrollbar go light', 
   assert.match(css, /\[data-theme="light"\] ::-webkit-scrollbar-track\s*\{[^}]*background: #F1F1F1/);
 });
 
+test('light tokens: gradient-text gets a dark-gold override (bright gold is 1.63:1 on white)', () => {
+  // .gradient-text is used in ~25 places (logos, hero headings/stats,
+  // About/Blog/Contact/Courses/Instructors, Footer, CTABanner, auth).
+  // The dark gradient (#F5C518 -> #FDE68A) is unreadable on white, so
+  // light mode needs dark golds: #8A6D00 4.92:1, #6B5400 7.26:1.
+  const css = read('app/globals.css');
+  const m = css.match(/\[data-theme="light"\] \.gradient-text\s*\{([\s\S]*?)\}/);
+  assert.ok(m, 'light .gradient-text override exists');
+  assert.match(m[1], /linear-gradient\(135deg, #8A6D00, #6B5400\)/);
+  assert.equal(m[1].includes('#F5C518'), false, 'no bright gold in the light gradient');
+  assert.equal(m[1].includes('#FDE68A'), false, 'no pale gold in the light gradient');
+});
+
+test('globals.css: plain @theme, NOT @theme inline (root cause of the broken toggle)', () => {
+  // Tailwind v4 `@theme inline` inlines token values into the
+  // generated utilities at build time (`.bg-dark-card{background-
+  // color:#1c1c1c}`), so the [data-theme="light"] overrides never
+  // reach any component. Plain @theme keeps utilities referencing
+  // the variables (var(--color-dark-card)), so light mode applies.
+  const css = read('app/globals.css');
+  assert.equal(css.includes('@theme inline'), false, '@theme inline must never come back');
+  assert.match(css, /@theme\s*\{/);
+});
+
 test('globals.css: no comment closes mid-line (a stray */ once swallowed the light block)', () => {
   // Regression: "`bg-*/border-*/ring-primary`" inside a comment closed
   // the comment early; Lightning CSS then dropped the whole
@@ -173,6 +230,10 @@ test('root layout: nonce-carrying pre-hydration script + cookie-driven data-them
   assert.match(layout, /<html lang="en" className="h-full"[^>]*suppressHydrationWarning/);
   assert.match(layout, /\(await headers\(\)\)\.get\('x-nonce'\)/);
   assert.match(layout, /<ThemeProvider>/);
+  // Three-mode model: a 'system' (or missing/invalid) cookie means
+  // NO server-side data-theme — the pre-hydration script resolves
+  // the device theme. parseThemeCookie returns null exactly then.
+  assert.match(layout, /parseThemeCookie returns null for 'system'/);
   // Phase 6 behaviour preserved.
   assert.match(layout, /MotionConfig\s+reducedMotion="user"/);
 });
@@ -185,23 +246,71 @@ test('root layout: Toaster uses theme tokens, not hardcoded dark colours', () =>
   assert.equal(layout.includes("background: '#1C1C1C'"), false, 'hardcoded dark Toaster bg is gone');
 });
 
-test('theme provider: writes data-theme + cookie; toggle flips', () => {
+test('theme provider: preference state, setPreference writes data-theme + cookie, system follows the OS live', () => {
   const provider = read('components/theme/ThemeProvider.tsx');
-  assert.match(provider, /document\.documentElement\.setAttribute\('data-theme', next\)/);
-  assert.match(provider, /document\.cookie = themeCookieString\(next\)/);
-  assert.match(provider, /toggleTheme\(theme\)/);
+  // Context carries the saved preference + the effective theme.
+  assert.match(provider, /preference: ThemePreference;/);
+  assert.match(provider, /theme: Theme;/);
+  assert.match(provider, /setPreference: \(preference: ThemePreference\) => void;/);
   assert.match(provider, /export function useTheme/);
+  // First render reads the cookie (the source of truth — data-theme
+  // only ever holds the EFFECTIVE theme) and falls back to 'system'.
+  assert.match(provider, /document\.cookie\.match\(\/\(\?:\^\|;\\s\*\)cb-theme=\(light\|dark\|system\)\//);
+  assert.match(provider, /parseThemePreference\(match\?\.\[1\]\) \?\? 'system'/);
+  // Initial effective theme agrees with the pre-hydration script.
   assert.match(provider, /getAttribute\('data-theme'\)/);
+  assert.match(provider, /resolveTheme\(preference, window\.matchMedia\('\(prefers-color-scheme: dark\)'\)\.matches\)/);
+  // setPreference: resolve the effective theme, apply it to <html>
+  // (attribute + colorScheme), persist the PREFERENCE in the cookie.
+  assert.match(provider, /const effective = resolveTheme\(next, window\.matchMedia\('\(prefers-color-scheme: dark\)'\)\.matches\);/);
+  assert.match(provider, /document\.documentElement\.setAttribute\('data-theme', theme\);/);
+  assert.match(provider, /document\.documentElement\.style\.colorScheme = theme;/);
+  assert.match(provider, /document\.cookie = themeCookieString\(next\)/);
+  // System mode: subscribe to OS changes and follow them live.
+  assert.match(provider, /if \(preference !== 'system'\) return;/);
+  assert.match(provider, /mq\.addEventListener\('change', onChange\)/);
+  assert.match(provider, /mq\.removeEventListener\('change', onChange\)/);
+  assert.match(provider, /const effective = resolveTheme\('system', prefersDark\);/);
+  // No trace of the old binary API.
+  assert.equal(provider.includes('toggleTheme'), false, 'old toggle helper is gone from the provider');
+  assert.equal(provider.includes('setTheme'), false, 'old setTheme is gone from the provider');
 });
 
-test('theme toggle: Sun/Moon, accessible label, no icon before mount', () => {
+test('theme menu: three options (Dark / Light / Default (system)), active one marked', () => {
   const toggle = read('components/theme/ThemeToggle.tsx');
-  assert.match(toggle, /import \{ Moon, Sun \} from 'lucide-react'/);
+  assert.match(toggle, /import \{ Check, Monitor, Moon, Sun \} from 'lucide-react'/);
+  // All three options, with the right icons and labels.
+  assert.match(toggle, /\{ preference: 'dark', label: 'Dark', Icon: Moon \}/);
+  assert.match(toggle, /\{ preference: 'light', label: 'Light', Icon: Sun \}/);
+  assert.match(toggle, /\{ preference: 'system', label: 'Default \(system\)', Icon: Monitor \}/);
+  // Radio-style menu items: the active preference is marked.
+  assert.match(toggle, /role="menuitemradio"/);
+  assert.match(toggle, /aria-checked=\{isActive\}/);
+  assert.match(toggle, /<Check className="w-4 h-4 ml-auto"/);
+  assert.match(toggle, /const isActive = preference === option;/);
+  // Choosing an option applies it and closes the menu — the end of
+  // the flow: menu click -> setPreference -> cookie + data-theme.
+  assert.match(toggle, /onClick=\{\(\) => \{ setPreference\(option\); setOpen\(false\); \}\}/);
+  assert.match(toggle, /const \{ preference, theme, setPreference \} = useTheme\(\);/);
+  // Menu behaviour: button toggles, closes on outside click and on
+  // Escape (focus back to the button), arrow keys move between items.
+  assert.match(toggle, /aria-haspopup="menu"/);
+  assert.match(toggle, /aria-expanded=\{isOpen\}/);
+  assert.match(toggle, /aria-label="Theme menu"/);
+  assert.match(toggle, /document\.addEventListener\('mousedown', handler\)/);
+  assert.match(toggle, /e\.key === 'Escape'/);
+  assert.match(toggle, /buttonRef\.current\?\.focus\(\)/);
+  assert.match(toggle, /e\.key !== 'ArrowDown' && e\.key !== 'ArrowUp'/);
+  // The button shows the CURRENT EFFECTIVE theme's icon (Sun when
+  // dark, Moon when light) and its label names the active preference.
   assert.match(toggle, /aria-label=\{label\}/);
-  assert.match(toggle, /Switch to light mode/);
-  assert.match(toggle, /Switch to dark mode/);
+  assert.match(toggle, /const label = `Theme: \$\{activeLabel\}`/);
   assert.match(toggle, /useEffect\(\(\) => \{\s*setMounted\(true\);/);
   assert.match(toggle, /mounted \? \(/);
+  // No trace of the old binary toggle.
+  assert.equal(toggle.includes('toggleTheme'), false, 'old toggle helper is gone from the menu');
+  assert.equal(toggle.includes('Switch to light mode'), false, 'old toggle labels are gone');
+  assert.equal(toggle.includes('Switch to dark mode'), false, 'old toggle labels are gone');
 });
 
 test('toggle is mounted in the public navbar and the portal topbar', () => {
