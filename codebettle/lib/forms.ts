@@ -224,7 +224,7 @@ export function paletteItemToField(item: PaletteItem, existingIds: string[]): Fo
   return field;
 }
 
-/** Field types that need a non-empty options list. */
+/** Field types that CAN carry an options list (options editor shown). */
 export const OPTION_FIELD_TYPES: FormFieldType[] = ['select', 'radio', 'checkbox'];
 
 /** Field types where minLength/maxLength/pattern apply. */
@@ -250,16 +250,19 @@ export function reorderFields<T>(fields: T[], fromIndex: number, toIndex: number
 /**
  * Validate a form schema before saving. Returns a list of human-readable
  * problems (empty = valid). The builder blocks saving while any are
- * present. Checks: at least one field, duplicate/blank ids, blank labels,
- * option fields with no usable options, minLength > maxLength, min > max,
- * negative lengths, and uncompilable regex patterns.
+ * present. Checks: duplicate/blank ids, blank labels, select/radio with
+ * no usable options, checkbox options blank when present, minLength >
+ * maxLength, min > max, negative lengths, and uncompilable regex
+ * patterns. `opts.requireFields` (default true) requires at least one
+ * field — pass `{ requireFields: false }` for draft saves (a form may
+ * be saved mid-build with no fields yet); publishing requires fields.
  */
-export function validateSchema(schema: FormSchema): string[] {
+export function validateSchema(schema: FormSchema, opts?: { requireFields?: boolean }): string[] {
   const errors: string[] = [];
   const fields = schema?.fields ?? [];
-  // Matches the server rule (Worker A, lib/services/form-schema.ts):
-  // a form must have at least one field before it can be saved.
-  if (fields.length === 0) {
+  // Matches the server rule (lib/services/form-schema.ts): publishing
+  // requires at least one field; saving a draft mid-build may have none.
+  if (fields.length === 0 && opts?.requireFields !== false) {
     errors.push('A form must have at least one field.');
   }
   const seenIds = new Set<string>();
@@ -276,10 +279,18 @@ export function validateSchema(schema: FormSchema): string[] {
     if (!field.label || !field.label.trim()) {
       errors.push(`${where} needs a label.`);
     }
-    if (OPTION_FIELD_TYPES.includes(field.type)) {
+    // Only select/radio REQUIRE options. A checkbox without options is
+    // a single boolean ("I agree"); with options it is a multi-select.
+    // When options are present on any type they must be non-empty.
+    if (field.type === 'select' || field.type === 'radio') {
       const usable = (field.options ?? []).filter((o) => o.trim().length > 0);
       if (usable.length === 0) {
         errors.push(`"${field.label || field.type}" needs at least one option.`);
+      }
+    } else if (field.options !== undefined) {
+      const usable = field.options.filter((o) => o.trim().length > 0);
+      if (usable.length !== field.options.length) {
+        errors.push(`"${field.label || field.type}" has a blank option — remove it or fill it in.`);
       }
     }
     const v = field.validation ?? {};

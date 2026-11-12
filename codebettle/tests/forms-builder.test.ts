@@ -156,3 +156,23 @@ test('formatSubmissionValue: arrays, booleans and empties render plainly', () =>
   assert.equal(formatSubmissionValue(''), '—');
   assert.equal(formatSubmissionValue(3.5), '3.5');
 });
+
+test('reconciliation: validateSchema empty fields — default errors, { requireFields: false } passes (draft save)', () => {
+  assert.ok(validateSchema({ fields: [] }).length > 0);
+  assert.deepEqual(validateSchema({ fields: [] }, { requireFields: false }), []);
+  assert.deepEqual(
+    validateSchema({ fields: [{ id: 'a', type: 'text', label: 'A', required: false }] }),
+    [],
+  );
+});
+
+test('reconciliation: checkbox without options passes; blank checkbox option is reported', () => {
+  const agree: FormSchema = {
+    fields: [{ id: 'agree', type: 'checkbox', label: 'I agree', required: true }],
+  };
+  assert.deepEqual(validateSchema(agree), []);
+  const blankOption: FormSchema = {
+    fields: [{ id: 'c', type: 'checkbox', label: 'Pick', required: false, options: ['OK', '  '] }],
+  };
+  assert.ok(validateSchema(blankOption).length > 0);
+});

@@ -103,7 +103,11 @@ export async function createFormService(
   if (input.status !== undefined && !isFormStatus(input.status)) {
     return badRequest("Status must be 'draft' or 'published'");
   }
-  const schemaCheck = validateFormSchema(input.schema);
+  // Drafts may be created mid-build with no fields yet; only a create
+  // that asks for 'published' requires at least one field.
+  const schemaCheck = validateFormSchema(input.schema, {
+    requireFields: input.status === 'published',
+  });
   if (!schemaCheck.ok) {
     return badRequest(`Invalid form schema: ${schemaCheck.errors[0]}`);
   }
@@ -181,8 +185,19 @@ export async function updateFormService(
   if (input.status !== undefined && !isFormStatus(input.status)) {
     return badRequest("Status must be 'draft' or 'published'");
   }
-  if (input.schema !== undefined) {
-    const schemaCheck = validateFormSchema(input.schema);
+  // The effective status after this update decides the field rule:
+  // publishing requires ≥1 field (checked against the effective
+  // schema — the incoming one, or the stored one when only the status
+  // changes); draft writes may keep an empty field list.
+  const resultingStatus = input.status ?? existing.status;
+  if (resultingStatus === 'published') {
+    const effectiveSchema = input.schema !== undefined ? input.schema : existing.schema;
+    const schemaCheck = validateFormSchema(effectiveSchema, { requireFields: true });
+    if (!schemaCheck.ok) {
+      return badRequest(`Invalid form schema: ${schemaCheck.errors[0]}`);
+    }
+  } else if (input.schema !== undefined) {
+    const schemaCheck = validateFormSchema(input.schema, { requireFields: false });
     if (!schemaCheck.ok) {
       return badRequest(`Invalid form schema: ${schemaCheck.errors[0]}`);
     }

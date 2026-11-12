@@ -3,11 +3,14 @@
  *
  * Pure functions — no database access, unit-testable. Two validators:
  *
- * - validateFormSchema(schema): checks a form DEFINITION's shape
- *   (field ids unique, types from the allowed list, select/radio/
- *   checkbox require non-empty options, validation rules sane).
- *   Called on every admin create/update, so no invalid schema is
- *   ever stored.
+ * - validateFormSchema(schema, opts?): checks a form DEFINITION's shape
+ *   (field ids unique, types from the allowed list, select/radio
+ *   require non-empty options, checkbox options are optional — a
+ *   checkbox without options is a single boolean — validation rules
+ *   sane). Called on every admin create/update, so no invalid schema is
+ *   ever stored. `opts.requireFields` (default true) requires at least
+ *   one field: the service passes false for draft writes (a form may
+ *   be saved mid-build with no fields yet) and true when publishing.
  * - validateSubmissionAgainstSchema(schema, data): checks a
  *   SUBMISSION against the STORED schema (never a client-sent one):
  *   required fields present, per-field type checks (email format,
@@ -22,7 +25,6 @@
  */
 import {
   FORM_FIELD_TYPES,
-  FORM_OPTION_FIELD_TYPES,
   type FormField,
   type FormFieldType,
   type FormSchema,
@@ -50,7 +52,10 @@ function isEmptyValue(value: unknown): boolean {
  * Validate a form definition's schema shape. Accepts unknown input
  * (the admin route passes the raw body) and type-narrows on success.
  */
-export function validateFormSchema(schema: unknown): SchemaValidationResult {
+export function validateFormSchema(
+  schema: unknown,
+  opts?: { requireFields?: boolean },
+): SchemaValidationResult {
   const errors: string[] = [];
   if (schema === null || typeof schema !== 'object' || Array.isArray(schema)) {
     return { ok: false, errors: ['Schema must be an object with a fields array'] };
@@ -60,8 +65,17 @@ export function validateFormSchema(schema: unknown): SchemaValidationResult {
     return { ok: false, errors: ['Schema must have a fields array'] };
   }
   const fields = raw.fields as unknown[];
-  if (fields.length === 0) {
+  // A draft may be saved mid-build with no fields yet; only publishing
+  // requires at least one field. Default is strict (requireFields true).
+  if (fields.length === 0 && opts?.requireFields !== false) {
     errors.push('A form must have at least one field');
+  }
+  // Form-level settings travel inside the schema (the builder writes
+  // them there); they must be strings when present.
+  for (const key of ['submitButtonText', 'successMessage'] as const) {
+    if (raw[key] !== undefined && typeof raw[key] !== 'string') {
+      errors.push(`Schema ${key} must be a string`);
+    }
   }
   const seenIds = new Set<string>();
   fields.forEach((item, index) => {
@@ -90,11 +104,11 @@ export function validateFormSchema(schema: unknown): SchemaValidationResult {
     if (f.placeholder !== undefined && typeof f.placeholder !== 'string') {
       errors.push(`${where}: placeholder must be a string`);
     }
-    // Options: required (non-empty) for select/radio/checkbox, and
-    // must be an array of non-empty strings when present.
-    const isOptionType =
-      typeof f.type === 'string' && (FORM_OPTION_FIELD_TYPES as readonly string[]).includes(f.type);
-    if (isOptionType) {
+    // Options: select/radio REQUIRE a non-empty options array. A
+    // checkbox may go either way — without options it is a single
+    // boolean ("I agree"); with options it is a multi-select. When
+    // options are present on any type they must be non-empty strings.
+    if (f.type === 'select' || f.type === 'radio') {
       if (
         !Array.isArray(f.options) ||
         f.options.length === 0 ||
@@ -103,8 +117,12 @@ export function validateFormSchema(schema: unknown): SchemaValidationResult {
         errors.push(`${where}: ${String(f.type)} fields require a non-empty options array`);
       }
     } else if (f.options !== undefined) {
-      if (!Array.isArray(f.options) || !f.options.every((o) => typeof o === 'string')) {
-        errors.push(`${where}: options must be an array of strings`);
+      if (
+        !Array.isArray(f.options) ||
+        f.options.length === 0 ||
+        !f.options.every((o) => typeof o === 'string' && o.trim() !== '')
+      ) {
+        errors.push(`${where}: options must be a non-empty array of non-empty strings`);
       }
     }
     if (f.validation !== undefined) {
@@ -257,7 +275,14 @@ export function validateSubmissionAgainstSchema(
   }
   for (const field of schema.fields) {
     const value = submitted[field.id];
-    if (isEmptyValue(value)) {
+    // A required single checkbox (no options) that is unchecked (false)
+    // is empty — an "I agree" box must be checked to submit.
+    const empty =
+      isEmptyValue(value) ||
+      (field.type === 'checkbox' &&
+        (!field.options || field.options.length === 0) &&
+        value === false);
+    if (empty) {
       if (field.required) {
         fieldErrors[field.id] = `${field.label} is required`;
       }

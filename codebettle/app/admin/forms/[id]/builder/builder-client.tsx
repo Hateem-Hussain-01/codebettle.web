@@ -280,7 +280,7 @@ export default function BuilderClient({ formId }: { formId: string }) {
       submitButtonText: submitButtonText.trim() || 'Submit',
       successMessage: successMessage.trim(),
     };
-    const errors = validateSchema(schema);
+    const errors = validateSchema(schema, { requireFields: false });
     setValidationErrors(errors);
     if (errors.length > 0) {
       toast.error('Fix the schema problems below before saving');
@@ -313,6 +313,21 @@ export default function BuilderClient({ formId }: { formId: string }) {
 
   const togglePublish = async () => {
     const nextStatus: FormStatus = status === 'published' ? 'draft' : 'published';
+    if (nextStatus === 'published') {
+      // Publishing requires a valid, non-empty schema — checked here so
+      // the admin sees the problems instead of a bare server 400.
+      const schema: FormSchema = {
+        fields,
+        submitButtonText: submitButtonText.trim() || 'Submit',
+        successMessage: successMessage.trim(),
+      };
+      const errors = validateSchema(schema);
+      setValidationErrors(errors);
+      if (errors.length > 0) {
+        toast.error('Add at least one valid field before publishing');
+        return;
+      }
+    }
     setToggling(true);
     try {
       const res = await fetch(`/api/admin/forms/${formId}`, {

@@ -10,7 +10,9 @@ import {
   createFormService,
   deleteFormService,
   slugifyFormName,
+  updateFormService,
 } from '../lib/services/form-service';
+import { toFormSchema } from '../lib/db/mappers';
 import { onFormSubmissionCreated } from '../lib/services/notification-service';
 import { getFormDefinitionById, getFormSubmissionById } from '../lib/db/forms';
 import { listNotificationsForUser } from '../lib/db/notifications';
@@ -496,4 +498,71 @@ test('onFormSubmissionCreated notifies admins (form_submission event)', async ()
   assert.equal(notes.total, 1);
   assert.equal(notes.items[0].type, 'form_submission');
   assert.ok(notes.items[0].title.includes('Summer Survey'));
+});
+
+// ---------------------------------------------------------------------------
+// Reconciliation (coordinator): draft vs publish field rule, checkbox
+// without options, required unchecked checkbox, schema settings keys
+// ---------------------------------------------------------------------------
+
+test('reconciliation: draft create with empty schema succeeds; create as published with empty schema fails', async () => {
+  const draft = await createFormService(ADMIN, {
+    name: 'Empty Draft', type: 'survey', schema: { fields: [] },
+  });
+  assert.ok(!('error' in draft), JSON.stringify(draft));
+  assert.equal(draft.form.status, 'draft');
+
+  const published = await createFormService(ADMIN, {
+    name: 'Empty Published', type: 'survey', schema: { fields: [] }, status: 'published',
+  });
+  assert.ok('error' in published && published.status === 400);
+});
+
+test('reconciliation: publishing an empty-schema draft fails; saving draft schema with no fields succeeds', async () => {
+  const draft = await createFormService(ADMIN, {
+    name: 'Empty Draft', type: 'survey', schema: { fields: [] },
+  });
+  assert.ok(!('error' in draft), JSON.stringify(draft));
+
+  const publish = await updateFormService(ADMIN, draft.form.id, { status: 'published' });
+  assert.ok('error' in publish && publish.status === 400);
+
+  const saveEmpty = await updateFormService(ADMIN, draft.form.id, { schema: { fields: [] } });
+  assert.ok(!('error' in saveEmpty), JSON.stringify(saveEmpty));
+
+  const publishWithFields = await updateFormService(ADMIN, draft.form.id, {
+    schema: SCHEMA, status: 'published',
+  });
+  assert.ok(!('error' in publishWithFields), JSON.stringify(publishWithFields));
+  assert.equal(publishWithFields.form.status, 'published');
+});
+
+test('reconciliation: checkbox without options is a valid single boolean; required unchecked fails submission', () => {
+  const agreeSchema: FormSchema = {
+    fields: [{ id: 'agree', type: 'checkbox', label: 'I agree', required: true }],
+  };
+  assert.deepEqual(validateFormSchema(agreeSchema), { ok: true });
+
+  assert.deepEqual(
+    validateSubmissionAgainstSchema(agreeSchema, { agree: false }),
+    { ok: false, fieldErrors: { agree: 'I agree is required' } },
+  );
+  assert.deepEqual(validateSubmissionAgainstSchema(agreeSchema, { agree: true }), { ok: true });
+
+  // A checkbox WITH options still needs a non-empty options array.
+  assert.equal(
+    validateFormSchema({ fields: [{ id: 'c', type: 'checkbox', label: 'Pick', options: [] }] }).ok,
+    false,
+  );
+});
+
+test('reconciliation: toFormSchema preserves submitButtonText / successMessage', () => {
+  const parsed = toFormSchema({
+    fields: [{ id: 'name', type: 'text', label: 'Name', required: true }],
+    submitButtonText: 'Send it',
+    successMessage: 'Got it, thanks!',
+  });
+  assert.equal(parsed.submitButtonText, 'Send it');
+  assert.equal(parsed.successMessage, 'Got it, thanks!');
+  assert.equal(parsed.fields.length, 1);
 });

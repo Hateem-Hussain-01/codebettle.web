@@ -28,30 +28,24 @@
  * submitting — it must never be treated as the enforcement point.
  */
 
-export type PublicFormFieldType =
-  | 'text'
-  | 'email'
-  | 'tel'
-  | 'textarea'
-  | 'number'
-  | 'date'
-  | 'select'
-  | 'radio'
-  | 'checkbox'
-  | 'password';
+/**
+ * Canonical form types live in `lib/forms.ts` (admin-shared, client-safe)
+ * and `lib/db/types.ts` (server). This module aliases them instead of
+ * redefining them, so a type change in one place reaches the public
+ * renderer. `PublicFormField` keeps its own shape only because its
+ * options defensively accept `{ value, label }` objects as well as
+ * plain strings (see normalizeFieldOptions).
+ */
+import type { FormFieldType, FormFieldValidation, FormSchema } from './forms';
+
+export type PublicFormFieldType = FormFieldType;
 
 export interface PublicFormFieldOption {
   value: string;
   label: string;
 }
 
-export interface PublicFormFieldValidation {
-  minLength?: number;
-  maxLength?: number;
-  pattern?: string;
-  min?: number;
-  max?: number;
-}
+export type PublicFormFieldValidation = FormFieldValidation;
 
 export interface PublicFormField {
   id: string;
@@ -65,16 +59,12 @@ export interface PublicFormField {
   styling?: { width?: 'full' | 'half' };
 }
 
-export interface PublicFormSchema {
+/**
+ * The public schema is the stored `FormSchema` (which carries the
+ * form-level settings) with the defensive public field shape.
+ */
+export interface PublicFormSchema extends Omit<FormSchema, 'fields'> {
   fields: PublicFormField[];
-  /**
-   * Form-level settings travel INSIDE the schema JSON (Worker B's
-   * builder writes them there, and the public API passes the stored
-   * schema through wholesale — see toPublicForm). Honoured when
-   * present; absent on forms built without them.
-   */
-  submitButtonText?: string;
-  successMessage?: string;
 }
 
 export interface PublicForm {

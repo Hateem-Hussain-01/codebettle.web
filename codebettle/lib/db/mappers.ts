@@ -520,7 +520,12 @@ export function toFormSchema(value: unknown): FormSchema {
     }
     fields.push(field);
   }
-  return { fields };
+  // Form-level settings travel inside the schema — preserve them so
+  // the public form sees the builder's button text / success message.
+  const out: FormSchema = { fields };
+  if (typeof raw.submitButtonText === 'string') out.submitButtonText = raw.submitButtonText;
+  if (typeof raw.successMessage === 'string') out.successMessage = raw.successMessage;
+  return out;
 }
 
 /** Safely read a stored submission `data` Json value (object keyed by field id). */

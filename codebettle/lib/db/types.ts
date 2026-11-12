@@ -1319,9 +1319,18 @@ export interface FormField {
   styling?: { width?: 'full' | 'half' };
 }
 
-/** The stored `FormDefinition.schema` Json value: ordered fields. */
+/**
+ * The stored `FormDefinition.schema` Json value: ordered fields plus
+ * form-level settings. The builder stores submit-button text and the
+ * success message inside the schema (next to `fields`) so they round-
+ * trip to the public form through `toFormSchema` / `toPublicForm`.
+ */
 export interface FormSchema {
   fields: FormField[];
+  /** Text on the public form's submit button. */
+  submitButtonText?: string;
+  /** Message shown to the submitter after a successful submission. */
+  successMessage?: string;
 }
 
 /** Form kind: 'registration' | 'survey' ONLY — there is no quiz type. */
