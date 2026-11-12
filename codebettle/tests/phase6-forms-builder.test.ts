@@ -132,10 +132,17 @@ test('validateFormSchema: valid schema passes; duplicate ids, bad types and opti
   assert.equal(dup.ok, false);
   assert.ok(dup.ok === false && dup.errors.some((e) => e.includes('duplicate field id "a"')));
 
-  const badType = validateFormSchema({
-    fields: [{ id: 'a', type: 'file', label: 'Upload', required: false }],
+  // 'file' is a valid field type since the GHL file-upload work
+  // (Worker C) overrode the Phase 6 "no file-upload field in v1"
+  // rule — but an unknown upload variant is still rejected.
+  const fileField = validateFormSchema({
+    fields: [{ id: 'a', type: 'file', label: 'Upload', required: false, uploadVariant: 'document' }],
   });
-  assert.equal(badType.ok, false, 'there is no file-upload field type in v1');
+  assert.deepEqual(fileField, { ok: true });
+  const badVariant = validateFormSchema({
+    fields: [{ id: 'a', type: 'file', label: 'Upload', required: false, uploadVariant: 'archive' }],
+  });
+  assert.equal(badVariant.ok, false);
 
   const noOptions = validateFormSchema({
     fields: [{ id: 'a', type: 'select', label: 'Pick', required: true, options: [] }],

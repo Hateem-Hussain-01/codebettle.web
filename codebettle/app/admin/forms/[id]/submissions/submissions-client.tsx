@@ -12,6 +12,7 @@ import FadeIn from '@/components/ui/FadeIn';
 import Select from '@/components/ui/Select';
 import Spinner from '@/components/ui/Spinner';
 import { formatDateShort } from '@/lib/utils';
+import { formatFileSize, isFileReference } from '@/lib/form-uploads';
 import {
   formatSubmissionValue,
   type AdminFormDetail,
@@ -47,6 +48,7 @@ export default function SubmissionsClient({ formId }: { formId: string }) {
   const [detailLoading, setDetailLoading] = useState(false);
   const [marking, setMarking] = useState(false);
   const [exporting, setExporting] = useState(false);
+  const [openingFile, setOpeningFile] = useState<string | null>(null);
 
   const loadForm = useCallback(async () => {
     try {
@@ -136,6 +138,33 @@ export default function SubmissionsClient({ formId }: { formId: string }) {
       toast.error('Could not update the submission — check your connection and try again');
     } finally {
       setMarking(false);
+    }
+  };
+
+  /**
+   * Open an uploaded file: fetch a short-lived signed URL from the
+   * admin file route (admin-only) and open it in a new tab. The
+   * stored value is only a private storage path — never a public URL.
+   */
+  const openFile = async (fieldId: string) => {
+    if (!selected) return;
+    setOpeningFile(fieldId);
+    try {
+      const res = await fetch(
+        `/api/admin/forms/${formId}/submissions/${selected.id}/file?field=${encodeURIComponent(fieldId)}`,
+      );
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        toast.error(body.error ?? 'Could not open the file');
+        return;
+      }
+      if (typeof body.url === 'string') {
+        window.open(body.url, '_blank', 'noopener,noreferrer');
+      }
+    } catch {
+      toast.error('Could not open the file — check your connection and try again');
+    } finally {
+      setOpeningFile(null);
     }
   };
 
@@ -352,7 +381,22 @@ export default function SubmissionsClient({ formId }: { formId: string }) {
                       <div key={row.key} className="border-b border-dark-border/40 last:border-0 pb-2 last:pb-0">
                         <dt className="text-xs text-muted">{row.label}</dt>
                         <dd className="text-sm text-foreground mt-0.5 break-words">
-                          {formatSubmissionValue(row.value)}
+                          {isFileReference(row.value) ? (
+                            <button
+                              type="button"
+                              onClick={() => void openFile(row.key)}
+                              disabled={openingFile === row.key}
+                              className="inline-flex items-center gap-1.5 text-primary-text hover:underline cursor-pointer disabled:opacity-50 text-left"
+                            >
+                              <Download className="w-4 h-4 shrink-0" />
+                              <span>
+                                {row.value.name} ({formatFileSize(row.value.size)})
+                                {openingFile === row.key ? ' — opening…' : ''}
+                              </span>
+                            </button>
+                          ) : (
+                            formatSubmissionValue(row.value)
+                          )}
                         </dd>
                       </div>
                     ))

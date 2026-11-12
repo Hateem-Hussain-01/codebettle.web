@@ -1278,7 +1278,8 @@ export type FormFieldType =
   | 'select'
   | 'radio'
   | 'checkbox'
-  | 'password';
+  | 'password'
+  | 'file';
 
 export const FORM_FIELD_TYPES: readonly FormFieldType[] = [
   'text',
@@ -1291,6 +1292,7 @@ export const FORM_FIELD_TYPES: readonly FormFieldType[] = [
   'radio',
   'checkbox',
   'password',
+  'file',
 ] as const;
 
 /** Field types whose value must come from `options`. */
@@ -1317,6 +1319,13 @@ export interface FormField {
   options?: string[];
   validation?: FormFieldValidation;
   styling?: { width?: 'full' | 'half' };
+  /**
+   * File fields only: which upload variant the field accepts
+   * ('picture' | 'document' | 'video' | 'files', default 'files').
+   * Stored inside the schema Json — no model change. The variant
+   * decides the server-enforced accept list (lib/form-uploads.ts).
+   */
+  uploadVariant?: import('../form-uploads').UploadVariant;
 }
 
 /**

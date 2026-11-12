@@ -26,6 +26,14 @@ import {
 import { toCsv } from './csv-export';
 import { badRequest, conflict, notFound, type Actor, type ServiceError } from './errors';
 import { validateFormSchema, validateSubmissionAgainstSchema } from './form-schema';
+import {
+  createFormFileSignedUrl,
+  deleteFormUploadFile,
+  FormUploadError,
+  uploadFormFile,
+  type FormUploadFile,
+} from './form-upload';
+import { isFileReference } from '../form-uploads';
 import { onFormSubmissionCreated } from './notification-service';
 import { hasAdminCapability } from '../rbac';
 import type {
@@ -290,10 +298,19 @@ export async function submitFormService(
   if (!check.ok) {
     return { ok: false, status: 400, error: 'Invalid submission', fieldErrors: check.fieldErrors };
   }
+  return persistSubmission(form, data as Record<string, unknown>, submitterId);
+}
+
+/** Shared tail of both submit paths: store + notify. */
+async function persistSubmission(
+  form: FormDefinition,
+  data: Record<string, unknown>,
+  submitterId?: string,
+): Promise<SubmitFormResult | SubmitFormError> {
   const submission = await createFormSubmission({
     formId: form.id,
     submitterId: submitterId ?? undefined,
-    data: data as Record<string, unknown>,
+    data,
   });
   // Best-effort: a notification failure never blocks the submission.
   try {
@@ -302,6 +319,115 @@ export async function submitFormService(
     console.error('[form-service] onFormSubmissionCreated failed:', error);
   }
   return { ok: true, submissionId: submission.id };
+}
+
+export type MultipartFileInput = FormUploadFile;
+
+/**
+ * Submit a form sent as multipart/form-data (forms WITH file fields).
+ * `data` is the JSON part (all non-file values); `files` maps field id
+ * to the uploaded File for that field. Files are uploaded to the
+ * private `application-files` bucket FIRST (server-side validated),
+ * and only the file reference { name, url, size, mime } lands in the
+ * submission data — never file bytes. The merged payload is then
+ * validated against the STORED schema exactly like a JSON submit, so
+ * a missing required file is a 400 field error and a forged file
+ * reference is rejected. Uploaded files are deleted again
+ * (best-effort) when the submission fails validation, so a rejected
+ * submit leaves no orphaned files in storage.
+ */
+export async function submitFormMultipartService(
+  slug: string,
+  data: unknown,
+  files: Record<string, MultipartFileInput>,
+  submitterId?: string,
+  storageClient?: import('@supabase/supabase-js').SupabaseClient,
+): Promise<SubmitFormResult | SubmitFormError> {
+  const form = await getFormDefinitionBySlug(slug);
+  if (!form || form.status !== 'published') {
+    return { ok: false, status: 404, error: 'Form not found' };
+  }
+  if (data === null || typeof data !== 'object' || Array.isArray(data)) {
+    return { ok: false, status: 400, error: 'Invalid submission', fieldErrors: { _form: 'Submission data must be an object keyed by field id' } };
+  }
+  const merged: Record<string, unknown> = { ...(data as Record<string, unknown>) };
+  const uploadedPaths: string[] = [];
+  const cleanupUploads = async () => {
+    for (const path of uploadedPaths) {
+      try {
+        await deleteFormUploadFile(path, storageClient);
+      } catch {
+        // Best-effort: a leftover file is inert (private bucket, no
+        // public URL, only reachable via an admin signed URL for a
+        // submission that references it — and this submission was
+        // never stored).
+      }
+    }
+  };
+  for (const field of form.schema.fields) {
+    if (field.type !== 'file') continue;
+    const file = files[field.id];
+    // No file sent for this field: leave the data value alone — the
+    // schema validator reports it when the field is required.
+    if (!file) continue;
+    try {
+      const ref = await uploadFormFile(form.id, field.uploadVariant ?? 'files', file, storageClient);
+      merged[field.id] = ref;
+      uploadedPaths.push(ref.url);
+    } catch (e) {
+      await cleanupUploads();
+      if (e instanceof FormUploadError) {
+        if (e.status === 400) {
+          return {
+            ok: false,
+            status: 400,
+            error: 'Invalid submission',
+            fieldErrors: { [field.id]: e.message },
+          };
+        }
+        return { ok: false, status: e.status, error: e.message };
+      }
+      throw e;
+    }
+  }
+  const check = validateSubmissionAgainstSchema(form.schema, merged);
+  if (!check.ok) {
+    await cleanupUploads();
+    return { ok: false, status: 400, error: 'Invalid submission', fieldErrors: check.fieldErrors };
+  }
+  return persistSubmission(form, merged, submitterId);
+}
+
+/**
+ * Mint a signed URL for one uploaded file in a submission (admin
+ * only). The file route verifies the submission belongs to the form
+ * AND the stored path belongs to the form before any signed URL is
+ * minted, so an admin for one form cannot open another form's files
+ * by guessing ids.
+ */
+export async function getFormFileService(
+  actor: Actor,
+  formId: string,
+  submissionId: string,
+  fieldId: string,
+  storageClient?: import('@supabase/supabase-js').SupabaseClient,
+): Promise<Result<{ url: string; name: string; size: number; mime: string }>> {
+  const denied = adminOnly(actor);
+  if (denied) return denied;
+  const found = await getFormSubmissionService(actor, formId, submissionId);
+  if ('error' in found) return found;
+  const { form, submission } = found;
+  const field = form.schema.fields.find((f) => f.id === fieldId);
+  if (!field || field.type !== 'file') return notFound('File');
+  const value = submission.data[fieldId];
+  if (!isFileReference(value)) return notFound('File');
+  try {
+    const url = await createFormFileSignedUrl(form.id, value.url, 3600, storageClient);
+    return { url, name: value.name, size: value.size, mime: value.mime };
+  } catch (e) {
+    if (e instanceof FormUploadError) return { error: e.message, status: e.status };
+    return { error: 'Could not open the file', status: 500 };
+  }
 }
 
 export async function listFormSubmissionsService(
@@ -346,9 +472,10 @@ export async function markFormSubmissionReviewedService(
   return { submission };
 }
 
-/** Format one submitted value as a CSV cell (arrays joined, objects JSON). */
+/** Format one submitted value as a CSV cell (arrays joined, file references as their filename, objects JSON). */
 function formatSubmissionValue(value: unknown): string {
   if (value === undefined || value === null) return '';
+  if (isFileReference(value)) return value.name;
   if (Array.isArray(value)) return value.map((v) => String(v)).join('; ');
   if (typeof value === 'object') return JSON.stringify(value);
   return String(value);

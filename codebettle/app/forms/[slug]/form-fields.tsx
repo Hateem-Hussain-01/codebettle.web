@@ -2,7 +2,9 @@ import Input from '@/components/ui/Input';
 import Textarea from '@/components/ui/Textarea';
 import Select from '@/components/ui/Select';
 import { cn } from '@/lib/utils';
+import { formatFileSize, uploadVariantConfig } from '@/lib/form-uploads';
 import {
+  fileAcceptForField,
   normalizeFieldOptions,
   type PublicFormField,
 } from '@/lib/public-form';
@@ -26,6 +28,29 @@ export function PublicFormFieldInput({ field, value, error, disabled, onChange }
   const stringValue = typeof value === 'string' ? value : '';
 
   switch (field.type) {
+    case 'file': {
+      const config = uploadVariantConfig(field.uploadVariant);
+      const chosen =
+        typeof File !== 'undefined' && value instanceof File ? value : null;
+      return (
+        <div className="flex flex-col gap-1.5">
+          <label className="text-sm font-medium text-foreground/80">
+            {label}
+          </label>
+          <input
+            type="file"
+            accept={fileAcceptForField(field)}
+            disabled={disabled}
+            onChange={(e) => onChange(field.id, e.target.files?.[0] ?? null)}
+            className="w-full bg-dark-card border border-dark-border rounded-lg px-4 py-2.5 text-sm text-foreground file:mr-3 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:bg-primary file:text-black file:text-xs file:font-semibold file:cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary"
+          />
+          <p className="text-xs text-muted">
+            {chosen ? `${chosen.name} (${formatFileSize(chosen.size)})` : config.description}
+          </p>
+          {error && <p className="text-xs text-red-400">{error}</p>}
+        </div>
+      );
+    }
     case 'textarea':
       return (
         <Textarea

@@ -67,6 +67,7 @@ import type {
   UserRow,
 } from './types';
 import { DEFAULT_NOTIFICATION_PREFS, FORM_FIELD_TYPES, FORM_STATUSES, FORM_TYPES, NOTIFICATION_EVENT_KEYS } from './types';
+import { isUploadVariant } from '../form-uploads';
 import { toAdminPermissions } from '../admin-access';
 
 export const CATEGORY_TO_STORAGE: Record<CourseCategory, CourseRow['category']> = {
@@ -517,6 +518,12 @@ export function toFormSchema(value: unknown): FormSchema {
     if (f.styling !== null && typeof f.styling === 'object' && !Array.isArray(f.styling)) {
       const width = (f.styling as Record<string, unknown>).width;
       if (width === 'full' || width === 'half') field.styling = { width };
+    }
+    // File fields keep their upload variant (default 'files' when the
+    // stored field has none or an unknown one — an old schema without
+    // the variant still renders and validates as a generic upload).
+    if (type === 'file') {
+      field.uploadVariant = isUploadVariant(f.uploadVariant) ? f.uploadVariant : 'files';
     }
     fields.push(field);
   }

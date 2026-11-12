@@ -7,8 +7,10 @@ import { CheckCircle2, Send, AlertTriangle } from 'lucide-react';
 import { PublicFormFields } from './form-fields';
 import {
   emptyFormData,
+  fileValues,
   getSubmitButtonText,
   getSuccessMessage,
+  hasFileFields,
   interpretSubmitResponse,
   prepareSubmitData,
   validateFormData,
@@ -68,11 +70,28 @@ export default function PublicFormClient({ form, slug }: { form: PublicForm; slu
     setBanner(null);
     setSubmitting(true);
     try {
-      const res = await fetch(`/api/forms/${encodeURIComponent(slug)}/submit`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ data: prepareSubmitData(fields, values) }),
-      });
+      // Forms with file fields submit as multipart/form-data: the JSON
+      // `data` part plus one `file:<fieldId>` part per chosen file.
+      // The server uploads the files first and stores only the file
+      // reference. Forms without file fields keep the JSON submit.
+      let res: Response;
+      if (hasFileFields(fields)) {
+        const multipart = new FormData();
+        multipart.append('data', JSON.stringify(prepareSubmitData(fields, values)));
+        for (const [fieldId, file] of Object.entries(fileValues(fields, values))) {
+          multipart.append(`file:${fieldId}`, file);
+        }
+        res = await fetch(`/api/forms/${encodeURIComponent(slug)}/submit`, {
+          method: 'POST',
+          body: multipart,
+        });
+      } else {
+        res = await fetch(`/api/forms/${encodeURIComponent(slug)}/submit`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ data: prepareSubmitData(fields, values) }),
+        });
+      }
       const body = await res.json().catch(() => ({}));
       const result = interpretSubmitResponse(res.status, body);
       if (result.outcome === 'success') {

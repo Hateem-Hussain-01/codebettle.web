@@ -99,6 +99,23 @@ function FieldPreview({ field }: { field: FormField }) {
             </label>
           ))}
         </div>
+      ) : field.type === 'file' ? (
+        <div>
+          <input
+            type="file"
+            disabled
+            className="w-full bg-dark-card border border-dark-border rounded-lg px-4 py-2.5 text-sm text-muted file:mr-3 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:bg-dark-border file:text-foreground/80 file:text-xs file:font-semibold"
+          />
+          <p className="text-xs text-muted mt-1">
+            {field.uploadVariant === 'picture'
+              ? 'JPG, PNG, WebP or GIF image (max 5 MB)'
+              : field.uploadVariant === 'document'
+                ? 'PDF, DOC or DOCX document (max 5 MB)'
+                : field.uploadVariant === 'video'
+                  ? 'MP4, WebM or MOV video (max 5 MB)'
+                  : 'Images, PDF, Office documents or plain text (max 5 MB)'}
+          </p>
+        </div>
       ) : (
         <input
           type={field.type}
@@ -675,6 +692,32 @@ export default function BuilderClient({ formId }: { formId: string }) {
                   />
                   Required field
                 </label>
+
+                {selectedField.type === 'file' && (
+                  <div>
+                    <Select
+                      label="Upload type"
+                      options={[
+                        { value: 'picture', label: 'Image upload — JPG, PNG, WebP, GIF' },
+                        { value: 'document', label: 'Document upload — PDF, DOC, DOCX' },
+                        { value: 'video', label: 'Video upload — MP4, WebM, MOV' },
+                        { value: 'files', label: 'Files upload — images, PDF, Office, text' },
+                      ]}
+                      value={selectedField.uploadVariant ?? 'files'}
+                      onChange={(e) =>
+                        updateField(selectedField.id, {
+                          uploadVariant: e.target.value as 'picture' | 'document' | 'video' | 'files',
+                        })
+                      }
+                    />
+                    <p className="text-xs text-muted mt-1.5">
+                      Max 5 MB per file. Files are checked on the server (type,
+                      size and contents) and stored privately — only admins
+                      can open them. Executables, scripts and archives are
+                      never accepted.
+                    </p>
+                  </div>
+                )}
 
                 {OPTION_FIELD_TYPES.includes(selectedField.type) && (
                   <div>
