@@ -37,6 +37,10 @@
  * plain strings (see normalizeFieldOptions).
  */
 import type { FormFieldType, FormFieldValidation, FormSchema } from './forms';
+import {
+  uploadVariantConfig,
+  type UploadVariant,
+} from './form-uploads';
 
 export type PublicFormFieldType = FormFieldType;
 
@@ -57,6 +61,8 @@ export interface PublicFormField {
   options?: (string | PublicFormFieldOption)[];
   validation?: PublicFormFieldValidation;
   styling?: { width?: 'full' | 'half' };
+  /** File fields only: upload variant (default 'files'). */
+  uploadVariant?: UploadVariant;
 }
 
 /**
@@ -125,6 +131,10 @@ export function normalizeFieldOptions(field: PublicFormField): PublicFormFieldOp
 
 /** True when a value counts as "not filled in" for this field type. */
 export function isFieldEmpty(field: PublicFormField, value: unknown): boolean {
+  if (field.type === 'file') {
+    // A chosen File is filled in; null/undefined/'' is not.
+    return value === undefined || value === null || value === '';
+  }
   if (field.type === 'checkbox') {
     // Multi-checkbox (with options): an array of chosen options — empty
     // when nothing is chosen. Single checkbox (no options): a boolean.
@@ -148,6 +158,21 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 export function validateFieldValue(field: PublicFormField, value: unknown): string | null {
   if (isFieldEmpty(field, value)) {
     return field.required ? 'This field is required.' : null;
+  }
+
+  if (field.type === 'file') {
+    // Client-side hint only — the server re-checks type, size and
+    // contents on upload. A File object is what the picker produces.
+    if (typeof File !== 'undefined' && value instanceof File) {
+      const config = uploadVariantConfig(field.uploadVariant);
+      if (!value.type || !(config.mimes as readonly string[]).includes(value.type)) {
+        return `Only ${config.description}.`;
+      }
+      if (value.size > config.maxBytes) {
+        return 'The file must be 5 MB or smaller.';
+      }
+    }
+    return null;
   }
 
   if (field.type === 'checkbox') {
@@ -216,16 +241,18 @@ export function validateFormData(
   return errors;
 }
 
-/** Initial (empty) values: '' for inputs, false for a single checkbox, [] for a multi-checkbox. */
+/** Initial (empty) values: '' for inputs, false for a single checkbox, [] for a multi-checkbox, null for a file field. */
 export function emptyFormData(fields: PublicFormField[]): Record<string, unknown> {
   const data: Record<string, unknown> = {};
   for (const field of fields) {
     data[field.id] =
-      field.type === 'checkbox'
-        ? field.options && field.options.length > 0
-          ? []
-          : false
-        : '';
+      field.type === 'file'
+        ? null
+        : field.type === 'checkbox'
+          ? field.options && field.options.length > 0
+            ? []
+            : false
+          : '';
   }
   return data;
 }
@@ -233,7 +260,10 @@ export function emptyFormData(fields: PublicFormField[]): Record<string, unknown
 /**
  * Shape the payload for POST /api/forms/[slug]/submit: number fields are
  * sent as numbers (when filled in and numeric), everything else as-is.
- * The server still validates every value against the stored schema.
+ * File fields are EXCLUDED — the client sends them as `file:<fieldId>`
+ * parts of a multipart request instead (prepareSubmitData only builds
+ * the JSON `data` part). The server still validates every value
+ * against the stored schema.
  */
 export function prepareSubmitData(
   fields: PublicFormField[],
@@ -241,6 +271,7 @@ export function prepareSubmitData(
 ): Record<string, unknown> {
   const out: Record<string, unknown> = {};
   for (const field of fields) {
+    if (field.type === 'file') continue;
     const value = data[field.id];
     if (field.type === 'number' && typeof value === 'string' && value.trim() !== '') {
       const num = Number(value);
@@ -248,6 +279,30 @@ export function prepareSubmitData(
     } else {
       out[field.id] = value;
     }
+  }
+  return out;
+}
+
+/** True when the form has at least one file field (submit as multipart). */
+export function hasFileFields(fields: PublicFormField[]): boolean {
+  return fields.some((f) => f.type === 'file');
+}
+
+/** The browser `accept` attribute for a file field (UX hint only). */
+export function fileAcceptForField(field: PublicFormField): string {
+  return uploadVariantConfig(field.uploadVariant).accept;
+}
+
+/** The chosen File objects, keyed by field id (for the multipart submit). */
+export function fileValues(
+  fields: PublicFormField[],
+  data: Record<string, unknown>,
+): Record<string, File> {
+  const out: Record<string, File> = {};
+  for (const field of fields) {
+    if (field.type !== 'file') continue;
+    const value = data[field.id];
+    if (typeof File !== 'undefined' && value instanceof File) out[field.id] = value;
   }
   return out;
 }

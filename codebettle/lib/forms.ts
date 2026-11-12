@@ -15,11 +15,16 @@
  * `schema.submitButtonText` / `schema.successMessage` from the stored
  * schema — so the settings round-trip to the public form.
  *
- * Wire values are LOWERCASE (verified against Worker A's zod schemas
- * and lib/db/types.ts): type 'registration' | 'survey', status
- * 'draft' | 'published'. Display labels come from formTypeLabel /
- * formStatusLabel below.
+ * Wire values are LOWERCASE for status ('draft' | 'published');
+ * `type` is the form's free-text purpose (any non-empty string up
+ * to 50 chars — 'registration', 'survey', 'Feedback', ...).
+ * Display labels come from formTypeLabel / formStatusLabel below.
  */
+import type { FormStyle } from './form-style';
+import { validateCoverImageUrlValue, validateFormStyleValue } from './form-style';
+
+import type { UploadVariant } from './form-uploads';
+import { isFileReference } from './form-uploads';
 
 export type FormFieldType =
   | 'text'
@@ -31,7 +36,8 @@ export type FormFieldType =
   | 'select'
   | 'radio'
   | 'checkbox'
-  | 'password';
+  | 'password'
+  | 'file';
 
 export interface FormFieldValidation {
   minLength?: number;
@@ -50,7 +56,11 @@ export interface FormField {
   options?: string[];
   validation?: FormFieldValidation;
   styling?: { width?: 'full' | 'half' };
+  /** File fields only: upload variant (default 'files'). */
+  uploadVariant?: UploadVariant;
 }
+
+export type { FormStyle, FormButtonShape, FormFont, FormWidth } from './form-style';
 
 export interface FormSchema {
   fields: FormField[];
@@ -58,14 +68,27 @@ export interface FormSchema {
   submitButtonText?: string;
   /** Message shown to the submitter after a successful submission. */
   successMessage?: string;
+  /** Whole-form custom styling (GHL-like). Absent = site defaults. */
+  style?: FormStyle;
+  /** Cover image banner URL (uploaded to the public `course-images` bucket, or a URL). */
+  coverImageUrl?: string;
 }
 
-export type FormType = 'registration' | 'survey';
+/**
+ * A form's purpose — free text, any non-empty string up to 50 chars.
+ * The alias is kept so existing imports don't churn.
+ */
+export type FormType = string;
 export type FormStatus = 'draft' | 'published';
 
-/** Display labels for the lowercase wire values Worker A's API uses. */
+/**
+ * Display label for a form purpose: the raw string with its first
+ * letter title-cased ('registration' -> 'Registration',
+ * 'job application' -> 'Job application').
+ */
 export function formTypeLabel(type: FormType): string {
-  return type === 'registration' ? 'Registration' : 'Survey';
+  if (!type) return '';
+  return type.charAt(0).toUpperCase() + type.slice(1);
 }
 
 export function formStatusLabel(status: FormStatus): string {
@@ -106,6 +129,8 @@ export function submissionCountOf(form: AdminFormListItem): number {
 /** Human-readable rendering of one submitted value in the detail view. */
 export function formatSubmissionValue(value: unknown): string {
   if (value === null || value === undefined || value === '') return '—';
+  // A stored file reference renders as its filename (not a JSON blob).
+  if (isFileReference(value)) return value.name;
   if (Array.isArray(value)) return value.length > 0 ? value.map(String).join(', ') : '—';
   if (typeof value === 'boolean') return value ? 'Yes' : 'No';
   return String(value);
@@ -124,6 +149,8 @@ export interface PaletteItem {
   /** Default options for select/radio/checkbox items. */
   options?: string[];
   validation?: FormFieldValidation;
+  /** File items only: the upload variant the new field accepts. */
+  uploadVariant?: UploadVariant;
 }
 
 export interface PaletteGroup {
@@ -179,6 +206,15 @@ export const FORM_PALETTE: PaletteGroup[] = [
     ],
   },
   {
+    category: 'Upload',
+    items: [
+      { key: 'picture-upload', label: 'Image upload', type: 'file', uploadVariant: 'picture', placeholder: 'Upload an image (JPG, PNG, WebP, GIF — max 5 MB)' },
+      { key: 'document-upload', label: 'Document upload', type: 'file', uploadVariant: 'document', placeholder: 'Upload a document (PDF, DOC, DOCX — max 5 MB)' },
+      { key: 'video-upload', label: 'Video upload', type: 'file', uploadVariant: 'video', placeholder: 'Upload a video (MP4, WebM, MOV — max 5 MB)' },
+      { key: 'file-upload', label: 'Files upload', type: 'file', uploadVariant: 'files', placeholder: 'Upload a file (images, PDF, Office docs, text — max 5 MB)' },
+    ],
+  },
+  {
     category: 'Custom',
     items: [
       { key: 'short-text', label: 'Short Text', type: 'text', placeholder: 'Your answer' },
@@ -221,6 +257,7 @@ export function paletteItemToField(item: PaletteItem, existingIds: string[]): Fo
   if (item.placeholder) field.placeholder = item.placeholder;
   if (item.options) field.options = [...item.options];
   if (item.validation) field.validation = { ...item.validation };
+  if (item.type === 'file') field.uploadVariant = item.uploadVariant ?? 'files';
   return field;
 }
 
@@ -265,6 +302,12 @@ export function validateSchema(schema: FormSchema, opts?: { requireFields?: bool
   if (fields.length === 0 && opts?.requireFields !== false) {
     errors.push('A form must have at least one field.');
   }
+  // GHL upgrade: whole-form style + cover image travel inside the
+  // schema too — same rules as the server validator (hex colours only,
+  // whitelisted enums, safe cover URL), so the builder blocks bad
+  // values before they ever reach the API.
+  errors.push(...validateFormStyleValue(schema?.style));
+  errors.push(...validateCoverImageUrlValue(schema?.coverImageUrl));
   const seenIds = new Set<string>();
 
   fields.forEach((field, index) => {
@@ -278,6 +321,14 @@ export function validateSchema(schema: FormSchema, opts?: { requireFields?: bool
     }
     if (!field.label || !field.label.trim()) {
       errors.push(`${where} needs a label.`);
+    }
+    // A file field's variant must be one of the four upload variants
+    // (an absent variant means 'files' — the server default).
+    if (field.type === 'file' && field.uploadVariant !== undefined) {
+      const valid = ['picture', 'document', 'video', 'files'].includes(field.uploadVariant);
+      if (!valid) {
+        errors.push(`"${field.label || field.type}" has an unknown upload variant "${field.uploadVariant}".`);
+      }
     }
     // Only select/radio REQUIRE options. A checkbox without options is
     // a single boolean ("I agree"); with options it is a multi-select.

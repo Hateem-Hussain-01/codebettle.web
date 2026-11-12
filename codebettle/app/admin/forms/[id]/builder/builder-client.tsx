@@ -1,10 +1,11 @@
 'use client';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
   ArrowLeft, Save, Eye, EyeOff, Trash2, Copy, ChevronUp, ChevronDown,
   GripVertical, ListChecks, MousePointerClick, Plus, X,
+  ExternalLink, Upload,
 } from 'lucide-react';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
@@ -30,6 +31,23 @@ import {
   type FormStatus,
 } from '@/lib/forms';
 import toast from 'react-hot-toast';
+import FormShareMenu from '@/app/admin/forms/form-share-menu';
+import {
+  FORM_BUTTON_SHAPES,
+  FORM_FONTS,
+  FORM_WIDTHS,
+  formButtonBorderRadius,
+  formButtonTextColor,
+  formFontFamily,
+  isValidCoverImageUrl,
+  isValidHexColor,
+  resolveFormStyle,
+  type FormButtonShape,
+  type FormFont,
+  type FormStyle,
+  type FormWidth,
+} from '@/lib/form-style';
+import { ALLOWED_COURSE_IMAGE_TYPES, MAX_COURSE_IMAGE_BYTES } from '@/lib/thumbnail';
 
 type DragPayload =
   | { kind: 'palette'; key: string }
@@ -52,16 +70,58 @@ function readDragPayload(e: React.DragEvent): DragPayload | null {
 }
 
 /**
+ * Design panel (GHL upgrade) — the three custom colours. The colour
+ * picker needs a valid hex at all times, so an unset colour shows its
+ * `swatchFallback` in the picker while the hex text field stays empty
+ * (empty = keep the default). Picking a colour commits it at once;
+ * typing a hex commits on blur / Enter, only when it is a valid
+ * 6-digit hex — anything else reverts with an error toast.
+ */
+const COLOR_ROWS: {
+  key: 'backgroundColor' | 'textColor' | 'primaryColor';
+  label: string;
+  swatchFallback: string;
+}[] = [
+  { key: 'backgroundColor', label: 'Background colour', swatchFallback: '#ffffff' },
+  { key: 'textColor', label: 'Text colour', swatchFallback: '#111111' },
+  { key: 'primaryColor', label: 'Button colour', swatchFallback: '#f5c518' },
+];
+
+const SHAPE_LABELS: Record<FormButtonShape, string> = {
+  rounded: 'Rounded corners',
+  pill: 'Pill',
+  square: 'Square',
+};
+
+const FONT_LABELS: Record<FormFont, string> = {
+  inter: 'Inter (default)',
+  system: 'System',
+  serif: 'Serif',
+  mono: 'Monospace',
+};
+
+const WIDTH_LABELS: Record<FormWidth, string> = {
+  narrow: 'Narrow (480px)',
+  medium: 'Medium (672px)',
+  wide: 'Wide (896px)',
+};
+
+/**
  * Live preview of one field, rendered as the end user will see it on
  * the public form. Inputs are uncontrolled so typing in the preview
  * works locally; nothing typed here touches builder state.
+ * `textColor` is the form's custom text colour (GHL Design panel) —
+ * applied inline to the label, whose class fixes its colour.
  */
-function FieldPreview({ field }: { field: FormField }) {
+function FieldPreview({ field, textColor }: { field: FormField; textColor?: string }) {
   const width = field.styling?.width === 'half' ? 'sm:w-[calc(50%-0.375rem)] w-full' : 'w-full';
   const inputClass =
     'w-full bg-dark-card border border-dark-border rounded-lg px-4 py-2.5 text-sm text-foreground placeholder-muted focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary';
   const label = (
-    <span className="text-sm font-medium text-foreground/80 block mb-1.5">
+    <span
+      className="text-sm font-medium text-foreground/80 block mb-1.5"
+      style={textColor ? { color: textColor } : undefined}
+    >
       {field.label}
       {field.required && <span className="text-red-400 ml-0.5">*</span>}
     </span>
@@ -98,6 +158,23 @@ function FieldPreview({ field }: { field: FormField }) {
               {o}
             </label>
           ))}
+        </div>
+      ) : field.type === 'file' ? (
+        <div>
+          <input
+            type="file"
+            disabled
+            className="w-full bg-dark-card border border-dark-border rounded-lg px-4 py-2.5 text-sm text-muted file:mr-3 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:bg-dark-border file:text-foreground/80 file:text-xs file:font-semibold"
+          />
+          <p className="text-xs text-muted mt-1">
+            {field.uploadVariant === 'picture'
+              ? 'JPG, PNG, WebP or GIF image (max 5 MB)'
+              : field.uploadVariant === 'document'
+                ? 'PDF, DOC or DOCX document (max 5 MB)'
+                : field.uploadVariant === 'video'
+                  ? 'MP4, WebM or MOV video (max 5 MB)'
+                  : 'Images, PDF, Office documents or plain text (max 5 MB)'}
+          </p>
         </div>
       ) : (
         <input
@@ -142,6 +219,18 @@ export default function BuilderClient({ formId }: { formId: string }) {
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
   const [dragIndex, setDragIndex] = useState<number | null>(null);
   const [dropIndex, setDropIndex] = useState<number | null>(null);
+  // GHL upgrade — Design panel state. `formStyle` holds only the keys
+  // the admin set (absent = site default); `hexDrafts` holds the raw
+  // hex text-field contents while the admin types.
+  const [formStyle, setFormStyle] = useState<FormStyle>({});
+  const [coverImageUrl, setCoverImageUrl] = useState('');
+  const [coverUploading, setCoverUploading] = useState(false);
+  const [hexDrafts, setHexDrafts] = useState({
+    backgroundColor: '',
+    textColor: '',
+    primaryColor: '',
+  });
+  const coverInputRef = useRef<HTMLInputElement>(null);
 
   const loadForm = useCallback(async () => {
     setLoading(true);
@@ -162,6 +251,14 @@ export default function BuilderClient({ formId }: { formId: string }) {
       setFields(schema.fields ?? []);
       setSubmitButtonText(schema.submitButtonText ?? 'Submit');
       setSuccessMessage(schema.successMessage ?? 'Thank you! Your response has been recorded.');
+      const schemaStyle = schema.style ?? {};
+      setFormStyle(schemaStyle);
+      setCoverImageUrl(schema.coverImageUrl ?? '');
+      setHexDrafts({
+        backgroundColor: schemaStyle.backgroundColor ?? '',
+        textColor: schemaStyle.textColor ?? '',
+        primaryColor: schemaStyle.primaryColor ?? '',
+      });
       setSelectedId(null);
       setDirty(false);
       setValidationErrors([]);
@@ -198,6 +295,118 @@ export default function BuilderClient({ formId }: { formId: string }) {
       ),
     );
     markDirty();
+  };
+
+  /**
+   * The schema the builder saves: fields + settings + Design style +
+   * cover. Style keys that are unset are omitted, so a form with no
+   * custom design stores no `style` key at all — and an old form that
+   * never had one keeps rendering the defaults.
+   */
+  const buildSchema = (): FormSchema => {
+    const style: FormStyle = {};
+    if (formStyle.backgroundColor) style.backgroundColor = formStyle.backgroundColor;
+    if (formStyle.textColor) style.textColor = formStyle.textColor;
+    if (formStyle.primaryColor) style.primaryColor = formStyle.primaryColor;
+    if (formStyle.buttonShape) style.buttonShape = formStyle.buttonShape;
+    if (formStyle.font) style.font = formStyle.font;
+    if (formStyle.formWidth) style.formWidth = formStyle.formWidth;
+    const schema: FormSchema = {
+      fields,
+      submitButtonText: submitButtonText.trim() || 'Submit',
+      successMessage: successMessage.trim(),
+    };
+    if (Object.keys(style).length > 0) schema.style = style;
+    if (coverImageUrl.trim()) schema.coverImageUrl = coverImageUrl.trim();
+    return schema;
+  };
+
+  const updateStyle = (patch: Partial<FormStyle>) => {
+    setFormStyle((s) => ({ ...s, ...patch }));
+    markDirty();
+  };
+
+  /** Commit a typed hex colour (blur / Enter). Empty clears the colour; an invalid value reverts with an error — it never reaches the schema. */
+  const commitHex = (key: 'backgroundColor' | 'textColor' | 'primaryColor', raw: string) => {
+    const value = raw.trim();
+    if (value === '') {
+      updateStyle({ [key]: undefined } as Partial<FormStyle>);
+      setHexDrafts((d) => ({ ...d, [key]: '' }));
+      return;
+    }
+    if (!isValidHexColor(value)) {
+      setHexDrafts((d) => ({ ...d, [key]: formStyle[key] ?? '' }));
+      toast.error('Use a 6-digit hex colour, e.g. #f5c518');
+      return;
+    }
+    updateStyle({ [key]: value } as Partial<FormStyle>);
+    setHexDrafts((d) => ({ ...d, [key]: value }));
+  };
+
+  /** Upload a cover image to the public `course-images` bucket (POST /api/admin/forms/[id]/cover). The returned URL is stored in state and saved with the form — the route itself writes nothing to the database. */
+  const uploadCover = async (file: File) => {
+    if (!(ALLOWED_COURSE_IMAGE_TYPES as readonly string[]).includes(file.type)) {
+      toast.error('Only JPG, PNG, WebP or GIF images are allowed');
+      return;
+    }
+    if (file.size > MAX_COURSE_IMAGE_BYTES) {
+      toast.error('Image must be 5 MB or smaller');
+      return;
+    }
+    const data = new FormData();
+    data.append('cover', file);
+    setCoverUploading(true);
+    try {
+      const res = await fetch(`/api/admin/forms/${formId}/cover`, { method: 'POST', body: data });
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        toast.error(body.error ?? 'Cover upload failed');
+        return;
+      }
+      if (!isValidCoverImageUrl(body.url)) {
+        toast.error('Cover upload failed — the server returned an invalid image URL');
+        return;
+      }
+      setCoverImageUrl(body.url);
+      markDirty();
+      toast.success('Cover uploaded — save the form to keep it');
+    } catch {
+      toast.error('Cover upload failed — check your connection and try again');
+    } finally {
+      setCoverUploading(false);
+    }
+  };
+
+  /** Remove the cover: DELETE clears the stored file (when it lives in `course-images`) and the stored schema's cover URL, then the builder state follows. */
+  const removeCover = async () => {
+    if (!coverImageUrl) return;
+    setCoverUploading(true);
+    try {
+      const res = await fetch(`/api/admin/forms/${formId}/cover`, { method: 'DELETE' });
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        toast.error(body.error ?? 'Could not remove the cover');
+        return;
+      }
+      setCoverImageUrl('');
+      markDirty();
+      toast.success('Cover removed');
+    } catch {
+      toast.error('Could not remove the cover — check your connection and try again');
+    } finally {
+      setCoverUploading(false);
+    }
+  };
+
+  /**
+   * Admin preview in a new tab: /forms/[slug]?preview=1 renders ANY
+   * status for an admin (drafts included) and 404s for everyone else.
+   * The preview reads the SAVED form — unsaved edits do not show, so
+   * a dirty builder warns instead of silently showing stale content.
+   */
+  const openPreview = () => {
+    if (dirty) toast('Save first — the preview shows the last saved version', { icon: '⚠️' });
+    window.open(`/forms/${form?.slug ?? ''}?preview=1`, '_blank', 'noopener,noreferrer');
   };
 
   /** Add a palette item to the canvas (at `atIndex`, or appended). */
@@ -275,11 +484,7 @@ export default function BuilderClient({ formId }: { formId: string }) {
       toast.error('Form title required');
       return;
     }
-    const schema: FormSchema = {
-      fields,
-      submitButtonText: submitButtonText.trim() || 'Submit',
-      successMessage: successMessage.trim(),
-    };
+    const schema = buildSchema();
     const errors = validateSchema(schema, { requireFields: false });
     setValidationErrors(errors);
     if (errors.length > 0) {
@@ -316,11 +521,7 @@ export default function BuilderClient({ formId }: { formId: string }) {
     if (nextStatus === 'published') {
       // Publishing requires a valid, non-empty schema — checked here so
       // the admin sees the problems instead of a bare server 400.
-      const schema: FormSchema = {
-        fields,
-        submitButtonText: submitButtonText.trim() || 'Submit',
-        successMessage: successMessage.trim(),
-      };
+      const schema = buildSchema();
       const errors = validateSchema(schema);
       setValidationErrors(errors);
       if (errors.length > 0) {
@@ -376,6 +577,24 @@ export default function BuilderClient({ formId }: { formId: string }) {
 
   const validation = selectedField?.validation ?? {};
 
+  // Resolved Design style for the LIVE centre preview: the preview
+  // card gets the form background / text colour / font, its submit
+  // button the button colour + shape (+ a readable text colour).
+  // Unset values stay undefined, so the preview shows the defaults.
+  const resolvedStyle = resolveFormStyle(formStyle);
+  const previewCardStyle: React.CSSProperties = {
+    backgroundColor: resolvedStyle.backgroundColor,
+    color: resolvedStyle.textColor,
+    fontFamily: formFontFamily(resolvedStyle.font),
+  };
+  const previewSubmitStyle: React.CSSProperties = {
+    backgroundColor: resolvedStyle.primaryColor,
+    borderRadius: formButtonBorderRadius(resolvedStyle.buttonShape),
+    color: resolvedStyle.primaryColor
+      ? formButtonTextColor(resolvedStyle.primaryColor)
+      : undefined,
+  };
+
   return (
     <div className="space-y-4">
       {/* Top bar */}
@@ -397,10 +616,16 @@ export default function BuilderClient({ formId }: { formId: string }) {
           <Button variant="secondary" size="sm" onClick={() => router.push(`/admin/forms/${formId}/submissions`)}>
             <ListChecks className="w-4 h-4" />Submissions
           </Button>
+          <Button variant="secondary" size="sm" onClick={openPreview} title="Open the public form in a new tab (admin preview — drafts included)">
+            <ExternalLink className="w-4 h-4" />Preview
+          </Button>
           <Button variant="outline" size="sm" onClick={() => void togglePublish()} loading={toggling} disabled={toggling}>
             {status === 'published' ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
             {status === 'published' ? 'Unpublish' : 'Publish'}
           </Button>
+          {status === 'published' && (
+            <FormShareMenu name={name} slug={form.slug} variant="button" />
+          )}
           <Button size="sm" onClick={() => void saveForm()} loading={saving} disabled={saving}>
             <Save className="w-4 h-4" />Save form
           </Button>
@@ -463,11 +688,19 @@ export default function BuilderClient({ formId }: { formId: string }) {
           }}
           onDrop={(e) => handleDrop(e, fields.length)}
         >
-        <Card className="min-h-[480px]">
+        <Card className="min-h-[480px]" style={previewCardStyle}>
           <div className="flex items-center justify-between mb-3">
             <h2 className="text-sm font-bold text-foreground">Form preview</h2>
             <span className="text-muted text-xs">Live preview — this is what submitters see</span>
           </div>
+
+          {coverImageUrl && (
+            <img
+              src={coverImageUrl}
+              alt="Cover preview"
+              className="w-full h-28 object-cover rounded-lg border border-dark-border mb-4"
+            />
+          )}
 
           {fields.length === 0 ? (
             <div
@@ -571,7 +804,7 @@ export default function BuilderClient({ formId }: { formId: string }) {
                         <Trash2 className="w-4 h-4" />
                       </button>
                     </div>
-                    <FieldPreview field={field} />
+                    <FieldPreview field={field} textColor={resolvedStyle.textColor} />
                   </div>
                 );
               })}
@@ -582,7 +815,7 @@ export default function BuilderClient({ formId }: { formId: string }) {
           )}
 
           <div className="mt-6 pt-4 border-t border-dark-border">
-            <Button variant="secondary" size="sm" disabled>
+            <Button variant="secondary" size="sm" disabled style={previewSubmitStyle}>
               {submitButtonText.trim() || 'Submit'}
             </Button>
             <p className="text-muted text-xs mt-2">
@@ -635,6 +868,146 @@ export default function BuilderClient({ formId }: { formId: string }) {
             </div>
           </Card>
 
+          {/* GHL upgrade — Design: whole-form colours / font / width + cover image.
+              No free-form CSS: colours are strict 6-digit hex (validated on
+              save, server-side too), shape / font / width are whitelisted
+              enums. Everything here applies LIVE to the centre preview and
+              to the public form once saved; blank = site defaults. */}
+          <Card>
+            <h2 className="text-sm font-bold text-foreground mb-1">Design</h2>
+            <p className="text-muted text-xs mb-3">
+              Colours, font and cover for the public form. Live in the preview — leave blank for the default dark + gold look.
+            </p>
+            <div className="space-y-4">
+              <div>
+                <span className="text-sm font-medium text-foreground/80 block mb-1.5">Cover image</span>
+                {coverImageUrl ? (
+                  <img
+                    src={coverImageUrl}
+                    alt="Form cover preview"
+                    className="w-full h-28 object-cover rounded-lg border border-dark-border"
+                  />
+                ) : (
+                  <div className="w-full h-28 rounded-lg border-2 border-dashed border-dark-border flex items-center justify-center">
+                    <span className="text-muted text-xs">No cover image yet</span>
+                  </div>
+                )}
+                <input
+                  ref={coverInputRef}
+                  type="file"
+                  accept={ALLOWED_COURSE_IMAGE_TYPES.join(',')}
+                  className="hidden"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    e.target.value = '';
+                    if (file) void uploadCover(file);
+                  }}
+                />
+                <div className="flex gap-2 mt-2">
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => coverInputRef.current?.click()}
+                    loading={coverUploading}
+                    disabled={coverUploading}
+                  >
+                    <Upload className="w-4 h-4" />{coverImageUrl ? 'Replace cover' : 'Upload cover'}
+                  </Button>
+                  {coverImageUrl && (
+                    <Button variant="secondary" size="sm" onClick={() => void removeCover()} disabled={coverUploading}>
+                      <X className="w-4 h-4" />Remove
+                    </Button>
+                  )}
+                </div>
+                <p className="text-xs text-muted mt-1.5">
+                  JPG, PNG, WebP or GIF, max 5 MB. Shown as a banner at the top of the public form.
+                </p>
+              </div>
+
+              <div className="space-y-3">
+                {COLOR_ROWS.map((row) => (
+                  <div key={row.key}>
+                    <span className="text-sm font-medium text-foreground/80 block mb-1.5">{row.label}</span>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="color"
+                        aria-label={`${row.label} picker`}
+                        value={
+                          isValidHexColor(formStyle[row.key])
+                            ? (formStyle[row.key] as string)
+                            : row.swatchFallback
+                        }
+                        onChange={(e) => {
+                          const value = e.target.value;
+                          setHexDrafts((d) => ({ ...d, [row.key]: value }));
+                          updateStyle({ [row.key]: value } as Partial<FormStyle>);
+                        }}
+                        className="w-10 h-10 p-0.5 bg-dark-card border border-dark-border rounded-lg cursor-pointer shrink-0"
+                      />
+                      <Input
+                        placeholder="#f5c518"
+                        value={hexDrafts[row.key]}
+                        onChange={(e) => setHexDrafts((d) => ({ ...d, [row.key]: e.target.value }))}
+                        onBlur={() => commitHex(row.key, hexDrafts[row.key])}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault();
+                            commitHex(row.key, hexDrafts[row.key]);
+                          }
+                        }}
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <Select
+                label="Button shape"
+                options={[
+                  { value: '', label: 'Default (rounded)' },
+                  ...FORM_BUTTON_SHAPES.map((s) => ({ value: s, label: SHAPE_LABELS[s] })),
+                ]}
+                value={formStyle.buttonShape ?? ''}
+                onChange={(e) =>
+                  updateStyle({
+                    buttonShape:
+                      e.target.value === '' ? undefined : (e.target.value as FormButtonShape),
+                  })
+                }
+              />
+              <Select
+                label="Font"
+                options={[
+                  { value: '', label: 'Default (Inter)' },
+                  ...FORM_FONTS.map((f) => ({ value: f, label: FONT_LABELS[f] })),
+                ]}
+                value={formStyle.font ?? ''}
+                onChange={(e) =>
+                  updateStyle({
+                    font: e.target.value === '' ? undefined : (e.target.value as FormFont),
+                  })
+                }
+              />
+              <Select
+                label="Form width"
+                options={[
+                  { value: '', label: 'Default (medium)' },
+                  ...FORM_WIDTHS.map((w) => ({ value: w, label: WIDTH_LABELS[w] })),
+                ]}
+                value={formStyle.formWidth ?? ''}
+                onChange={(e) =>
+                  updateStyle({
+                    formWidth:
+                      e.target.value === '' ? undefined : (e.target.value as FormWidth),
+                  })
+                }
+              />
+              <p className="text-xs text-muted">
+                Blank colours mean “keep the default”. The design is stored with the form — save to keep it.
+              </p>
+            </div>
+          </Card>
+
           <Card>
             <h2 className="text-sm font-bold text-foreground mb-3">Selected field</h2>
             {!selectedField ? (
@@ -675,6 +1048,32 @@ export default function BuilderClient({ formId }: { formId: string }) {
                   />
                   Required field
                 </label>
+
+                {selectedField.type === 'file' && (
+                  <div>
+                    <Select
+                      label="Upload type"
+                      options={[
+                        { value: 'picture', label: 'Image upload — JPG, PNG, WebP, GIF' },
+                        { value: 'document', label: 'Document upload — PDF, DOC, DOCX' },
+                        { value: 'video', label: 'Video upload — MP4, WebM, MOV' },
+                        { value: 'files', label: 'Files upload — images, PDF, Office, text' },
+                      ]}
+                      value={selectedField.uploadVariant ?? 'files'}
+                      onChange={(e) =>
+                        updateField(selectedField.id, {
+                          uploadVariant: e.target.value as 'picture' | 'document' | 'video' | 'files',
+                        })
+                      }
+                    />
+                    <p className="text-xs text-muted mt-1.5">
+                      Max 5 MB per file. Files are checked on the server (type,
+                      size and contents) and stored privately — only admins
+                      can open them. Executables, scripts and archives are
+                      never accepted.
+                    </p>
+                  </div>
+                )}
 
                 {OPTION_FIELD_TYPES.includes(selectedField.type) && (
                   <div>

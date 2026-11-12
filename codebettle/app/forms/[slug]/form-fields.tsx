@@ -2,7 +2,9 @@ import Input from '@/components/ui/Input';
 import Textarea from '@/components/ui/Textarea';
 import Select from '@/components/ui/Select';
 import { cn } from '@/lib/utils';
+import { formatFileSize, uploadVariantConfig } from '@/lib/form-uploads';
 import {
+  fileAcceptForField,
   normalizeFieldOptions,
   type PublicFormField,
 } from '@/lib/public-form';
@@ -13,6 +15,14 @@ interface FieldInputProps {
   error?: string;
   disabled?: boolean;
   onChange: (fieldId: string, value: unknown) => void;
+  /**
+   * Whole-form custom style (GHL upgrade): the form's text colour for
+   * labels/legends (their classes fix the colour, so it is passed as
+   * an inline style) and the form's primary colour as the radio /
+   * checkbox accent. Both optional — absent = the default dark + gold.
+   */
+  textColor?: string;
+  accentColor?: string;
 }
 
 /**
@@ -21,15 +31,42 @@ interface FieldInputProps {
  * with renderToStaticMarkup. Labels carry the required marker; errors
  * render inline under the control.
  */
-export function PublicFormFieldInput({ field, value, error, disabled, onChange }: FieldInputProps) {
+export function PublicFormFieldInput({ field, value, error, disabled, onChange, textColor, accentColor }: FieldInputProps) {
   const label = `${field.label}${field.required ? ' *' : ''}`;
   const stringValue = typeof value === 'string' ? value : '';
+  // Inline styles beat the label/accent classes (see FieldInputProps).
+  const labelStyle = textColor ? { color: textColor } : undefined;
+  const accentStyle = accentColor ? { accentColor } : undefined;
 
   switch (field.type) {
+    case 'file': {
+      const config = uploadVariantConfig(field.uploadVariant);
+      const chosen =
+        typeof File !== 'undefined' && value instanceof File ? value : null;
+      return (
+        <div className="flex flex-col gap-1.5">
+          <label className="text-sm font-medium text-foreground/80">
+            {label}
+          </label>
+          <input
+            type="file"
+            accept={fileAcceptForField(field)}
+            disabled={disabled}
+            onChange={(e) => onChange(field.id, e.target.files?.[0] ?? null)}
+            className="w-full bg-dark-card border border-dark-border rounded-lg px-4 py-2.5 text-sm text-foreground file:mr-3 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:bg-primary file:text-ink file:text-xs file:font-semibold file:cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary"
+          />
+          <p className="text-xs text-muted">
+            {chosen ? `${chosen.name} (${formatFileSize(chosen.size)})` : config.description}
+          </p>
+          {error && <p className="text-xs text-red-400">{error}</p>}
+        </div>
+      );
+    }
     case 'textarea':
       return (
         <Textarea
           label={label}
+          labelStyle={labelStyle}
           placeholder={field.placeholder}
           value={stringValue}
           error={error}
@@ -45,6 +82,7 @@ export function PublicFormFieldInput({ field, value, error, disabled, onChange }
       return (
         <Select
           label={label}
+          labelStyle={labelStyle}
           options={options}
           value={stringValue}
           error={error}
@@ -57,10 +95,10 @@ export function PublicFormFieldInput({ field, value, error, disabled, onChange }
       const options = normalizeFieldOptions(field);
       return (
         <fieldset disabled={disabled} className="flex flex-col gap-1.5">
-          <legend className="text-sm font-medium text-foreground/80">{label}</legend>
+          <legend className="text-sm font-medium text-foreground/80" style={labelStyle}>{label}</legend>
           <div className="flex flex-col gap-2 pt-1">
             {options.map((opt) => (
-              <label key={opt.value} className="flex items-center gap-2.5 text-sm text-foreground cursor-pointer">
+              <label key={opt.value} className="flex items-center gap-2.5 text-sm text-foreground cursor-pointer" style={labelStyle}>
                 <input
                   type="radio"
                   name={field.id}
@@ -68,6 +106,7 @@ export function PublicFormFieldInput({ field, value, error, disabled, onChange }
                   checked={stringValue === opt.value}
                   onChange={() => onChange(field.id, opt.value)}
                   className="w-4 h-4 accent-primary"
+                  style={accentStyle}
                 />
                 {opt.label}
               </label>
@@ -93,10 +132,10 @@ export function PublicFormFieldInput({ field, value, error, disabled, onChange }
         };
         return (
           <fieldset disabled={disabled} className="flex flex-col gap-1.5">
-            <legend className="text-sm font-medium text-foreground/80">{label}</legend>
+            <legend className="text-sm font-medium text-foreground/80" style={labelStyle}>{label}</legend>
             <div className="flex flex-col gap-2 pt-1">
               {options.map((opt) => (
-                <label key={opt.value} className="flex items-center gap-2.5 text-sm text-foreground cursor-pointer">
+                <label key={opt.value} className="flex items-center gap-2.5 text-sm text-foreground cursor-pointer" style={labelStyle}>
                   <input
                     type="checkbox"
                     name={field.id}
@@ -104,6 +143,7 @@ export function PublicFormFieldInput({ field, value, error, disabled, onChange }
                     checked={chosen.includes(opt.value)}
                     onChange={() => toggle(opt.value)}
                     className="w-4 h-4 accent-primary"
+                    style={accentStyle}
                   />
                   {opt.label}
                 </label>
@@ -115,7 +155,7 @@ export function PublicFormFieldInput({ field, value, error, disabled, onChange }
       }
       return (
         <div className="flex flex-col gap-1.5">
-          <label className="flex items-start gap-2.5 text-sm text-foreground cursor-pointer pt-1">
+          <label className="flex items-start gap-2.5 text-sm text-foreground cursor-pointer pt-1" style={labelStyle}>
             <input
               type="checkbox"
               id={field.id}
@@ -124,6 +164,7 @@ export function PublicFormFieldInput({ field, value, error, disabled, onChange }
               disabled={disabled}
               onChange={(e) => onChange(field.id, e.target.checked)}
               className="w-4 h-4 mt-0.5 accent-primary"
+              style={accentStyle}
             />
             <span>
               {field.label}
@@ -139,6 +180,7 @@ export function PublicFormFieldInput({ field, value, error, disabled, onChange }
         <Input
           type="number"
           label={label}
+          labelStyle={labelStyle}
           placeholder={field.placeholder}
           value={stringValue}
           error={error}
@@ -153,6 +195,7 @@ export function PublicFormFieldInput({ field, value, error, disabled, onChange }
         <Input
           type="date"
           label={label}
+          labelStyle={labelStyle}
           value={stringValue}
           error={error}
           disabled={disabled}
@@ -168,6 +211,7 @@ export function PublicFormFieldInput({ field, value, error, disabled, onChange }
         <Input
           type={field.type === 'text' ? 'text' : field.type}
           label={label}
+          labelStyle={labelStyle}
           placeholder={field.placeholder}
           value={stringValue}
           error={error}
@@ -184,6 +228,9 @@ interface FieldsProps {
   errors: Record<string, string>;
   disabled?: boolean;
   onChange: (fieldId: string, value: unknown) => void;
+  /** Whole-form custom style — see FieldInputProps. */
+  textColor?: string;
+  accentColor?: string;
 }
 
 /**
@@ -192,7 +239,7 @@ interface FieldsProps {
  * full row. A lone half-width field at the end of the list also takes
  * the full row rather than leaving a gap.
  */
-export function PublicFormFields({ fields, values, errors, disabled, onChange }: FieldsProps) {
+export function PublicFormFields({ fields, values, errors, disabled, onChange, textColor, accentColor }: FieldsProps) {
   const rows: PublicFormField[][] = [];
   for (let i = 0; i < fields.length; i++) {
     const field = fields[i];
@@ -223,6 +270,8 @@ export function PublicFormFields({ fields, values, errors, disabled, onChange }:
               error={errors[field.id]}
               disabled={disabled}
               onChange={onChange}
+              textColor={textColor}
+              accentColor={accentColor}
             />
           ))}
         </div>

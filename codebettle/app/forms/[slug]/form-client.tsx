@@ -6,9 +6,18 @@ import FadeIn from '@/components/ui/FadeIn';
 import { CheckCircle2, Send, AlertTriangle } from 'lucide-react';
 import { PublicFormFields } from './form-fields';
 import {
+  formButtonBorderRadius,
+  formButtonTextColor,
+  formFontFamily,
+  isValidCoverImageUrl,
+  resolveFormStyle,
+} from '@/lib/form-style';
+import {
   emptyFormData,
+  fileValues,
   getSubmitButtonText,
   getSuccessMessage,
+  hasFileFields,
   interpretSubmitResponse,
   prepareSubmitData,
   validateFormData,
@@ -34,9 +43,33 @@ const BANNER_TEXT: Record<Banner['kind'], string> = {
  * visitors submit the same way — the server records the submitter, the
  * client sends nothing about identity. Double-submit is prevented by
  * disabling the button while a submission is in flight.
+ *
+ * GHL upgrade — whole-form custom style (schema.style) and cover image
+ * (schema.coverImageUrl) are applied here with inline styles, so a form
+ * with no style set renders exactly as before (dark + gold defaults):
+ * the form background / text colour / font, the submit button's colour
+ * + shape, and the cover banner at the top. The cover URL is re-checked
+ * here before rendering (defence in depth — the server validates it on
+ * save, but a stored URL is rendered verbatim, so never trust it blind).
  */
 export default function PublicFormClient({ form, slug }: { form: PublicForm; slug: string }) {
   const fields = form.schema.fields;
+  const style = resolveFormStyle(form.schema.style);
+  const coverUrl = isValidCoverImageUrl(form.schema.coverImageUrl)
+    ? (form.schema.coverImageUrl as string)
+    : undefined;
+  // Inline styles beat the dark-card / primary classes below; unset
+  // values stay undefined so React omits them and the defaults show.
+  const formStyle: React.CSSProperties = {
+    backgroundColor: style.backgroundColor,
+    color: style.textColor,
+    fontFamily: formFontFamily(style.font),
+  };
+  const submitStyle: React.CSSProperties = {
+    backgroundColor: style.primaryColor,
+    borderRadius: formButtonBorderRadius(style.buttonShape),
+    color: style.primaryColor ? formButtonTextColor(style.primaryColor) : undefined,
+  };
   const [values, setValues] = useState<Record<string, unknown>>(() => emptyFormData(fields));
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [banner, setBanner] = useState<Banner | null>(null);
@@ -68,11 +101,28 @@ export default function PublicFormClient({ form, slug }: { form: PublicForm; slu
     setBanner(null);
     setSubmitting(true);
     try {
-      const res = await fetch(`/api/forms/${encodeURIComponent(slug)}/submit`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ data: prepareSubmitData(fields, values) }),
-      });
+      // Forms with file fields submit as multipart/form-data: the JSON
+      // `data` part plus one `file:<fieldId>` part per chosen file.
+      // The server uploads the files first and stores only the file
+      // reference. Forms without file fields keep the JSON submit.
+      let res: Response;
+      if (hasFileFields(fields)) {
+        const multipart = new FormData();
+        multipart.append('data', JSON.stringify(prepareSubmitData(fields, values)));
+        for (const [fieldId, file] of Object.entries(fileValues(fields, values))) {
+          multipart.append(`file:${fieldId}`, file);
+        }
+        res = await fetch(`/api/forms/${encodeURIComponent(slug)}/submit`, {
+          method: 'POST',
+          body: multipart,
+        });
+      } else {
+        res = await fetch(`/api/forms/${encodeURIComponent(slug)}/submit`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ data: prepareSubmitData(fields, values) }),
+        });
+      }
       const body = await res.json().catch(() => ({}));
       const result = interpretSubmitResponse(res.status, body);
       if (result.outcome === 'success') {
@@ -101,7 +151,7 @@ export default function PublicFormClient({ form, slug }: { form: PublicForm; slu
   if (submitted) {
     return (
       <FadeIn>
-        <Card className="text-center border-primary/30">
+        <Card className="text-center border-primary/30" style={formStyle}>
           <CheckCircle2 className="w-12 h-12 text-green-400 mx-auto mb-4" />
           <h2 className="text-xl font-bold text-foreground mb-2">Response submitted</h2>
           <p className="text-muted text-sm leading-relaxed">{getSuccessMessage(form)}</p>
@@ -123,7 +173,28 @@ export default function PublicFormClient({ form, slug }: { form: PublicForm; slu
 
   return (
     <FadeIn>
-      <form onSubmit={handleSubmit} noValidate className="bg-dark-card border border-dark-border rounded-xl p-6 space-y-5">
+      {coverUrl && (
+        <img
+          src={coverUrl}
+          alt=""
+          className="w-full h-44 object-cover block border border-b-0 border-dark-border rounded-t-xl"
+        />
+      )}
+      <form
+        onSubmit={handleSubmit}
+        noValidate
+        style={formStyle}
+        // With a cover the form is the bottom half of one card: square
+        // top corners, no top border (the seam would double it). Without
+        // a cover it is a standalone rounded card. The two class sets
+        // are mutually exclusive — never rounded-xl + rounded-b-xl
+        // together, which would fight over the top corners.
+        className={
+          coverUrl
+            ? 'bg-dark-card border border-t-0 border-dark-border rounded-b-xl p-6 space-y-5'
+            : 'bg-dark-card border border-dark-border rounded-xl p-6 space-y-5'
+        }
+      >
         {banner && (
           <div
             role="alert"
@@ -139,8 +210,10 @@ export default function PublicFormClient({ form, slug }: { form: PublicForm; slu
           errors={errors}
           disabled={submitting}
           onChange={handleChange}
+          textColor={style.textColor}
+          accentColor={style.primaryColor}
         />
-        <Button type="submit" size="lg" loading={submitting} fullWidth className="gap-2">
+        <Button type="submit" size="lg" loading={submitting} fullWidth className="gap-2" style={submitStyle}>
           <Send className="w-4 h-4" /> {getSubmitButtonText(form)}
         </Button>
       </form>

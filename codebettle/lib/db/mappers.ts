@@ -66,7 +66,8 @@ import type {
   User,
   UserRow,
 } from './types';
-import { DEFAULT_NOTIFICATION_PREFS, FORM_FIELD_TYPES, FORM_STATUSES, FORM_TYPES, NOTIFICATION_EVENT_KEYS } from './types';
+import { DEFAULT_NOTIFICATION_PREFS, FORM_FIELD_TYPES, FORM_STATUSES, NOTIFICATION_EVENT_KEYS } from './types';
+import { isUploadVariant } from '../form-uploads';
 import { toAdminPermissions } from '../admin-access';
 
 export const CATEGORY_TO_STORAGE: Record<CourseCategory, CourseRow['category']> = {
@@ -518,6 +519,12 @@ export function toFormSchema(value: unknown): FormSchema {
       const width = (f.styling as Record<string, unknown>).width;
       if (width === 'full' || width === 'half') field.styling = { width };
     }
+    // File fields keep their upload variant (default 'files' when the
+    // stored field has none or an unknown one — an old schema without
+    // the variant still renders and validates as a generic upload).
+    if (type === 'file') {
+      field.uploadVariant = isUploadVariant(f.uploadVariant) ? f.uploadVariant : 'files';
+    }
     fields.push(field);
   }
   // Form-level settings travel inside the schema — preserve them so
@@ -541,7 +548,9 @@ export function mapFormDefinitionRow(row: FormDefinitionRow): FormDefinition {
     id: row.id,
     name: row.name,
     slug: row.slug,
-    type: (FORM_TYPES as readonly string[]).includes(row.type) ? (row.type as FormDefinition['type']) : 'registration',
+    // `type` is the form's free-text purpose — passed through as
+    // stored (a blank legacy value falls back to 'General').
+    type: typeof row.type === 'string' && row.type.trim() ? row.type : 'General',
     description: row.description ?? undefined,
     schema: toFormSchema(row.schema),
     status: (FORM_STATUSES as readonly string[]).includes(row.status)

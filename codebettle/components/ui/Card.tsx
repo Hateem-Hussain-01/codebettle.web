@@ -5,9 +5,16 @@ interface CardProps {
   className?: string;
   hover?: boolean;
   glow?: boolean;
+  /**
+   * Inline styles for the card element. Inline styles beat the
+   * `bg-dark-card` class, so callers (e.g. the form builder live
+   * preview, the styled public form) can recolour a card without a
+   * new variant. Absent = the default dark card.
+   */
+  style?: React.CSSProperties;
 }
 
-export default function Card({ children, className, hover, glow }: CardProps) {
+export default function Card({ children, className, hover, glow, style }: CardProps) {
   return (
     <div className={cn(
       'bg-dark-card border border-dark-border rounded-xl p-6',
@@ -17,7 +24,8 @@ export default function Card({ children, className, hover, glow }: CardProps) {
       hover && 'card-lift hover:border-primary/40',
       glow && 'hover:shadow-[0_0_20px_rgba(245,197,24,0.15)]',
       className
-    )}>
+    )}
+    style={style}>
       {children}
     </div>
   );
