@@ -320,7 +320,7 @@ export default function NotificationsClient({
                           void acknowledge(notif.id);
                         }}
                         disabled={ackBusyId === notif.id}
-                        className="text-[11px] font-semibold px-2.5 py-1 rounded-full bg-primary text-black hover:opacity-90 transition-opacity cursor-pointer disabled:opacity-50"
+                        className="text-[11px] font-semibold px-2.5 py-1 rounded-full bg-primary text-ink hover:opacity-90 transition-opacity cursor-pointer disabled:opacity-50"
                       >
                         Acknowledge
                       </button>

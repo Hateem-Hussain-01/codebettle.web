@@ -31,10 +31,13 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
-  // Module 6 — theme. A returning visitor's saved cookie sets
-  // data-theme server-side (no flash at all); a first-time visitor
-  // gets no attribute here and the pre-hydration script below sets it
-  // from the device/OS preference before the first paint. Either way
+  // Module 6 — theme, three-mode model (theme-selector fix).
+  // A returning visitor's saved cookie sets data-theme server-side
+  // (no flash at all) — but only for an EXPLICIT 'dark'/'light'
+  // cookie: parseThemeCookie returns null for 'system' (and for a
+  // missing/invalid cookie), so those visitors get NO attribute here
+  // and the pre-hydration script below resolves the device/OS
+  // preference before the first paint. Either way
   // suppressHydrationWarning is needed: the script may add the
   // attribute between the server render and hydration.
   // Reading cookies()/headers() opts the layout into dynamic rendering
@@ -59,7 +62,8 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         {/*
           Module 6 — pre-hydration theme script. First child of <body>
           so it runs before any content paints: reads the cb-theme
-          cookie, else the device preference, and sets data-theme on
+          cookie ('dark'/'light' win; 'system', missing or invalid
+          falls back to the device preference) and sets data-theme on
           <html>. Carries the request nonce (see above).
         */}
         <script nonce={nonce} dangerouslySetInnerHTML={{ __html: THEME_SCRIPT }} />

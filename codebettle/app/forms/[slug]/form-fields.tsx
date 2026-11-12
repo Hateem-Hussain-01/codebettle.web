@@ -67,7 +67,7 @@ export function PublicFormFieldInput({ field, value, error, disabled, onChange }
                   value={opt.value}
                   checked={stringValue === opt.value}
                   onChange={() => onChange(field.id, opt.value)}
-                  className="w-4 h-4 accent-[#f5c518]"
+                  className="w-4 h-4 accent-primary"
                 />
                 {opt.label}
               </label>
@@ -103,7 +103,7 @@ export function PublicFormFieldInput({ field, value, error, disabled, onChange }
                     value={opt.value}
                     checked={chosen.includes(opt.value)}
                     onChange={() => toggle(opt.value)}
-                    className="w-4 h-4 accent-[#f5c518]"
+                    className="w-4 h-4 accent-primary"
                   />
                   {opt.label}
                 </label>
@@ -123,7 +123,7 @@ export function PublicFormFieldInput({ field, value, error, disabled, onChange }
               checked={value === true}
               disabled={disabled}
               onChange={(e) => onChange(field.id, e.target.checked)}
-              className="w-4 h-4 mt-0.5 accent-[#f5c518]"
+              className="w-4 h-4 mt-0.5 accent-primary"
             />
             <span>
               {field.label}

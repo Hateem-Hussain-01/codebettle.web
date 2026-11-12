@@ -402,7 +402,7 @@ export default function CommunicationsClient({
             key={t.id}
             onClick={() => setTab(t.id)}
             className={`px-3 py-1.5 rounded-md text-xs font-medium whitespace-nowrap cursor-pointer transition-colors ${
-              tab === t.id ? 'bg-primary text-black' : 'text-muted hover:text-foreground'
+              tab === t.id ? 'bg-primary text-ink' : 'text-muted hover:text-foreground'
             }`}
           >
             {t.label}

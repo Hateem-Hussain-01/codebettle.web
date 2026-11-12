@@ -1,6 +1,14 @@
 @import "tailwindcss";
 
-@theme inline {
+@theme {
+  /* Plain @theme (NOT the "inline" variant) — REQUIRED for the theme to
+     work. With `inline`, Tailwind v4 inlines token values into the
+     generated utilities at build time (`.bg-dark-card{background-
+     color:#1c1c1c}`), so the `[data-theme="light"]` overrides below
+     never reach any component and the light theme looks broken.
+     Plain @theme makes utilities reference the variables
+     (`var(--color-dark-card)`), so the light overrides apply.
+     Do NOT put `inline` back — see lib/theme.ts. */
   --color-primary: #F5C518;
   --color-primary-dark: #C9A000;
   --color-primary-light: #FDE68A;
@@ -94,6 +102,18 @@
 
 [data-theme="light"] ::-webkit-scrollbar-track {
   background: #F1F1F1;
+}
+
+/* Light-mode gradient text: the dark gradient (#F5C518 -> #FDE68A) is
+   1.63:1 on white (unreadable). The light gradient uses dark golds
+   (#8A6D00 4.92:1, #6B5400 7.26:1 on white) so headings stay readable.
+   Used in ~25 places (logos, hero headings/stats, About/Blog/Contact/
+   Courses/Instructors pages, Footer, CTABanner, auth forms). */
+[data-theme="light"] .gradient-text {
+  background: linear-gradient(135deg, #8A6D00, #6B5400);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
 body {

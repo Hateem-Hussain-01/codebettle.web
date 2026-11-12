@@ -26,7 +26,7 @@ const AUTH_NAV_PLATFORMS: readonly SocialPlatform[] = SOCIAL_PLATFORMS.filter(
 
 export default function AuthSocialNav() {
   const iconLinkClass =
-    'flex h-9 w-9 items-center justify-center rounded-full border border-dark-border bg-dark-card text-muted transition-colors hover:border-primary/60 hover:text-primary focus-visible:outline-2 focus-visible:outline-primary';
+    'flex h-9 w-9 items-center justify-center rounded-full border border-dark-border bg-dark-card text-muted transition-colors hover:border-primary/60 hover:text-primary-text focus-visible:outline-2 focus-visible:outline-primary';
 
   return (
     <nav aria-label="CodeBettle on social media" className="flex flex-wrap items-center justify-center gap-2.5">
@@ -47,7 +47,7 @@ export default function AuthSocialNav() {
         href={WHATSAPP_COMMUNITY_URL}
         target="_blank"
         rel="noopener noreferrer"
-        className="flex items-center gap-2 rounded-full border border-primary/40 bg-primary/10 px-4 py-1.5 text-sm font-semibold text-primary transition-colors hover:bg-primary hover:text-dark focus-visible:outline-2 focus-visible:outline-primary"
+        className="flex items-center gap-2 rounded-full border border-primary/40 bg-primary/10 px-4 py-1.5 text-sm font-semibold text-primary-text transition-colors hover:bg-primary hover:text-ink focus-visible:outline-2 focus-visible:outline-primary"
       >
         <WhatsAppIcon className="h-4 w-4" />
         Join our community
