@@ -6,7 +6,7 @@ import Badge from '@/components/ui/Badge';
 import Input from '@/components/ui/Input';
 import Textarea from '@/components/ui/Textarea';
 import FadeIn from '@/components/ui/FadeIn';
-import { UserCheck, Check, X, ChevronLeft, ChevronRight, ChevronDown, ChevronUp, FileText, Video, ExternalLink, Eye, GraduationCap, MessageSquare, Plus, Trash2, ArrowUp, ArrowDown, Pencil } from 'lucide-react';
+import { UserCheck, Check, X, ChevronLeft, ChevronRight, ChevronDown, ChevronUp, FileText, Video, ExternalLink, GraduationCap, MessageSquare, Plus, Trash2, ArrowUp, ArrowDown, Pencil } from 'lucide-react';
 import { LinkedInIcon } from '@/components/auth/BrandIcons';
 import { formatDateShort } from '@/lib/utils';
 import toast from 'react-hot-toast';
@@ -102,14 +102,6 @@ export default function AdminApplicationsPage() {
   const [infoNote, setInfoNote] = useState<Record<string, string>>({});
   const [requestingId, setRequestingId] = useState<string | null>(null);
   const [onboardingId, setOnboardingId] = useState<string | null>(null);
-  const [viewingId, setViewingId] = useState<string | null>(null);
-  // Applications whose applicant is actually onboarded (user isTeacher).
-  // The list payload carries no onboarded flag, so this comes from each
-  // approved application's stage history (the 'onboarded' action).
-  // Fail closed: an application whose history could not be read shows
-  // no "Switch to Teacher Portal" button — before onboarding, view-as
-  // fails with 403.
-  const [onboardedIds, setOnboardedIds] = useState<Record<string, true>>({});
 
   // Expanded detail (history + internal notes).
   const [expandedId, setExpandedId] = useState<string | null>(null);
@@ -139,37 +131,6 @@ export default function AdminApplicationsPage() {
     }
   };
 
-  /**
-   * Work out which approved applications are actually onboarded, from
-   * their stage history. Only approved applications with an account
-   * can be onboarded, so only those get a detail fetch. Any failure
-   * leaves the button hidden (fail closed).
-   */
-  const loadOnboardedState = async (list: Application[]) => {
-    const candidates = list.filter((a) => a.status === 'approved' && a.userId);
-    if (candidates.length === 0) return;
-    const entries = await Promise.all(
-      candidates.map(async (app) => {
-        try {
-          const res = await fetch(`/api/admin/applications/${app.id}`);
-          if (!res.ok) return [app.id, false] as const;
-          const data = await res.json();
-          const onboarded = (data.history ?? []).some((h: HistoryEntry) => h.action === 'onboarded');
-          return [app.id, onboarded] as const;
-        } catch {
-          return [app.id, false] as const;
-        }
-      }),
-    );
-    setOnboardedIds((prev) => {
-      const next = { ...prev };
-      for (const [id, onboarded] of entries) {
-        if (onboarded) next[id] = true;
-      }
-      return next;
-    });
-  };
-
   const loadApplications = async (status: StatusFilter, pageToLoad: number) => {
     setLoading(true);
     setLoadError('');
@@ -183,7 +144,6 @@ export default function AdminApplicationsPage() {
       setPage(data.page ?? pageToLoad);
       setTotalPages(data.totalPages ?? 1);
       setTotal(data.total ?? data.applications.length);
-      void loadOnboardedState(data.applications);
     } catch (err) {
       setLoadError(err instanceof Error ? err.message : 'Failed to load applications');
     } finally {
@@ -277,28 +237,9 @@ export default function AdminApplicationsPage() {
       const data = await res.json();
       if (!res.ok) { toast.error(data.error || 'Could not onboard the applicant'); return; }
       toast.success(`${data.application.email} is now a teacher — same account, same credentials`);
-      // The teacher portal can now be viewed — show the button at once.
-      setOnboardedIds((prev) => ({ ...prev, [id]: true }));
       if (expandedId === id) loadDetail(id);
     } finally {
       setOnboardingId(null);
-    }
-  };
-
-  /** Admin-assisted view-as (Module 21.4): open the teacher's actual Teacher Portal, view-only. */
-  const handleViewAs = async (teacherId: string) => {
-    setViewingId(teacherId);
-    try {
-      const res = await fetch('/api/admin/view-as', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ teacherId }),
-      });
-      const data = await res.json();
-      if (!res.ok) { toast.error(data.error || 'Could not open the teacher portal'); return; }
-      window.location.href = '/instructor/dashboard';
-    } finally {
-      setViewingId(null);
     }
   };
 
@@ -640,11 +581,6 @@ export default function AdminApplicationsPage() {
                       <Button size="sm" onClick={() => handleOnboard(app.id)} loading={onboardingId === app.id}>
                         <GraduationCap className="w-3.5 h-3.5" />Approve & Onboard as Teacher
                       </Button>
-                      {app.userId && onboardedIds[app.id] && (
-                        <Button size="sm" variant="secondary" onClick={() => handleViewAs(app.userId!)} loading={viewingId === app.userId}>
-                          <Eye className="w-3.5 h-3.5" />Switch to Teacher Portal
-                        </Button>
-                      )}
                     </div>
                   )}
                 </div>

@@ -43,7 +43,8 @@ export async function getSession() {
   // data), marked with `viewAs` so write routes refuse mutations and
   // layouts show the viewing banner. The real (admin) session is
   // untouched — getRealSession() below still returns it — and a
-  // forged/expired/mismatched token simply yields the admin session.
+  // forged/mismatched token (or a legacy token past its expiry)
+  // simply yields the admin session.
   // View-as never opens a student portal: the token is only minted
   // for teachers (see the view-as route/service) and is re-checked
   // here against the teacher flag on every request.
