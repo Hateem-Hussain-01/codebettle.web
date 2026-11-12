@@ -73,6 +73,8 @@ export const courseCreateSchema = z.object({
   requirements: z.array(z.string()).optional(),
   whatYouLearn: z.array(z.string()).optional(),
   tags: z.array(z.string()).optional(),
+  /** Optional full HTML certificate template for this course. Absent = the default Python design. */
+  certificateTemplateHtml: z.string().optional(),
 });
 
 export const courseUpdateSchema = z.object({
@@ -93,6 +95,8 @@ export const courseUpdateSchema = z.object({
   requirements: z.array(z.string()).optional(),
   whatYouLearn: z.array(z.string()).optional(),
   tags: z.array(z.string()).optional(),
+  /** Full HTML certificate template for this course; null clears an attached template. */
+  certificateTemplateHtml: z.string().nullable().optional(),
 });
 
 export const courseStatusSchema = z.object({
@@ -239,6 +243,8 @@ export const certificateCreateSchema = z.object({
   courseId: z.string().min(1),
   enrollmentId: z.string().min(1),
   certificateNumber: z.string().min(1).optional(),
+  /** Cohort batch printed on the certificate (e.g. "BATCH-8"). Optional. */
+  batch: z.string().max(50).optional(),
 });
 
 export const blogCreateSchema = z

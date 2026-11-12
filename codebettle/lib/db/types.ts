@@ -239,6 +239,8 @@ export interface Course {
   reviewCount: number;
   createdAt: string;
   updatedAt: string;
+  /** Full HTML certificate template attached to this course, or null when none is attached (use the default Python design). */
+  certificateTemplateHtml?: string | null;
 }
 
 /**
@@ -273,6 +275,10 @@ export interface Certificate {
   issuedAt: string;
   certificateNumber: string;
   verificationToken: string;
+  /** Cohort batch printed on the certificate (e.g. "BATCH-8"). Null when not recorded. */
+  batch?: string | null;
+  /** Revocation date ('YYYY-MM-DD') when an admin revoked the certificate. Null = valid. */
+  revokedAt?: string | null;
 }
 
 export interface Coupon {
@@ -497,6 +503,7 @@ export type CourseRow = Pick<
   | 'reviewCount'
   | 'createdAt'
   | 'updatedAt'
+  | 'certificateTemplateHtml'
 >;
 
 export type ModuleRow = Pick<Models.public_Module, 'id' | 'courseId' | 'title' | 'position'>;
@@ -527,8 +534,16 @@ export type LessonProgressRow = Pick<
 
 export type CertificateRow = Pick<
   Models.public_Certificate,
-  'id' | 'studentId' | 'courseId' | 'enrollmentId' | 'certificateNumber' | 'verificationToken' | 'issuedAt'
+  'id' | 'studentId' | 'courseId' | 'enrollmentId' | 'certificateNumber' | 'verificationToken' | 'issuedAt' | 'batch' | 'revokedAt'
 >;
+
+/**
+ * A certificate row as read from the DB. batch/revokedAt are optional
+ * here: the legacy select (pre-migration fallback) does not return
+ * them, and the mapper treats a missing value as null.
+ */
+export type CertificateRowLike = Omit<CertificateRow, 'batch' | 'revokedAt'> &
+  Partial<Pick<CertificateRow, 'batch' | 'revokedAt'>>;
 
 export type CouponRow = Pick<
   Models.public_Coupon,

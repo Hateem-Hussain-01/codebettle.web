@@ -1259,6 +1259,13 @@
           },
           "Certificate": {
             "fields": {
+              "batch": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
               "certificateNumber": {
                 "nullable": false,
                 "type": {
@@ -1289,6 +1296,16 @@
               },
               "issuedAt": {
                 "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "precision": 3
+                  }
+                }
+              },
+              "revokedAt": {
+                "nullable": true,
                 "type": {
                   "codecId": "pg/timestamptz-date@1",
                   "kind": "scalar",
@@ -1364,6 +1381,9 @@
             },
             "storage": {
               "fields": {
+                "batch": {
+                  "column": "batch"
+                },
                 "certificateNumber": {
                   "column": "certificateNumber"
                 },
@@ -1378,6 +1398,9 @@
                 },
                 "issuedAt": {
                   "column": "issuedAt"
+                },
+                "revokedAt": {
+                  "column": "revokedAt"
                 },
                 "studentId": {
                   "column": "studentId"
@@ -1731,6 +1754,13 @@
                   "entityName": "CourseCategory",
                   "namespaceId": "public",
                   "plane": "domain"
+                }
+              },
+              "certificateTemplateHtml": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
                 }
               },
               "completedAt": {
@@ -2099,6 +2129,9 @@
               "fields": {
                 "category": {
                   "column": "category"
+                },
+                "certificateTemplateHtml": {
+                  "column": "certificateTemplateHtml"
                 },
                 "completedAt": {
                   "column": "completedAt"
@@ -7540,6 +7573,11 @@
             },
             "Certificate": {
               "columns": {
+                "batch": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": true
+                },
                 "certificateNumber": {
                   "codecId": "pg/text@1",
                   "dataType": "pg/text",
@@ -7568,6 +7606,14 @@
                     "kind": "function"
                   },
                   "nullable": false,
+                  "typeParams": {
+                    "precision": 3
+                  }
+                },
+                "revokedAt": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "dataType": "pg/timestamptz",
+                  "nullable": true,
                   "typeParams": {
                     "precision": 3
                   }
@@ -7996,6 +8042,11 @@
                     "namespaceId": "public",
                     "plane": "storage"
                   }
+                },
+                "certificateTemplateHtml": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": true
                 },
                 "completedAt": {
                   "codecId": "pg/timestamptz-date@1",
@@ -12089,7 +12140,7 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "010b9bc72427f1b2d35d978cf7efa835570f71df252aca6e8027a8d6c18df023"
+    "storageHash": "ad006496b129389a93658010687e2868f5e6e2b87c15bd94c1e830fa0cfbee23"
   },
   "execution": {
     "executionHash": "67b5ac48cddfa323043b0f23a573a25fa0a3d5b31c32799505176ecb8d2a1a8e",

@@ -44,6 +44,10 @@ export default function NewCourseClient({ instructors: allInstructors }: NewCour
     instructorId: instructors[0]?.id || '',
     zoomLink: '', thumbnail: '',
     requirements: [''], whatYouLearn: [''],
+    // Optional certificate HTML template for this course (Phase 2).
+    // Empty = the course uses the default Python certificate design;
+    // a template can be attached later from the course page.
+    certificateTemplateHtml: '',
   });
 
   const [schedule, setSchedule] = useState({
@@ -135,6 +139,11 @@ export default function NewCourseClient({ instructors: allInstructors }: NewCour
             : {}),
           requirements: form.requirements.filter(Boolean),
           whatYouLearn: form.whatYouLearn.filter(Boolean),
+          // Optional: attach a per-course certificate HTML template now,
+          // or leave it empty (default Python design) and attach it later.
+          ...(form.certificateTemplateHtml.trim()
+            ? { certificateTemplateHtml: form.certificateTemplateHtml }
+            : {}),
         }),
       });
       const data = await res.json();
@@ -187,6 +196,24 @@ export default function NewCourseClient({ instructors: allInstructors }: NewCour
   };
 
   const activeDays = getActiveDays();
+
+  // Certificate template placeholders a per-course HTML template is
+  // expected to carry (same list as CERTIFICATE_PLACEHOLDERS in
+  // lib/certificates/template.ts — duplicated here so this client
+  // component does not pull the server QR/PDF modules into the browser
+  // bundle). Missing ones only warn; they never block saving.
+  const CERTIFICATE_PLACEHOLDERS = ['{{STUDENT_NAME}}', '{{COURSE_NAME}}', '{{COURSE_ICON}}', '{{BATCH}}', '{{CERTIFICATE_NUMBER}}', '{{SIGNATURE_NAME}}', '{{SIGNATURE_TITLE}}', '{{QR_CODE}}'];
+  const missingTemplatePlaceholders = form.certificateTemplateHtml.trim()
+    ? CERTIFICATE_PLACEHOLDERS.filter(p => !form.certificateTemplateHtml.includes(p))
+    : [];
+
+  const onTemplateFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const text = await file.text();
+    setForm(f => ({ ...f, certificateTemplateHtml: text }));
+    e.target.value = '';
+  };
 
   return (
     <div className="space-y-6 max-w-4xl">
@@ -344,6 +371,40 @@ export default function NewCourseClient({ instructors: allInstructors }: NewCour
             ))}
             <button onClick={() => setForm(f => ({ ...f, whatYouLearn: [...f.whatYouLearn, ''] }))} className="text-primary-text text-xs hover:underline cursor-pointer">+ Add</button>
           </div>
+        </div>
+      </Card>
+      </FadeIn>
+
+      {/* Certificate Template — optional */}
+      <FadeIn delay={0.22}>
+      <Card>
+        <h2 className="text-foreground font-bold mb-1">Certificate Template <span className="text-muted text-sm font-normal">(Optional)</span></h2>
+        <p className="text-muted text-xs mb-4">This course&apos;s own certificate design (full HTML). Leave empty to use the default CodeBettle certificate — you can attach a template later from the course page.</p>
+        <div className="space-y-3">
+          <Textarea
+            label="Certificate HTML"
+            placeholder="Paste the full certificate HTML template here…"
+            value={form.certificateTemplateHtml}
+            onChange={set('certificateTemplateHtml')}
+            rows={6}
+          />
+          <div>
+            <label className="text-sm font-medium text-foreground/80 block mb-2">Or upload a .html file</label>
+            <input
+              type="file"
+              accept=".html,text/html"
+              onChange={onTemplateFile}
+              className="text-sm text-muted file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border file:border-dark-border file:bg-dark-border/30 file:text-foreground file:text-xs file:cursor-pointer cursor-pointer"
+            />
+          </div>
+          {form.certificateTemplateHtml.trim() && (
+            <p className="text-xs text-muted">
+              {form.certificateTemplateHtml.length.toLocaleString()} characters.
+              {missingTemplatePlaceholders.length > 0 && (
+                <span className="text-amber-400"> Missing placeholders (the PDF will leave those parts blank): {missingTemplatePlaceholders.join(', ')}</span>
+              )}
+            </p>
+          )}
         </div>
       </Card>
       </FadeIn>

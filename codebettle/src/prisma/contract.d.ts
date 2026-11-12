@@ -23,7 +23,7 @@ import type {
 } from '@prisma/orm-postgres/contract/types';
 
 export type StorageHash =
-  StorageHashBase<'010b9bc72427f1b2d35d978cf7efa835570f71df252aca6e8027a8d6c18df023'>;
+  StorageHashBase<'ad006496b129389a93658010687e2868f5e6e2b87c15bd94c1e830fa0cfbee23'>;
 export type ExecutionHash =
   ExecutionHashBase<'67b5ac48cddfa323043b0f23a573a25fa0a3d5b31c32799505176ecb8d2a1a8e'>;
 export type ProfileHash =
@@ -623,11 +623,13 @@ export namespace Models {
     readonly [RelationKeys]?: 'author';
   };
   export type public_Certificate = {
+    batch: FieldOutputTypes['public']['Certificate']['batch'];
     certificateNumber: FieldOutputTypes['public']['Certificate']['certificateNumber'];
     courseId: FieldOutputTypes['public']['Certificate']['courseId'];
     enrollmentId: FieldOutputTypes['public']['Certificate']['enrollmentId'];
     id: FieldOutputTypes['public']['Certificate']['id'];
     issuedAt: FieldOutputTypes['public']['Certificate']['issuedAt'];
+    revokedAt: FieldOutputTypes['public']['Certificate']['revokedAt'];
     studentId: FieldOutputTypes['public']['Certificate']['studentId'];
     verificationToken: FieldOutputTypes['public']['Certificate']['verificationToken'];
     course: public_Course;
@@ -671,6 +673,7 @@ export namespace Models {
   };
   export type public_Course = {
     category: FieldOutputTypes['public']['Course']['category'];
+    certificateTemplateHtml: FieldOutputTypes['public']['Course']['certificateTemplateHtml'];
     completedAt: FieldOutputTypes['public']['Course']['completedAt'];
     createdAt: FieldOutputTypes['public']['Course']['createdAt'];
     deletedAt: FieldOutputTypes['public']['Course']['deletedAt'];
@@ -1840,6 +1843,12 @@ type ContractBase = Omit<
             };
             readonly Certificate: {
               columns: {
+                readonly batch: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
                 readonly certificateNumber: {
                   readonly dataType: 'pg/text';
                   readonly codecId: 'pg/text@1';
@@ -1869,6 +1878,13 @@ type ContractBase = Omit<
                   readonly codecId: 'pg/timestamptz-date@1';
                   readonly nullable: false;
                   readonly default: { readonly kind: 'function'; readonly expression: 'now()' };
+                  readonly typeParams: { readonly precision: 3 };
+                  readonly many: false;
+                };
+                readonly revokedAt: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly nullable: true;
                   readonly typeParams: { readonly precision: 3 };
                   readonly many: false;
                 };
@@ -2157,6 +2173,12 @@ type ContractBase = Omit<
                   readonly dataType: 'pg/text';
                   readonly codecId: 'pg/text@1';
                   readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly certificateTemplateHtml: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
                   readonly many: false;
                 };
                 readonly completedAt: {
@@ -6028,6 +6050,10 @@ type ContractBase = Omit<
           };
           readonly Certificate: {
             readonly fields: {
+              readonly batch: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
               readonly certificateNumber: {
                 readonly nullable: false;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
@@ -6046,6 +6072,14 @@ type ContractBase = Omit<
               };
               readonly issuedAt: {
                 readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly typeParams: { readonly precision: 3 };
+                };
+              };
+              readonly revokedAt: {
+                readonly nullable: true;
                 readonly type: {
                   readonly kind: 'scalar';
                   readonly codecId: 'pg/timestamptz-date@1';
@@ -6100,11 +6134,13 @@ type ContractBase = Omit<
               readonly table: 'Certificate';
               readonly namespaceId: 'public';
               readonly fields: {
+                readonly batch: { readonly column: 'batch' };
                 readonly certificateNumber: { readonly column: 'certificateNumber' };
                 readonly courseId: { readonly column: 'courseId' };
                 readonly enrollmentId: { readonly column: 'enrollmentId' };
                 readonly id: { readonly column: 'id' };
                 readonly issuedAt: { readonly column: 'issuedAt' };
+                readonly revokedAt: { readonly column: 'revokedAt' };
                 readonly studentId: { readonly column: 'studentId' };
                 readonly verificationToken: { readonly column: 'verificationToken' };
               };
@@ -6317,6 +6353,10 @@ type ContractBase = Omit<
             readonly fields: {
               readonly category: {
                 readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly certificateTemplateHtml: {
+                readonly nullable: true;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
               };
               readonly completedAt: {
@@ -6548,6 +6588,7 @@ type ContractBase = Omit<
               readonly namespaceId: 'public';
               readonly fields: {
                 readonly category: { readonly column: 'category' };
+                readonly certificateTemplateHtml: { readonly column: 'certificateTemplateHtml' };
                 readonly completedAt: { readonly column: 'completedAt' };
                 readonly createdAt: { readonly column: 'createdAt' };
                 readonly deletedAt: { readonly column: 'deletedAt' };

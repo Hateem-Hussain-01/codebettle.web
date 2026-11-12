@@ -18,6 +18,7 @@ import type {
   BlogPostRow,
   Certificate,
   CertificateRow,
+  CertificateRowLike,
   ContactMessage,
   ContactMessageRow,
   Coupon,
@@ -331,6 +332,8 @@ export function mapCourseRow(
     enrolledCount: row.enrolledCount,
     rating: row.rating,
     reviewCount: row.reviewCount,
+    // Defensive: rows read before the Phase 2 migration ran carry no template column.
+    certificateTemplateHtml: (row as Partial<CourseRow>).certificateTemplateHtml ?? null,
     createdAt: dateToString(row.createdAt),
     updatedAt: dateToString(row.updatedAt),
   };
@@ -354,7 +357,11 @@ export function mapEnrollmentRow(row: EnrollmentRow, progress: LessonProgressRow
   };
 }
 
-export function mapCertificateRow(row: CertificateRow): Certificate {
+export function mapCertificateRow(row: CertificateRowLike): Certificate {
+  // batch / revokedAt are read defensively: rows seeded in tests (and
+  // rows read before the Phase 2 migration ran) may not carry them.
+  const batch = row.batch ?? null;
+  const revokedAt = row.revokedAt;
   return {
     id: row.id,
     studentId: row.studentId,
@@ -363,6 +370,8 @@ export function mapCertificateRow(row: CertificateRow): Certificate {
     issuedAt: dateToString(row.issuedAt),
     certificateNumber: row.certificateNumber,
     verificationToken: row.verificationToken,
+    batch,
+    revokedAt: revokedAt ? dateToString(revokedAt) : null,
   };
 }
 

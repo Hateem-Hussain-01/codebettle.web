@@ -7,8 +7,8 @@ import StudentCertificatesClient from './student-certificates-client';
 /**
  * Student certificates — server wrapper (Phase 2).
  * Fetches the logged-in student's certificates and the matching courses
- * on the server and passes them to the client component. The download
- * (generating an HTML certificate in the browser) is unchanged.
+ * on the server and passes them to the client component. Downloading
+ * fetches the on-demand PDF from /api/certificates/[id]/download.
  */
 export default async function StudentCertificatesPage() {
   const session = await getSession();

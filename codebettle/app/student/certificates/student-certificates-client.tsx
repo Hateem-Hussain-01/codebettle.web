@@ -1,5 +1,5 @@
 'use client';
-import { useState, useRef } from 'react';
+import { useState } from 'react';
 import { Award, Download } from 'lucide-react';
 import Button from '@/components/ui/Button';
 import Card from '@/components/ui/Card';
@@ -16,29 +16,32 @@ interface StudentCertificatesClientProps {
 
 export default function StudentCertificatesClient({ certificates, coursesById, studentName }: StudentCertificatesClientProps) {
   const items = certificates.map(c => ({ cert: c, course: coursesById[c.courseId] })).filter(i => i.course);
+  const [downloadingId, setDownloadingId] = useState<string | null>(null);
 
-  const handleDownload = (certNumber: string, courseName: string, studentName: string, issuedDate: string) => {
-    const html = `<!DOCTYPE html>
-<html>
-<head><meta charset="UTF-8"><title>Certificate</title>
-<style>body{margin:0;background:#111;font-family:Arial,sans-serif}.cert{width:900px;height:620px;margin:auto;background:linear-gradient(135deg,#1C1C1C 0%,#111 100%);border:3px solid #F5C518;border-radius:16px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:40px;box-sizing:border-box}.logo{color:#F5C518;font-size:28px;font-weight:900;margin-bottom:20px}.title{color:#F5C518;font-size:16px;letter-spacing:4px;text-transform:uppercase;margin-bottom:30px}.name{color:#fff;font-size:44px;font-weight:900;margin-bottom:20px}.course{color:#999;font-size:14px;margin-bottom:8px}.course-name{color:#fff;font-size:22px;font-weight:700;margin-bottom:30px}.meta{color:#666;font-size:12px;margin-top:20px;border-top:1px solid #2A2A2A;padding-top:15px;width:100%}.cert-no{color:#F5C518;font-size:11px}</style>
-</head>
-<body><div class="cert">
-<div class="logo">🐛 CodeBettle</div>
-<div class="title">Certificate of Completion</div>
-<p style="color:#999;font-size:14px;margin-bottom:10px">This is to certify that</p>
-<div class="name">${studentName}</div>
-<div class="course">has successfully completed</div>
-<div class="course-name">${courseName}</div>
-<p style="color:#999;font-size:13px">Issued on ${issuedDate}</p>
-<div class="meta"><div class="cert-no">Certificate No: ${certNumber}</div></div>
-</div></body></html>`;
-    const blob = new Blob([html], { type: 'text/html' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url; a.download = `CodeBettle-Certificate-${certNumber}.html`;
-    a.click(); URL.revokeObjectURL(url);
-    toast.success('Certificate downloaded!');
+  // Download the real certificate PDF (generated on demand by the
+  // server from the course's HTML template — never stored, never HTML).
+  const handleDownload = async (cert: Certificate) => {
+    setDownloadingId(cert.id);
+    try {
+      const res = await fetch(`/api/certificates/${cert.id}/download`);
+      if (!res.ok) {
+        const data = await res.json().catch(() => null);
+        toast.error((data as { error?: string } | null)?.error || 'Could not download the certificate');
+        return;
+      }
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `CodeBettle-Certificate-${cert.certificateNumber}.pdf`;
+      a.click();
+      URL.revokeObjectURL(url);
+      toast.success('Certificate downloaded!');
+    } catch {
+      toast.error('Could not download the certificate');
+    } finally {
+      setDownloadingId(null);
+    }
   };
 
   return (
@@ -72,7 +75,8 @@ export default function StudentCertificatesClient({ certificates, coursesById, s
                 fullWidth
                 size="sm"
                 variant="outline"
-                onClick={() => handleDownload(cert.certificateNumber, course!.title, studentName, formatDate(cert.issuedAt))}
+                loading={downloadingId === cert.id}
+                onClick={() => handleDownload(cert)}
               >
                 <Download className="w-3.5 h-3.5" /> Download
               </Button>

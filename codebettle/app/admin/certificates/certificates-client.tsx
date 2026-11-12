@@ -34,8 +34,10 @@ export default function CertificatesClient({ students, courses, eligibleEnrollme
   const [loadError, setLoadError] = useState('');
   const [isIssueOpen, setIsIssueOpen] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [revokingId, setRevokingId] = useState<string | null>(null);
+  const [confirmRevokeId, setConfirmRevokeId] = useState<string | null>(null);
   const [eligibleEnrollments, setEligibleEnrollments] = useState(initialEligible);
-  const [issueForm, setIssueForm] = useState({ studentId: '', courseId: '', enrollmentId: '', certificateNumber: '' });
+  const [issueForm, setIssueForm] = useState({ studentId: '', courseId: '', enrollmentId: '', certificateNumber: '', batch: '' });
 
   const studentMap = useMemo(() => Object.fromEntries(students.map(s => [s.id, s])), [students]);
   const courseMap = useMemo(() => Object.fromEntries(courses.map(c => [c.id, c])), [courses]);
@@ -87,6 +89,7 @@ export default function CertificatesClient({ students, courses, eligibleEnrollme
           courseId: issueForm.courseId,
           enrollmentId: issueForm.enrollmentId,
           certificateNumber: issueForm.certificateNumber.trim() || undefined,
+          batch: issueForm.batch.trim() || undefined,
         }),
       });
       const data = await res.json();
@@ -95,10 +98,28 @@ export default function CertificatesClient({ students, courses, eligibleEnrollme
       setEligibleEnrollments(es => es.filter(e => e.id !== issueForm.enrollmentId));
       setTotal(t => t + 1);
       setIsIssueOpen(false);
-      setIssueForm({ studentId: '', courseId: '', enrollmentId: '', certificateNumber: '' });
+      setIssueForm({ studentId: '', courseId: '', enrollmentId: '', certificateNumber: '', batch: '' });
       toast.success(`Certificate issued: ${(data.certificate as Certificate).certificateNumber}`);
     } finally {
       setSaving(false);
+    }
+  };
+
+  // Revoke (Phase 2): two-step confirm — the first click arms the
+  // button, the second calls POST /api/admin/certificates/[id]/revoke.
+  // Revoking is permanent (no un-revoke); the verify page then shows
+  // the certificate as revoked/invalid.
+  const revokeCertificate = async (id: string) => {
+    setRevokingId(id);
+    try {
+      const res = await fetch(`/api/admin/certificates/${id}/revoke`, { method: 'POST' });
+      const data = await res.json();
+      if (!res.ok) { toast.error(data.error || 'Could not revoke certificate'); return; }
+      setCertificates(cs => cs.map(c => (c.id === id ? (data.certificate as Certificate) : c)));
+      setConfirmRevokeId(null);
+      toast.success(`Certificate revoked: ${(data.certificate as Certificate).certificateNumber}`);
+    } finally {
+      setRevokingId(null);
     }
   };
 
@@ -126,14 +147,14 @@ export default function CertificatesClient({ students, courses, eligibleEnrollme
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-dark-border bg-dark-border/20">
-                    {['Certificate No', 'Student', 'Course', 'Issued Date', 'Status'].map(h => (
+                    {['Certificate No', 'Student', 'Course', 'Issued Date', 'Status', 'Actions'].map(h => (
                       <th key={h} className="text-left text-muted text-xs py-3 px-4 font-medium">{h}</th>
                     ))}
                   </tr>
                 </thead>
                 <tbody>
                   {certificates.length === 0 && (
-                    <tr><td colSpan={5} className="py-8 px-4 text-center text-muted text-sm">No certificates issued yet.</td></tr>
+                    <tr><td colSpan={6} className="py-8 px-4 text-center text-muted text-sm">No certificates issued yet.</td></tr>
                   )}
                   {certificates.map(cert => {
                     const student = studentMap[cert.studentId];
@@ -154,7 +175,25 @@ export default function CertificatesClient({ students, courses, eligibleEnrollme
                         </td>
                         <td className="py-3 px-4 text-muted text-xs max-w-[160px] truncate">{course?.title}</td>
                         <td className="py-3 px-4 text-muted text-xs">{formatDate(cert.issuedAt)}</td>
-                        <td className="py-3 px-4"><Badge variant="success">Valid</Badge></td>
+                        <td className="py-3 px-4">
+                          {cert.revokedAt ? (
+                            <Badge variant="warning">Revoked{cert.revokedAt ? ` ${formatDate(cert.revokedAt)}` : ''}</Badge>
+                          ) : (
+                            <Badge variant="success">Valid</Badge>
+                          )}
+                        </td>
+                        <td className="py-3 px-4">
+                          {cert.revokedAt ? (
+                            <span className="text-muted text-xs">—</span>
+                          ) : confirmRevokeId === cert.id ? (
+                            <span className="flex items-center gap-2">
+                              <Button size="sm" variant="danger" loading={revokingId === cert.id} onClick={() => revokeCertificate(cert.id)}>Confirm revoke</Button>
+                              <Button size="sm" variant="secondary" onClick={() => setConfirmRevokeId(null)}>Cancel</Button>
+                            </span>
+                          ) : (
+                            <Button size="sm" variant="secondary" onClick={() => setConfirmRevokeId(cert.id)}>Revoke</Button>
+                          )}
+                        </td>
                       </tr>
                     );
                   })}
@@ -185,7 +224,7 @@ export default function CertificatesClient({ students, courses, eligibleEnrollme
           <Select
             label="Student *"
             value={issueForm.studentId}
-            onChange={e => setIssueForm({ studentId: e.target.value, courseId: '', enrollmentId: '', certificateNumber: issueForm.certificateNumber })}
+            onChange={e => setIssueForm({ studentId: e.target.value, courseId: '', enrollmentId: '', certificateNumber: issueForm.certificateNumber, batch: '' })}
             options={[
               { value: '', label: 'Select a student' },
               ...[...new Set(eligibleEnrollments.map(e => e.studentId))].map(id => ({
@@ -220,6 +259,12 @@ export default function CertificatesClient({ students, courses, eligibleEnrollme
             placeholder="Leave blank to auto-generate"
             value={issueForm.certificateNumber}
             onChange={e => setIssueForm(f => ({ ...f, certificateNumber: e.target.value }))}
+          />
+          <Input
+            label="Batch (optional)"
+            placeholder="e.g. BATCH-8 — leave blank for the course default"
+            value={issueForm.batch}
+            onChange={e => setIssueForm(f => ({ ...f, batch: e.target.value }))}
           />
           <p className="text-muted text-xs">Only completed enrollments without a certificate are listed. The number is auto-generated as CB-&lt;year&gt;-&lt;seq&gt; when left blank.</p>
           <div className="flex gap-3">

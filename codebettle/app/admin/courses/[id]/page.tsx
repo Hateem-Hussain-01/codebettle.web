@@ -17,6 +17,7 @@ import Button from '@/components/ui/Button';
 import CourseCurriculumClient from './course-curriculum-client';
 import CourseInstructorClient from './course-instructor-client';
 import CourseThumbnailClient from './course-thumbnail-client';
+import CourseCertificateTemplateClient from './course-certificate-template-client';
 
 const DAYS = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
 
@@ -68,6 +69,10 @@ export default async function AdminCourseDetailPage({ params }: { params: Promis
       {/* Thumbnail (Phase 4, Module 2 — admin-managed; upload replaces the
           current thumbnail everywhere it renders). */}
       <CourseThumbnailClient courseId={course.id} thumbnail={course.thumbnail} />
+
+      {/* Certificate template (Phase 2 — per-course HTML template;
+          without one the course uses the default design). */}
+      <CourseCertificateTemplateClient courseId={course.id} initialTemplate={course.certificateTemplateHtml ?? null} />
 
       {/* Instructor info + assign control (always shown, even if the
           current instructor record is missing — the assign control is
