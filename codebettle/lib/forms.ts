@@ -15,10 +15,10 @@
  * `schema.submitButtonText` / `schema.successMessage` from the stored
  * schema — so the settings round-trip to the public form.
  *
- * Wire values are LOWERCASE (verified against Worker A's zod schemas
- * and lib/db/types.ts): type 'registration' | 'survey', status
- * 'draft' | 'published'. Display labels come from formTypeLabel /
- * formStatusLabel below.
+ * Wire values are LOWERCASE for status ('draft' | 'published');
+ * `type` is the form's free-text purpose (any non-empty string up
+ * to 50 chars — 'registration', 'survey', 'Feedback', ...).
+ * Display labels come from formTypeLabel / formStatusLabel below.
  */
 
 export type FormFieldType =
@@ -60,12 +60,21 @@ export interface FormSchema {
   successMessage?: string;
 }
 
-export type FormType = 'registration' | 'survey';
+/**
+ * A form's purpose — free text, any non-empty string up to 50 chars.
+ * The alias is kept so existing imports don't churn.
+ */
+export type FormType = string;
 export type FormStatus = 'draft' | 'published';
 
-/** Display labels for the lowercase wire values Worker A's API uses. */
+/**
+ * Display label for a form purpose: the raw string with its first
+ * letter title-cased ('registration' -> 'Registration',
+ * 'job application' -> 'Job application').
+ */
 export function formTypeLabel(type: FormType): string {
-  return type === 'registration' ? 'Registration' : 'Survey';
+  if (!type) return '';
+  return type.charAt(0).toUpperCase() + type.slice(1);
 }
 
 export function formStatusLabel(status: FormStatus): string {

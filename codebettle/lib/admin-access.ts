@@ -85,11 +85,11 @@ export const ADMIN_AREAS: readonly AdminArea[] = [
   { key: 'reports', label: 'Reports', href: '/admin/reports', description: 'Reports and exports' },
   { key: 'certificates', label: 'Certificates', href: '/admin/certificates', description: 'Issued certificates' },
   { key: 'applications', label: 'Applications', href: '/admin/applications', description: 'Instructor applications' },
-  // Phase 6: registration and survey forms builder. A NEW area (not
+  // Phase 6: forms builder (forms for any purpose). A NEW area (not
   // folded into 'content') because form submissions are user data
   // with their own review workflow. Restricted admins do NOT get it
   // by default (secure default: missing keys are denied).
-  { key: 'forms', label: 'Forms', href: '/admin/forms', description: 'Registration and survey forms builder' },
+  { key: 'forms', label: 'Forms', href: '/admin/forms', description: 'Forms builder (any purpose)' },
   { key: 'settings', label: 'Settings', href: '/admin/settings', description: 'Site settings' },
 ] as const;
 

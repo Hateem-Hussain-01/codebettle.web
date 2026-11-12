@@ -36,7 +36,7 @@ import type {
   FormType,
   PublicForm,
 } from '../db/types';
-import { FORM_STATUSES, FORM_TYPES } from '../db/types';
+import { FORM_STATUSES } from '../db/types';
 import type { Page } from '../db/pagination';
 
 type Result<T> = T | ServiceError;
@@ -65,8 +65,15 @@ export async function ensureUniqueSlug(base: string, excludeId?: string): Promis
   }
 }
 
-function isFormType(value: unknown): value is FormType {
-  return typeof value === 'string' && (FORM_TYPES as readonly string[]).includes(value);
+/** A form's purpose: any non-empty string up to 50 chars. */
+export const MAX_FORM_TYPE_LENGTH = 50;
+
+function isValidFormType(value: unknown): value is FormType {
+  return (
+    typeof value === 'string' &&
+    value.trim().length > 0 &&
+    value.trim().length <= MAX_FORM_TYPE_LENGTH
+  );
 }
 
 function isFormStatus(value: unknown): value is FormStatus {
@@ -97,8 +104,8 @@ export async function createFormService(
   if (denied) return denied;
   const name = input.name?.trim();
   if (!name) return badRequest('Name is required');
-  if (!isFormType(input.type)) {
-    return badRequest("Type must be 'registration' or 'survey'");
+  if (!isValidFormType(input.type)) {
+    return badRequest('Type must be a non-empty purpose of at most 50 characters');
   }
   if (input.status !== undefined && !isFormStatus(input.status)) {
     return badRequest("Status must be 'draft' or 'published'");
@@ -126,7 +133,7 @@ export async function createFormService(
   const form = await createFormDefinition({
     name,
     slug,
-    type: input.type,
+    type: input.type.trim(),
     description: input.description?.trim() || undefined,
     schema: input.schema as FormSchema,
     status: input.status ?? 'draft',
@@ -179,8 +186,8 @@ export async function updateFormService(
   const existing = await getFormDefinitionById(id);
   if (!existing) return notFound('Form');
   if (input.name !== undefined && !input.name.trim()) return badRequest('Name is required');
-  if (input.type !== undefined && !isFormType(input.type)) {
-    return badRequest("Type must be 'registration' or 'survey'");
+  if (input.type !== undefined && !isValidFormType(input.type)) {
+    return badRequest('Type must be a non-empty purpose of at most 50 characters');
   }
   if (input.status !== undefined && !isFormStatus(input.status)) {
     return badRequest("Status must be 'draft' or 'published'");
@@ -218,7 +225,7 @@ export async function updateFormService(
   const form = await updateFormDefinition(id, {
     name: input.name?.trim(),
     slug,
-    type: input.type,
+    type: input.type?.trim(),
     description: input.description === null ? null : input.description?.trim() || undefined,
     schema: input.schema as FormSchema | undefined,
     status: input.status,
@@ -359,11 +366,14 @@ function formatSubmissionValue(value: unknown): string {
  * submission (all submissions, not just the current page). Columns:
  * Submission ID, Submitted At, Reviewed, Submitter ID, then one
  * column per schema field (in field order, labelled by field label).
+ * `opts.reviewed` limits the export to reviewed (true) or
+ * unreviewed (false) submissions only; omitted = all.
  */
 export async function exportFormSubmissionsCsvService(
   actor: Actor,
   formId: string,
-): Promise<Result<{ csv: string; filename: string }>> {
+  opts?: { reviewed?: boolean },
+): Promise<Result<{ csv: string; filename: string; count: number }>> {
   const denied = adminOnly(actor);
   if (denied) return denied;
   const form = await getFormDefinitionById(formId);
@@ -372,7 +382,11 @@ export async function exportFormSubmissionsCsvService(
   const all: FormSubmission[] = [];
   let page = 1;
   for (;;) {
-    const chunk = await listFormSubmissions(formId, { page: String(page), limit: '100' });
+    const chunk = await listFormSubmissions(formId, {
+      page: String(page),
+      limit: '100',
+      reviewed: opts?.reviewed,
+    });
     all.push(...chunk.items);
     if (!chunk.hasNext) break;
     page += 1;
@@ -394,5 +408,6 @@ export async function exportFormSubmissionsCsvService(
   return {
     csv: toCsv([header, ...rows]),
     filename: `form-${form.slug}-submissions.csv`,
+    count: all.length,
   };
 }

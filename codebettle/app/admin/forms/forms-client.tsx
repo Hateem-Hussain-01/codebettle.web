@@ -14,7 +14,7 @@ import FadeIn from '@/components/ui/FadeIn';
 import Select from '@/components/ui/Select';
 import Spinner from '@/components/ui/Spinner';
 import { formatDateShort } from '@/lib/utils';
-import { submissionCountOf, formStatusLabel, formTypeLabel, type AdminFormListItem, type FormStatus, type FormType } from '@/lib/forms';
+import { submissionCountOf, formStatusLabel, formTypeLabel, type AdminFormListItem, type FormStatus } from '@/lib/forms';
 import toast from 'react-hot-toast';
 
 /**
@@ -22,18 +22,21 @@ import toast from 'react-hot-toast';
  * Every control calls a real API (Worker A's /api/admin/forms):
  * list, create (POST, new forms start as drafts with an empty
  * schema), publish/unpublish toggle (PATCH status), delete (DELETE
- * with confirmation). Clicking a row opens the 3-pane builder.
+ * with confirmation). Clicking a row opens the 3-pane builder;
+ * clicking a form's name (or its submissions count) opens its
+ * submissions instead.
  */
 export default function FormsClient() {
   const router = useRouter();
   const [forms, setForms] = useState<AdminFormListItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
-  const [typeFilter, setTypeFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [createName, setCreateName] = useState('');
-  const [createType, setCreateType] = useState<FormType>('registration');
+  // Purpose is free text — prefilled 'General', the admin can
+  // overwrite it with anything (Registration, Feedback, …).
+  const [createType, setCreateType] = useState('General');
   const [createDescription, setCreateDescription] = useState('');
   const [creating, setCreating] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<AdminFormListItem | null>(null);
@@ -66,18 +69,17 @@ export default function FormsClient() {
   }, [loadForms]);
 
   const visibleForms = useMemo(
-    () =>
-      forms.filter(
-        (f) =>
-          (!typeFilter || f.type === typeFilter) &&
-          (!statusFilter || f.status === statusFilter),
-      ),
-    [forms, typeFilter, statusFilter],
+    () => forms.filter((f) => !statusFilter || f.status === statusFilter),
+    [forms, statusFilter],
   );
 
   const createForm = async () => {
     if (!createName.trim()) {
       toast.error('Form name required');
+      return;
+    }
+    if (!createType.trim() || createType.trim().length > 50) {
+      toast.error('Purpose is required (max 50 characters)');
       return;
     }
     setCreating(true);
@@ -87,7 +89,7 @@ export default function FormsClient() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           name: createName.trim(),
-          type: createType,
+          type: createType.trim(),
           description: createDescription.trim() || undefined,
           // The API requires a schema key; new forms start as drafts
           // with an empty field list (per the brief).
@@ -104,7 +106,7 @@ export default function FormsClient() {
       setIsCreateOpen(false);
       setCreateName('');
       setCreateDescription('');
-      setCreateType('registration');
+      setCreateType('General');
       router.push(`/admin/forms/${created.id}/builder`);
     } catch {
       toast.error('Could not create the form — check your connection and try again');
@@ -163,7 +165,7 @@ export default function FormsClient() {
         <div>
           <h1 className="text-2xl font-black text-foreground">Forms</h1>
           <p className="text-muted text-sm mt-1">
-            Registration and survey forms ({forms.length} total)
+            Forms for any purpose ({forms.length} total)
           </p>
         </div>
         <Button onClick={() => setIsCreateOpen(true)}>
@@ -172,18 +174,6 @@ export default function FormsClient() {
       </FadeIn>
 
       <FadeIn delay={0.05} className="flex flex-col sm:flex-row gap-3">
-        <div className="sm:w-52">
-          <Select
-            label="Type"
-            options={[
-              { value: '', label: 'All types' },
-              { value: 'registration', label: 'Registration' },
-              { value: 'survey', label: 'Survey' },
-            ]}
-            value={typeFilter}
-            onChange={(e) => setTypeFilter(e.target.value)}
-          />
-        </div>
         <div className="sm:w-52">
           <Select
             label="Status"
@@ -224,8 +214,8 @@ export default function FormsClient() {
           </p>
           <p className="text-muted text-sm mt-1">
             {forms.length === 0
-              ? 'Create your first registration or survey form to start collecting responses.'
-              : 'Try clearing the type or status filter.'}
+              ? 'Create your first form for any purpose — registration, feedback, job applications and more.'
+              : 'Try clearing the status filter.'}
           </p>
           {forms.length === 0 && (
             <div className="mt-4 flex justify-center">
@@ -254,18 +244,40 @@ export default function FormsClient() {
                     onClick={() => router.push(`/admin/forms/${form.id}/builder`)}
                   >
                     <td className="py-3 px-4">
-                      <p className="text-foreground text-sm font-medium">{form.name}</p>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          router.push(`/admin/forms/${form.id}/submissions`);
+                        }}
+                        title="View submissions"
+                        className="text-foreground text-sm font-medium hover:text-primary-text hover:underline text-left cursor-pointer"
+                      >
+                        {form.name}
+                      </button>
                       <p className="text-muted text-xs mt-0.5 truncate max-w-[280px]">
                         /{form.slug}{form.description ? ` · ${form.description}` : ''}
                       </p>
                     </td>
                     <td className="py-3 px-4">
-                      <Badge variant={form.type === 'registration' ? 'primary' : 'info'}>{formTypeLabel(form.type)}</Badge>
+                      <Badge variant="info">{formTypeLabel(form.type)}</Badge>
                     </td>
                     <td className="py-3 px-4">
                       <Badge variant={form.status === 'published' ? 'success' : 'muted'}>{formStatusLabel(form.status)}</Badge>
                     </td>
-                    <td className="py-3 px-4 text-muted text-xs">{submissionCountOf(form)}</td>
+                    <td className="py-3 px-4">
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          router.push(`/admin/forms/${form.id}/submissions`);
+                        }}
+                        title="View submissions"
+                        className="text-muted text-xs hover:text-primary-text hover:underline cursor-pointer"
+                      >
+                        {submissionCountOf(form)}
+                      </button>
+                    </td>
                     <td className="py-3 px-4 text-muted text-xs">{formatDateShort(form.createdAt)}</td>
                     <td className="py-3 px-4" onClick={(e) => e.stopPropagation()}>
                       <div className="flex items-center gap-1">
@@ -318,14 +330,12 @@ export default function FormsClient() {
             value={createName}
             onChange={(e) => setCreateName(e.target.value)}
           />
-          <Select
-            label="Type"
-            options={[
-              { value: 'registration', label: 'Registration' },
-              { value: 'survey', label: 'Survey' },
-            ]}
+          <Input
+            label="Purpose"
+            placeholder="Registration, Feedback, Job Application…"
             value={createType}
-            onChange={(e) => setCreateType(e.target.value as FormType)}
+            onChange={(e) => setCreateType(e.target.value)}
+            maxLength={50}
           />
           <Textarea
             label="Description (optional)"

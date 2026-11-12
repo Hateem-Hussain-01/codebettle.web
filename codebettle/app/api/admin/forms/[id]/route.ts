@@ -17,7 +17,7 @@ import { deleteFormService, getFormService, updateFormService } from '@/lib/serv
 const patchSchema = z.object({
   name: z.string().trim().min(1, 'Name is required').max(200).optional(),
   slug: z.string().trim().max(200).optional(),
-  type: z.enum(['registration', 'survey']).optional(),
+  type: z.string().trim().min(1, 'Purpose is required').max(50).optional(),
   description: z.string().max(2000).nullable().optional(),
   schema: z.unknown().optional(),
   status: z.enum(['draft', 'published']).optional(),

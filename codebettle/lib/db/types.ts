@@ -1257,7 +1257,7 @@ export type SupportRequestRow = Pick<
 >;
 
 // ---------------------------------------------------------------------------
-// Phase 6 — Forms Builder (registration + survey forms).
+// Phase 6 — Forms Builder (forms for any purpose).
 // ---------------------------------------------------------------------------
 
 /**
@@ -1333,10 +1333,15 @@ export interface FormSchema {
   successMessage?: string;
 }
 
-/** Form kind: 'registration' | 'survey' ONLY — there is no quiz type. */
-export type FormType = 'registration' | 'survey';
-
-export const FORM_TYPES: readonly FormType[] = ['registration', 'survey'] as const;
+/**
+ * A form's purpose — free text, any non-empty string up to 50 chars
+ * (e.g. 'Registration', 'Survey', 'Feedback', 'Job Application').
+ * Stored as a plain `text` column; there is no enum or check
+ * constraint. Existing 'registration'/'survey' values keep working
+ * and display as-is. Validated in lib/services/form-service.ts and
+ * in the admin API zod schemas.
+ */
+export type FormType = string;
 
 /** Form lifecycle: 'draft' | 'published'. Only published forms are public. */
 export type FormStatus = 'draft' | 'published';
@@ -1344,7 +1349,7 @@ export type FormStatus = 'draft' | 'published';
 export const FORM_STATUSES: readonly FormStatus[] = ['draft', 'published'] as const;
 
 /**
- * A registration/survey form definition (Phase 6). `slug` is the
+ * A form definition (Phase 6) for any purpose. `slug` is the
  * URL-safe public key (/forms/[slug]); `schema` is the stored
  * { fields: FormField[] } — submissions are ALWAYS validated against
  * this stored schema, never a client-sent one.

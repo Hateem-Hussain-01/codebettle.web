@@ -203,11 +203,24 @@ test('slugifyFormName + create: same name twice yields unique slugs', async () =
   assert.equal(second.form.slug, 'summer-survey-2');
 });
 
-test('createFormService: quiz type and invalid schema are rejected; explicit duplicate slug is 409', async () => {
+test('createFormService: any-purpose type is accepted, empty/over-long purpose rejected; invalid schema rejected; explicit duplicate slug is 409', async () => {
+  // 'quiz' used to be rejected under the registration/survey-only
+  // rule; type is now free-text purpose, so it must be accepted.
   const quiz = await createFormService(ADMIN, {
-    name: 'Quiz?', type: 'quiz' as never, schema: SCHEMA,
+    name: 'Quiz?', type: 'quiz', schema: SCHEMA,
   });
-  assert.ok('error' in quiz && quiz.status === 400);
+  assert.ok(!('error' in quiz), JSON.stringify(quiz));
+  assert.equal(quiz.form.type, 'quiz');
+
+  const empty = await createFormService(ADMIN, {
+    name: 'Empty?', type: '   ', schema: SCHEMA,
+  });
+  assert.ok('error' in empty && empty.status === 400);
+
+  const tooLong = await createFormService(ADMIN, {
+    name: 'Too long?', type: 'x'.repeat(51), schema: SCHEMA,
+  });
+  assert.ok('error' in tooLong && tooLong.status === 400);
 
   const badSchema = await createFormService(ADMIN, {
     name: 'Bad', type: 'survey', schema: { fields: [{ id: 'x', type: 'select', label: 'X', required: true }] },

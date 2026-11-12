@@ -66,7 +66,7 @@ import type {
   User,
   UserRow,
 } from './types';
-import { DEFAULT_NOTIFICATION_PREFS, FORM_FIELD_TYPES, FORM_STATUSES, FORM_TYPES, NOTIFICATION_EVENT_KEYS } from './types';
+import { DEFAULT_NOTIFICATION_PREFS, FORM_FIELD_TYPES, FORM_STATUSES, NOTIFICATION_EVENT_KEYS } from './types';
 import { toAdminPermissions } from '../admin-access';
 
 export const CATEGORY_TO_STORAGE: Record<CourseCategory, CourseRow['category']> = {
@@ -541,7 +541,9 @@ export function mapFormDefinitionRow(row: FormDefinitionRow): FormDefinition {
     id: row.id,
     name: row.name,
     slug: row.slug,
-    type: (FORM_TYPES as readonly string[]).includes(row.type) ? (row.type as FormDefinition['type']) : 'registration',
+    // `type` is the form's free-text purpose — passed through as
+    // stored (a blank legacy value falls back to 'General').
+    type: typeof row.type === 'string' && row.type.trim() ? row.type : 'General',
     description: row.description ?? undefined,
     schema: toFormSchema(row.schema),
     status: (FORM_STATUSES as readonly string[]).includes(row.status)

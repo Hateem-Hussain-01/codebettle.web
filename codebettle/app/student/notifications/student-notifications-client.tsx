@@ -50,7 +50,7 @@ const EVENT_LABELS: { key: NotificationEventKey; label: string }[] = [
   // (NotificationEventKey): support requests + request updates.
   { key: 'support_request', label: 'Support requests' },
   { key: 'request_update', label: 'Request updates' },
-  // Phase 6 — form submissions (registration/survey forms).
+  // Phase 6 — form submissions (forms for any purpose).
   { key: 'form_submission', label: 'Form submissions' },
 ];
 

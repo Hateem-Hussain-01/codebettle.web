@@ -142,7 +142,15 @@ export default function SubmissionsClient({ formId }: { formId: string }) {
   const exportCsv = async () => {
     setExporting(true);
     try {
-      const res = await fetch(`/api/admin/forms/${formId}/submissions/export`);
+      // The export honours the same reviewed/unreviewed filter as
+      // the list: '' = all, 'reviewed' / 'unreviewed' = that slice.
+      const params = new URLSearchParams();
+      if (filter === 'reviewed') params.set('reviewed', 'true');
+      else if (filter === 'unreviewed') params.set('reviewed', 'false');
+      const query = params.toString();
+      const res = await fetch(
+        `/api/admin/forms/${formId}/submissions/export${query ? `?${query}` : ''}`,
+      );
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
         toast.error(body.error ?? 'Could not export submissions');
@@ -157,7 +165,12 @@ export default function SubmissionsClient({ formId }: { formId: string }) {
       a.click();
       a.remove();
       URL.revokeObjectURL(url);
-      toast.success('Submissions exported as CSV');
+      const exported = Number(res.headers.get('X-Export-Count'));
+      const count = Number.isFinite(exported) ? exported : total;
+      toast.success(
+        `Exported ${count} submission${count === 1 ? '' : 's'} as CSV` +
+          (filter === 'reviewed' ? ' (reviewed only)' : filter === 'unreviewed' ? ' (unreviewed only)' : ''),
+      );
     } catch {
       toast.error('Could not export submissions — check your connection and try again');
     } finally {
@@ -204,7 +217,12 @@ export default function SubmissionsClient({ formId }: { formId: string }) {
             <Pencil className="w-4 h-4" />Open builder
           </Button>
           <Button size="sm" onClick={() => void exportCsv()} loading={exporting} disabled={exporting}>
-            <Download className="w-4 h-4" />Export CSV
+            <Download className="w-4 h-4" />
+            {filter === 'reviewed'
+              ? 'Export CSV (reviewed only)'
+              : filter === 'unreviewed'
+                ? 'Export CSV (unreviewed only)'
+                : 'Export CSV (all)'}
           </Button>
         </div>
       </FadeIn>
