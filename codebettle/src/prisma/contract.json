@@ -5796,6 +5796,13 @@
                   "kind": "scalar"
                 }
               },
+              "canViewAuditLog": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/bool@1",
+                  "kind": "scalar"
+                }
+              },
               "createdAt": {
                 "nullable": false,
                 "type": {
@@ -6318,6 +6325,9 @@
                 },
                 "bio": {
                   "column": "bio"
+                },
+                "canViewAuditLog": {
+                  "column": "canViewAuditLog"
                 },
                 "createdAt": {
                   "column": "createdAt"
@@ -11065,6 +11075,15 @@
                   "dataType": "pg/text",
                   "nullable": true
                 },
+                "canViewAuditLog": {
+                  "codecId": "pg/bool@1",
+                  "dataType": "pg/bool",
+                  "default": {
+                    "kind": "literal",
+                    "value": false
+                  },
+                  "nullable": false
+                },
                 "createdAt": {
                   "codecId": "pg/timestamptz-date@1",
                   "dataType": "pg/timestamptz",
@@ -11459,7 +11478,7 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "354f04bc914218afbaecf1860816c3eb17265df49166f0e49a2bdea59c846cba"
+    "storageHash": "7c805afa9e4fbef914a66aae13de2740343b2c1d64d98a42fbe12937165385f5"
   },
   "execution": {
     "executionHash": "d8dedd49153c74bc46848ff157274826b9693ff2b12fe3a18c9b0cd948a537f3",

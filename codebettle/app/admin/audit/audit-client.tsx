@@ -219,8 +219,8 @@ export default function AuditClient({ canManageAccess }: { canManageAccess: bool
   return (
     <div className="space-y-6">
       <FadeIn>
-        <h1 className="text-2xl font-black text-white flex items-center gap-2">
-          <ScrollText className="w-6 h-6 text-primary" /> Audit Log
+        <h1 className="text-2xl font-black text-foreground flex items-center gap-2">
+          <ScrollText className="w-6 h-6 text-primary-text" /> Audit Log
         </h1>
         <p className="text-muted text-sm mt-1">
           A record of privileged actions on the platform — who did what, when. Entries are
@@ -320,7 +320,7 @@ export default function AuditClient({ canManageAccess }: { canManageAccess: bool
           {!loading && !loadError && entries.length === 0 && (
             <div className="py-16 text-center">
               <Inbox className="w-10 h-10 text-muted mx-auto mb-3" />
-              <p className="text-white font-medium">
+              <p className="text-foreground font-medium">
                 No audit entries{filters.actor || filters.action || filters.entity || filters.from || filters.to ? ' match these filters' : ' yet'}
               </p>
               <p className="text-muted text-sm mt-1">Privileged actions will appear here as they happen.</p>
@@ -344,13 +344,13 @@ export default function AuditClient({ canManageAccess }: { canManageAccess: bool
                         {entry.ip && <span className="block text-muted/70">{entry.ip}</span>}
                       </td>
                       <td className="py-3 px-4">
-                        <p className="text-white text-xs font-medium">{entry.actorName ?? 'Unknown actor'}</p>
+                        <p className="text-foreground text-xs font-medium">{entry.actorName ?? 'Unknown actor'}</p>
                         {entry.actorEmail && <p className="text-muted text-xs truncate max-w-52">{entry.actorEmail}</p>}
                       </td>
                       <td className="py-3 px-4">
                         <Badge variant="info">{entry.action}</Badge>
                       </td>
-                      <td className="py-3 px-4 text-white text-xs">{entry.entity}</td>
+                      <td className="py-3 px-4 text-foreground text-xs">{entry.entity}</td>
                       <td className="py-3 px-4 text-muted text-xs font-mono break-all max-w-40">
                         {entry.entityId ?? '—'}
                       </td>
@@ -405,8 +405,8 @@ export default function AuditClient({ canManageAccess }: { canManageAccess: bool
       {canManageAccess && (
         <FadeIn delay={0.08}>
           <Card>
-            <h2 className="text-white font-bold flex items-center gap-2">
-              <ShieldCheck className="w-5 h-5 text-primary" /> Access &amp; Permissions
+            <h2 className="text-foreground font-bold flex items-center gap-2">
+              <ShieldCheck className="w-5 h-5 text-primary-text" /> Access &amp; Permissions
             </h2>
             <p className="text-muted text-sm mt-1">
               Choose who else can open this audit log. Access here is separate from admin
@@ -420,8 +420,8 @@ export default function AuditClient({ canManageAccess }: { canManageAccess: bool
             {!accessLoading && !accessError && (
               <div className="mt-4 space-y-4">
                 <div>
-                  <h3 className="text-sm font-bold text-white flex items-center gap-2">
-                    <ShieldCheck className="w-4 h-4 text-primary" /> Authorized administrators
+                  <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
+                    <ShieldCheck className="w-4 h-4 text-primary-text" /> Authorized administrators
                   </h3>
                   {accessLists.officials.length === 0 ? (
                     <p className="text-muted text-sm mt-2">No authorized administrators found.</p>
@@ -430,7 +430,7 @@ export default function AuditClient({ canManageAccess }: { canManageAccess: bool
                       {accessLists.officials.map((person) => (
                         <div key={person.id} className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-dark-border px-4 py-3">
                           <div>
-                            <p className="text-sm font-semibold text-white">{person.name}</p>
+                            <p className="text-sm font-semibold text-foreground">{person.name}</p>
                             <p className="text-xs text-muted">{person.email}</p>
                           </div>
                           <Badge variant="primary">Always authorized</Badge>
@@ -441,7 +441,7 @@ export default function AuditClient({ canManageAccess }: { canManageAccess: bool
                 </div>
 
                 <div>
-                  <h3 className="text-sm font-bold text-white">Granted access</h3>
+                  <h3 className="text-sm font-bold text-foreground">Granted access</h3>
                   {accessLists.granted.length === 0 ? (
                     <p className="text-muted text-sm mt-2">Nobody else has audit log access yet. Use the form below to grant it.</p>
                   ) : (
@@ -449,7 +449,7 @@ export default function AuditClient({ canManageAccess }: { canManageAccess: bool
                       {accessLists.granted.map((person) => (
                         <div key={person.id} className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-dark-border px-4 py-3">
                           <div>
-                            <p className="text-sm font-semibold text-white">{person.name}</p>
+                            <p className="text-sm font-semibold text-foreground">{person.name}</p>
                             <p className="text-xs text-muted">{person.email}</p>
                           </div>
                           <Button
@@ -468,8 +468,8 @@ export default function AuditClient({ canManageAccess }: { canManageAccess: bool
                 </div>
 
                 <form onSubmit={handleGrant} className="border-t border-dark-border pt-4 space-y-3">
-                  <h3 className="text-sm font-bold text-white flex items-center gap-2">
-                    <UserPlus className="w-4 h-4 text-primary" /> Grant access
+                  <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
+                    <UserPlus className="w-4 h-4 text-primary-text" /> Grant access
                   </h3>
                   {candidates.length === 0 ? (
                     <p className="text-muted text-sm flex items-center gap-1">
