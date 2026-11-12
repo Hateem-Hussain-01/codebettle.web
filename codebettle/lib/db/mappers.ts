@@ -27,6 +27,13 @@ import type {
   CourseRow,
   Enrollment,
   EnrollmentRow,
+  FormDefinition,
+  FormDefinitionRow,
+  FormField,
+  FormFieldType,
+  FormSchema,
+  FormSubmission,
+  FormSubmissionRow,
   Lesson,
   LessonProgressRow,
   LessonRow,
@@ -59,7 +66,7 @@ import type {
   User,
   UserRow,
 } from './types';
-import { DEFAULT_NOTIFICATION_PREFS, NOTIFICATION_EVENT_KEYS } from './types';
+import { DEFAULT_NOTIFICATION_PREFS, FORM_FIELD_TYPES, FORM_STATUSES, FORM_TYPES, NOTIFICATION_EVENT_KEYS } from './types';
 import { toAdminPermissions } from '../admin-access';
 
 export const CATEGORY_TO_STORAGE: Record<CourseCategory, CourseRow['category']> = {
@@ -459,6 +466,97 @@ function isSupportRequestStatus(value: unknown): value is SupportRequest['status
     value === 'resolved' ||
     value === 'rejected'
   );
+}
+
+// ---------------------------------------------------------------------------
+// Phase 6 — Forms Builder.
+// ---------------------------------------------------------------------------
+
+/**
+ * Safely read the stored `FormDefinition.schema` Json column. A row
+ * whose schema is missing/invalid (e.g. hand-edited in the DB) reads
+ * as an empty field list instead of crashing the caller — the service
+ * validates the schema on every write, so a stored row is valid in
+ * practice. Fields are normalised to the shared shape (unknown keys
+ * dropped, defaults applied) so readers never see a malformed field.
+ */
+export function toFormSchema(value: unknown): FormSchema {
+  if (value === null || value === undefined || typeof value !== 'object' || Array.isArray(value)) {
+    return { fields: [] };
+  }
+  const raw = value as Record<string, unknown>;
+  if (!Array.isArray(raw.fields)) return { fields: [] };
+  const fields: FormField[] = [];
+  for (const item of raw.fields) {
+    if (item === null || typeof item !== 'object' || Array.isArray(item)) continue;
+    const f = item as Record<string, unknown>;
+    if (typeof f.id !== 'string' || f.id.trim() === '') continue;
+    const type = (FORM_FIELD_TYPES as readonly string[]).includes(String(f.type))
+      ? (f.type as FormFieldType)
+      : 'text';
+    const field: FormField = {
+      id: f.id,
+      type,
+      label: typeof f.label === 'string' ? f.label : f.id,
+      required: f.required === true,
+    };
+    if (typeof f.placeholder === 'string') field.placeholder = f.placeholder;
+    if (Array.isArray(f.options)) {
+      field.options = f.options.filter((o): o is string => typeof o === 'string');
+    }
+    if (f.validation !== null && typeof f.validation === 'object' && !Array.isArray(f.validation)) {
+      const v = f.validation as Record<string, unknown>;
+      const validation: NonNullable<FormField['validation']> = {};
+      if (typeof v.minLength === 'number') validation.minLength = v.minLength;
+      if (typeof v.maxLength === 'number') validation.maxLength = v.maxLength;
+      if (typeof v.pattern === 'string') validation.pattern = v.pattern;
+      if (typeof v.min === 'number') validation.min = v.min;
+      if (typeof v.max === 'number') validation.max = v.max;
+      if (Object.keys(validation).length > 0) field.validation = validation;
+    }
+    if (f.styling !== null && typeof f.styling === 'object' && !Array.isArray(f.styling)) {
+      const width = (f.styling as Record<string, unknown>).width;
+      if (width === 'full' || width === 'half') field.styling = { width };
+    }
+    fields.push(field);
+  }
+  return { fields };
+}
+
+/** Safely read a stored submission `data` Json value (object keyed by field id). */
+export function toFormSubmissionData(value: unknown): Record<string, unknown> {
+  if (value === null || value === undefined || typeof value !== 'object' || Array.isArray(value)) {
+    return {};
+  }
+  return value as Record<string, unknown>;
+}
+
+export function mapFormDefinitionRow(row: FormDefinitionRow): FormDefinition {
+  return {
+    id: row.id,
+    name: row.name,
+    slug: row.slug,
+    type: (FORM_TYPES as readonly string[]).includes(row.type) ? (row.type as FormDefinition['type']) : 'registration',
+    description: row.description ?? undefined,
+    schema: toFormSchema(row.schema),
+    status: (FORM_STATUSES as readonly string[]).includes(row.status)
+      ? (row.status as FormDefinition['status'])
+      : 'draft',
+    createdById: row.createdById,
+    createdAt: row.createdAt.toISOString(),
+    updatedAt: row.updatedAt.toISOString(),
+  };
+}
+
+export function mapFormSubmissionRow(row: FormSubmissionRow): FormSubmission {
+  return {
+    id: row.id,
+    formId: row.formId,
+    submitterId: row.submitterId ?? undefined,
+    data: toFormSubmissionData(row.data),
+    reviewed: row.reviewed,
+    submittedAt: row.submittedAt.toISOString(),
+  };
 }
 
 export function mapReviewRow(row: ReviewRow): Review {

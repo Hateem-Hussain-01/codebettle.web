@@ -50,6 +50,7 @@ export type AdminAreaKey =
   | 'reports'
   | 'certificates'
   | 'applications'
+  | 'forms'
   | 'settings';
 
 /**
@@ -84,6 +85,11 @@ export const ADMIN_AREAS: readonly AdminArea[] = [
   { key: 'reports', label: 'Reports', href: '/admin/reports', description: 'Reports and exports' },
   { key: 'certificates', label: 'Certificates', href: '/admin/certificates', description: 'Issued certificates' },
   { key: 'applications', label: 'Applications', href: '/admin/applications', description: 'Instructor applications' },
+  // Phase 6: registration and survey forms builder. A NEW area (not
+  // folded into 'content') because form submissions are user data
+  // with their own review workflow. Restricted admins do NOT get it
+  // by default (secure default: missing keys are denied).
+  { key: 'forms', label: 'Forms', href: '/admin/forms', description: 'Registration and survey forms builder' },
   { key: 'settings', label: 'Settings', href: '/admin/settings', description: 'Site settings' },
 ] as const;
 
@@ -176,7 +182,7 @@ export function areaForAdminPath(pathname: string): AdminAreaKey | 'access' | nu
 /**
  * Normalise a permissions map received from the access UI before saving.
  * - Unknown keys are dropped; non-boolean values are dropped.
- * - All 17 areas true collapses to undefined (full admin), so "grant
+ * - All 18 areas true collapses to undefined (full admin), so "grant
  *   everything" stays a real full admin.
  * - No areas true stays `{}` (restricted admin with nothing granted).
  * Returns undefined for full admin, otherwise the restricted map.
