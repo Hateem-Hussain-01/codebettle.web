@@ -7,9 +7,12 @@ import Select from '@/components/ui/Select';
 import Card from '@/components/ui/Card';
 import Modal from '@/components/ui/Modal';
 import FadeIn from '@/components/ui/FadeIn';
-import { Save, Globe, Mail, Phone, AlertTriangle, CreditCard, Plus, Pencil, Trash2, ChevronUp, ChevronDown } from 'lucide-react';
+import { Save, Globe, Mail, Phone, AlertTriangle, CreditCard, Plus, Pencil, Trash2, ChevronUp, ChevronDown, Share2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import type { PaymentAccount, PaymentMethod } from '@/lib/db/types';
+import type { SocialLink } from '@/lib/db/types';
+import { SocialPlatformIcon } from '@/components/auth/BrandIcons';
+import { resolvePlatformKey } from '@/lib/social';
 
 const METHOD_LABELS: Record<PaymentMethod, string> = {
   bank: 'Bank transfer',
@@ -59,12 +62,8 @@ export default function AdminSettingsPage() {
     siteName: 'CodeBettle',
     siteDescription: "Pakistan's premier digital institute",
     contactEmail: 'info@codebettle.com',
-    phone: '+92 300 1234567',
+    phone: '+92 305 5261893',
     address: 'Lahore, Punjab, Pakistan',
-    twitter: '',
-    linkedin: '',
-    github: '',
-    instagram: '',
     maintenanceMode: false,
   });
   const [saving, setSaving] = useState(false);
@@ -248,6 +247,165 @@ export default function AdminSettingsPage() {
     }
   };
 
+  // --- Footer Social Icons (real backend, Phase 4 Module 7) ---
+  // Same pattern as Payment Accounts above: every change goes through
+  // /api/admin/social-links and is verified by re-fetching the list
+  // afterwards. Only two things are required per icon: Icon Name and
+  // Icon Link. The icon itself is auto-fetched from the name (no image
+  // upload). Only enabled icons are shown in the footer; while no
+  // rows exist the footer falls back to its hardcoded defaults.
+  const [socialLinks, setSocialLinks] = useState<SocialLink[]>([]);
+  const [socialLoading, setSocialLoading] = useState(true);
+  const [socialError, setSocialError] = useState<string | null>(null);
+  const [socialFormOpen, setSocialFormOpen] = useState(false);
+  const [socialEditing, setSocialEditing] = useState<SocialLink | null>(null);
+  const [socialForm, setSocialForm] = useState({ name: '', url: '', isEnabled: true, displayOrder: 0 });
+  const [socialFormError, setSocialFormError] = useState<string | null>(null);
+  const [socialFormSaving, setSocialFormSaving] = useState(false);
+  const [socialDeleteTarget, setSocialDeleteTarget] = useState<SocialLink | null>(null);
+  const [socialDeleting, setSocialDeleting] = useState(false);
+
+  const loadSocialLinks = async (): Promise<SocialLink[]> => {
+    setSocialLoading(true);
+    setSocialError(null);
+    try {
+      const res = await fetch('/api/admin/social-links');
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error ?? 'Could not load footer social icons');
+      const list = (data.links ?? []) as SocialLink[];
+      setSocialLinks(list);
+      return list;
+    } catch (e) {
+      setSocialError(e instanceof Error ? e.message : 'Could not load footer social icons');
+      return [];
+    } finally {
+      setSocialLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    void loadSocialLinks();
+  }, []);
+
+  const openSocialAdd = () => {
+    setSocialEditing(null);
+    setSocialForm({ name: '', url: '', isEnabled: true, displayOrder: socialLinks.length });
+    setSocialFormError(null);
+    setSocialFormOpen(true);
+  };
+
+  const openSocialEdit = (link: SocialLink) => {
+    setSocialEditing(link);
+    setSocialForm({
+      name: link.name,
+      url: link.url,
+      isEnabled: link.isEnabled,
+      displayOrder: link.displayOrder,
+    });
+    setSocialFormError(null);
+    setSocialFormOpen(true);
+  };
+
+  const saveSocialForm = async () => {
+    if (!socialForm.name.trim()) { setSocialFormError('Icon name is required'); return; }
+    if (!socialForm.url.trim()) { setSocialFormError('Icon link is required'); return; }
+    setSocialFormError(null);
+    setSocialFormSaving(true);
+    try {
+      const payload = {
+        name: socialForm.name.trim(),
+        url: socialForm.url.trim(),
+        isEnabled: socialForm.isEnabled,
+        displayOrder: socialForm.displayOrder,
+      };
+      const res = await fetch(
+        socialEditing ? `/api/admin/social-links/${socialEditing.id}` : '/api/admin/social-links',
+        {
+          method: socialEditing ? 'PATCH' : 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        },
+      );
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error ?? 'Could not save social icon');
+      // Read-back: re-fetch the list and confirm the saved icon is there.
+      const list = await loadSocialLinks();
+      const saved = list.find((l) => l.id === (data.link as SocialLink).id);
+      if (!saved) throw new Error('Saved, but the icon did not come back from the server — please reload');
+      setSocialFormOpen(false);
+      toast.success(socialEditing ? 'Social icon updated' : 'Social icon added');
+    } catch (e) {
+      setSocialFormError(e instanceof Error ? e.message : 'Could not save social icon');
+    } finally {
+      setSocialFormSaving(false);
+    }
+  };
+
+  const toggleSocialEnabled = async (link: SocialLink) => {
+    try {
+      const res = await fetch(`/api/admin/social-links/${link.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ isEnabled: !link.isEnabled }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error ?? 'Could not update social icon');
+      const list = await loadSocialLinks();
+      const saved = list.find((l) => l.id === link.id);
+      if (!saved || saved.isEnabled === link.isEnabled) {
+        throw new Error('The change did not persist — please reload');
+      }
+      toast.success(saved.isEnabled ? 'Social icon enabled' : 'Social icon disabled');
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Could not update social icon');
+    }
+  };
+
+  const moveSocialLink = async (link: SocialLink, direction: -1 | 1) => {
+    const idx = socialLinks.findIndex((l) => l.id === link.id);
+    const neighbour = socialLinks[idx + direction];
+    if (!neighbour) return;
+    try {
+      const patch = async (id: string, displayOrder: number) => {
+        const res = await fetch(`/api/admin/social-links/${id}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ displayOrder }),
+        });
+        if (!res.ok) {
+          const data = await res.json().catch(() => ({}));
+          throw new Error(data.error ?? 'Could not reorder social icons');
+        }
+      };
+      await patch(link.id, neighbour.displayOrder);
+      await patch(neighbour.id, link.displayOrder);
+      await loadSocialLinks();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Could not reorder social icons');
+      await loadSocialLinks();
+    }
+  };
+
+  const confirmSocialDelete = async () => {
+    if (!socialDeleteTarget) return;
+    setSocialDeleting(true);
+    try {
+      const res = await fetch(`/api/admin/social-links/${socialDeleteTarget.id}`, { method: 'DELETE' });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error ?? 'Could not delete social icon');
+      const list = await loadSocialLinks();
+      if (list.some((l) => l.id === socialDeleteTarget.id)) {
+        throw new Error('The icon was not deleted — please reload');
+      }
+      setSocialDeleteTarget(null);
+      toast.success('Social icon deleted');
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Could not delete social icon');
+    } finally {
+      setSocialDeleting(false);
+    }
+  };
+
   return (
     <div className="space-y-6 max-w-2xl">
       <FadeIn>
@@ -278,13 +436,91 @@ export default function AdminSettingsPage() {
 
       <FadeIn delay={0.15}>
       <Card>
-        <h2 className="text-white font-bold mb-4">Social Links</h2>
-        <div className="grid sm:grid-cols-2 gap-4">
-          <Input label="Twitter" placeholder="https://twitter.com/..." value={settings.twitter} onChange={e => setSettings(s => ({ ...s, twitter: e.target.value }))} />
-          <Input label="LinkedIn" placeholder="https://linkedin.com/..." value={settings.linkedin} onChange={e => setSettings(s => ({ ...s, linkedin: e.target.value }))} />
-          <Input label="GitHub" placeholder="https://github.com/..." value={settings.github} onChange={e => setSettings(s => ({ ...s, github: e.target.value }))} />
-          <Input label="Instagram" placeholder="https://instagram.com/..." value={settings.instagram} onChange={e => setSettings(s => ({ ...s, instagram: e.target.value }))} />
+        <div className="flex items-center justify-between mb-1">
+          <h2 className="text-white font-bold flex items-center gap-2"><Share2 className="w-4 h-4 text-primary" />Footer Social Icons</h2>
+          <Button size="sm" onClick={openSocialAdd}><Plus className="w-4 h-4" />Add Icon</Button>
         </div>
+        <p className="text-muted text-sm mb-4">Icons shown in the website footer. Only the icon name and link are needed — the icon is fetched automatically from the name. Only enabled icons are shown; while no icons are added here, the footer shows its default LinkedIn, Instagram, Facebook, GitHub, WhatsApp and Email links.</p>
+        {socialLoading && <p className="text-muted text-sm">Loading footer social icons…</p>}
+        {socialError && (
+          <div className="flex items-center justify-between gap-3">
+            <p className="text-sm text-red-400">{socialError}</p>
+            <Button size="sm" variant="outline" onClick={() => void loadSocialLinks()}>Retry</Button>
+          </div>
+        )}
+        {!socialLoading && !socialError && socialLinks.length === 0 && (
+          <p className="text-muted text-sm">No custom footer icons yet. Add one to take control of the footer icons, or leave this empty to keep the defaults.</p>
+        )}
+        {!socialLoading && !socialError && socialLinks.length > 0 && (
+          <ul className="space-y-3">
+            {socialLinks.map((link, idx) => (
+              <li key={link.id} className={`rounded-xl border p-4 ${link.isEnabled ? 'border-dark-border' : 'border-dark-border opacity-60'}`}>
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0 flex items-start gap-3">
+                    <span className="w-9 h-9 rounded-lg bg-dark-border flex items-center justify-center text-muted flex-shrink-0">
+                      <SocialPlatformIcon platform={resolvePlatformKey(link.name)} className="w-4 h-4" />
+                    </span>
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="text-white font-semibold">{link.name}</span>
+                        <span className={`text-xs px-2 py-0.5 rounded-full ${link.isEnabled ? 'bg-green-500/20 text-green-300' : 'bg-red-500/20 text-red-300'}`}>
+                          {link.isEnabled ? 'Shown in footer' : 'Hidden'}
+                        </span>
+                        <span className="text-xs text-muted">Order {link.displayOrder}</span>
+                      </div>
+                      <p className="text-sm text-muted font-mono break-all">{link.url}</p>
+                    </div>
+                  </div>
+                  <div className="flex flex-col items-end gap-1 flex-shrink-0">
+                    <div className="flex gap-1">
+                      <button
+                        type="button"
+                        aria-label={`Move ${link.name} up`}
+                        disabled={idx === 0}
+                        onClick={() => void moveSocialLink(link, -1)}
+                        className="p-1.5 rounded-lg text-muted hover:text-white hover:bg-dark-border disabled:opacity-30 cursor-pointer"
+                      >
+                        <ChevronUp className="w-4 h-4" />
+                      </button>
+                      <button
+                        type="button"
+                        aria-label={`Move ${link.name} down`}
+                        disabled={idx === socialLinks.length - 1}
+                        onClick={() => void moveSocialLink(link, 1)}
+                        className="p-1.5 rounded-lg text-muted hover:text-white hover:bg-dark-border disabled:opacity-30 cursor-pointer"
+                      >
+                        <ChevronDown className="w-4 h-4" />
+                      </button>
+                      <button
+                        type="button"
+                        aria-label={`Edit ${link.name}`}
+                        onClick={() => openSocialEdit(link)}
+                        className="p-1.5 rounded-lg text-muted hover:text-white hover:bg-dark-border cursor-pointer"
+                      >
+                        <Pencil className="w-4 h-4" />
+                      </button>
+                      <button
+                        type="button"
+                        aria-label={`Delete ${link.name}`}
+                        onClick={() => setSocialDeleteTarget(link)}
+                        className="p-1.5 rounded-lg text-muted hover:text-red-400 hover:bg-dark-border cursor-pointer"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => void toggleSocialEnabled(link)}
+                      className={`text-xs px-3 py-1.5 rounded-lg border cursor-pointer ${link.isEnabled ? 'border-dark-border text-white/80 hover:text-white' : 'border-green-500/50 text-green-300 hover:bg-green-500/10'}`}
+                    >
+                      {link.isEnabled ? 'Hide from footer' : 'Show in footer'}
+                    </button>
+                  </div>
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
       </Card>
       </FadeIn>
 
@@ -433,6 +669,46 @@ export default function AdminSettingsPage() {
         <div className="flex justify-end gap-2 mt-6">
           <Button variant="outline" onClick={() => setDeleteTarget(null)}>Cancel</Button>
           <Button onClick={() => void confirmDelete()} loading={deleting}>Delete</Button>
+        </div>
+      </Modal>
+
+      <Modal isOpen={socialFormOpen} onClose={() => setSocialFormOpen(false)} title={socialEditing ? 'Edit Footer Social Icon' : 'Add Footer Social Icon'} size="lg">
+        <div className="space-y-4">
+          <Input label="Icon Name *" placeholder="e.g. LinkedIn" value={socialForm.name} onChange={e => setSocialForm(f => ({ ...f, name: e.target.value }))} />
+          <Input label="Icon Link *" placeholder="e.g. https://www.linkedin.com/company/codebettle/" value={socialForm.url} onChange={e => setSocialForm(f => ({ ...f, url: e.target.value }))} />
+          <div className="grid grid-cols-2 gap-4">
+            <Input label="Display Order" type="number" value={String(socialForm.displayOrder)} onChange={e => setSocialForm(f => ({ ...f, displayOrder: Number(e.target.value) || 0 }))} />
+            <label className="flex items-end gap-2 pb-2.5 cursor-pointer">
+              <input type="checkbox" checked={socialForm.isEnabled} onChange={e => setSocialForm(f => ({ ...f, isEnabled: e.target.checked }))} className="w-4 h-4 accent-yellow-400" />
+              <span className="text-sm text-white/80">Shown in footer</span>
+            </label>
+          </div>
+          <p className="text-xs text-muted">The icon is fetched automatically from the name (LinkedIn, Instagram, Facebook, GitHub, WhatsApp, Email). The link must be a valid https:// URL or a mailto: address. Only enabled icons appear in the footer.</p>
+          {socialForm.name.trim() && (
+            <p className="text-xs text-muted flex items-center gap-2">
+              Preview:
+              <span className="w-9 h-9 rounded-lg bg-dark-border inline-flex items-center justify-center text-muted">
+                <SocialPlatformIcon platform={resolvePlatformKey(socialForm.name)} className="w-4 h-4" />
+              </span>
+              {socialForm.name.trim()}
+            </p>
+          )}
+          {socialFormError && <p className="text-sm text-red-400">{socialFormError}</p>}
+          <div className="flex justify-end gap-2">
+            <Button variant="outline" onClick={() => setSocialFormOpen(false)}>Cancel</Button>
+            <Button onClick={() => void saveSocialForm()} loading={socialFormSaving}>{socialEditing ? 'Save Changes' : 'Add Icon'}</Button>
+          </div>
+        </div>
+      </Modal>
+
+      <Modal isOpen={socialDeleteTarget !== null} onClose={() => setSocialDeleteTarget(null)} title="Delete Footer Social Icon">
+        <p className="text-sm text-white/80">
+          Delete <span className="font-semibold text-white">{socialDeleteTarget?.name}</span>?
+          It will no longer appear in the footer. If this was the last custom icon, the footer goes back to its default icons.
+        </p>
+        <div className="flex justify-end gap-2 mt-6">
+          <Button variant="outline" onClick={() => setSocialDeleteTarget(null)}>Cancel</Button>
+          <Button onClick={() => void confirmSocialDelete()} loading={socialDeleting}>Delete</Button>
         </div>
       </Modal>
     </div>
