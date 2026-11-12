@@ -95,7 +95,18 @@ export function getSafeRedirect(raw: string | null | undefined, fallback = '/'):
  * this codebase (all Supabase access is server-side), so the browser
  * only ever talks to this origin.
  */
-export function buildCspHeader(nonce: string, isDev = false): string {
+export function buildCspHeader(
+  nonce: string,
+  isDev = false,
+  opts?: { allowFraming?: boolean },
+): string {
+  // Embed exemption (Forms GHL upgrade): the standalone embed render
+  // (?embed=1 on /forms/[slug]) is designed to be framed by other
+  // sites, so for that render ONLY frame-ancestors is '*' instead of
+  // 'none'. Everything else keeps 'none' — see shouldAllowFraming()
+  // and proxy.ts, which is the only caller that ever passes
+  // allowFraming: true.
+  const frameAncestors = opts?.allowFraming ? 'frame-ancestors *;' : "frame-ancestors 'none';";
   const csp = `
     default-src 'self';
     script-src 'self' 'nonce-${nonce}' 'strict-dynamic'${isDev ? " 'unsafe-eval'" : ''};
@@ -106,10 +117,21 @@ export function buildCspHeader(nonce: string, isDev = false): string {
     object-src 'none';
     base-uri 'self';
     form-action 'self';
-    frame-ancestors 'none';
+    ${frameAncestors}
     upgrade-insecure-requests;
   `;
   return csp.replace(/\s{2,}/g, ' ').trim();
+}
+
+/**
+ * Is this request the standalone embed render, which alone may be
+ * framed? True only for a /forms/<slug> page request with exactly
+ * `?embed=1`. Every other path — including /forms itself without the
+ * param, and the admin preview (`?preview=1`) — stays unframeable.
+ * Pure so the proxy and the tests share the rule.
+ */
+export function shouldAllowFraming(pathname: string, embedParam: string | null): boolean {
+  return pathname.startsWith('/forms/') && pathname !== '/forms/' && embedParam === '1';
 }
 
 /** One fresh, unpredictable nonce per request (base64 of a UUID). */

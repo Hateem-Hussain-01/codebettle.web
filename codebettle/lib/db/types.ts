@@ -12,6 +12,7 @@
  */
 import type { Models } from '../../src/prisma/contract.d';
 import type { AdminPermissions } from '../admin-access';
+import type { FormStyle } from '../form-style';
 
 export type { AdminPermissions } from '../admin-access';
 
@@ -1257,7 +1258,7 @@ export type SupportRequestRow = Pick<
 >;
 
 // ---------------------------------------------------------------------------
-// Phase 6 — Forms Builder (registration + survey forms).
+// Phase 6 — Forms Builder (forms for any purpose).
 // ---------------------------------------------------------------------------
 
 /**
@@ -1278,7 +1279,8 @@ export type FormFieldType =
   | 'select'
   | 'radio'
   | 'checkbox'
-  | 'password';
+  | 'password'
+  | 'file';
 
 export const FORM_FIELD_TYPES: readonly FormFieldType[] = [
   'text',
@@ -1291,6 +1293,7 @@ export const FORM_FIELD_TYPES: readonly FormFieldType[] = [
   'radio',
   'checkbox',
   'password',
+  'file',
 ] as const;
 
 /** Field types whose value must come from `options`. */
@@ -1317,6 +1320,13 @@ export interface FormField {
   options?: string[];
   validation?: FormFieldValidation;
   styling?: { width?: 'full' | 'half' };
+  /**
+   * File fields only: which upload variant the field accepts
+   * ('picture' | 'document' | 'video' | 'files', default 'files').
+   * Stored inside the schema Json — no model change. The variant
+   * decides the server-enforced accept list (lib/form-uploads.ts).
+   */
+  uploadVariant?: import('../form-uploads').UploadVariant;
 }
 
 /**
@@ -1324,6 +1334,10 @@ export interface FormField {
  * form-level settings. The builder stores submit-button text and the
  * success message inside the schema (next to `fields`) so they round-
  * trip to the public form through `toFormSchema` / `toPublicForm`.
+ * GHL upgrade (Worker B): `style` (whole-form colours / button shape /
+ * font / width) and `coverImageUrl` also live here — no model change,
+ * no migration. When absent, the public form renders the current
+ * dark + gold defaults.
  */
 export interface FormSchema {
   fields: FormField[];
@@ -1331,12 +1345,21 @@ export interface FormSchema {
   submitButtonText?: string;
   /** Message shown to the submitter after a successful submission. */
   successMessage?: string;
+  /** Whole-form custom styling (GHL-like). Absent = site defaults. */
+  style?: FormStyle;
+  /** Cover image banner URL (uploaded to the public `course-images` bucket, or a URL). */
+  coverImageUrl?: string;
 }
 
-/** Form kind: 'registration' | 'survey' ONLY — there is no quiz type. */
-export type FormType = 'registration' | 'survey';
-
-export const FORM_TYPES: readonly FormType[] = ['registration', 'survey'] as const;
+/**
+ * A form's purpose — free text, any non-empty string up to 50 chars
+ * (e.g. 'Registration', 'Survey', 'Feedback', 'Job Application').
+ * Stored as a plain `text` column; there is no enum or check
+ * constraint. Existing 'registration'/'survey' values keep working
+ * and display as-is. Validated in lib/services/form-service.ts and
+ * in the admin API zod schemas.
+ */
+export type FormType = string;
 
 /** Form lifecycle: 'draft' | 'published'. Only published forms are public. */
 export type FormStatus = 'draft' | 'published';
@@ -1344,7 +1367,7 @@ export type FormStatus = 'draft' | 'published';
 export const FORM_STATUSES: readonly FormStatus[] = ['draft', 'published'] as const;
 
 /**
- * A registration/survey form definition (Phase 6). `slug` is the
+ * A form definition (Phase 6) for any purpose. `slug` is the
  * URL-safe public key (/forms/[slug]); `schema` is the stored
  * { fields: FormField[] } — submissions are ALWAYS validated against
  * this stored schema, never a client-sent one.

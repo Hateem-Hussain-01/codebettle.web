@@ -4,13 +4,18 @@ import { forwardRef } from 'react';
 interface TextareaProps extends React.TextareaHTMLAttributes<HTMLTextAreaElement> {
   label?: string;
   error?: string;
+  /**
+   * Inline styles for the <label> — see Input's labelStyle: the label
+   * class fixes its colour, so a recoloured form passes it here.
+   */
+  labelStyle?: React.CSSProperties;
 }
 
 const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
-  ({ label, error, className, ...props }, ref) => {
+  ({ label, error, labelStyle, className, ...props }, ref) => {
     return (
       <div className="flex flex-col gap-1.5">
-        {label && <label className="text-sm font-medium text-foreground/80">{label}</label>}
+        {label && <label className="text-sm font-medium text-foreground/80" style={labelStyle}>{label}</label>}
         <textarea
           ref={ref}
           className={cn(

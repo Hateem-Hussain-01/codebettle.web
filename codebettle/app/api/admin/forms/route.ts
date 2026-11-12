@@ -6,12 +6,13 @@ import { createFormService, listFormsService } from '@/lib/services/form-service
 /**
  * GET /api/admin/forms — list form definitions (Phase 6).
  * Query params: page, limit, status (draft|published), type
- * (registration|survey).
+ * (exact purpose string).
  * POST /api/admin/forms — create a form definition. Body: { name,
- * slug?, type, description?, schema, status? }. The schema is
- * validated (field ids unique, types allowed, options required for
- * select/radio/checkbox); the slug is generated from the name when
- * omitted and made unique automatically.
+ * slug?, type, description?, schema, status? }. `type` is the
+ * form's free-text purpose (any non-empty string up to 50 chars).
+ * The schema is validated (field ids unique, types allowed, options
+ * required for select/radio/checkbox); the slug is generated from
+ * the name when omitted and made unique automatically.
  *
  * Guard: requireAdminArea('forms') — restricted admins need the
  * 'forms' area granted. Full admins pass.
@@ -19,7 +20,7 @@ import { createFormService, listFormsService } from '@/lib/services/form-service
 const createSchema = z.object({
   name: z.string().trim().min(1, 'Name is required').max(200),
   slug: z.string().trim().max(200).optional(),
-  type: z.enum(['registration', 'survey']),
+  type: z.string().trim().min(1, 'Purpose is required').max(50),
   description: z.string().max(2000).optional(),
   schema: z.unknown(),
   status: z.enum(['draft', 'published']).optional(),

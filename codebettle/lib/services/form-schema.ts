@@ -29,6 +29,15 @@ import {
   type FormFieldType,
   type FormSchema,
 } from '../db/types';
+import { validateCoverImageUrlValue, validateFormStyleValue } from '../form-style';
+import {
+  fileExtensionOf,
+  isFileReference,
+  isFormUploadPath,
+  isUploadVariant,
+  MIME_TO_EXTENSION,
+  uploadVariantConfig,
+} from '../form-uploads';
 
 export type SchemaValidationResult =
   | { ok: true }
@@ -77,6 +86,13 @@ export function validateFormSchema(
       errors.push(`Schema ${key} must be a string`);
     }
   }
+  // GHL upgrade: whole-form style + cover image also travel inside the
+  // schema. Colours must be strict 6-digit hex (anything else — url(,
+  // expression(, gradients, named colours — is rejected, so no CSS
+  // injection can reach an inline style); enums are whitelisted; the
+  // cover URL must be http(s) or a same-origin path.
+  errors.push(...validateFormStyleValue(raw.style));
+  errors.push(...validateCoverImageUrlValue(raw.coverImageUrl));
   const seenIds = new Set<string>();
   fields.forEach((item, index) => {
     const where = `Field ${index + 1}`;
@@ -94,6 +110,11 @@ export function validateFormSchema(
     }
     if (typeof f.type !== 'string' || !(FORM_FIELD_TYPES as readonly string[]).includes(f.type)) {
       errors.push(`${where}: type must be one of ${FORM_FIELD_TYPES.join(', ')}`);
+    }
+    // A file field's variant, when present, must be one of the four
+    // upload variants (absent means 'files' — the server default).
+    if (f.type === 'file' && f.uploadVariant !== undefined && !isUploadVariant(f.uploadVariant)) {
+      errors.push(`${where}: uploadVariant must be one of picture, document, video, files`);
     }
     if (typeof f.label !== 'string' || f.label.trim() === '') {
       errors.push(`${where}: label is required`);
@@ -245,6 +266,33 @@ function validateFieldValue(field: FormField, value: unknown): string | null {
         return null;
       }
       if (typeof value !== 'boolean') return `${label} must be true or false`;
+      return null;
+    }
+    case 'file': {
+      // A file field's value must be the stored file reference
+      // { name, url, size, mime } produced by the server-side upload —
+      // never raw bytes, never a bare string. The reference is checked
+      // against this field's variant accept list and size limit, and
+      // its storage path must be a form-upload path whose extension
+      // matches its MIME type (a forged reference pointing at another
+      // file cannot pass the extension/MIME check, and the admin file
+      // route additionally verifies the path belongs to this form).
+      if (!isFileReference(value)) return `${label} must be an uploaded file`;
+      const config = uploadVariantConfig(field.uploadVariant);
+      if (!(config.mimes as readonly string[]).includes(value.mime)) {
+        return `${label} must be ${config.description}`;
+      }
+      if (value.size <= 0 || value.size > config.maxBytes) {
+        return `${label} must be 5 MB or smaller`;
+      }
+      if (!isFormUploadPath(value.url)) {
+        return `${label} is not a valid uploaded file`;
+      }
+      const ext = fileExtensionOf(value.url);
+      const canonical = MIME_TO_EXTENSION[value.mime];
+      if (canonical !== ext && !(value.mime === 'image/jpeg' && ext === 'jpeg')) {
+        return `${label} does not match its file type`;
+      }
       return null;
     }
     default:
