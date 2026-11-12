@@ -10,9 +10,12 @@ import { getUnreadCount, listNotificationsForUser } from '@/lib/db/notifications
  * - ?type=<type> filters by notification type (e.g. 'announcement').
  * - ?category=<category> filters by category (general | important |
  *   warning | special_notice).
- * - ?pending=true returns ONLY unread notifications with
- *   requiresAcknowledge=true, oldest first (the login acknowledge
- *   popup). unreadCount is unaffected — it still counts all unread.
+ * - ?pending=true returns ONLY notifications with
+ *   requiresAcknowledge=true that have NOT been acknowledged yet,
+ *   oldest first (the login acknowledge popup). Read state does NOT
+ *   discharge them — a read-but-unacknowledged item stays pending
+ *   until acknowledgedAt is set. unreadCount is unaffected — it
+ *   still counts all unread.
  * Session auth required; userId always comes from the session, never
  * from the request.
  */

@@ -224,16 +224,10 @@ test('email templates stay dark-only (out of scope for the theme)', () => {
 // touch them; their hardcoded colours are listed in the worker report
 // for reconciliation instead of being edited here.
 const OWNED_BY_OTHERS = [
-  'components/layout/Footer.tsx',
   'components/auth/AuthSocialNav.tsx',
   'components/auth/BrandIcons.tsx',
-  'app/admin/settings/page.tsx',
 ];
-const OWNED_BY_OTHERS_DIRS = [
-  'app/admin/courses/',
-  'app/instructor/quizzes/',
-  'app/student/quizzes/',
-];
+const OWNED_BY_OTHERS_DIRS: string[] = [];
 
 function ownedTsxFiles(dir: string): string[] {
   const out: string[] = [];

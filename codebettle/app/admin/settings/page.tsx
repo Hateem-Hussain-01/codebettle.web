@@ -409,13 +409,13 @@ export default function AdminSettingsPage() {
   return (
     <div className="space-y-6 max-w-2xl">
       <FadeIn>
-        <h1 className="text-2xl font-black text-white">Site Settings</h1>
+        <h1 className="text-2xl font-black text-foreground">Site Settings</h1>
         <p className="text-muted text-sm mt-1">Configure platform-wide settings</p>
       </FadeIn>
 
       <FadeIn delay={0.05}>
       <Card>
-        <h2 className="text-white font-bold mb-4 flex items-center gap-2"><Globe className="w-4 h-4 text-primary" />General</h2>
+        <h2 className="text-foreground font-bold mb-4 flex items-center gap-2"><Globe className="w-4 h-4 text-primary-text" />General</h2>
         <div className="space-y-4">
           <Input label="Site Name" value={settings.siteName} onChange={e => setSettings(s => ({ ...s, siteName: e.target.value }))} />
           <Input label="Site Description" value={settings.siteDescription} onChange={e => setSettings(s => ({ ...s, siteDescription: e.target.value }))} />
@@ -425,7 +425,7 @@ export default function AdminSettingsPage() {
 
       <FadeIn delay={0.1}>
       <Card>
-        <h2 className="text-white font-bold mb-4 flex items-center gap-2"><Mail className="w-4 h-4 text-primary" />Contact</h2>
+        <h2 className="text-foreground font-bold mb-4 flex items-center gap-2"><Mail className="w-4 h-4 text-primary-text" />Contact</h2>
         <div className="space-y-4">
           <Input label="Contact Email" type="email" value={settings.contactEmail} onChange={e => setSettings(s => ({ ...s, contactEmail: e.target.value }))} />
           <Input label="Phone" value={settings.phone} onChange={e => setSettings(s => ({ ...s, phone: e.target.value }))} />
@@ -437,7 +437,7 @@ export default function AdminSettingsPage() {
       <FadeIn delay={0.15}>
       <Card>
         <div className="flex items-center justify-between mb-1">
-          <h2 className="text-white font-bold flex items-center gap-2"><Share2 className="w-4 h-4 text-primary" />Footer Social Icons</h2>
+          <h2 className="text-foreground font-bold flex items-center gap-2"><Share2 className="w-4 h-4 text-primary-text" />Footer Social Icons</h2>
           <Button size="sm" onClick={openSocialAdd}><Plus className="w-4 h-4" />Add Icon</Button>
         </div>
         <p className="text-muted text-sm mb-4">Icons shown in the website footer. Only the icon name and link are needed — the icon is fetched automatically from the name. Only enabled icons are shown; while no icons are added here, the footer shows its default LinkedIn, Instagram, Facebook, GitHub, WhatsApp and Email links.</p>
@@ -462,7 +462,7 @@ export default function AdminSettingsPage() {
                     </span>
                     <div className="min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
-                        <span className="text-white font-semibold">{link.name}</span>
+                        <span className="text-foreground font-semibold">{link.name}</span>
                         <span className={`text-xs px-2 py-0.5 rounded-full ${link.isEnabled ? 'bg-green-500/20 text-green-300' : 'bg-red-500/20 text-red-300'}`}>
                           {link.isEnabled ? 'Shown in footer' : 'Hidden'}
                         </span>
@@ -478,7 +478,7 @@ export default function AdminSettingsPage() {
                         aria-label={`Move ${link.name} up`}
                         disabled={idx === 0}
                         onClick={() => void moveSocialLink(link, -1)}
-                        className="p-1.5 rounded-lg text-muted hover:text-white hover:bg-dark-border disabled:opacity-30 cursor-pointer"
+                        className="p-1.5 rounded-lg text-muted hover:text-foreground hover:bg-dark-border disabled:opacity-30 cursor-pointer"
                       >
                         <ChevronUp className="w-4 h-4" />
                       </button>
@@ -487,7 +487,7 @@ export default function AdminSettingsPage() {
                         aria-label={`Move ${link.name} down`}
                         disabled={idx === socialLinks.length - 1}
                         onClick={() => void moveSocialLink(link, 1)}
-                        className="p-1.5 rounded-lg text-muted hover:text-white hover:bg-dark-border disabled:opacity-30 cursor-pointer"
+                        className="p-1.5 rounded-lg text-muted hover:text-foreground hover:bg-dark-border disabled:opacity-30 cursor-pointer"
                       >
                         <ChevronDown className="w-4 h-4" />
                       </button>
@@ -495,7 +495,7 @@ export default function AdminSettingsPage() {
                         type="button"
                         aria-label={`Edit ${link.name}`}
                         onClick={() => openSocialEdit(link)}
-                        className="p-1.5 rounded-lg text-muted hover:text-white hover:bg-dark-border cursor-pointer"
+                        className="p-1.5 rounded-lg text-muted hover:text-foreground hover:bg-dark-border cursor-pointer"
                       >
                         <Pencil className="w-4 h-4" />
                       </button>
@@ -511,7 +511,7 @@ export default function AdminSettingsPage() {
                     <button
                       type="button"
                       onClick={() => void toggleSocialEnabled(link)}
-                      className={`text-xs px-3 py-1.5 rounded-lg border cursor-pointer ${link.isEnabled ? 'border-dark-border text-white/80 hover:text-white' : 'border-green-500/50 text-green-300 hover:bg-green-500/10'}`}
+                      className={`text-xs px-3 py-1.5 rounded-lg border cursor-pointer ${link.isEnabled ? 'border-dark-border text-foreground/80 hover:text-foreground' : 'border-green-500/50 text-green-300 hover:bg-green-500/10'}`}
                     >
                       {link.isEnabled ? 'Hide from footer' : 'Show in footer'}
                     </button>
@@ -529,7 +529,7 @@ export default function AdminSettingsPage() {
         <div className="flex items-start gap-4">
           <AlertTriangle className="w-6 h-6 text-yellow-400 flex-shrink-0" />
           <div className="flex-1">
-            <h2 className="text-white font-bold mb-1">Maintenance Mode</h2>
+            <h2 className="text-foreground font-bold mb-1">Maintenance Mode</h2>
             <p className="text-muted text-sm mb-4">When enabled, visitors will see a maintenance page. Only admins can access the site.</p>
             <label className="flex items-center gap-3 cursor-pointer">
               <div
@@ -538,7 +538,7 @@ export default function AdminSettingsPage() {
               >
                 <span className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white transition-transform ${settings.maintenanceMode ? 'translate-x-6' : ''}`} />
               </div>
-              <span className="text-sm text-white">{settings.maintenanceMode ? 'Maintenance mode ON' : 'Maintenance mode OFF'}</span>
+              <span className="text-sm text-foreground">{settings.maintenanceMode ? 'Maintenance mode ON' : 'Maintenance mode OFF'}</span>
             </label>
           </div>
         </div>
@@ -548,7 +548,7 @@ export default function AdminSettingsPage() {
       <FadeIn delay={0.25}>
       <Card>
         <div className="flex items-center justify-between mb-1">
-          <h2 className="text-white font-bold flex items-center gap-2"><CreditCard className="w-4 h-4 text-primary" />Payment Accounts Management</h2>
+          <h2 className="text-foreground font-bold flex items-center gap-2"><CreditCard className="w-4 h-4 text-primary-text" />Payment Accounts Management</h2>
           <Button size="sm" onClick={openAdd}><Plus className="w-4 h-4" />Add Account</Button>
         </div>
         <p className="text-muted text-sm mb-4">Receiving accounts students pay into (bank / Easypaisa / JazzCash / wallet). Only active accounts are shown to students, in display order.</p>
@@ -569,14 +569,14 @@ export default function AdminSettingsPage() {
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <span className="text-white font-semibold">{account.label}</span>
-                      <span className="text-xs px-2 py-0.5 rounded-full bg-dark-border text-white/80">{METHOD_LABELS[account.method]}</span>
+                      <span className="text-foreground font-semibold">{account.label}</span>
+                      <span className="text-xs px-2 py-0.5 rounded-full bg-dark-border text-foreground/80">{METHOD_LABELS[account.method]}</span>
                       <span className={`text-xs px-2 py-0.5 rounded-full ${account.isActive ? 'bg-green-500/20 text-green-300' : 'bg-red-500/20 text-red-300'}`}>
                         {account.isActive ? 'Active' : 'Inactive'}
                       </span>
                       <span className="text-xs text-muted">Order {account.displayOrder}</span>
                     </div>
-                    <p className="text-sm text-white/80 mt-1">{account.accountHolder}{account.bankName ? ` · ${account.bankName}` : ''}</p>
+                    <p className="text-sm text-foreground/80 mt-1">{account.accountHolder}{account.bankName ? ` · ${account.bankName}` : ''}</p>
                     <p className="text-sm text-muted font-mono break-all">{accountRef(account)}</p>
                     {account.instructions && <p className="text-sm text-muted mt-1">{account.instructions}</p>}
                   </div>
@@ -587,7 +587,7 @@ export default function AdminSettingsPage() {
                         aria-label={`Move ${account.label} up`}
                         disabled={idx === 0}
                         onClick={() => void moveAccount(account, -1)}
-                        className="p-1.5 rounded-lg text-muted hover:text-white hover:bg-dark-border disabled:opacity-30 cursor-pointer"
+                        className="p-1.5 rounded-lg text-muted hover:text-foreground hover:bg-dark-border disabled:opacity-30 cursor-pointer"
                       >
                         <ChevronUp className="w-4 h-4" />
                       </button>
@@ -596,7 +596,7 @@ export default function AdminSettingsPage() {
                         aria-label={`Move ${account.label} down`}
                         disabled={idx === accounts.length - 1}
                         onClick={() => void moveAccount(account, 1)}
-                        className="p-1.5 rounded-lg text-muted hover:text-white hover:bg-dark-border disabled:opacity-30 cursor-pointer"
+                        className="p-1.5 rounded-lg text-muted hover:text-foreground hover:bg-dark-border disabled:opacity-30 cursor-pointer"
                       >
                         <ChevronDown className="w-4 h-4" />
                       </button>
@@ -604,7 +604,7 @@ export default function AdminSettingsPage() {
                         type="button"
                         aria-label={`Edit ${account.label}`}
                         onClick={() => openEdit(account)}
-                        className="p-1.5 rounded-lg text-muted hover:text-white hover:bg-dark-border cursor-pointer"
+                        className="p-1.5 rounded-lg text-muted hover:text-foreground hover:bg-dark-border cursor-pointer"
                       >
                         <Pencil className="w-4 h-4" />
                       </button>
@@ -620,7 +620,7 @@ export default function AdminSettingsPage() {
                     <button
                       type="button"
                       onClick={() => void toggleActive(account)}
-                      className={`text-xs px-3 py-1.5 rounded-lg border cursor-pointer ${account.isActive ? 'border-dark-border text-white/80 hover:text-white' : 'border-green-500/50 text-green-300 hover:bg-green-500/10'}`}
+                      className={`text-xs px-3 py-1.5 rounded-lg border cursor-pointer ${account.isActive ? 'border-dark-border text-foreground/80 hover:text-foreground' : 'border-green-500/50 text-green-300 hover:bg-green-500/10'}`}
                     >
                       {account.isActive ? 'Deactivate' : 'Activate'}
                     </button>
@@ -649,7 +649,7 @@ export default function AdminSettingsPage() {
             <Input label="Display Order" type="number" value={String(form.displayOrder)} onChange={e => setForm(f => ({ ...f, displayOrder: Number(e.target.value) || 0 }))} />
             <label className="flex items-end gap-2 pb-2.5 cursor-pointer">
               <input type="checkbox" checked={form.isActive} onChange={e => setForm(f => ({ ...f, isActive: e.target.checked }))} className="w-4 h-4 accent-yellow-400" />
-              <span className="text-sm text-white/80">Active (shown to students)</span>
+              <span className="text-sm text-foreground/80">Active (shown to students)</span>
             </label>
           </div>
           <p className="text-xs text-muted">At least one of account number, IBAN or wallet number is required.</p>
@@ -662,8 +662,8 @@ export default function AdminSettingsPage() {
       </Modal>
 
       <Modal isOpen={deleteTarget !== null} onClose={() => setDeleteTarget(null)} title="Delete Payment Account">
-        <p className="text-sm text-white/80">
-          Delete <span className="font-semibold text-white">{deleteTarget?.label}</span>?
+        <p className="text-sm text-foreground/80">
+          Delete <span className="font-semibold text-foreground">{deleteTarget?.label}</span>?
           Past payment submissions keep their saved copy of this account, so payment history is not affected.
         </p>
         <div className="flex justify-end gap-2 mt-6">
@@ -680,7 +680,7 @@ export default function AdminSettingsPage() {
             <Input label="Display Order" type="number" value={String(socialForm.displayOrder)} onChange={e => setSocialForm(f => ({ ...f, displayOrder: Number(e.target.value) || 0 }))} />
             <label className="flex items-end gap-2 pb-2.5 cursor-pointer">
               <input type="checkbox" checked={socialForm.isEnabled} onChange={e => setSocialForm(f => ({ ...f, isEnabled: e.target.checked }))} className="w-4 h-4 accent-yellow-400" />
-              <span className="text-sm text-white/80">Shown in footer</span>
+              <span className="text-sm text-foreground/80">Shown in footer</span>
             </label>
           </div>
           <p className="text-xs text-muted">The icon is fetched automatically from the name (LinkedIn, Instagram, Facebook, GitHub, WhatsApp, Email). The link must be a valid https:// URL or a mailto: address. Only enabled icons appear in the footer.</p>
@@ -702,8 +702,8 @@ export default function AdminSettingsPage() {
       </Modal>
 
       <Modal isOpen={socialDeleteTarget !== null} onClose={() => setSocialDeleteTarget(null)} title="Delete Footer Social Icon">
-        <p className="text-sm text-white/80">
-          Delete <span className="font-semibold text-white">{socialDeleteTarget?.name}</span>?
+        <p className="text-sm text-foreground/80">
+          Delete <span className="font-semibold text-foreground">{socialDeleteTarget?.name}</span>?
           It will no longer appear in the footer. If this was the last custom icon, the footer goes back to its default icons.
         </p>
         <div className="flex justify-end gap-2 mt-6">

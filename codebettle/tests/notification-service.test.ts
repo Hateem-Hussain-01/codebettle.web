@@ -2,11 +2,12 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { __resetDbClient, __setDbClient } from '../lib/db/client';
 import { createFakeDb, type FakeDb } from './fake-db';
-import { getUnreadCount, listNotificationsForUser } from '../lib/db/notifications';
+import { getUnreadCount, listNotificationsByAnnouncement, listNotificationsForUser } from '../lib/db/notifications';
 import {
   notifyEnrolledStudents,
   notifyUser,
   notifyUsers,
+  onAnnouncementPublished,
   onApplicationReviewed,
   onCertificateIssued,
   onCourseCompleted,
@@ -174,6 +175,69 @@ test('best-effort: a failing prefs lookup never throws; malformed prefs fall bac
     completedLessons: [], isCompleted: false, paymentStatus: 'paid', amountPaid: 0,
   });
   assert.ok(noCourse.ok && 'notification' in noCourse, JSON.stringify(noCourse));
+});
+
+test('onAnnouncementPublished fans out a course announcement with announcementId + course link (TeacherMessagePopup signal)', async () => {
+  const summary = await onAnnouncementPublished({
+    id: 'ann-1', title: 'Quiz moved', content: 'Quiz is now Thursday', type: 'course',
+    courseId: 'course-1', authorId: 'admin-1', createdAt: '2024-05-01', isActive: true,
+  });
+  assert.equal(summary.sent, 1);
+  assert.equal(summary.failed, 0);
+  // Only the enrolled student got it.
+  assert.equal((await listNotificationsForUser('stu-1', {})).total, 1);
+  assert.equal((await listNotificationsForUser('stu-2', {})).total, 0);
+
+  const rows = await listNotificationsByAnnouncement('ann-1');
+  assert.equal(rows.length, 1);
+  assert.equal(rows[0].userId, 'stu-1');
+  assert.equal(rows[0].announcementId, 'ann-1');
+  // Course deep link: isTeacherMessage() matches '/student/courses/'.
+  assert.equal(rows[0].linkUrl, '/student/courses/course-1');
+});
+
+test('onAnnouncementPublished fans out site-wide; receipts show read/acknowledged states per recipient', async () => {
+  const summary = await onAnnouncementPublished({
+    id: 'ann-9', title: 'Holiday', content: 'No classes Friday', type: 'site-wide',
+    authorId: 'admin-1', createdAt: '2024-05-01', isActive: true,
+  });
+  assert.equal(summary.sent, 3);
+  const rows = await listNotificationsByAnnouncement('ann-9');
+  assert.equal(rows.length, 3);
+  assert.ok(rows.every((r) => r.announcementId === 'ann-9'));
+  assert.ok(rows.every((r) => r.linkUrl === undefined));
+
+  const { acknowledgeNotification, markNotificationRead } = await import('../lib/db/notifications');
+  const stu1Row = rows.find((r) => r.userId === 'stu-1');
+  const stu2Row = rows.find((r) => r.userId === 'stu-2');
+  assert.ok(stu1Row && stu2Row);
+  await markNotificationRead('stu-1', stu1Row.id);
+  await acknowledgeNotification('stu-2', stu2Row.id);
+
+  const after = await listNotificationsByAnnouncement('ann-9');
+  assert.equal(after.filter((r) => r.readAt).length, 2);
+  assert.equal(after.filter((r) => r.acknowledgedAt).length, 1);
+  assert.equal(after.find((r) => r.userId === 'stu-1')?.acknowledgedAt, null);
+  assert.ok(after.find((r) => r.userId === 'stu-2')?.acknowledgedAt);
+  assert.equal(after.find((r) => r.userId === 'admin-1')?.readAt, null);
+});
+
+test('double-publishing the same announcement does not duplicate notifications', async () => {
+  const announcement = {
+    id: 'ann-1', title: 'Quiz moved', content: 'Quiz is now Thursday', type: 'course' as const,
+    courseId: 'course-1', authorId: 'admin-1', createdAt: '2024-05-01', isActive: true,
+  };
+  const first = await onAnnouncementPublished(announcement);
+  assert.equal(first.sent, 1);
+  assert.equal(first.skipped, 0);
+
+  const second = await onAnnouncementPublished(announcement);
+  assert.equal(second.sent, 0);
+  assert.equal(second.skipped, 1);
+  assert.equal(second.failed, 0);
+
+  assert.equal((await listNotificationsByAnnouncement('ann-1')).length, 1);
+  assert.equal((await listNotificationsForUser('stu-1', {})).total, 1);
 });
 
 test('email hook returns not-configured without throwing when RESEND_API_KEY is absent', async () => {

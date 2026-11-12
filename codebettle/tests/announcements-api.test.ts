@@ -9,6 +9,7 @@ import { DELETE as adminDelete } from '../app/api/admin/announcements/[id]/route
 import { POST as instructorCreate } from '../app/api/instructor/announcements/route';
 import { DELETE as instructorDelete } from '../app/api/instructor/announcements/[id]/route';
 import { listAnnouncements } from '../lib/db/announcements';
+import { listNotificationsByAnnouncement } from '../lib/db/notifications';
 import type { SessionUser } from '../lib/services/auth-service';
 
 /**
@@ -127,6 +128,64 @@ test('instructor POST to their own course works; to another instructor’s cours
     title: 'x', content: 'y', courseId: 'course-1',
   }));
   assert.equal(asStudent.status, 403);
+});
+
+test('end-to-end: publishing a course announcement fans out receipts; read/ack states show per recipient', async () => {
+  const { GET: receipts } = await import('../app/api/admin/announcements/[id]/receipts/route');
+  const { acknowledgeNotification, markNotificationRead } = await import('../lib/db/notifications');
+  fake.seed('Enrollment', [
+    { id: 'enr-1', studentId: 'stu-1', courseId: 'course-1', enrolledAt: D('2024-05-01'), isCompleted: false, completedAt: null, paymentStatus: 'paid', amountPaid: 5000, couponUsed: null, deletedAt: null },
+  ]);
+
+  __setTestSession(ADMIN);
+  const created = await adminCreate(jsonReq('http://localhost/api/admin/announcements', 'POST', {
+    title: 'Quiz moved', content: 'Quiz is now Thursday', type: 'course', courseId: 'course-1',
+  }));
+  assert.equal(created.status, 201);
+  const createdBody = (await created.json()) as { announcement: { id: string } };
+  const annId = createdBody.announcement.id;
+
+  const readReceipts = async () => {
+    const res = await receipts(new NextRequest(`http://localhost/api/admin/announcements/${annId}/receipts`), {
+      params: Promise.resolve({ id: annId }),
+    });
+    assert.equal(res.status, 200);
+    return (await res.json()) as {
+      total: number;
+      read: number;
+      acknowledged: number;
+      recipients: { userId: string; readAt: string | null; acknowledgedAt: string | null }[];
+    };
+  };
+
+  // One recipient (only stu-1 is enrolled), unread + unacknowledged.
+  const first = await readReceipts();
+  assert.equal(first.total, 1);
+  assert.equal(first.read, 0);
+  assert.equal(first.acknowledged, 0);
+  assert.equal(first.recipients[0].userId, 'stu-1');
+  assert.equal(first.recipients[0].readAt, null);
+  assert.equal(first.recipients[0].acknowledgedAt, null);
+
+  // The fanned-out row is linked to the announcement with a course link.
+  const rows = await listNotificationsByAnnouncement(annId);
+  assert.equal(rows.length, 1);
+  assert.equal(rows[0].linkUrl, '/student/courses/course-1');
+
+  // stu-1 reads it: receipts show read 1, acknowledged still 0.
+  await markNotificationRead('stu-1', rows[0].id);
+  const afterRead = await readReceipts();
+  assert.equal(afterRead.total, 1);
+  assert.equal(afterRead.read, 1);
+  assert.equal(afterRead.acknowledged, 0);
+  assert.ok(afterRead.recipients[0].readAt);
+
+  // stu-1 acknowledges it: receipts show acknowledged 1.
+  await acknowledgeNotification('stu-1', rows[0].id);
+  const afterAck = await readReceipts();
+  assert.equal(afterAck.read, 1);
+  assert.equal(afterAck.acknowledged, 1);
+  assert.ok(afterAck.recipients[0].acknowledgedAt);
 });
 
 test('instructor DELETE: own announcement 200, another instructor’s 403, unknown 404', async () => {

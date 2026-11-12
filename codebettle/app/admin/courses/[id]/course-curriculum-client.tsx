@@ -197,7 +197,7 @@ export default function CourseCurriculumClient({ courseId, modules: initialModul
     <FadeIn>
     <Card>
       <div className="flex items-center justify-between mb-4">
-        <h2 className="text-white font-bold text-sm flex items-center gap-2"><BookOpen className="w-4 h-4 text-primary" />Manage Curriculum</h2>
+        <h2 className="text-foreground font-bold text-sm flex items-center gap-2"><BookOpen className="w-4 h-4 text-primary-text" />Manage Curriculum</h2>
         <span className="text-muted text-xs">{modules.length} module{modules.length !== 1 ? 's' : ''} · {modules.reduce((a, m) => a + m.lessons.length, 0)} lessons</span>
       </div>
 
@@ -218,8 +218,8 @@ export default function CourseCurriculumClient({ courseId, modules: initialModul
                 placeholder={`Module ${mi + 1}`}
                 className="flex-1 text-sm"
               />
-              <button onClick={() => moveModule(mod.id, -1)} disabled={mi === 0} title="Move up" className="text-muted hover:text-white disabled:opacity-30 cursor-pointer p-1"><ChevronUp className="w-4 h-4" /></button>
-              <button onClick={() => moveModule(mod.id, 1)} disabled={mi === modules.length - 1} title="Move down" className="text-muted hover:text-white disabled:opacity-30 cursor-pointer p-1"><ChevronDown className="w-4 h-4" /></button>
+              <button onClick={() => moveModule(mod.id, -1)} disabled={mi === 0} title="Move up" className="text-muted hover:text-foreground disabled:opacity-30 cursor-pointer p-1"><ChevronUp className="w-4 h-4" /></button>
+              <button onClick={() => moveModule(mod.id, 1)} disabled={mi === modules.length - 1} title="Move down" className="text-muted hover:text-foreground disabled:opacity-30 cursor-pointer p-1"><ChevronDown className="w-4 h-4" /></button>
               <Button size="sm" variant="secondary" onClick={() => renameModule(mod.id)}><Save className="w-3.5 h-3.5" />Save</Button>
               <button onClick={() => setDeleteTarget({ kind: 'module', moduleId: mod.id, title: mod.title })} title="Delete module" className="text-muted hover:text-red-400 cursor-pointer p-1"><Trash2 className="w-4 h-4" /></button>
             </div>
@@ -229,9 +229,9 @@ export default function CourseCurriculumClient({ courseId, modules: initialModul
                 {mod.lessons.map((lesson, li) => (
                   <div key={lesson.id} className="bg-dark-border/20 rounded-lg p-3 space-y-2">
                     <div className="flex items-center gap-2">
-                      <span className="text-primary text-xs font-semibold flex-shrink-0">Class {li + 1}</span>
-                      <button onClick={() => moveLesson(mod.id, lesson.id, -1)} disabled={li === 0} title="Move up" className="text-muted hover:text-white disabled:opacity-30 cursor-pointer p-1"><ChevronUp className="w-4 h-4" /></button>
-                      <button onClick={() => moveLesson(mod.id, lesson.id, 1)} disabled={li === mod.lessons.length - 1} title="Move down" className="text-muted hover:text-white disabled:opacity-30 cursor-pointer p-1"><ChevronDown className="w-4 h-4" /></button>
+                      <span className="text-primary-text text-xs font-semibold flex-shrink-0">Class {li + 1}</span>
+                      <button onClick={() => moveLesson(mod.id, lesson.id, -1)} disabled={li === 0} title="Move up" className="text-muted hover:text-foreground disabled:opacity-30 cursor-pointer p-1"><ChevronUp className="w-4 h-4" /></button>
+                      <button onClick={() => moveLesson(mod.id, lesson.id, 1)} disabled={li === mod.lessons.length - 1} title="Move down" className="text-muted hover:text-foreground disabled:opacity-30 cursor-pointer p-1"><ChevronDown className="w-4 h-4" /></button>
                       <button onClick={() => setDeleteTarget({ kind: 'lesson', moduleId: mod.id, lessonId: lesson.id, title: lesson.title })} title="Delete lesson" className="ml-auto text-muted hover:text-red-400 cursor-pointer p-1"><Trash2 className="w-4 h-4" /></button>
                     </div>
                     <div className="grid sm:grid-cols-3 gap-2">

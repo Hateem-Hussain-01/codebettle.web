@@ -45,11 +45,13 @@ import {
   buildApplicantTrackingView,
   canCreateNewApplication,
   createApplicantApplication,
+  createStageService,
   getApplicantTracking,
   listMyApplications,
   onboardApplication,
   requestInfo,
   startViewAs,
+  updateStageService,
 } from '../lib/services/recruitment-service';
 import { mintViewAsToken, verifyViewAsToken } from '../lib/view-as';
 import { listNotificationsForUser } from '../lib/db/notifications';
@@ -326,6 +328,9 @@ test('onboarding requires an approved application with an account', async () => 
   const blocked = await onboardApplication(ADMIN_ACTOR, noAccount.id);
   assert.ok('error' in blocked);
   assert.equal(blocked.status, 400);
+  // Phase 7 (GAP #B6): the message must promise what actually happens —
+  // signup links the application automatically, so no manual step is offered.
+  assert.match(blocked.error, /links automatically/i);
 });
 
 // ---------------------------------------------------------------------------
@@ -359,6 +364,43 @@ test('custom stage CRUD works and history survives a stage delete', async () => 
   assert.deepEqual((await listStages()).map((s) => s.name).includes('References Checked'), false);
   const current = await getCurrentStage(app.id);
   assert.equal(current?.stageName, 'References Checked');
+});
+
+test('custom stages reject terminal names and duplicate names (case-insensitive)', async () => {
+  const seeded = await ensureDefaultStages();
+  assert.equal(seeded.length, 8);
+
+  // Terminal names can never be created as custom stages — they could
+  // never be assigned (assignStage refuses them).
+  const rejected = await createStageService(ADMIN_ACTOR, { name: 'Rejected' });
+  assert.ok('error' in rejected);
+  assert.equal(rejected.status, 400);
+  const onboarded = await createStageService(ADMIN_ACTOR, { name: 'successfully onboarded' });
+  assert.ok('error' in onboarded);
+  assert.equal(onboarded.status, 400);
+
+  // Duplicate of a seeded stage, case-insensitively.
+  const dupe = await createStageService(ADMIN_ACTOR, { name: 'under review' });
+  assert.ok('error' in dupe);
+  assert.equal(dupe.status, 409);
+
+  const created = await createStageService(ADMIN_ACTOR, { name: 'Demo Day' });
+  assert.ok(!('error' in created), JSON.stringify(created));
+  const dupeCase = await createStageService(ADMIN_ACTOR, { name: 'demo day' });
+  assert.ok('error' in dupeCase);
+  assert.equal(dupeCase.status, 409);
+
+  // Renames get the same guards.
+  const renameTerminal = await updateStageService(ADMIN_ACTOR, created.stage.id, { name: 'Rejected' });
+  assert.ok('error' in renameTerminal);
+  assert.equal(renameTerminal.status, 400);
+  const renameDupe = await updateStageService(ADMIN_ACTOR, created.stage.id, { name: 'Under Review' });
+  assert.ok('error' in renameDupe);
+  assert.equal(renameDupe.status, 409);
+  // Renaming a stage to its own current name is a no-op and stays allowed.
+  const renameSame = await updateStageService(ADMIN_ACTOR, created.stage.id, { name: 'Demo Day' });
+  assert.ok(!('error' in renameSame), JSON.stringify(renameSame));
+  assert.equal(renameSame.stage.name, 'Demo Day');
 });
 
 // ---------------------------------------------------------------------------

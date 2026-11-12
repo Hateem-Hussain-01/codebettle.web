@@ -245,7 +245,7 @@ export default function QuizDetailClient({ quiz: initial }: { quiz: Quiz }) {
     <div className="space-y-6">
       <FadeIn className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-black text-white">{quiz.title}</h1>
+          <h1 className="text-2xl font-black text-foreground">{quiz.title}</h1>
           <p className="text-muted text-sm mt-1">
             {questions.length} question{questions.length !== 1 ? 's' : ''}
             {flaggedCount > 0 && ` · ${flaggedCount} flagged — check the notes on those questions`}
@@ -268,7 +268,7 @@ export default function QuizDetailClient({ quiz: initial }: { quiz: Quiz }) {
       {/* Settings */}
       <FadeIn delay={0.05}>
       <Card className="p-5">
-        <h2 className="text-white font-bold mb-4">Settings</h2>
+        <h2 className="text-foreground font-bold mb-4">Settings</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <Input label="Title" value={meta.title} onChange={(e) => setMeta({ ...meta, title: e.target.value })} />
           <Input
@@ -303,7 +303,7 @@ export default function QuizDetailClient({ quiz: initial }: { quiz: Quiz }) {
             ]}
           />
           <div className="flex items-center gap-6 pt-6">
-            <label className="flex items-center gap-2 text-sm text-white">
+            <label className="flex items-center gap-2 text-sm text-foreground">
               <input
                 type="checkbox"
                 checked={meta.showResultsToStudents}
@@ -311,7 +311,7 @@ export default function QuizDetailClient({ quiz: initial }: { quiz: Quiz }) {
               />
               Show results to students
             </label>
-            <label className="flex items-center gap-2 text-sm text-white">
+            <label className="flex items-center gap-2 text-sm text-foreground">
               <input
                 type="checkbox"
                 checked={meta.showCorrectAnswers}
@@ -338,7 +338,7 @@ export default function QuizDetailClient({ quiz: initial }: { quiz: Quiz }) {
       {isDraft && (
         <FadeIn delay={0.08}>
         <Card className="p-5">
-          <h2 className="text-white font-bold mb-2">Import from text</h2>
+          <h2 className="text-foreground font-bold mb-2">Import from text</h2>
           <p className="text-muted text-sm mb-4">
             Copy the prompt below, fill in the [BRACKETS], and give it to any AI tool (ChatGPT, Claude, Gemini…).
             Paste the text it gives you into the box below and import it — the quiz is created from that text.
@@ -347,7 +347,7 @@ export default function QuizDetailClient({ quiz: initial }: { quiz: Quiz }) {
 
           <div className="mb-4">
             <div className="flex items-center justify-between mb-2">
-              <h3 className="text-white font-semibold text-sm">Ready-made AI prompt</h3>
+              <h3 className="text-foreground font-semibold text-sm">Ready-made AI prompt</h3>
               <Button variant="outline" size="sm" onClick={() => void copyText(QUIZ_AI_PROMPT, 'Prompt')}>
                 <Copy className="w-4 h-4 mr-1" /> Copy prompt
               </Button>
@@ -359,7 +359,7 @@ export default function QuizDetailClient({ quiz: initial }: { quiz: Quiz }) {
 
           <div className="mb-4">
             <div className="flex items-center justify-between mb-2">
-              <h3 className="text-white font-semibold text-sm">Sample format</h3>
+              <h3 className="text-foreground font-semibold text-sm">Sample format</h3>
               <Button variant="outline" size="sm" onClick={() => void copyText(QUIZ_TEXT_IMPORT_SAMPLE, 'Sample')}>
                 <Copy className="w-4 h-4 mr-1" /> Copy sample
               </Button>
@@ -406,7 +406,7 @@ export default function QuizDetailClient({ quiz: initial }: { quiz: Quiz }) {
       <FadeIn delay={0.1}>
       <Card className="p-5">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-white font-bold">Questions</h2>
+          <h2 className="text-foreground font-bold">Questions</h2>
           {isDraft && (
             <Button
               variant="outline"
@@ -426,7 +426,7 @@ export default function QuizDetailClient({ quiz: initial }: { quiz: Quiz }) {
             {questions.map((q, qi) => (
               <div key={qi} className={`border rounded-xl p-4 ${q.needsReview ? 'border-amber-500/50' : 'border-dark-border'}`}>
                 <div className="flex items-center justify-between gap-3 mb-3">
-                  <span className="text-white font-semibold text-sm">Q{qi + 1}</span>
+                  <span className="text-foreground font-semibold text-sm">Q{qi + 1}</span>
                   <div className="flex items-center gap-2">
                     {q.needsReview && (
                       <Badge variant="warning">Needs attention</Badge>
@@ -513,7 +513,7 @@ export default function QuizDetailClient({ quiz: initial }: { quiz: Quiz }) {
                           onChange={(e) => updateOption(qi, oi, { text: e.target.value })}
                           placeholder={`Option ${String.fromCharCode(65 + oi)}`}
                         />
-                        <label className="flex items-center gap-1 text-xs text-white whitespace-nowrap">
+                        <label className="flex items-center gap-1 text-xs text-foreground whitespace-nowrap">
                           <input
                             type="checkbox"
                             checked={opt.isCorrect ?? false}

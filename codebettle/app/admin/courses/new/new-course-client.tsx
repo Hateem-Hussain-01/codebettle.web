@@ -194,7 +194,7 @@ export default function NewCourseClient({ instructors: allInstructors }: NewCour
         <div className="flex items-center gap-3">
           <Link href="/admin/courses"><Button variant="ghost" size="sm"><ArrowLeft className="w-4 h-4" /></Button></Link>
           <div>
-            <h1 className="text-2xl font-black text-white">Create New Course</h1>
+            <h1 className="text-2xl font-black text-foreground">Create New Course</h1>
             <p className="text-muted text-sm mt-0.5">Save as draft — instructor will add curriculum, then you publish</p>
           </div>
         </div>
@@ -206,23 +206,23 @@ export default function NewCourseClient({ instructors: allInstructors }: NewCour
 
       {/* Draft flow info */}
       <FadeIn delay={0.05} className="bg-primary/5 border border-primary/20 rounded-xl p-4 flex items-start gap-3">
-        <Info className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
+        <Info className="w-5 h-5 text-primary-text flex-shrink-0 mt-0.5" />
         <div className="text-sm">
-          <p className="text-white font-medium">Recommended Workflow</p>
-          <p className="text-muted mt-0.5">Save as <span className="text-primary">Draft</span> → Instructor adds curriculum → You <span className="text-primary">Publish</span>. You can also publish without curriculum — instructor can add it anytime later.</p>
+          <p className="text-foreground font-medium">Recommended Workflow</p>
+          <p className="text-muted mt-0.5">Save as <span className="text-primary-text">Draft</span> → Instructor adds curriculum → You <span className="text-primary-text">Publish</span>. You can also publish without curriculum — instructor can add it anytime later.</p>
         </div>
       </FadeIn>
 
       {/* Basic Info */}
       <FadeIn delay={0.08}>
       <Card>
-        <h2 className="text-white font-bold mb-4">Course Details</h2>
+        <h2 className="text-foreground font-bold mb-4">Course Details</h2>
         <div className="space-y-4">
           <Input label="Course Title *" placeholder="e.g., Complete React & Next.js Course" value={form.title} onChange={set('title')} />
           <Textarea label="Short Description" placeholder="Shown on course cards (1–2 sentences)" value={form.description} onChange={set('description')} rows={2} />
           <Textarea label="Full Description" placeholder="Detailed course overview" value={form.longDescription} onChange={set('longDescription')} rows={4} />
           <div>
-            <label className="text-sm font-medium text-white/80 block mb-2">Thumbnail *</label>
+            <label className="text-sm font-medium text-foreground/80 block mb-2">Thumbnail *</label>
             <CourseThumbnailUploader
               uploadUrl="/api/admin/courses/thumbnail-upload"
               initialUrl={form.thumbnail}
@@ -248,7 +248,7 @@ export default function NewCourseClient({ instructors: allInstructors }: NewCour
       {/* Instructor & Zoom */}
       <FadeIn delay={0.12}>
       <Card className="border-blue-500/20">
-        <h2 className="text-white font-bold mb-4 flex items-center gap-2"><Video className="w-5 h-5 text-blue-400" />Instructor & Zoom</h2>
+        <h2 className="text-foreground font-bold mb-4 flex items-center gap-2"><Video className="w-5 h-5 text-blue-400" />Instructor & Zoom</h2>
         <div className="grid sm:grid-cols-2 gap-4">
           <div>
             <Select label="Assign Instructor *" value={form.instructorId} onChange={set('instructorId')} options={instructors.map(i => ({ value: i.id, label: i.name }))} />
@@ -256,7 +256,7 @@ export default function NewCourseClient({ instructors: allInstructors }: NewCour
               <div className="mt-2 flex items-center gap-2 bg-dark-border/30 rounded-lg px-3 py-2">
                 <img src={instructors.find(i => i.id === form.instructorId)?.avatar || ''} className="w-7 h-7 rounded-full border border-primary/30" alt="" />
                 <div>
-                  <p className="text-white text-xs font-medium">{instructors.find(i => i.id === form.instructorId)?.name}</p>
+                  <p className="text-foreground text-xs font-medium">{instructors.find(i => i.id === form.instructorId)?.name}</p>
                   <p className="text-muted text-xs">{instructors.find(i => i.id === form.instructorId)?.expertise?.slice(0, 2).join(' · ')}</p>
                 </div>
               </div>
@@ -273,7 +273,7 @@ export default function NewCourseClient({ instructors: allInstructors }: NewCour
       {/* Schedule */}
       <FadeIn delay={0.16}>
       <Card className="border-green-500/20">
-        <h2 className="text-white font-bold mb-4 flex items-center gap-2"><Calendar className="w-5 h-5 text-green-400" />Class Schedule</h2>
+        <h2 className="text-foreground font-bold mb-4 flex items-center gap-2"><Calendar className="w-5 h-5 text-green-400" />Class Schedule</h2>
         <div className="space-y-4">
           <div className="grid sm:grid-cols-3 gap-4">
             <Input label="Class Time" type="time" value={schedule.classTime} onChange={setScheduleField('classTime')} />
@@ -281,13 +281,13 @@ export default function NewCourseClient({ instructors: allInstructors }: NewCour
             <Input label="Start Date" type="date" value={schedule.startDate} onChange={setScheduleField('startDate')} />
           </div>
           <div>
-            <label className="text-sm font-medium text-white/80 block mb-2">Schedule Type</label>
+            <label className="text-sm font-medium text-foreground/80 block mb-2">Schedule Type</label>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-3">
               {[{ value: 'weekdays', label: 'Mon – Fri' }, { value: 'weekends', label: 'Weekends' }, { value: 'whole-week', label: 'All 7 Days' }, { value: 'custom', label: 'Custom Days' }].map(opt => (
                 <button
                   key={opt.value}
                   onClick={() => { setSchedule(s => ({ ...s, scheduleType: opt.value, customDays: opt.value !== 'custom' ? SCHEDULE_PRESETS[opt.value] : s.customDays })); }}
-                  className={`py-2 px-3 rounded-lg border text-sm font-medium transition-all cursor-pointer ${schedule.scheduleType === opt.value ? 'bg-primary text-dark border-primary' : 'border-dark-border text-muted hover:border-primary/40'}`}
+                  className={`py-2 px-3 rounded-lg border text-sm font-medium transition-all cursor-pointer ${schedule.scheduleType === opt.value ? 'bg-primary text-ink border-primary' : 'border-dark-border text-muted hover:border-primary/40'}`}
                 >
                   {opt.label}
                 </button>
@@ -299,7 +299,7 @@ export default function NewCourseClient({ instructors: allInstructors }: NewCour
                   <button
                     key={day}
                     onClick={() => toggleDay(day)}
-                    className={`py-1.5 px-3 rounded-lg border text-xs font-medium transition-all cursor-pointer ${schedule.customDays.includes(day) ? 'bg-primary/20 text-primary border-primary/40' : 'border-dark-border text-muted hover:border-primary/30'}`}
+                    className={`py-1.5 px-3 rounded-lg border text-xs font-medium transition-all cursor-pointer ${schedule.customDays.includes(day) ? 'bg-primary/20 text-primary-text border-primary/40' : 'border-dark-border text-muted hover:border-primary/30'}`}
                   >
                     {day}
                   </button>
@@ -322,27 +322,27 @@ export default function NewCourseClient({ instructors: allInstructors }: NewCour
       {/* Requirements & Outcomes */}
       <FadeIn delay={0.2}>
       <Card>
-        <h2 className="text-white font-bold mb-4">Requirements & Outcomes</h2>
+        <h2 className="text-foreground font-bold mb-4">Requirements & Outcomes</h2>
         <div className="grid sm:grid-cols-2 gap-6">
           <div>
-            <label className="text-sm font-medium text-white/80 block mb-2">Requirements</label>
+            <label className="text-sm font-medium text-foreground/80 block mb-2">Requirements</label>
             {form.requirements.map((req, i) => (
               <div key={i} className="flex gap-2 mb-2">
                 <Input value={req} onChange={e => { const r = [...form.requirements]; r[i] = e.target.value; setForm(f => ({ ...f, requirements: r })); }} placeholder={`Requirement ${i + 1}`} />
                 {form.requirements.length > 1 && <button onClick={() => setForm(f => ({ ...f, requirements: f.requirements.filter((_, j) => j !== i) }))} className="text-muted hover:text-red-400 cursor-pointer"><X className="w-4 h-4" /></button>}
               </div>
             ))}
-            <button onClick={() => setForm(f => ({ ...f, requirements: [...f.requirements, ''] }))} className="text-primary text-xs hover:underline cursor-pointer">+ Add</button>
+            <button onClick={() => setForm(f => ({ ...f, requirements: [...f.requirements, ''] }))} className="text-primary-text text-xs hover:underline cursor-pointer">+ Add</button>
           </div>
           <div>
-            <label className="text-sm font-medium text-white/80 block mb-2">What Students Will Learn</label>
+            <label className="text-sm font-medium text-foreground/80 block mb-2">What Students Will Learn</label>
             {form.whatYouLearn.map((item, i) => (
               <div key={i} className="flex gap-2 mb-2">
                 <Input value={item} onChange={e => { const w = [...form.whatYouLearn]; w[i] = e.target.value; setForm(f => ({ ...f, whatYouLearn: w })); }} placeholder={`Outcome ${i + 1}`} />
                 {form.whatYouLearn.length > 1 && <button onClick={() => setForm(f => ({ ...f, whatYouLearn: f.whatYouLearn.filter((_, j) => j !== i) }))} className="text-muted hover:text-red-400 cursor-pointer"><X className="w-4 h-4" /></button>}
               </div>
             ))}
-            <button onClick={() => setForm(f => ({ ...f, whatYouLearn: [...f.whatYouLearn, ''] }))} className="text-primary text-xs hover:underline cursor-pointer">+ Add</button>
+            <button onClick={() => setForm(f => ({ ...f, whatYouLearn: [...f.whatYouLearn, ''] }))} className="text-primary-text text-xs hover:underline cursor-pointer">+ Add</button>
           </div>
         </div>
       </Card>
@@ -353,7 +353,7 @@ export default function NewCourseClient({ instructors: allInstructors }: NewCour
       <Card>
         <div className="flex items-center justify-between mb-2">
           <div>
-            <h2 className="text-white font-bold">Curriculum <span className="text-muted text-sm font-normal">(Optional)</span></h2>
+            <h2 className="text-foreground font-bold">Curriculum <span className="text-muted text-sm font-normal">(Optional)</span></h2>
             <p className="text-muted text-xs mt-0.5">Leave empty — instructor will design the curriculum. Or add modules now if you prefer.</p>
           </div>
           <Button size="sm" variant="secondary" onClick={() => { setShowCurriculum(true); addModule(); }}>
@@ -390,12 +390,12 @@ export default function NewCourseClient({ instructors: allInstructors }: NewCour
                         <Input value={ses.description} onChange={e => updateSession(mod.id, ses.id, 'description', e.target.value)} placeholder="Description" className="sm:col-span-2" />
                       </div>
                     ))}
-                    <button onClick={() => addSession(mod.id)} className="text-primary text-sm hover:underline cursor-pointer flex items-center gap-1"><Plus className="w-3.5 h-3.5" />Add Class</button>
+                    <button onClick={() => addSession(mod.id)} className="text-primary-text text-sm hover:underline cursor-pointer flex items-center gap-1"><Plus className="w-3.5 h-3.5" />Add Class</button>
                   </div>
                 )}
               </div>
             ))}
-            <button onClick={addModule} className="text-primary text-sm hover:underline cursor-pointer flex items-center gap-1"><Plus className="w-3.5 h-3.5" />Add Module</button>
+            <button onClick={addModule} className="text-primary-text text-sm hover:underline cursor-pointer flex items-center gap-1"><Plus className="w-3.5 h-3.5" />Add Module</button>
           </div>
         )}
       </Card>

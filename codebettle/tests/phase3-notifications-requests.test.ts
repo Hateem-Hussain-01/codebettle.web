@@ -10,6 +10,7 @@ import {
   acknowledgeNotification,
   createNotification,
   listNotificationsForUser,
+  markNotificationRead,
 } from '../lib/db/notifications';
 import {
   getSupportRequestById,
@@ -141,13 +142,13 @@ test('category field is stored; important notices bypass the per-event prefs tog
   assert.equal(blocked.reason, 'in-app-disabled');
 });
 
-test('list filters: ?type=, ?category= and ?pending=true (unread + requiresAcknowledge, oldest first)', async () => {
+test('list filters: ?type=, ?category= and ?pending=true (requiresAcknowledge + unacknowledged, oldest first)', async () => {
   await createNotification({ userId: 'stu-1', type: 'announcement', title: 'A1', body: 'b', category: 'general' });
   await createNotification({ userId: 'stu-1', type: 'announcement', title: 'A2', body: 'b', category: 'important', requiresAcknowledge: true });
   await createNotification({ userId: 'stu-1', type: 'enrollment', title: 'E1', body: 'b', category: 'general', requiresAcknowledge: true });
   const read = await createNotification({ userId: 'stu-1', type: 'announcement', title: 'A3', body: 'b', category: 'warning', requiresAcknowledge: true });
-  // Mark A3 read — pending must exclude it even though it requires ack.
-  const { markNotificationRead } = await import('../lib/db/notifications');
+  // Mark A3 read — Phase 7: the pending feed keys on acknowledgedAt,
+  // NOT readAt, so a read-but-unacknowledged item STAYS pending.
   await markNotificationRead('stu-1', read.id);
 
   const byType = await listNotificationsForUser('stu-1', { type: 'enrollment' });
@@ -159,7 +160,35 @@ test('list filters: ?type=, ?category= and ?pending=true (unread + requiresAckno
   assert.equal(byCategory.items[0].title, 'A2');
 
   const pending = await listNotificationsForUser('stu-1', { pending: true });
-  assert.deepEqual(pending.items.map((n) => n.title), ['A2', 'E1']);
+  assert.deepEqual(pending.items.map((n) => n.title), ['A2', 'E1', 'A3']);
+});
+
+test('pending feed: a read-but-unacknowledged notification stays pending until acknowledged; non-ack items never appear', async () => {
+  const mustAck = await createNotification({
+    userId: 'stu-1', type: 'announcement', title: 'Must ack', body: 'b',
+    category: 'important', requiresAcknowledge: true,
+  });
+  const pendingIds = async () =>
+    (await listNotificationsForUser('stu-1', { pending: true })).items.map((n) => n.id);
+
+  // Unread + unacknowledged: pending.
+  assert.deepEqual(await pendingIds(), [mustAck.id]);
+
+  // Marking it read (card click / Mark All Read) must NOT discharge it.
+  await markNotificationRead('stu-1', mustAck.id);
+  assert.deepEqual(await pendingIds(), [mustAck.id]);
+
+  // Acknowledging removes it from the pending feed.
+  await acknowledgeNotification('stu-1', mustAck.id);
+  assert.deepEqual(await pendingIds(), []);
+
+  // A non-ack notification never appears in the pending feed, read or not.
+  const plain = await createNotification({
+    userId: 'stu-1', type: 'announcement', title: 'Plain', body: 'b', category: 'general',
+  });
+  assert.deepEqual(await pendingIds(), []);
+  await markNotificationRead('stu-1', plain.id);
+  assert.deepEqual(await pendingIds(), []);
 });
 
 // ---------------------------------------------------------------------------
@@ -308,6 +337,58 @@ test('receipts aggregate read/acknowledged counts per recipient; missing announc
   );
   assert.equal(body.recipients[0].email, 'ali@example.com');
   assert.equal(body.recipients[2].readAt, null);
+});
+
+// ---------------------------------------------------------------------------
+// Admin user search (Phase 7, Fix 5): role filter
+// ---------------------------------------------------------------------------
+
+test('admin user search: role filter returns instructors/admins when asked (default stays students-only)', async () => {
+  const { GET } = await import('../app/api/admin/users/route');
+  // A teacher+admin: primary role 'admin' with the isTeacher flag —
+  // a primary-role filter would miss them from the instructor list.
+  fake.seed('User', [
+    { id: 'admin-2', name: 'Zara Admin', email: 'zara@codebettle.com', passwordHash: '$2b$12$hash', role: 'admin', isAdmin: true, isTeacher: true, status: 'active', joinedAt: D('2024-01-05') },
+  ]);
+
+  __setTestSession(ADMIN);
+  const get = async (url: string) => {
+    const res = await GET(new NextRequest(url));
+    assert.equal(res.status, 200, url);
+    return (await res.json()) as { users: { id: string; name: string; role: string }[]; total: number };
+  };
+
+  // Default (no role): students only.
+  const def = await get('http://localhost/api/admin/users?search=a');
+  assert.ok(def.users.length > 0, 'expected some students');
+  assert.ok(def.users.every((u) => u.role === 'student'), JSON.stringify(def.users));
+  assert.deepEqual(def.users.map((u) => u.id).sort(), ['stu-1', 'stu-2']);
+
+  // role=all: students + instructors + admins matching the search.
+  const all = await get('http://localhost/api/admin/users?search=a&role=all');
+  assert.deepEqual(all.users.map((u) => u.id).sort(), ['admin-1', 'admin-2', 'inst-1', 'stu-1', 'stu-2']);
+
+  // role=instructor: the instructor plus the teacher+admin.
+  const inst = await get('http://localhost/api/admin/users?role=instructor');
+  assert.deepEqual(inst.users.map((u) => u.id).sort(), ['admin-2', 'inst-1']);
+
+  // role=admin: both admins.
+  const adm = await get('http://localhost/api/admin/users?role=admin');
+  assert.deepEqual(adm.users.map((u) => u.id).sort(), ['admin-1', 'admin-2']);
+
+  // role=admin with a search narrows to matching admins only.
+  const admSearch = await get('http://localhost/api/admin/users?role=admin&search=zara');
+  assert.deepEqual(admSearch.users.map((u) => u.id), ['admin-2']);
+
+  // Unknown role falls back to students-only.
+  const weird = await get('http://localhost/api/admin/users?role=superuser');
+  assert.ok(weird.users.every((u) => u.role === 'student'), JSON.stringify(weird.users));
+
+  // Non-admins and signed-out users still get 403 / 401.
+  __setTestSession(STU1);
+  assert.equal((await GET(new NextRequest('http://localhost/api/admin/users?role=all'))).status, 403);
+  __setTestSession(null);
+  assert.equal((await GET(new NextRequest('http://localhost/api/admin/users?role=all'))).status, 401);
 });
 
 // ---------------------------------------------------------------------------

@@ -82,7 +82,7 @@ export default function CourseInstructorClient({ courseId, currentInstructorId, 
         <div className="mt-2 flex items-center gap-2 bg-dark-border/30 rounded-lg px-3 py-2">
           <img src={selected.avatar || ''} className="w-7 h-7 rounded-full border border-primary/30" alt="" />
           <div>
-            <p className="text-white text-xs font-medium">{selected.name}</p>
+            <p className="text-foreground text-xs font-medium">{selected.name}</p>
             <p className="text-muted text-xs">{selected.expertise?.slice(0, 2).join(' · ') || selected.email}</p>
           </div>
           {unchanged && <span className="ml-auto text-muted text-xs">Current instructor</span>}

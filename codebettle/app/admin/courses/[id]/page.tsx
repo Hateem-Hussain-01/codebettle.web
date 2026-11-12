@@ -54,7 +54,7 @@ export default async function AdminCourseDetailPage({ params }: { params: Promis
         <div className="flex items-start gap-3">
           <Link href="/admin/courses"><Button variant="ghost" size="sm">← Back</Button></Link>
           <div>
-            <h1 className="text-xl font-black text-white">{course.title}</h1>
+            <h1 className="text-xl font-black text-foreground">{course.title}</h1>
             <div className="flex items-center gap-2 mt-1 flex-wrap">
               <Badge variant={course.status === 'published' ? 'success' : course.status === 'draft' ? 'warning' : 'muted'}>{course.status}</Badge>
               {course.isCompleted && <Badge variant="info">Completed</Badge>}
@@ -74,13 +74,13 @@ export default async function AdminCourseDetailPage({ params }: { params: Promis
           how an unassigned course gets a teacher). */}
       <FadeIn delay={0.05}>
         <Card>
-          <h2 className="text-white font-bold mb-3 text-sm">Assigned Instructor</h2>
+          <h2 className="text-foreground font-bold mb-3 text-sm">Assigned Instructor</h2>
           {instructor ? (
             <>
               <div className="flex items-center gap-3">
                 <img src={instructor.avatar || ''} alt={instructor.name} className="w-12 h-12 rounded-full border-2 border-primary/30" />
                 <div>
-                  <p className="text-white font-semibold">{instructor.name}</p>
+                  <p className="text-foreground font-semibold">{instructor.name}</p>
                   <p className="text-muted text-xs">{instructor.email}</p>
                   <p className="text-muted text-xs mt-0.5">{instructor.expertise?.join(' · ')}</p>
                 </div>
@@ -109,23 +109,23 @@ export default async function AdminCourseDetailPage({ params }: { params: Promis
       {course.schedule && (
         <FadeIn delay={0.1}>
         <Card>
-          <h2 className="text-white font-bold mb-4 text-sm flex items-center gap-2"><Calendar className="w-4 h-4 text-green-400" />Class Schedule</h2>
+          <h2 className="text-foreground font-bold mb-4 text-sm flex items-center gap-2"><Calendar className="w-4 h-4 text-green-400" />Class Schedule</h2>
           <div className="grid sm:grid-cols-3 gap-3 text-xs mb-3">
             <div className="bg-dark-border/30 rounded-lg p-3">
               <p className="text-muted mb-1">Time</p>
-              <p className="text-white font-medium">{course.schedule.classTime}</p>
+              <p className="text-foreground font-medium">{course.schedule.classTime}</p>
             </div>
             <div className="bg-dark-border/30 rounded-lg p-3">
               <p className="text-muted mb-1">Duration</p>
-              <p className="text-white font-medium">{course.schedule.classDuration}</p>
+              <p className="text-foreground font-medium">{course.schedule.classDuration}</p>
             </div>
             <div className="bg-dark-border/30 rounded-lg p-3">
               <p className="text-muted mb-1">Start Date</p>
-              <p className="text-white font-medium">{course.schedule.startDate ? formatDateShort(course.schedule.startDate) : '—'}</p>
+              <p className="text-foreground font-medium">{course.schedule.startDate ? formatDateShort(course.schedule.startDate) : '—'}</p>
             </div>
           </div>
           <div className="flex flex-wrap gap-1.5">
-            {scheduleDays.map(d => <span key={d} className="text-xs px-2.5 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20">{d}</span>)}
+            {scheduleDays.map(d => <span key={d} className="text-xs px-2.5 py-0.5 rounded-full bg-primary/10 text-primary-text border border-primary/20">{d}</span>)}
           </div>
           {course.schedule.notes && <p className="text-muted text-xs mt-2 italic">{course.schedule.notes}</p>}
         </Card>
@@ -135,7 +135,7 @@ export default async function AdminCourseDetailPage({ params }: { params: Promis
       {/* Students & Certificate Eligibility */}
       <FadeIn delay={0.15}>
       <Card>
-        <h2 className="text-white font-bold mb-4 text-sm flex items-center gap-2"><Users className="w-4 h-4 text-primary" />Enrolled Students & Certificate Status</h2>
+        <h2 className="text-foreground font-bold mb-4 text-sm flex items-center gap-2"><Users className="w-4 h-4 text-primary-text" />Enrolled Students & Certificate Status</h2>
         {enrollments.length === 0 ? (
           <p className="text-muted text-sm text-center py-6">No students enrolled</p>
         ) : (
@@ -146,7 +146,7 @@ export default async function AdminCourseDetailPage({ params }: { params: Promis
                 <div key={enr.id} className="flex items-center gap-3 py-2 border-b border-dark-border/40 last:border-0">
                   <img src={student?.avatar || ''} alt={student?.name} className="w-8 h-8 rounded-full" />
                   <div className="flex-1">
-                    <p className="text-white text-sm font-medium">{student?.name}</p>
+                    <p className="text-foreground text-sm font-medium">{student?.name}</p>
                     <p className="text-muted text-xs">{student?.email}</p>
                   </div>
                   {course.isCompleted ? (
@@ -174,7 +174,7 @@ export default async function AdminCourseDetailPage({ params }: { params: Promis
       <FadeIn delay={0.2}>
       <Card>
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-white font-bold text-sm flex items-center gap-2"><BookOpen className="w-4 h-4 text-primary" />Curriculum</h2>
+          <h2 className="text-foreground font-bold text-sm flex items-center gap-2"><BookOpen className="w-4 h-4 text-primary-text" />Curriculum</h2>
           {course.modules.length > 0
             ? <Badge variant="success">{course.modules.reduce((a, m) => a + m.lessons.length, 0)} classes across {course.modules.length} modules</Badge>
             : <Badge variant="warning">Empty — waiting for instructor</Badge>
@@ -186,7 +186,7 @@ export default async function AdminCourseDetailPage({ params }: { params: Promis
           <div className="space-y-2">
             {course.modules.map(mod => (
               <div key={mod.id} className="bg-dark-border/20 rounded-lg px-4 py-3">
-                <p className="text-white text-sm font-medium">{mod.title}</p>
+                <p className="text-foreground text-sm font-medium">{mod.title}</p>
                 <p className="text-muted text-xs">{mod.lessons.length} class session{mod.lessons.length !== 1 ? 's' : ''}</p>
               </div>
             ))}

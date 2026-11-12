@@ -28,7 +28,7 @@ export default async function QuizAnalyticsPage({ params }: { params: Promise<{ 
     <div className="space-y-6">
       <FadeIn className="flex items-start justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-black text-white">Analytics — {quiz.title}</h1>
+          <h1 className="text-2xl font-black text-foreground">Analytics — {quiz.title}</h1>
           <p className="text-muted text-sm mt-1">
             {a.submittedAttempts} submitted attempt{a.submittedAttempts !== 1 ? 's' : ''} ·{' '}
             {a.uniqueStudents} student{a.uniqueStudents !== 1 ? 's' : ''} · average{' '}
@@ -52,7 +52,7 @@ export default async function QuizAnalyticsPage({ params }: { params: Promise<{ 
 
       <FadeIn delay={0.1}>
       <Card className="p-5">
-        <h2 className="text-white font-bold mb-4">Per-question accuracy</h2>
+        <h2 className="text-foreground font-bold mb-4">Per-question accuracy</h2>
         {a.perQuestion.length === 0 ? (
           <p className="text-muted text-sm">No questions yet.</p>
         ) : (
@@ -70,11 +70,11 @@ export default async function QuizAnalyticsPage({ params }: { params: Promise<{ 
               <tbody>
                 {a.perQuestion.map((q) => (
                   <tr key={q.questionId} className="border-b border-dark-border/50">
-                    <td className="py-2 pr-3 text-white">{q.position}</td>
-                    <td className="py-2 pr-3 text-white">{q.prompt}</td>
+                    <td className="py-2 pr-3 text-foreground">{q.position}</td>
+                    <td className="py-2 pr-3 text-foreground">{q.prompt}</td>
                     <td className="py-2 pr-3 text-muted">{q.points}</td>
                     <td className="py-2 pr-3 text-muted">{q.attempts}</td>
-                    <td className="py-2 text-white">{q.accuracy === null ? '—' : `${q.accuracy.toFixed(0)}%`}</td>
+                    <td className="py-2 text-foreground">{q.accuracy === null ? '—' : `${q.accuracy.toFixed(0)}%`}</td>
                   </tr>
                 ))}
               </tbody>
@@ -86,7 +86,7 @@ export default async function QuizAnalyticsPage({ params }: { params: Promise<{ 
 
       <FadeIn delay={0.15}>
       <Card className="p-5">
-        <h2 className="text-white font-bold mb-4">Per-student results</h2>
+        <h2 className="text-foreground font-bold mb-4">Per-student results</h2>
         {a.perStudent.length === 0 ? (
           <p className="text-muted text-sm">No submissions yet.</p>
         ) : (
@@ -103,10 +103,10 @@ export default async function QuizAnalyticsPage({ params }: { params: Promise<{ 
               <tbody>
                 {a.perStudent.map((s) => (
                   <tr key={s.studentId} className="border-b border-dark-border/50">
-                    <td className="py-2 pr-3 text-white">{s.studentName}</td>
+                    <td className="py-2 pr-3 text-foreground">{s.studentName}</td>
                     <td className="py-2 pr-3 text-muted">{s.attempts}</td>
-                    <td className="py-2 pr-3 text-white">{s.bestScore ?? '—'}</td>
-                    <td className="py-2 text-white">{s.latestScore ?? '—'}</td>
+                    <td className="py-2 pr-3 text-foreground">{s.bestScore ?? '—'}</td>
+                    <td className="py-2 text-foreground">{s.latestScore ?? '—'}</td>
                   </tr>
                 ))}
               </tbody>
@@ -119,11 +119,11 @@ export default async function QuizAnalyticsPage({ params }: { params: Promise<{ 
       {a.byTopic.length > 0 && (
         <FadeIn delay={0.2}>
         <Card className="p-5">
-          <h2 className="text-white font-bold mb-4">By topic</h2>
+          <h2 className="text-foreground font-bold mb-4">By topic</h2>
           <div className="space-y-2">
             {a.byTopic.map((t) => (
               <div key={t.topic} className="flex justify-between text-sm">
-                <span className="text-white">{t.topic}</span>
+                <span className="text-foreground">{t.topic}</span>
                 <span className="text-muted">
                   {t.accuracy === null ? '—' : `${t.accuracy.toFixed(0)}%`} ({t.attempts} answered)
                 </span>

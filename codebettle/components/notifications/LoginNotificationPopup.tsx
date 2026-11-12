@@ -25,6 +25,10 @@ import {
  *   ("Please acknowledge to continue") is shown instead — the user
  *   must press Acknowledge before the popup moves on. There is no
  *   backdrop, so the page behind stays usable.
+ * - Phase 7: if the acknowledge/read POST itself fails, the popup
+ *   still advances/dismisses locally instead of trapping the user —
+ *   the item stays unacknowledged server-side, so the pending feed
+ *   shows it again at the next login.
  * - Anything else: Close dismisses that notification and shows the
  *   next one; after the last one the popup disappears.
  * - If the fetch fails (API not deployed yet, network error, 401),
@@ -79,7 +83,12 @@ export default function LoginNotificationPopup() {
       if (!res.ok) throw new Error(`Failed (${res.status})`);
       advance();
     } catch (error) {
-      console.error('[LoginNotificationPopup] mark failed:', error);
+      // Phase 7: a failed acknowledge/read must NEVER trap the user —
+      // dismiss locally anyway. The item stays unacknowledged
+      // server-side, so the pending feed (which keys on
+      // acknowledgedAt, not readAt) shows it again at the next login.
+      console.error('[LoginNotificationPopup] mark failed — dismissing locally:', error);
+      advance();
     } finally {
       setBusy(false);
     }

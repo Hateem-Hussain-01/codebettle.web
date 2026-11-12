@@ -18,7 +18,7 @@ export default async function InstructorQuizzesPage() {
   if ('error' in listed) {
     return (
       <div className="space-y-6">
-        <h1 className="text-2xl font-black text-white">Quizzes</h1>
+        <h1 className="text-2xl font-black text-foreground">Quizzes</h1>
         <p className="text-muted text-sm">Could not load your quizzes: {listed.error}</p>
       </div>
     );

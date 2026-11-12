@@ -72,7 +72,7 @@ export default function InstructorQuizzesClient({
     <div className="space-y-6">
       <FadeIn className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-black text-white">Quizzes</h1>
+          <h1 className="text-2xl font-black text-foreground">Quizzes</h1>
           <p className="text-muted text-sm mt-1">
             Create a quiz, paste AI-generated quiz text or add questions manually, then publish it to your students.
           </p>
@@ -86,7 +86,7 @@ export default function InstructorQuizzesClient({
 
       {courses.length === 0 && (
         <Card className="py-8 text-center">
-          <p className="text-white font-semibold mb-2">No courses assigned yet</p>
+          <p className="text-foreground font-semibold mb-2">No courses assigned yet</p>
           <p className="text-muted text-sm">The admin assigns courses to you. Quizzes are created per course.</p>
         </Card>
       )}
@@ -94,7 +94,7 @@ export default function InstructorQuizzesClient({
       {quizzes.length === 0 ? (
         <Card className="py-16 text-center">
           <FileQuestion className="w-12 h-12 text-muted mx-auto mb-4" />
-          <p className="text-white font-semibold mb-2">No quizzes yet</p>
+          <p className="text-foreground font-semibold mb-2">No quizzes yet</p>
           <p className="text-muted text-sm">
             Create a quiz, then paste AI-generated quiz text or add questions manually on the next screen.
           </p>
@@ -106,7 +106,7 @@ export default function InstructorQuizzesClient({
             <Card className="p-5 h-full">
               <div className="flex items-start justify-between gap-3">
                 <div>
-                  <h2 className="text-white font-bold">{quiz.title}</h2>
+                  <h2 className="text-foreground font-bold">{quiz.title}</h2>
                   <p className="text-muted text-sm mt-1">
                     {courses.find((c) => c.id === quiz.courseId)?.title ?? 'Course'} ·{' '}
                     {quiz.questions?.length ?? 0} question{(quiz.questions?.length ?? 0) !== 1 ? 's' : ''}

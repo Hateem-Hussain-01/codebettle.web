@@ -27,7 +27,7 @@
  */
 import { getCourseById } from '../db/courses';
 import { getEnrollmentsByCourse } from '../db/enrollments';
-import { createNotification } from '../db/notifications';
+import { createNotification, notificationExistsForAnnouncement } from '../db/notifications';
 import { getAllUsers, getUserById, getUserNotificationPrefs } from '../db/users';
 import type {
   Announcement,
@@ -97,6 +97,11 @@ function eventAllowed(prefs: NotificationPrefs, event: NotificationEventKey): bo
  * Phase 3: an important / special_notice category BYPASSES the
  * per-event toggle check (see the file header) — the toggle is the
  * only thing skipped; inApp off still means no row is created.
+ *
+ * Phase 7: when announcementId is set, a row already fanned out from
+ * that announcement for this user is NOT created again — a retried or
+ * double publish is a no-op skip ('duplicate-announcement'), so a
+ * student never gets the same announcement twice.
  */
 export async function notifyUser(userId: string, input: NotifyInput): Promise<NotifyResult> {
   try {
@@ -106,6 +111,16 @@ export async function notifyUser(userId: string, input: NotifyInput): Promise<No
     const bypassesPrefs = (PREFS_BYPASS_CATEGORIES as readonly string[]).includes(category);
     if (!bypassesPrefs && !eventAllowed(prefs, input.event)) {
       return { ok: true, skipped: true, reason: 'event-disabled' };
+    }
+
+    // Phase 7 dedupe: one row per (userId, announcementId). Checked
+    // before the email hook, so a retried publish sends no duplicate
+    // email either.
+    if (input.announcementId) {
+      const alreadySent = await notificationExistsForAnnouncement(userId, input.announcementId);
+      if (alreadySent) {
+        return { ok: true, skipped: true, reason: 'duplicate-announcement' };
+      }
     }
 
     let email: EmailDeliveryResult | undefined;
@@ -417,6 +432,13 @@ export async function onPaymentRejected(
  * An announcement was published. Course announcements go to the
  * enrolled students of that course; site-wide announcements go to
  * every user. Event: 'announcement'.
+ *
+ * Phase 7: the fan-out rows carry announcementId (so the receipts
+ * endpoint can aggregate read/acknowledged states per recipient —
+ * previously it was never passed, so receipts were always empty) and,
+ * for course announcements, a linkUrl to the course (so the
+ * TeacherMessagePopup, which matches linkUrl containing
+ * '/student/courses/', fires for them).
  */
 export async function onAnnouncementPublished(announcement: Announcement): Promise<NotifySummary> {
   try {
@@ -425,6 +447,8 @@ export async function onAnnouncementPublished(announcement: Announcement): Promi
       event: 'announcement',
       title: announcement.title,
       body: announcement.content,
+      announcementId: announcement.id,
+      linkUrl: announcement.courseId ? `/student/courses/${announcement.courseId}` : undefined,
     };
     if (announcement.type === 'course' && announcement.courseId) {
       return notifyEnrolledStudents(announcement.courseId, input);

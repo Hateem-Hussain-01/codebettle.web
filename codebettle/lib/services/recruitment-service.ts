@@ -80,6 +80,12 @@ function requireAdmin(actor: Actor): ServiceError | null {
 const ONBOARDED_STAGE_NAME = 'Successfully Onboarded';
 const REJECTED_STAGE_NAME = 'Rejected';
 
+/** Terminal names are reserved: a custom stage with one of these names could never be assigned (assignStage refuses them), and a duplicate of one would confuse name-based tracking. Compared case-insensitively. */
+function isReservedStageName(name: string): boolean {
+  const lower = name.toLowerCase();
+  return lower === ONBOARDED_STAGE_NAME.toLowerCase() || lower === REJECTED_STAGE_NAME.toLowerCase();
+}
+
 // ---------------------------------------------------------------------------
 // Admin: pipeline stage CRUD
 // ---------------------------------------------------------------------------
@@ -99,7 +105,18 @@ export async function createStageService(
   if (denied) return denied;
   const name = input.name.trim();
   if (!name) return badRequest('Stage name is required');
+  // Phase 7 (Caveat #B8): a custom stage named like a terminal stage
+  // could never be assigned, and a duplicate name confuses
+  // name-based tracking — reject both (case-insensitive).
+  if (isReservedStageName(name)) {
+    return badRequest(
+      `"${name}" is a terminal stage — it is reached by approving / rejecting or onboarding, and cannot be created as a custom stage`,
+    );
+  }
   const existing = await listStages();
+  if (existing.some((s) => s.name.toLowerCase() === name.toLowerCase())) {
+    return conflict(`A stage named "${name}" already exists`);
+  }
   const position = existing.reduce((max, s) => Math.max(max, s.position), 0) + 1;
   const stage = await createStage({ name, position, instructions: input.instructions?.trim() || undefined });
   await logAudit({ actorId: actor.id, action: 'recruitment.stage.create', entity: 'application_stage', entityId: stage.id, detail: name });
@@ -114,6 +131,25 @@ export async function updateStageService(
   const denied = requireAdmin(actor);
   if (denied) return denied;
   if (input.name !== undefined && !input.name.trim()) return badRequest('Stage name is required');
+  const existingStage = await getStageById(id);
+  if (!existingStage) return notFound('Stage');
+  if (input.name !== undefined) {
+    const name = input.name.trim();
+    // Renaming a stage to its own current name is a no-op — allow it.
+    // Any other rename gets the same guards as creation (Caveat #B8):
+    // terminal names are reserved and names must stay unique.
+    if (name.toLowerCase() !== existingStage.name.toLowerCase()) {
+      if (isReservedStageName(name)) {
+        return badRequest(
+          `"${name}" is a terminal stage — it is reached by approving / rejecting or onboarding, and cannot be used as a custom stage name`,
+        );
+      }
+      const stages = await listStages();
+      if (stages.some((s) => s.id !== id && s.name.toLowerCase() === name.toLowerCase())) {
+        return conflict(`A stage named "${name}" already exists`);
+      }
+    }
+  }
   const stage = await updateStage(id, {
     ...(input.name !== undefined ? { name: input.name.trim() } : {}),
     ...(input.instructions !== undefined
@@ -242,8 +278,11 @@ export async function onboardApplication(
     return badRequest('Only an approved application can be onboarded as a teacher');
   }
   if (!application.userId) {
+    // Phase 7 (GAP #B6): signup now links a pre-existing unlinked
+    // application automatically, so this only happens while the
+    // applicant has not signed up yet — say so, and what happens next.
     return badRequest(
-      'This applicant has no account yet — ask them to create one with the same email, then onboard',
+      'This applicant has no account yet — once they sign up with the same email, their application links automatically and you can onboard them',
     );
   }
   const history = await listHistory(applicationId);
