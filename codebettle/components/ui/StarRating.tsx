@@ -25,7 +25,7 @@ export default function StarRating({ rating, maxStars = 5, interactive, onChange
             className={cn(
               sizeMap[size],
               'transition-colors',
-              filled ? 'text-primary fill-primary' : 'text-muted',
+              filled ? 'text-primary-text fill-primary-text' : 'text-muted',
               interactive && 'cursor-pointer hover:scale-110'
             )}
             onMouseEnter={() => interactive && setHovered(i + 1)}

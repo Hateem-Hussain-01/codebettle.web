@@ -282,7 +282,7 @@ export default function InstructorCourseManageClient({ course, enrolledStudents 
         <div className="flex items-start gap-3">
           <Link href="/instructor/courses"><Button variant="ghost" size="sm"><ArrowLeft className="w-4 h-4" /></Button></Link>
           <div>
-            <h1 className="text-xl font-black text-white leading-snug">{course.title}</h1>
+            <h1 className="text-xl font-black text-foreground leading-snug">{course.title}</h1>
             <div className="flex items-center gap-3 mt-1 flex-wrap">
               <Badge variant={course.status === 'published' ? 'success' : 'warning'}>{course.status}</Badge>
               {completed && <Badge variant="info">Completed</Badge>}
@@ -308,7 +308,7 @@ export default function InstructorCourseManageClient({ course, enrolledStudents 
       <Card className="border-blue-500/20 p-4">
         <div className="flex items-center gap-3 flex-wrap">
           <Video className="w-4 h-4 text-blue-400 flex-shrink-0" />
-          <span className="text-white text-sm font-medium">Zoom Link</span>
+          <span className="text-foreground text-sm font-medium">Zoom Link</span>
           <Input value={zoomLink} onChange={e => setZoomLink(e.target.value)} placeholder="https://zoom.us/j/..." className="flex-1 min-w-[200px]" />
           <Button size="sm" onClick={handleSaveZoom}><Save className="w-3.5 h-3.5" />Update</Button>
         </div>
@@ -321,7 +321,7 @@ export default function InstructorCourseManageClient({ course, enrolledStudents 
           <button
             key={t.key}
             onClick={() => setActiveTab(t.key)}
-            className={`flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-lg text-sm font-medium transition-all cursor-pointer ${activeTab === t.key ? 'bg-primary text-dark' : 'text-muted hover:text-white'}`}
+            className={`flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-lg text-sm font-medium transition-all cursor-pointer ${activeTab === t.key ? 'bg-primary text-ink' : 'text-muted hover:text-foreground'}`}
           >
             {t.label}
             {'count' in t && t.count && <span className={`text-xs px-1.5 py-0.5 rounded-full ${activeTab === t.key ? 'bg-dark/20' : 'bg-dark-border'}`}>{t.count}</span>}
@@ -336,15 +336,15 @@ export default function InstructorCourseManageClient({ course, enrolledStudents 
           {modules.length === 0 ? (
             <Card className="py-10 text-center">
               <BookOpen className="w-10 h-10 text-muted mx-auto mb-3" />
-              <p className="text-white font-semibold">No curriculum yet</p>
+              <p className="text-foreground font-semibold">No curriculum yet</p>
               <p className="text-muted text-xs mt-1">Add curriculum in the Curriculum tab first, then you can upload recordings here.</p>
             </Card>
           ) : modules.map(mod => (
             <Card key={mod.id} className="p-0 overflow-hidden">
               <button onClick={() => setOpenModules(o => ({ ...o, [mod.id]: !o[mod.id] }))} className="w-full flex items-center justify-between px-5 py-3 bg-dark-border/20 hover:bg-dark-border/40 cursor-pointer">
                 <div className="flex items-center gap-3">
-                  <BookOpen className="w-4 h-4 text-primary" />
-                  <span className="text-white font-semibold text-sm">{mod.title}</span>
+                  <BookOpen className="w-4 h-4 text-primary-text" />
+                  <span className="text-foreground font-semibold text-sm">{mod.title}</span>
                 </div>
                 <div className="flex items-center gap-3">
                   <span className="text-xs text-muted">{mod.lessons.filter(l => recordings[l.id]).length}/{mod.lessons.length} uploaded</span>
@@ -360,7 +360,7 @@ export default function InstructorCourseManageClient({ course, enrolledStudents 
                         <div className="flex items-center gap-3 mb-3">
                           <span className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 ${hasRec ? 'bg-green-500/20 text-green-400' : 'bg-dark-border text-muted'}`}>{si + 1}</span>
                           <div>
-                            <p className="text-white text-sm font-medium">{ses.title}</p>
+                            <p className="text-foreground text-sm font-medium">{ses.title}</p>
                             {ses.date && <p className="text-muted text-xs">{formatDateShort(ses.date)} {ses.duration && `· ${ses.duration}`}</p>}
                           </div>
                           {hasRec && <Badge variant="success" className="ml-auto">Uploaded</Badge>}
@@ -397,7 +397,7 @@ export default function InstructorCourseManageClient({ course, enrolledStudents 
           {modules.length === 0 ? (
             <div className="border-2 border-dashed border-dark-border rounded-xl py-12 text-center">
               <BookOpen className="w-10 h-10 text-muted mx-auto mb-3" />
-              <p className="text-white font-semibold mb-1">No modules yet</p>
+              <p className="text-foreground font-semibold mb-1">No modules yet</p>
               <p className="text-muted text-xs mb-4">Click "Add Module" to start building the curriculum</p>
               <Button size="sm" onClick={addModule}><Plus className="w-3.5 h-3.5" />Add First Module</Button>
             </div>
@@ -418,7 +418,7 @@ export default function InstructorCourseManageClient({ course, enrolledStudents 
                       {mod.lessons.map((ses, si) => (
                         <div key={ses.id} className="bg-dark-border/20 rounded-lg p-3 space-y-2">
                           <div className="flex items-center gap-2">
-                            <span className="text-primary text-xs font-semibold flex-shrink-0">Class {si + 1}</span>
+                            <span className="text-primary-text text-xs font-semibold flex-shrink-0">Class {si + 1}</span>
                             {mod.lessons.length > 1 && <button onClick={() => removeSession(mod.id, ses.id)} className="ml-auto text-muted hover:text-red-400 cursor-pointer"><X className="w-3.5 h-3.5" /></button>}
                           </div>
                           <div className="grid sm:grid-cols-3 gap-2">
@@ -429,13 +429,13 @@ export default function InstructorCourseManageClient({ course, enrolledStudents 
                           <Input value={ses.description} onChange={e => updateSession(mod.id, ses.id, 'description', e.target.value)} placeholder="Topics covered in this class" />
                         </div>
                       ))}
-                      <button onClick={() => addSession(mod.id)} className="text-primary text-sm hover:underline cursor-pointer flex items-center gap-1"><Plus className="w-3.5 h-3.5" />Add Class Session</button>
+                      <button onClick={() => addSession(mod.id)} className="text-primary-text text-sm hover:underline cursor-pointer flex items-center gap-1"><Plus className="w-3.5 h-3.5" />Add Class Session</button>
                     </div>
                   )}
                 </div>
               ))}
               <div className="flex justify-between items-center">
-                <button onClick={addModule} className="text-primary text-sm hover:underline cursor-pointer flex items-center gap-1"><Plus className="w-3.5 h-3.5" />Add Module</button>
+                <button onClick={addModule} className="text-primary-text text-sm hover:underline cursor-pointer flex items-center gap-1"><Plus className="w-3.5 h-3.5" />Add Module</button>
                 <Button onClick={handleSaveCurriculum} loading={savingCurriculum}><Save className="w-4 h-4" />Save Curriculum</Button>
               </div>
             </div>
@@ -448,45 +448,45 @@ export default function InstructorCourseManageClient({ course, enrolledStudents 
         <FadeIn className="space-y-4">
           {course.schedule ? (
             <Card>
-              <h2 className="text-white font-bold mb-4 flex items-center gap-2"><Calendar className="w-5 h-5 text-green-400" />Class Schedule</h2>
+              <h2 className="text-foreground font-bold mb-4 flex items-center gap-2"><Calendar className="w-5 h-5 text-green-400" />Class Schedule</h2>
               <div className="grid sm:grid-cols-2 gap-4 text-sm">
                 <div className="space-y-3">
                   <div className="flex items-center gap-3 bg-dark-border/30 rounded-lg px-4 py-3">
-                    <Clock className="w-4 h-4 text-primary" />
+                    <Clock className="w-4 h-4 text-primary-text" />
                     <div>
                       <p className="text-muted text-xs">Class Time</p>
-                      <p className="text-white font-medium">{course.schedule.classTime || '—'}</p>
+                      <p className="text-foreground font-medium">{course.schedule.classTime || '—'}</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-3 bg-dark-border/30 rounded-lg px-4 py-3">
-                    <BookOpen className="w-4 h-4 text-primary" />
+                    <BookOpen className="w-4 h-4 text-primary-text" />
                     <div>
                       <p className="text-muted text-xs">Duration per Class</p>
-                      <p className="text-white font-medium">{course.schedule.classDuration || '—'}</p>
+                      <p className="text-foreground font-medium">{course.schedule.classDuration || '—'}</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-3 bg-dark-border/30 rounded-lg px-4 py-3">
-                    <Calendar className="w-4 h-4 text-primary" />
+                    <Calendar className="w-4 h-4 text-primary-text" />
                     <div>
                       <p className="text-muted text-xs">Start Date</p>
-                      <p className="text-white font-medium">{course.schedule.startDate ? formatDateShort(course.schedule.startDate) : '—'}</p>
+                      <p className="text-foreground font-medium">{course.schedule.startDate ? formatDateShort(course.schedule.startDate) : '—'}</p>
                     </div>
                   </div>
                 </div>
                 <div>
                   <div className="bg-dark-border/30 rounded-lg px-4 py-3 mb-3">
                     <p className="text-muted text-xs mb-2">Schedule</p>
-                    <p className="text-white font-medium capitalize">{course.schedule.scheduleType.replace('-', ' ')}</p>
+                    <p className="text-foreground font-medium capitalize">{course.schedule.scheduleType.replace('-', ' ')}</p>
                     <div className="flex flex-wrap gap-1.5 mt-2">
                       {(course.schedule.customDays || (course.schedule.scheduleType === 'weekdays' ? ['Monday','Tuesday','Wednesday','Thursday','Friday'] : course.schedule.scheduleType === 'weekends' ? ['Saturday','Sunday'] : DAYS)).map(day => (
-                        <span key={day} className="text-xs px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20">{day}</span>
+                        <span key={day} className="text-xs px-2 py-0.5 rounded-full bg-primary/10 text-primary-text border border-primary/20">{day}</span>
                       ))}
                     </div>
                   </div>
                   {course.schedule.notes && (
                     <div className="bg-dark-border/30 rounded-lg px-4 py-3">
                       <p className="text-muted text-xs mb-1">Notes</p>
-                      <p className="text-white text-sm">{course.schedule.notes}</p>
+                      <p className="text-foreground text-sm">{course.schedule.notes}</p>
                     </div>
                   )}
                 </div>
@@ -495,14 +495,14 @@ export default function InstructorCourseManageClient({ course, enrolledStudents 
           ) : (
             <Card className="py-10 text-center">
               <Calendar className="w-10 h-10 text-muted mx-auto mb-3" />
-              <p className="text-white font-semibold">No schedule set</p>
+              <p className="text-foreground font-semibold">No schedule set</p>
               <p className="text-muted text-xs mt-1">The admin can add the class schedule when editing the course.</p>
             </Card>
           )}
 
           {/* Enrolled students list */}
           <Card>
-            <h2 className="text-white font-bold mb-4 flex items-center gap-2"><Users className="w-5 h-5 text-primary" />Enrolled Students ({enrolledStudents.length})</h2>
+            <h2 className="text-foreground font-bold mb-4 flex items-center gap-2"><Users className="w-5 h-5 text-primary-text" />Enrolled Students ({enrolledStudents.length})</h2>
             {enrolledStudents.length === 0 ? (
               <p className="text-muted text-sm text-center py-6">No students enrolled yet</p>
             ) : (
@@ -511,7 +511,7 @@ export default function InstructorCourseManageClient({ course, enrolledStudents 
                   <div key={enrollment.id} className="flex items-center gap-3 py-2 border-b border-dark-border/40 last:border-0">
                     <img src={student?.avatar || ''} alt={student?.name} className="w-8 h-8 rounded-full border border-primary/20" />
                     <div className="flex-1">
-                      <p className="text-white text-sm font-medium">{student?.name}</p>
+                      <p className="text-foreground text-sm font-medium">{student?.name}</p>
                       <p className="text-muted text-xs">Enrolled {formatDateShort(enrollment.enrolledAt)}</p>
                     </div>
                     {enrollment.certificateEligible === true && <Badge variant="success">Certificate Eligible</Badge>}
@@ -536,10 +536,10 @@ export default function InstructorCourseManageClient({ course, enrolledStudents 
           {/* Student certificate eligibility */}
           <div className="border border-dark-border rounded-xl p-4">
             <div className="flex items-center justify-between mb-2">
-              <p className="text-white font-semibold text-sm">Certificate Eligibility</p>
+              <p className="text-foreground font-semibold text-sm">Certificate Eligibility</p>
               <div className="flex gap-3 text-xs">
-                <button onClick={() => setEligibleStudents(Object.fromEntries(enrolledStudents.map(s => [s.enrollment.id, true])))} className="text-primary hover:underline cursor-pointer">Select all</button>
-                <button onClick={() => setEligibleStudents(Object.fromEntries(enrolledStudents.map(s => [s.enrollment.id, false])))} className="text-muted hover:text-white cursor-pointer">Clear all</button>
+                <button onClick={() => setEligibleStudents(Object.fromEntries(enrolledStudents.map(s => [s.enrollment.id, true])))} className="text-primary-text hover:underline cursor-pointer">Select all</button>
+                <button onClick={() => setEligibleStudents(Object.fromEntries(enrolledStudents.map(s => [s.enrollment.id, false])))} className="text-muted hover:text-foreground cursor-pointer">Clear all</button>
               </div>
             </div>
             <p className="text-muted text-xs mb-3">Unchecked students will be told to contact admin.</p>
@@ -551,12 +551,12 @@ export default function InstructorCourseManageClient({ course, enrolledStudents 
                   <label key={enrollment.id} className="flex items-center gap-3 py-2 px-3 rounded-lg hover:bg-dark-border/30 cursor-pointer transition-all">
                     <button onClick={() => setEligibleStudents(e => ({ ...e, [enrollment.id]: !e[enrollment.id] }))} className="flex-shrink-0 cursor-pointer">
                       {eligibleStudents[enrollment.id]
-                        ? <CheckSquare className="w-5 h-5 text-primary" />
+                        ? <CheckSquare className="w-5 h-5 text-primary-text" />
                         : <Square className="w-5 h-5 text-muted" />
                       }
                     </button>
                     <img src={student?.avatar || ''} alt={student?.name} className="w-7 h-7 rounded-full border border-dark-border" />
-                    <p className="text-white text-sm font-medium flex-1">{student?.name}</p>
+                    <p className="text-foreground text-sm font-medium flex-1">{student?.name}</p>
                     {eligibleStudents[enrollment.id]
                       ? <span className="text-xs text-green-400">✓ Eligible</span>
                       : <span className="text-xs text-red-400">✗ Not eligible</span>

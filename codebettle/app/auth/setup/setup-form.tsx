@@ -52,7 +52,7 @@ export default function SetupForm({ admins }: { admins: SetupStatusEntry[] }) {
     return (
       <div className="bg-dark-card border border-dark-border rounded-2xl p-8 text-center">
         <CheckCircle2 className="w-12 h-12 text-green-400 mx-auto mb-4" />
-        <h1 className="text-xl font-bold text-white">Welcome, {done}</h1>
+        <h1 className="text-xl font-bold text-foreground">Welcome, {done}</h1>
         <p className="text-muted text-sm mt-2">
           Your admin account is ready. Sign in with the password you just chose.
         </p>
@@ -69,7 +69,7 @@ export default function SetupForm({ admins }: { admins: SetupStatusEntry[] }) {
         <Link href="/" className="text-2xl font-black gradient-text">
           CodeBettle
         </Link>
-        <h1 className="text-xl font-bold text-white mt-4">First-Run Admin Setup</h1>
+        <h1 className="text-xl font-bold text-foreground mt-4">First-Run Admin Setup</h1>
         <p className="text-muted text-sm mt-1">
           Choose your admin account and set your own password. Only the two official
           administrators can sign up here.
@@ -78,7 +78,7 @@ export default function SetupForm({ admins }: { admins: SetupStatusEntry[] }) {
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
-          <label className="block text-sm font-medium text-white mb-2">Administrator</label>
+          <label className="block text-sm font-medium text-foreground mb-2">Administrator</label>
           <div className="space-y-2">
             {admins.map((admin) => (
               <label
@@ -101,7 +101,7 @@ export default function SetupForm({ admins }: { admins: SetupStatusEntry[] }) {
                   className="accent-yellow-500"
                 />
                 <span>
-                  <span className="block text-sm font-semibold text-white">
+                  <span className="block text-sm font-semibold text-foreground">
                     {admin.name} — {admin.title}
                   </span>
                   <span className="block text-xs text-muted">
@@ -128,7 +128,7 @@ export default function SetupForm({ admins }: { admins: SetupStatusEntry[] }) {
           <button
             type="button"
             onClick={() => setShowPassword(!showPassword)}
-            className="absolute right-3 top-8 text-muted hover:text-white cursor-pointer"
+            className="absolute right-3 top-8 text-muted hover:text-foreground cursor-pointer"
           >
             {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
           </button>
@@ -149,7 +149,7 @@ export default function SetupForm({ admins }: { admins: SetupStatusEntry[] }) {
       </form>
 
       <p className="flex items-center justify-center gap-1.5 text-center text-xs text-muted mt-6">
-        <ShieldCheck className="w-3.5 h-3.5 text-primary" />
+        <ShieldCheck className="w-3.5 h-3.5 text-primary-text" />
         Your password is hashed before it is stored — it is never written to a file or email.
       </p>
     </div>

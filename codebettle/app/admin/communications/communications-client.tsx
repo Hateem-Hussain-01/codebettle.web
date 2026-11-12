@@ -260,12 +260,12 @@ export default function CommunicationsClient({
       <FadeIn key={entry.announcement.id} delay={Math.min(index, 4) * 0.05}>
         <Card hover>
           <div className="flex items-start gap-4">
-            <div className="w-10 h-10 rounded-lg bg-primary/10 text-primary flex items-center justify-center flex-shrink-0">
+            <div className="w-10 h-10 rounded-lg bg-primary/10 text-primary-text flex items-center justify-center flex-shrink-0">
               {entry.announcement.type === 'course' ? <BookOpen className="w-5 h-5" /> : <Megaphone className="w-5 h-5" />}
             </div>
             <div className="flex-1 min-w-0">
               <div className="flex items-center justify-between gap-2 flex-wrap">
-                <p className="text-white font-semibold text-sm">{entry.announcement.title}</p>
+                <p className="text-foreground font-semibold text-sm">{entry.announcement.title}</p>
                 <div className="flex items-center gap-2">
                   <Badge variant={entry.origin === 'teacher' ? 'info' : 'primary'}>
                     {entry.origin === 'teacher' ? 'Teacher' : 'Admin'}
@@ -286,12 +286,12 @@ export default function CommunicationsClient({
               <div className="flex items-center gap-3 mt-3 flex-wrap">
                 <button
                   onClick={() => toggleReceipts(entry.announcement.id)}
-                  className="inline-flex items-center gap-1 text-xs text-primary hover:underline cursor-pointer"
+                  className="inline-flex items-center gap-1 text-xs text-primary-text hover:underline cursor-pointer"
                 >
                   {expandedId === entry.announcement.id ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
                   {expandedId === entry.announcement.id ? 'Hide receipts' : 'Read receipts'}
                 </button>
-                <Link href="/admin/announcements" className="text-xs text-primary hover:underline">
+                <Link href="/admin/announcements" className="text-xs text-primary-text hover:underline">
                   View in Announcements →
                 </Link>
               </div>
@@ -316,7 +316,7 @@ export default function CommunicationsClient({
       return (
         <Card className="py-12 text-center">
           <Send className="w-10 h-10 text-muted mx-auto mb-3" />
-          <p className="text-white font-semibold text-sm mb-1">No targeted notifications yet</p>
+          <p className="text-foreground font-semibold text-sm mb-1">No targeted notifications yet</p>
           <p className="text-muted text-xs">Admin-composed targeted sends will appear here once the compose page sends one.</p>
         </Card>
       );
@@ -327,11 +327,11 @@ export default function CommunicationsClient({
           <FadeIn key={row.notification.id} delay={Math.min(i, 4) * 0.05}>
             <Card hover>
               <div className="flex items-start gap-4 flex-wrap">
-                <div className="w-9 h-9 rounded-full bg-primary/20 text-primary flex items-center justify-center font-bold text-sm flex-shrink-0">
+                <div className="w-9 h-9 rounded-full bg-primary/20 text-primary-text flex items-center justify-center font-bold text-sm flex-shrink-0">
                   {row.recipientName.charAt(0) || '?'}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-white font-semibold text-sm">{row.notification.title}</p>
+                  <p className="text-foreground font-semibold text-sm">{row.notification.title}</p>
                   <p className="text-muted text-sm mt-0.5">{row.notification.body}</p>
                   <p className="text-muted text-xs mt-2">
                     To {row.recipientName} ({row.recipientEmail}) · {formatDateShort(row.notification.createdAt)}
@@ -353,7 +353,7 @@ export default function CommunicationsClient({
     <div className="space-y-6">
       <FadeIn className="flex items-start justify-between gap-4 flex-wrap">
         <div>
-          <h1 className="text-2xl font-black text-white">Communications</h1>
+          <h1 className="text-2xl font-black text-foreground">Communications</h1>
           <p className="text-muted text-sm mt-1">
             Announcements, targeted notifications, read receipts and request summaries — newest first (history view).
             This dashboard only reads; it never sends.
@@ -387,7 +387,7 @@ export default function CommunicationsClient({
             value={originFilter}
             onChange={(e) => setOriginFilter(e.target.value as 'all' | 'admin' | 'teacher')}
             aria-label="Filter by author"
-            className="bg-dark-card border border-dark-border rounded-md px-2 py-2 text-xs text-white cursor-pointer"
+            className="bg-dark-card border border-dark-border rounded-md px-2 py-2 text-xs text-foreground cursor-pointer"
           >
             <option value="all">All authors</option>
             <option value="admin">Admin-authored</option>
@@ -402,7 +402,7 @@ export default function CommunicationsClient({
             key={t.id}
             onClick={() => setTab(t.id)}
             className={`px-3 py-1.5 rounded-md text-xs font-medium whitespace-nowrap cursor-pointer transition-colors ${
-              tab === t.id ? 'bg-primary text-black' : 'text-muted hover:text-white'
+              tab === t.id ? 'bg-primary text-black' : 'text-muted hover:text-foreground'
             }`}
           >
             {t.label}
@@ -421,7 +421,7 @@ export default function CommunicationsClient({
           {general.length === 0 ? (
             <Card className="py-12 text-center">
               <Bell className="w-10 h-10 text-muted mx-auto mb-3" />
-              <p className="text-white font-semibold text-sm">No site-wide announcements</p>
+              <p className="text-foreground font-semibold text-sm">No site-wide announcements</p>
             </Card>
           ) : (
             general.map((entry, i) => renderAnnouncementCard(entry, i))
@@ -460,7 +460,7 @@ export default function CommunicationsClient({
           {teacherAnnouncements.length === 0 ? (
             <Card className="py-12 text-center">
               <GraduationCap className="w-10 h-10 text-muted mx-auto mb-3" />
-              <p className="text-white font-semibold text-sm">No teacher-authored announcements yet</p>
+              <p className="text-foreground font-semibold text-sm">No teacher-authored announcements yet</p>
             </Card>
           ) : (
             <div className="space-y-3">{teacherAnnouncements.map((entry, i) => renderAnnouncementCard(entry, i))}</div>
@@ -478,7 +478,7 @@ export default function CommunicationsClient({
           {teacherTargeted.length === 0 ? (
             <Card className="py-12 text-center">
               <GraduationCap className="w-10 h-10 text-muted mx-auto mb-3" />
-              <p className="text-white font-semibold text-sm">No teacher course announcements yet</p>
+              <p className="text-foreground font-semibold text-sm">No teacher course announcements yet</p>
             </Card>
           ) : (
             <div className="space-y-3">{teacherTargeted.map((entry, i) => renderAnnouncementCard(entry, i))}</div>
@@ -496,11 +496,11 @@ export default function CommunicationsClient({
           {requestsState === 'unavailable' && (
             <Card className="py-8 text-center">
               <Inbox className="w-10 h-10 text-muted mx-auto mb-3" />
-              <p className="text-white font-semibold text-sm mb-1">Request queue is not available yet</p>
+              <p className="text-foreground font-semibold text-sm mb-1">Request queue is not available yet</p>
               <p className="text-muted text-xs mb-3">
                 GET /api/admin/requests is still being built (Worker C) — this summary will fill in once it lands.
               </p>
-              <Link href="/admin/requests" className="text-xs text-primary hover:underline">
+              <Link href="/admin/requests" className="text-xs text-primary-text hover:underline">
                 Open the request queue →
               </Link>
             </Card>
@@ -510,17 +510,17 @@ export default function CommunicationsClient({
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                 <Card>
                   <p className="text-muted text-xs">Total requests</p>
-                  <p className="text-white text-2xl font-bold mt-1">{requestSummary.total}</p>
+                  <p className="text-foreground text-2xl font-bold mt-1">{requestSummary.total}</p>
                 </Card>
                 {Object.entries(requestSummary.byStatus).map(([status, count]) => (
                   <Card key={status}>
                     <p className="text-muted text-xs capitalize">{status}</p>
-                    <p className="text-white text-2xl font-bold mt-1">{count}</p>
+                    <p className="text-foreground text-2xl font-bold mt-1">{count}</p>
                   </Card>
                 ))}
               </div>
               <Card>
-                <h2 className="text-white font-semibold text-sm mb-2">By category</h2>
+                <h2 className="text-foreground font-semibold text-sm mb-2">By category</h2>
                 {Object.keys(requestSummary.byCategory).length === 0 ? (
                   <p className="text-muted text-xs">No categories yet.</p>
                 ) : (
@@ -532,12 +532,12 @@ export default function CommunicationsClient({
                             category as keyof typeof SUPPORT_REQUEST_CATEGORY_LABELS
                           ] ?? category}
                         </span>
-                        <span className="text-white font-medium">{count}</span>
+                        <span className="text-foreground font-medium">{count}</span>
                       </li>
                     ))}
                   </ul>
                 )}
-                <Link href="/admin/requests" className="inline-block mt-3 text-xs text-primary hover:underline">
+                <Link href="/admin/requests" className="inline-block mt-3 text-xs text-primary-text hover:underline">
                   Open the full request queue →
                 </Link>
               </Card>
@@ -546,7 +546,7 @@ export default function CommunicationsClient({
                   value={requestStatusFilter}
                   onChange={(e) => setRequestStatusFilter(e.target.value)}
                   aria-label="Filter requests by status"
-                  className="bg-dark-card border border-dark-border rounded-md px-2 py-2 text-xs text-white cursor-pointer"
+                  className="bg-dark-card border border-dark-border rounded-md px-2 py-2 text-xs text-foreground cursor-pointer"
                 >
                   <option value="all">All statuses</option>
                   {requestStatuses.map((s) => (
@@ -557,7 +557,7 @@ export default function CommunicationsClient({
                   value={requestCategoryFilter}
                   onChange={(e) => setRequestCategoryFilter(e.target.value)}
                   aria-label="Filter requests by category"
-                  className="bg-dark-card border border-dark-border rounded-md px-2 py-2 text-xs text-white cursor-pointer"
+                  className="bg-dark-card border border-dark-border rounded-md px-2 py-2 text-xs text-foreground cursor-pointer"
                 >
                   <option value="all">All categories</option>
                   {requestCategories.map((c) => (
@@ -575,7 +575,7 @@ export default function CommunicationsClient({
                     <Card key={request.id} hover>
                       <div className="flex items-start justify-between gap-3 flex-wrap">
                         <div>
-                          <p className="text-white font-semibold text-sm">{request.subject}</p>
+                          <p className="text-foreground font-semibold text-sm">{request.subject}</p>
                           {request.message && (
                             <p className="text-muted text-xs mt-1 line-clamp-2">{request.message}</p>
                           )}
@@ -590,7 +590,7 @@ export default function CommunicationsClient({
                             ] ?? request.category}
                           </Badge>
                           <Badge variant="muted">{request.status.replaceAll('_', ' ')}</Badge>
-                          <Link href="/admin/requests" className="text-xs text-primary hover:underline">
+                          <Link href="/admin/requests" className="text-xs text-primary-text hover:underline">
                             Open in queue →
                           </Link>
                         </div>
@@ -617,7 +617,7 @@ export default function CommunicationsClient({
               if (e.target.value) loadReceipts(e.target.value);
             }}
             aria-label="Pick an announcement for receipts"
-            className="w-full bg-dark-card border border-dark-border rounded-md px-3 py-2 text-sm text-white cursor-pointer"
+            className="w-full bg-dark-card border border-dark-border rounded-md px-3 py-2 text-sm text-foreground cursor-pointer"
           >
             <option value="">Pick an announcement…</option>
             {announcements.map((e) => (
@@ -630,7 +630,7 @@ export default function CommunicationsClient({
             <Card>
               <div className="flex items-center justify-between gap-2 flex-wrap mb-3">
                 <div>
-                  <p className="text-white font-semibold text-sm">{receiptsPick.announcement.title}</p>
+                  <p className="text-foreground font-semibold text-sm">{receiptsPick.announcement.title}</p>
                   <p className="text-muted text-xs mt-0.5">
                     By {receiptsPick.authorName} · {formatDateShort(receiptsPick.announcement.createdAt)} ·{' '}
                     {receiptsPick.recipientCount} recipients

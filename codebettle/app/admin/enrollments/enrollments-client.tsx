@@ -173,7 +173,7 @@ export default function EnrollmentsClient({ students, courses }: EnrollmentsClie
     <div className="space-y-6">
       <FadeIn className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-black text-white">Enrollments</h1>
+          <h1 className="text-2xl font-black text-foreground">Enrollments</h1>
           <p className="text-muted text-sm mt-1">{total} total enrollments</p>
         </div>
         <div className="flex gap-2 items-center">
@@ -217,7 +217,7 @@ export default function EnrollmentsClient({ students, courses }: EnrollmentsClie
                         <td className="py-3 px-4">
                           <div className="flex items-center gap-2">
                             <img src={student?.avatar || ''} alt={student?.name} className="w-7 h-7 rounded-full" />
-                            <span className="text-white text-xs font-medium">{student?.name}</span>
+                            <span className="text-foreground text-xs font-medium">{student?.name}</span>
                           </div>
                         </td>
                         <td className="py-3 px-4 text-muted text-xs max-w-[160px] truncate">{course?.title}</td>
@@ -314,7 +314,7 @@ export default function EnrollmentsClient({ students, courses }: EnrollmentsClie
             <Input label="Amount Paid (PKR)" type="number" placeholder="0" value={editForm.amountPaid} onChange={e => setEditForm(f => ({ ...f, amountPaid: e.target.value }))} />
             <label className="flex items-center gap-2 cursor-pointer">
               <input type="checkbox" checked={editForm.certificateEligible} onChange={e => setEditForm(f => ({ ...f, certificateEligible: e.target.checked }))} className="w-4 h-4 accent-primary" />
-              <span className="text-sm text-white/80">Certificate eligible</span>
+              <span className="text-sm text-foreground/80">Certificate eligible</span>
             </label>
             <div className="flex gap-3">
               <Button variant="secondary" fullWidth onClick={() => setEditTarget(null)}>Cancel</Button>
@@ -326,7 +326,7 @@ export default function EnrollmentsClient({ students, courses }: EnrollmentsClie
 
       {/* Delete Modal */}
       <Modal isOpen={!!deleteTarget} onClose={() => setDeleteTarget(null)} title="Delete Enrollment" size="sm">
-        <p className="text-muted text-sm mb-6">Delete the enrollment for <span className="text-white font-medium">{deleteTarget?.label}</span>? This cannot be undone.</p>
+        <p className="text-muted text-sm mb-6">Delete the enrollment for <span className="text-foreground font-medium">{deleteTarget?.label}</span>? This cannot be undone.</p>
         <div className="flex gap-3">
           <Button variant="secondary" fullWidth onClick={() => setDeleteTarget(null)}>Cancel</Button>
           <Button variant="danger" fullWidth onClick={() => deleteEnrollment(deleteTarget!.id)}>Delete</Button>

@@ -138,7 +138,7 @@ export default function PaymentsClient() {
     <FadeIn className="space-y-5">
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
-          <h1 className="text-2xl font-black text-white">Payment Verifications</h1>
+          <h1 className="text-2xl font-black text-foreground">Payment Verifications</h1>
           <p className="text-muted text-sm mt-1">
             Review student payment submissions. Approving marks the enrolment paid with the submitted amount.
           </p>
@@ -157,8 +157,8 @@ export default function PaymentsClient() {
             onClick={() => setFilter(f.value)}
             className={`text-xs font-medium px-3 py-1.5 rounded-full border transition-colors cursor-pointer ${
               filter === f.value
-                ? 'bg-primary/15 text-primary border-primary/30'
-                : 'bg-dark-card text-muted border-dark-border hover:text-white'
+                ? 'bg-primary/15 text-primary-text border-primary/30'
+                : 'bg-dark-card text-muted border-dark-border hover:text-foreground'
             }`}
           >
             {f.label}
@@ -182,7 +182,7 @@ export default function PaymentsClient() {
               <div className="flex items-start gap-4 flex-wrap">
                 <div className="flex-1 min-w-52">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <p className="text-white font-semibold text-sm">{s.studentName ?? 'Unknown student'}</p>
+                    <p className="text-foreground font-semibold text-sm">{s.studentName ?? 'Unknown student'}</p>
                     <Badge variant={STATUS_BADGE[s.reviewStatus]}>{STATUS_LABEL[s.reviewStatus]}</Badge>
                     {s.couponUsed && <Badge variant="muted">Coupon: {s.couponUsed}</Badge>}
                   </div>
@@ -193,12 +193,12 @@ export default function PaymentsClient() {
                       <span> · Course price: PKR {s.coursePrice.toLocaleString()}</span>
                     )}
                   </p>
-                  <p className="text-white text-sm mt-2">
+                  <p className="text-foreground text-sm mt-2">
                     PKR {s.amountPkr.toLocaleString()}
                     <span className="text-muted text-xs"> · {s.accountSnapshot.label} ({s.accountSnapshot.accountHolder})</span>
                   </p>
                   <p className="text-muted text-xs mt-0.5">
-                    Transaction ref: <span className="text-white font-mono">{s.transactionRef}</span>
+                    Transaction ref: <span className="text-foreground font-mono">{s.transactionRef}</span>
                     {' · '}Submitted {formatDateShort(s.submittedAt)}
                   </p>
                   {s.reviewedAt && (
@@ -246,15 +246,15 @@ export default function PaymentsClient() {
             <p className="text-muted text-sm">
               {reviewDecision === 'approved' ? (
                 <>
-                  Approving marks <span className="text-white font-medium">{reviewTarget.studentName}</span>’s
-                  enrolment in <span className="text-white font-medium">{reviewTarget.courseTitle}</span> as{' '}
+                  Approving marks <span className="text-foreground font-medium">{reviewTarget.studentName}</span>’s
+                  enrolment in <span className="text-foreground font-medium">{reviewTarget.courseTitle}</span> as{' '}
                   <span className="text-green-400 font-medium">paid</span> with amount{' '}
-                  <span className="text-white font-medium">PKR {reviewTarget.amountPkr.toLocaleString()}</span>{' '}
+                  <span className="text-foreground font-medium">PKR {reviewTarget.amountPkr.toLocaleString()}</span>{' '}
                   and writes a <span className="font-mono text-xs">payment.approve</span> audit entry.
                 </>
               ) : (
                 <>
-                  Rejecting notifies <span className="text-white font-medium">{reviewTarget.studentName}</span>{' '}
+                  Rejecting notifies <span className="text-foreground font-medium">{reviewTarget.studentName}</span>{' '}
                   and lets them submit their payment again. Add a reason below — the student sees it.
                 </>
               )}

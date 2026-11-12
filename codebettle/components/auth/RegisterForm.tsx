@@ -69,19 +69,19 @@ export default function RegisterForm() {
     <div>
       <div className="mb-5 text-center">
         <Link href="/" className="gradient-text text-2xl font-black">CodeBettle</Link>
-        <h1 className="mt-3 text-xl font-bold text-white">Create Your Account</h1>
+        <h1 className="mt-3 text-xl font-bold text-foreground">Create Your Account</h1>
         <p className="mt-1 text-sm text-muted">Start your coding journey today</p>
       </div>
 
       {verificationSent ? (
         <div className="py-2 text-center">
           <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full border border-primary/40 bg-primary/10">
-            <MailCheck className="h-8 w-8 text-primary" />
+            <MailCheck className="h-8 w-8 text-primary-text" />
           </div>
-          <h2 className="mt-5 text-lg font-bold text-white">Verification email sent!</h2>
+          <h2 className="mt-5 text-lg font-bold text-foreground">Verification email sent!</h2>
           <p className="mt-2 text-sm leading-relaxed text-muted">
             We&apos;ve sent a verification email to{' '}
-            <span className="font-semibold text-white">{form.email}</span>.
+            <span className="font-semibold text-foreground">{form.email}</span>.
             Click the link in the email to verify your account, then sign in.
           </p>
           <p className="mt-2 text-sm text-muted">
@@ -94,7 +94,7 @@ export default function RegisterForm() {
             <button
               type="button"
               onClick={() => router.push('/student/dashboard')}
-              className="w-full cursor-pointer text-center text-sm font-medium text-primary hover:underline"
+              className="w-full cursor-pointer text-center text-sm font-medium text-primary-text hover:underline"
             >
               Continue to dashboard
             </button>
@@ -116,7 +116,7 @@ export default function RegisterForm() {
               error={errors.password}
               required
             />
-            <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-8 cursor-pointer text-muted hover:text-white">
+            <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-8 cursor-pointer text-muted hover:text-foreground">
               {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
             </button>
           </div>
@@ -128,7 +128,7 @@ export default function RegisterForm() {
       {!verificationSent && (
         <p className="mt-4 text-center text-sm text-muted">
           Already have an account?{' '}
-          <Link href="/auth/login" className="font-medium text-primary hover:underline">Sign in</Link>
+          <Link href="/auth/login" className="font-medium text-primary-text hover:underline">Sign in</Link>
         </p>
       )}
     </div>

@@ -8,6 +8,7 @@ import Card from '@/components/ui/Card';
 import Modal from '@/components/ui/Modal';
 import FadeIn from '@/components/ui/FadeIn';
 import StarRating from '@/components/ui/StarRating';
+import CourseThumbnail from '@/components/ui/CourseThumbnail';
 import type { PublicCourse, Review } from '@/lib/db/types';
 import { formatDateShort } from '@/lib/utils';
 import toast from 'react-hot-toast';
@@ -73,7 +74,7 @@ export default function StudentReviewsClient({ initialReviews, enrolledCourses, 
     <div className="space-y-6">
       <FadeIn className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-black text-white">My Reviews</h1>
+          <h1 className="text-2xl font-black text-foreground">My Reviews</h1>
           <p className="text-muted text-sm mt-1">{myReviews.length} review{myReviews.length !== 1 ? 's' : ''} written</p>
         </div>
         <Button onClick={() => setIsModalOpen(true)}><Plus className="w-4 h-4" />Write Review</Button>
@@ -82,7 +83,7 @@ export default function StudentReviewsClient({ initialReviews, enrolledCourses, 
       {myReviews.length === 0 ? (
         <Card className="py-16 text-center">
           <Star className="w-12 h-12 text-muted mx-auto mb-4" />
-          <p className="text-white font-semibold mb-2">No reviews yet</p>
+          <p className="text-foreground font-semibold mb-2">No reviews yet</p>
           <p className="text-muted text-sm mb-4">Share your experience with fellow students.</p>
           <Button size="sm" onClick={() => setIsModalOpen(true)}>Write a Review</Button>
         </Card>
@@ -94,9 +95,9 @@ export default function StudentReviewsClient({ initialReviews, enrolledCourses, 
               <FadeIn key={review.id} delay={Math.min(i, 3) * 0.06}>
               <Card hover>
                 <div className="flex items-start gap-4">
-                  {course && <img src={course.thumbnail} alt={course.title} className="w-16 h-16 rounded-lg object-cover flex-shrink-0" />}
+                  {course && <CourseThumbnail src={course.thumbnail} alt={course.title} className="w-16 h-16 rounded-lg object-cover flex-shrink-0" />}
                   <div className="flex-1">
-                    <p className="text-white font-semibold text-sm mb-1">{course?.title || 'Unknown Course'}</p>
+                    <p className="text-foreground font-semibold text-sm mb-1">{course?.title || 'Unknown Course'}</p>
                     <StarRating rating={review.rating} size="sm" />
                     <p className="text-muted text-sm mt-2">{review.comment}</p>
                     <p className="text-muted text-xs mt-2">{formatDateShort(review.createdAt)}</p>
@@ -121,7 +122,7 @@ export default function StudentReviewsClient({ initialReviews, enrolledCourses, 
             options={[{ value: '', label: reviewableCourses.length === 0 ? 'No courses left to review' : 'Choose a course...' }, ...reviewableCourses.map(c => ({ value: c.id, label: c.title }))]}
           />
           <div>
-            <label className="text-sm font-medium text-white/80 block mb-2">Your Rating</label>
+            <label className="text-sm font-medium text-foreground/80 block mb-2">Your Rating</label>
             <StarRating rating={newRating} interactive onChange={setNewRating} size="lg" />
           </div>
           <Textarea label="Your Review" placeholder="Share your experience with this course..." value={newComment} onChange={e => setNewComment(e.target.value)} rows={4} />

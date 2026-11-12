@@ -122,7 +122,7 @@ export default function ApplicantProfilePage() {
   return (
     <div className="space-y-6 max-w-2xl">
       <FadeIn>
-        <h1 className="text-2xl font-black text-white">My Profile</h1>
+        <h1 className="text-2xl font-black text-foreground">My Profile</h1>
         <p className="text-muted text-sm mt-1">Your applicant profile — the same details travel with you when you are onboarded as a teacher.</p>
       </FadeIn>
 
@@ -136,14 +136,14 @@ export default function ApplicantProfilePage() {
               disabled={uploading}
               aria-label="Change profile photo"
               title="Change profile photo"
-              className="absolute -bottom-1 -right-1 w-7 h-7 rounded-full bg-primary text-dark flex items-center justify-center hover:bg-primary-dark transition-colors cursor-pointer disabled:opacity-50"
+              className="absolute -bottom-1 -right-1 w-7 h-7 rounded-full bg-primary text-ink flex items-center justify-center hover:bg-primary-dark transition-colors cursor-pointer disabled:opacity-50"
             >
               <Camera className="w-3.5 h-3.5" />
             </button>
             <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleAvatarChange} />
           </div>
           <div>
-            <p className="text-white font-semibold">{`${firstName} ${lastName}`.trim() || 'Your name'}</p>
+            <p className="text-foreground font-semibold">{`${firstName} ${lastName}`.trim() || 'Your name'}</p>
             <p className="text-muted text-xs">{email}</p>
           </div>
         </div>

@@ -6,6 +6,7 @@ import type { SafeUser } from '@/lib/db/types';
 import Card from '@/components/ui/Card';
 import Badge from '@/components/ui/Badge';
 import FadeIn from '@/components/ui/FadeIn';
+import CourseThumbnail from '@/components/ui/CourseThumbnail';
 import { Users, Award } from 'lucide-react';
 import { formatDateShort } from '@/lib/utils';
 
@@ -31,7 +32,7 @@ export default async function InstructorStudentsPage() {
   return (
     <div className="space-y-6">
       <FadeIn>
-        <h1 className="text-2xl font-black text-white">Students</h1>
+        <h1 className="text-2xl font-black text-foreground">Students</h1>
         <p className="text-muted text-sm mt-1">{uniqueStudentIds.length} unique student{uniqueStudentIds.length !== 1 ? 's' : ''} across {myCourses.length} course{myCourses.length !== 1 ? 's' : ''}</p>
       </FadeIn>
 
@@ -42,9 +43,9 @@ export default async function InstructorStudentsPage() {
           <FadeIn key={course.id} delay={Math.min(i, 3) * 0.06}>
           <Card>
             <div className="flex items-center gap-3 mb-4">
-              <img src={course.thumbnail} alt={course.title} className="w-12 h-12 rounded-lg object-cover" />
+              <CourseThumbnail src={course.thumbnail} alt={course.title} className="w-12 h-12 rounded-lg object-cover" />
               <div>
-                <h3 className="text-white font-semibold text-sm">{course.title}</h3>
+                <h3 className="text-foreground font-semibold text-sm">{course.title}</h3>
                 <p className="text-muted text-xs">{courseEnrollments.length} enrolled</p>
               </div>
             </div>
@@ -66,7 +67,7 @@ export default async function InstructorStudentsPage() {
                         <td className="py-3 pr-4">
                           <div className="flex items-center gap-2">
                             <img src={student?.avatar || ''} alt={student?.name} className="w-7 h-7 rounded-full" />
-                            <span className="text-white text-xs font-medium">{student?.name}</span>
+                            <span className="text-foreground text-xs font-medium">{student?.name}</span>
                           </div>
                         </td>
                         <td className="py-3 pr-4 text-muted text-xs">{formatDateShort(enr.enrolledAt)}</td>

@@ -14,7 +14,7 @@ interface StatCardProps {
 
 export default function StatCard({ title, value, subtitle, icon, color = 'yellow', trend }: StatCardProps) {
   const colors = {
-    yellow: 'text-primary bg-primary/10',
+    yellow: 'text-primary-text bg-primary/10',
     blue: 'text-blue-400 bg-blue-400/10',
     green: 'text-green-400 bg-green-400/10',
     purple: 'text-purple-400 bg-purple-400/10',
@@ -27,7 +27,7 @@ export default function StatCard({ title, value, subtitle, icon, color = 'yellow
         <div className="flex items-start justify-between">
           <div>
             <p className="text-muted text-sm">{title}</p>
-            <p className="text-3xl font-bold text-white mt-1">{value}</p>
+            <p className="text-3xl font-bold text-foreground mt-1">{value}</p>
             {subtitle && <p className="text-muted text-xs mt-1">{subtitle}</p>}
             {trend && (
               <p className={cn('text-xs mt-2 font-medium', trend.value >= 0 ? 'text-green-400' : 'text-red-400')}>

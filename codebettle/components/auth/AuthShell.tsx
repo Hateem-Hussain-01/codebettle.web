@@ -48,8 +48,8 @@ function PanelBenefits() {
   return (
     <ul className="mt-6 space-y-2.5 text-left">
       {PANEL_BENEFITS.map(({ icon: Icon, text }) => (
-        <li key={text} className="flex items-center gap-2.5 text-sm font-semibold text-dark/85">
-          <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-dark/10">
+        <li key={text} className="flex items-center gap-2.5 text-sm font-semibold text-ink/85">
+          <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-ink/10">
             <Icon className="h-4 w-4" />
           </span>
           {text}
@@ -87,13 +87,16 @@ export default function AuthShell({ initialMode, loginForm, registerForm }: Auth
       {/* Page background: code-based grid texture (visible but subtle) + dark veil + gold glow.
           The texture never enters the cards. Lines raised from 4.5% to 12%
           and the layer from 40% to 70% opacity — the old values were so
-          faint the grid read as plain dark at normal size. */}
+          faint the grid read as plain dark at normal size.
+          Module 6: the grid lines use the foreground token (via color-mix)
+          instead of hardcoded white, so the texture stays visible in
+          light mode too — white lines on a white page would vanish. */}
       <div
         aria-hidden="true"
         className="absolute inset-0 opacity-70"
         style={{
           backgroundImage:
-            'linear-gradient(to right, rgba(255, 255, 255, 0.12) 1px, transparent 1px), linear-gradient(to bottom, rgba(255, 255, 255, 0.12) 1px, transparent 1px)',
+            'linear-gradient(to right, color-mix(in srgb, var(--color-foreground) 12%, transparent) 1px, transparent 1px), linear-gradient(to bottom, color-mix(in srgb, var(--color-foreground) 12%, transparent) 1px, transparent 1px)',
           backgroundSize: '60px 60px',
         }}
       />
@@ -108,7 +111,7 @@ export default function AuthShell({ initialMode, loginForm, registerForm }: Auth
         <button
           type="button"
           onClick={() => switchMode(mode === 'login' ? 'register' : 'login')}
-          className="shrink-0 cursor-pointer rounded-full border border-primary/60 px-4 py-1.5 text-sm font-semibold text-primary transition-colors hover:bg-primary hover:text-dark"
+          className="shrink-0 cursor-pointer rounded-full border border-primary/60 px-4 py-1.5 text-sm font-semibold text-primary-text transition-colors hover:bg-primary hover:text-ink"
         >
           {mode === 'login' ? 'Sign Up' : 'Sign In'}
         </button>
@@ -142,17 +145,21 @@ export default function AuthShell({ initialMode, loginForm, registerForm }: Auth
             </div>
           </div>
 
-          {/* Gold overlay panel — desktop only, slides across the card. */}
+          {/* Gold overlay panel — desktop only, slides across the card.
+              The panel is a hardcoded gold gradient in BOTH themes, so
+              everything on it uses --color-ink (stays near-black) and
+              bright --color-primary on hover — never the theme-flipping
+              --color-dark / --color-primary-text tokens. */}
           <motion.div
             aria-hidden="true"
-            className="absolute inset-y-0 left-0 hidden w-1/2 flex-col items-center justify-center bg-[linear-gradient(135deg,#FDE68A_0%,#F5C518_45%,#C9A000_100%)] px-8 text-center text-dark md:flex"
+            className="absolute inset-y-0 left-0 hidden w-1/2 flex-col items-center justify-center bg-[linear-gradient(135deg,#FDE68A_0%,#F5C518_45%,#C9A000_100%)] px-8 text-center text-ink md:flex"
             initial={false}
             animate={{ x: mode === 'login' ? '100%' : '0%' }}
             transition={{ duration: 0.6, ease: [0.32, 0.72, 0, 1] }}
           >
             {/* Decorative soft circles for depth */}
             <div aria-hidden="true" className="absolute -top-10 -right-10 h-40 w-40 rounded-full bg-white/15 blur-2xl" />
-            <div aria-hidden="true" className="absolute -bottom-12 -left-8 h-44 w-44 rounded-full bg-dark/10 blur-2xl" />
+            <div aria-hidden="true" className="absolute -bottom-12 -left-8 h-44 w-44 rounded-full bg-ink/10 blur-2xl" />
             <AnimatePresence mode="wait">
               <motion.div
                 key={mode}
@@ -165,14 +172,14 @@ export default function AuthShell({ initialMode, loginForm, registerForm }: Auth
                 {mode === 'login' ? (
                   <>
                     <h2 className="text-3xl font-black">Welcome Back!</h2>
-                    <p className="mt-3 text-sm font-medium text-dark/75">
+                    <p className="mt-3 text-sm font-medium text-ink/75">
                       Sign in to access your account and continue where you left off.
                     </p>
                     <PanelBenefits />
                     <button
                       type="button"
                       onClick={() => switchMode('register')}
-                      className="mt-6 cursor-pointer rounded-full border-2 border-dark/80 px-8 py-2.5 text-sm font-bold tracking-widest text-dark transition-colors hover:bg-dark hover:text-primary"
+                      className="mt-6 cursor-pointer rounded-full border-2 border-ink/80 px-8 py-2.5 text-sm font-bold tracking-widest text-ink transition-colors hover:bg-ink hover:text-primary"
                     >
                       SIGN UP
                     </button>
@@ -180,14 +187,14 @@ export default function AuthShell({ initialMode, loginForm, registerForm }: Auth
                 ) : (
                   <>
                     <h2 className="text-3xl font-black">Create Your Account!</h2>
-                    <p className="mt-3 text-sm font-medium text-dark/75">
+                    <p className="mt-3 text-sm font-medium text-ink/75">
                       Join us today and explore all the features we have to offer.
                     </p>
                     <PanelBenefits />
                     <button
                       type="button"
                       onClick={() => switchMode('login')}
-                      className="mt-6 cursor-pointer rounded-full border-2 border-dark/80 px-8 py-2.5 text-sm font-bold tracking-widest text-dark transition-colors hover:bg-dark hover:text-primary"
+                      className="mt-6 cursor-pointer rounded-full border-2 border-ink/80 px-8 py-2.5 text-sm font-bold tracking-widest text-ink transition-colors hover:bg-ink hover:text-primary"
                     >
                       SIGN IN
                     </button>

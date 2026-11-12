@@ -110,7 +110,7 @@ export default function StudentCourseContent({
           <div className="bg-gradient-to-r from-blue-500/15 to-transparent border border-blue-500/30 rounded-xl p-4 flex flex-col sm:flex-row items-start sm:items-center gap-4">
             <div className="w-10 h-10 rounded-xl bg-blue-500/20 flex items-center justify-center flex-shrink-0"><Clock className="w-5 h-5 text-blue-400" /></div>
             <div className="flex-1">
-              <p className="text-white font-bold text-sm">Waiting for Approval</p>
+              <p className="text-foreground font-bold text-sm">Waiting for Approval</p>
               <p className="text-muted text-xs mt-0.5">Your payment has been submitted and is waiting for admin verification. The Zoom link and remaining recordings unlock once it is approved — the first 2 lessons are already available below.</p>
             </div>
           </div>
@@ -118,7 +118,7 @@ export default function StudentCourseContent({
           <div className="bg-gradient-to-r from-yellow-500/15 to-transparent border border-yellow-500/30 rounded-xl p-4 flex flex-col sm:flex-row items-start sm:items-center gap-4">
             <div className="w-10 h-10 rounded-xl bg-yellow-500/20 flex items-center justify-center flex-shrink-0"><Lock className="w-5 h-5 text-yellow-400" /></div>
             <div className="flex-1">
-              <p className="text-white font-bold text-sm">Payment pending</p>
+              <p className="text-foreground font-bold text-sm">Payment pending</p>
               <p className="text-muted text-xs mt-0.5">You are enrolled, but your payment has not been confirmed yet. The Zoom link and remaining recordings unlock once an admin confirms your payment — the first 2 lessons are already available below.</p>
             </div>
             <Button onClick={() => setPaymentModalOpen(true)} className="flex-shrink-0">Complete Payment</Button>
@@ -136,7 +136,7 @@ export default function StudentCourseContent({
         <div className="bg-gradient-to-r from-blue-500/15 to-transparent border border-blue-500/30 rounded-xl p-4 flex flex-col sm:flex-row items-start sm:items-center gap-4">
           <div className="w-10 h-10 rounded-xl bg-blue-500/20 flex items-center justify-center flex-shrink-0"><Video className="w-5 h-5 text-blue-400" /></div>
           <div className="flex-1">
-            <p className="text-white font-bold text-sm">Live Class — Zoom</p>
+            <p className="text-foreground font-bold text-sm">Live Class — Zoom</p>
             <p className="text-muted text-xs mt-0.5">
               {schedule ? `${scheduleDays.slice(0, 3).join(', ')}${scheduleDays.length > 3 ? '...' : ''} at ${schedule.classTime}` : 'Check announcements for class timings'}
             </p>
@@ -160,24 +160,24 @@ export default function StudentCourseContent({
           {/* Schedule info strip */}
           {schedule && (
             <div className="bg-dark-card border border-dark-border rounded-xl p-4">
-              <h3 className="text-white font-semibold text-sm mb-3 flex items-center gap-2"><Calendar className="w-4 h-4 text-primary" />Class Schedule</h3>
+              <h3 className="text-foreground font-semibold text-sm mb-3 flex items-center gap-2"><Calendar className="w-4 h-4 text-primary-text" />Class Schedule</h3>
               <div className="grid sm:grid-cols-3 gap-3 text-xs">
                 <div className="bg-dark-border/30 rounded-lg p-3">
                   <p className="text-muted mb-1">Time</p>
-                  <p className="text-white font-medium flex items-center gap-1"><Clock className="w-3 h-3" />{schedule.classTime}</p>
+                  <p className="text-foreground font-medium flex items-center gap-1"><Clock className="w-3 h-3" />{schedule.classTime}</p>
                 </div>
                 <div className="bg-dark-border/30 rounded-lg p-3">
                   <p className="text-muted mb-1">Duration</p>
-                  <p className="text-white font-medium">{schedule.classDuration}</p>
+                  <p className="text-foreground font-medium">{schedule.classDuration}</p>
                 </div>
                 <div className="bg-dark-border/30 rounded-lg p-3">
                   <p className="text-muted mb-1">Days</p>
-                  <p className="text-white font-medium capitalize">{schedule.scheduleType.replace('-', ' ')}</p>
+                  <p className="text-foreground font-medium capitalize">{schedule.scheduleType.replace('-', ' ')}</p>
                 </div>
               </div>
               <div className="flex flex-wrap gap-1.5 mt-3">
                 {scheduleDays.map((day) => (
-                  <span key={day} className="text-xs px-2.5 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20">{day}</span>
+                  <span key={day} className="text-xs px-2.5 py-0.5 rounded-full bg-primary/10 text-primary-text border border-primary/20">{day}</span>
                 ))}
               </div>
               {schedule.notes && <p className="text-muted text-xs mt-2 italic">{schedule.notes}</p>}
@@ -185,7 +185,7 @@ export default function StudentCourseContent({
           )}
 
           {/* Class sessions */}
-          <h2 className="text-white font-bold">Class Sessions</h2>
+          <h2 className="text-foreground font-bold">Class Sessions</h2>
           {modules.length === 0 ? (
             <Card className="py-10 text-center">
               <BookOpen className="w-10 h-10 text-muted mx-auto mb-3" />
@@ -196,8 +196,8 @@ export default function StudentCourseContent({
             return (
               <Card key={mod.id} className="p-0 overflow-hidden">
                 <div className="flex items-center gap-3 px-5 py-3 bg-dark-border/30">
-                  <BookOpen className="w-4 h-4 text-primary" />
-                  <h3 className="font-semibold text-white text-sm">{mod.title}</h3>
+                  <BookOpen className="w-4 h-4 text-primary-text" />
+                  <h3 className="font-semibold text-foreground text-sm">{mod.title}</h3>
                   <span className="text-xs text-muted ml-auto">{recorded === null ? '…' : recorded}/{mod.lessons.length} recorded</span>
                 </div>
                 <div className="divide-y divide-dark-border">
@@ -212,7 +212,7 @@ export default function StudentCourseContent({
                           <span className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 mt-0.5 ${hasRec ? 'bg-green-500/20 text-green-400' : 'bg-dark-border text-muted'}`}>{si + 1}</span>
                           <div className="flex-1">
                             <div className="flex items-center gap-2 flex-wrap">
-                              <p className="text-white text-sm font-medium">{ses.title}</p>
+                              <p className="text-foreground text-sm font-medium">{ses.title}</p>
                               {locked ? <Badge variant="muted"><Lock className="w-3 h-3" /> Locked</Badge> : hasRec ? <Badge variant="success">Recorded</Badge> : <Badge variant="muted">Pending</Badge>}
                             </div>
                             {ses.description && <p className="text-muted text-xs mt-0.5">{ses.description}</p>}
@@ -244,7 +244,7 @@ export default function StudentCourseContent({
                             <div className="flex flex-wrap gap-2 mt-2">
                               {materials.map((mat, mi) => (
                                 <a key={mi} href={mat.url}
-                                  className="inline-flex items-center gap-1.5 text-xs text-muted hover:text-white bg-dark-border/30 rounded-lg px-3 py-1.5 border border-dark-border">
+                                  className="inline-flex items-center gap-1.5 text-xs text-muted hover:text-foreground bg-dark-border/30 rounded-lg px-3 py-1.5 border border-dark-border">
                                   <Download className="w-3 h-3" />{mat.name}
                                 </a>
                               ))}

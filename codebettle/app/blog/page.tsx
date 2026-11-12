@@ -16,8 +16,8 @@ export default async function BlogPage() {
       <main className="min-h-screen bg-background pt-16">
         <div className="py-16 bg-dark-card border-b border-dark-border text-center">
           <FadeIn className="max-w-xl mx-auto px-4">
-            <span className="text-primary text-sm font-semibold uppercase tracking-wider">Blog</span>
-            <h1 className="text-4xl font-black text-white mt-2 mb-3">Tech <span className="gradient-text">Insights</span></h1>
+            <span className="text-primary-text text-sm font-semibold uppercase tracking-wider">Blog</span>
+            <h1 className="text-4xl font-black text-foreground mt-2 mb-3">Tech <span className="gradient-text">Insights</span></h1>
             <p className="text-muted">Articles, tutorials, and tips from our expert instructors.</p>
           </FadeIn>
         </div>
@@ -33,18 +33,18 @@ export default async function BlogPage() {
                   </div>
                   <div className="p-5 flex flex-col flex-1">
                     <div className="flex items-center gap-2 mb-2">
-                      <span className="text-xs font-medium text-primary">{post.category}</span>
+                      <span className="text-xs font-medium text-primary-text">{post.category}</span>
                       {post.pdfUrl && (
-                        <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20">
+                        <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-primary/10 text-primary-text border border-primary/20">
                           <FileText className="w-3 h-3" /> PDF
                         </span>
                       )}
                     </div>
-                    <h2 className="text-white font-bold leading-snug mb-2 group-hover:text-primary transition-colors flex-1">{post.title}</h2>
+                    <h2 className="text-foreground font-bold leading-snug mb-2 group-hover:text-primary-text transition-colors flex-1">{post.title}</h2>
                     <p className="text-muted text-sm line-clamp-2 mb-4">{post.excerpt}</p>
                     <div className="flex items-center justify-between text-xs text-muted">
                       <div className="flex items-center gap-2">
-                        <div className="w-6 h-6 rounded-full bg-primary/20 flex items-center justify-center text-primary text-xs font-bold">{post.authorName.charAt(0)}</div>
+                        <div className="w-6 h-6 rounded-full bg-primary/20 flex items-center justify-center text-primary-text text-xs font-bold">{post.authorName.charAt(0)}</div>
                         <span>{post.authorName}</span>
                       </div>
                       <span className="flex items-center gap-1"><Clock className="w-3 h-3" />{post.readTime}</span>

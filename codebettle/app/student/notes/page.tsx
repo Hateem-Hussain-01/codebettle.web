@@ -105,7 +105,7 @@ export default function StudentNotesPage() {
     <div className="space-y-6">
       <FadeIn className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-black text-white">My Notes</h1>
+          <h1 className="text-2xl font-black text-foreground">My Notes</h1>
           <p className="text-muted text-sm mt-1">{notes.length} note{notes.length !== 1 ? 's' : ''}</p>
         </div>
         <Button onClick={openCreate}><Plus className="w-4 h-4" />New Note</Button>
@@ -118,7 +118,7 @@ export default function StudentNotesPage() {
       ) : notes.length === 0 ? (
         <Card className="py-16 text-center">
           <StickyNote className="w-12 h-12 text-muted mx-auto mb-4" />
-          <p className="text-white font-semibold mb-2">No notes yet</p>
+          <p className="text-foreground font-semibold mb-2">No notes yet</p>
           <p className="text-muted text-sm mb-4">Start creating your learning notes.</p>
           <Button onClick={openCreate} size="sm"><Plus className="w-4 h-4" />Create Note</Button>
         </Card>
@@ -128,13 +128,13 @@ export default function StudentNotesPage() {
             <FadeIn key={note.id} delay={Math.min(i % 3, 2) * 0.07}>
             <Card hover className="flex flex-col h-full">
               <div className="flex items-start justify-between mb-2">
-                <h3 className="text-white font-semibold text-sm">{note.title}</h3>
+                <h3 className="text-foreground font-semibold text-sm">{note.title}</h3>
                 <div className="flex items-center gap-1 ml-2 flex-shrink-0">
-                  <button onClick={() => openEdit(note)} className="text-muted hover:text-primary transition-colors p-1 cursor-pointer"><Edit3 className="w-3.5 h-3.5" /></button>
+                  <button onClick={() => openEdit(note)} className="text-muted hover:text-primary-text transition-colors p-1 cursor-pointer"><Edit3 className="w-3.5 h-3.5" /></button>
                   <button onClick={() => handleDelete(note.id)} className="text-muted hover:text-red-400 transition-colors p-1 cursor-pointer"><Trash2 className="w-3.5 h-3.5" /></button>
                 </div>
               </div>
-              {note.courseTitle && <p className="text-xs text-primary mb-2">{note.courseTitle}</p>}
+              {note.courseTitle && <p className="text-xs text-primary-text mb-2">{note.courseTitle}</p>}
               <p className="text-muted text-xs leading-relaxed flex-1 whitespace-pre-wrap line-clamp-4">{note.content}</p>
               <p className="text-muted text-xs mt-3">{formatDateShort(note.createdAt)}</p>
             </Card>

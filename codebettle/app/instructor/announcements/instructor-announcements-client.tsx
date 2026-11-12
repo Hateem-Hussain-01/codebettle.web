@@ -70,7 +70,7 @@ export default function InstructorAnnouncementsClient({ courses: myCourses, init
     <div className="space-y-6">
       <FadeIn className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-black text-white">Announcements</h1>
+          <h1 className="text-2xl font-black text-foreground">Announcements</h1>
           <p className="text-muted text-sm mt-1">Post updates to your enrolled students</p>
         </div>
         <Button onClick={() => setIsOpen(true)}><Plus className="w-4 h-4" />New Announcement</Button>
@@ -79,7 +79,7 @@ export default function InstructorAnnouncementsClient({ courses: myCourses, init
       {announcements.length === 0 ? (
         <Card className="py-16 text-center">
           <Bell className="w-12 h-12 text-muted mx-auto mb-4" />
-          <p className="text-white font-semibold mb-2">No announcements yet</p>
+          <p className="text-foreground font-semibold mb-2">No announcements yet</p>
           <p className="text-muted text-sm mb-4">Keep your students informed with course updates.</p>
           <Button size="sm" onClick={() => setIsOpen(true)}><Plus className="w-4 h-4" />Post Announcement</Button>
         </Card>
@@ -90,13 +90,13 @@ export default function InstructorAnnouncementsClient({ courses: myCourses, init
             return (
               <FadeIn key={ann.id} delay={Math.min(i, 4) * 0.05}>
               <Card hover className="flex items-start gap-4">
-                <div className="w-10 h-10 rounded-lg bg-primary/10 text-primary flex items-center justify-center flex-shrink-0"><Bell className="w-5 h-5" /></div>
+                <div className="w-10 h-10 rounded-lg bg-primary/10 text-primary-text flex items-center justify-center flex-shrink-0"><Bell className="w-5 h-5" /></div>
                 <div className="flex-1">
                   <div className="flex items-center justify-between gap-2">
-                    <p className="text-white font-semibold text-sm">{ann.title}</p>
+                    <p className="text-foreground font-semibold text-sm">{ann.title}</p>
                     <button onClick={() => handleDelete(ann)} className="text-muted hover:text-red-400 cursor-pointer"><Trash2 className="w-4 h-4" /></button>
                   </div>
-                  {course && <p className="text-primary text-xs mb-1">{course.title}</p>}
+                  {course && <p className="text-primary-text text-xs mb-1">{course.title}</p>}
                   <p className="text-muted text-sm">{ann.content}</p>
                   <p className="text-muted text-xs mt-2">{formatDateShort(ann.createdAt)}</p>
                 </div>

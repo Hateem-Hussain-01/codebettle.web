@@ -44,14 +44,14 @@ export default function StudentCertificatesClient({ certificates, coursesById, s
   return (
     <div className="space-y-6">
       <FadeIn>
-        <h1 className="text-2xl font-black text-white">My Certificates</h1>
+        <h1 className="text-2xl font-black text-foreground">My Certificates</h1>
         <p className="text-muted text-sm mt-1">{items.length} certificate{items.length !== 1 ? 's' : ''} earned</p>
       </FadeIn>
 
       {items.length === 0 ? (
         <Card className="py-16 text-center">
           <Award className="w-12 h-12 text-muted mx-auto mb-4" />
-          <p className="text-white font-semibold mb-2">No certificates yet</p>
+          <p className="text-foreground font-semibold mb-2">No certificates yet</p>
           <p className="text-muted text-sm">Complete a course to earn your first certificate.</p>
         </Card>
       ) : (
@@ -59,14 +59,14 @@ export default function StudentCertificatesClient({ certificates, coursesById, s
           {items.map(({ cert, course }, i) => (
             <FadeIn key={cert.id} delay={Math.min(i % 3, 2) * 0.07} className="bg-gradient-to-br from-dark-card to-surface border border-primary/30 rounded-xl p-6 hover:border-primary/60 transition-all hover:shadow-[0_0_20px_rgba(245,197,24,0.1)]">
               <div className="text-center mb-4">
-                <Award className="w-12 h-12 text-primary mx-auto mb-3" />
-                <p className="text-xs font-bold text-primary uppercase tracking-wider mb-1">Certificate of Completion</p>
+                <Award className="w-12 h-12 text-primary-text mx-auto mb-3" />
+                <p className="text-xs font-bold text-primary-text uppercase tracking-wider mb-1">Certificate of Completion</p>
                 <p className="text-muted text-xs mb-2">{studentName}</p>
-                <h3 className="text-white font-bold text-sm leading-snug">{course!.title}</h3>
+                <h3 className="text-foreground font-bold text-sm leading-snug">{course!.title}</h3>
               </div>
               <div className="text-center text-xs text-muted mb-4">
                 <p>Issued: {formatDate(cert.issuedAt)}</p>
-                <p className="text-primary font-mono mt-1">{cert.certificateNumber}</p>
+                <p className="text-primary-text font-mono mt-1">{cert.certificateNumber}</p>
               </div>
               <Button
                 fullWidth

@@ -5,6 +5,7 @@ import { useState, useEffect } from 'react';
 import { Menu, X, ChevronDown } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Button from '@/components/ui/Button';
+import ThemeToggle from '@/components/theme/ThemeToggle';
 import { primaryPortalDashboard } from '@/lib/portal-switch';
 
 interface NavbarProps {
@@ -38,15 +39,16 @@ export default function Navbar({ session }: NavbarProps) {
 
           {/* Desktop Nav */}
           <div className="hidden md:flex items-center gap-6">
-            <Link href="/courses" className="text-sm text-muted hover:text-white transition-colors">Courses</Link>
-            <Link href="/instructors" className="text-sm text-muted hover:text-white transition-colors">Instructors</Link>
-            <Link href="/blog" className="text-sm text-muted hover:text-white transition-colors">Blog</Link>
-            <Link href="/about" className="text-sm text-muted hover:text-white transition-colors">About</Link>
-            <Link href="/contact" className="text-sm text-muted hover:text-white transition-colors">Contact</Link>
+            <Link href="/courses" className="text-sm text-muted hover:text-foreground transition-colors">Courses</Link>
+            <Link href="/instructors" className="text-sm text-muted hover:text-foreground transition-colors">Instructors</Link>
+            <Link href="/blog" className="text-sm text-muted hover:text-foreground transition-colors">Blog</Link>
+            <Link href="/about" className="text-sm text-muted hover:text-foreground transition-colors">About</Link>
+            <Link href="/contact" className="text-sm text-muted hover:text-foreground transition-colors">Contact</Link>
           </div>
 
           {/* Auth */}
           <div className="hidden md:flex items-center gap-3">
+            <ThemeToggle />
             {session ? (
               <Link href={portalLink!}>
                 <Button variant="primary" size="sm">
@@ -62,9 +64,12 @@ export default function Navbar({ session }: NavbarProps) {
           </div>
 
           {/* Mobile toggle */}
-          <button onClick={() => setMobileOpen(!mobileOpen)} className="md:hidden text-muted hover:text-white transition-colors p-2">
-            {mobileOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-          </button>
+          <div className="flex items-center gap-1 md:hidden">
+            <ThemeToggle />
+            <button onClick={() => setMobileOpen(!mobileOpen)} className="text-muted hover:text-foreground transition-colors p-2" aria-label={mobileOpen ? 'Close menu' : 'Open menu'}>
+              {mobileOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+            </button>
+          </div>
         </div>
       </div>
 
@@ -79,7 +84,7 @@ export default function Navbar({ session }: NavbarProps) {
           >
             <div className="px-4 py-4 flex flex-col gap-3">
               {[['/', 'Home'], ['/courses', 'Courses'], ['/instructors', 'Instructors'], ['/blog', 'Blog'], ['/about', 'About'], ['/contact', 'Contact']].map(([href, label]) => (
-                <Link key={href} href={href} className="text-muted hover:text-white py-1.5 text-sm" onClick={() => setMobileOpen(false)}>{label}</Link>
+                <Link key={href} href={href} className="text-muted hover:text-foreground py-1.5 text-sm" onClick={() => setMobileOpen(false)}>{label}</Link>
               ))}
               <div className="pt-2 border-t border-dark-border flex flex-col gap-2">
                 {session ? (

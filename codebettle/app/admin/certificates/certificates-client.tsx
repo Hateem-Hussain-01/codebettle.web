@@ -106,7 +106,7 @@ export default function CertificatesClient({ students, courses, eligibleEnrollme
     <div className="space-y-6">
       <FadeIn className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-black text-white">Certificates</h1>
+          <h1 className="text-2xl font-black text-foreground">Certificates</h1>
           <p className="text-muted text-sm mt-1">{total} certificates issued</p>
         </div>
         <Button onClick={() => setIsIssueOpen(true)}><Plus className="w-4 h-4" />Issue Certificate</Button>
@@ -142,14 +142,14 @@ export default function CertificatesClient({ students, courses, eligibleEnrollme
                       <tr key={cert.id} className="border-b border-dark-border/40 last:border-0 hover:bg-dark-border/10">
                         <td className="py-3 px-4">
                           <div className="flex items-center gap-2">
-                            <Award className="w-4 h-4 text-primary" />
-                            <span className="text-primary font-mono text-xs font-bold">{cert.certificateNumber}</span>
+                            <Award className="w-4 h-4 text-primary-text" />
+                            <span className="text-primary-text font-mono text-xs font-bold">{cert.certificateNumber}</span>
                           </div>
                         </td>
                         <td className="py-3 px-4">
                           <div className="flex items-center gap-2">
                             <img src={student?.avatar || ''} alt={student?.name} className="w-7 h-7 rounded-full" />
-                            <span className="text-white text-xs">{student?.name}</span>
+                            <span className="text-foreground text-xs">{student?.name}</span>
                           </div>
                         </td>
                         <td className="py-3 px-4 text-muted text-xs max-w-[160px] truncate">{course?.title}</td>

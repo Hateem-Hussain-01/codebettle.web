@@ -250,7 +250,7 @@ export default function InstructorProfilePage() {
   return (
     <div className="space-y-6 max-w-2xl">
       <div>
-        <h1 className="text-2xl font-black text-white">My Profile</h1>
+        <h1 className="text-2xl font-black text-foreground">My Profile</h1>
         <p className="text-muted text-sm mt-1">Your public instructor profile</p>
       </div>
 
@@ -264,7 +264,7 @@ export default function InstructorProfilePage() {
               disabled={uploading}
               aria-label="Change profile photo"
               title="Change profile photo"
-              className="absolute -bottom-1 -right-1 w-7 h-7 rounded-full bg-primary text-dark flex items-center justify-center hover:bg-primary-dark transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+              className="absolute -bottom-1 -right-1 w-7 h-7 rounded-full bg-primary text-ink flex items-center justify-center hover:bg-primary-dark transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <Camera className="w-3.5 h-3.5" />
             </button>
@@ -277,7 +277,7 @@ export default function InstructorProfilePage() {
             />
           </div>
           <div>
-            <p className="text-white font-bold">{profile.name}</p>
+            <p className="text-foreground font-bold">{profile.name}</p>
             <p className="text-muted text-sm">{profile.email}</p>
             <span className="text-xs px-2.5 py-0.5 rounded-full bg-green-400/10 text-green-400 border border-green-400/20 mt-1 inline-block">Instructor</span>
           </div>
@@ -293,10 +293,10 @@ export default function InstructorProfilePage() {
           <Textarea label="Bio" value={profile.bio} onChange={e => setProfile(p => ({ ...p, bio: e.target.value }))} rows={4} placeholder="Tell students about yourself..." />
 
           <div>
-            <label className="text-sm font-medium text-white/80 block mb-2">Expertise Tags</label>
+            <label className="text-sm font-medium text-foreground/80 block mb-2">Expertise Tags</label>
             <div className="flex flex-wrap gap-2 mb-2">
               {expertise.map(tag => (
-                <span key={tag} className="flex items-center gap-1 text-xs px-2.5 py-1 bg-primary/10 text-primary border border-primary/20 rounded-full">
+                <span key={tag} className="flex items-center gap-1 text-xs px-2.5 py-1 bg-primary/10 text-primary-text border border-primary/20 rounded-full">
                   {tag}
                   <button onClick={() => setExpertise(e => e.filter(t => t !== tag))} className="hover:text-red-400 cursor-pointer"><X className="w-3 h-3" /></button>
                 </span>
@@ -308,7 +308,7 @@ export default function InstructorProfilePage() {
             </div>
           </div>
 
-          <h3 className="text-white font-medium text-sm pt-2">Social Links</h3>
+          <h3 className="text-foreground font-medium text-sm pt-2">Social Links</h3>
           <div className="grid sm:grid-cols-2 gap-4">
             <Input label="Website" placeholder="https://" value={profile.website} onChange={e => setProfile(p => ({ ...p, website: e.target.value }))} icon={<Globe className="w-4 h-4" />} />
             <Input label="GitHub" placeholder="https://github.com/..." value={profile.github} onChange={e => setProfile(p => ({ ...p, github: e.target.value }))} icon={<Code className="w-4 h-4" />} />
@@ -322,7 +322,7 @@ export default function InstructorProfilePage() {
 
       {/* Change Password */}
       <Card>
-        <h2 className="text-white font-bold mb-4 flex items-center gap-2"><Lock className="w-4 h-4 text-primary" />Change Password</h2>
+        <h2 className="text-foreground font-bold mb-4 flex items-center gap-2"><Lock className="w-4 h-4 text-primary-text" />Change Password</h2>
         <form onSubmit={handleChangePassword} className="space-y-4">
           <Input label="Current Password" type="password" placeholder="••••••••" value={passwords.current} onChange={e => setPasswords(p => ({ ...p, current: e.target.value }))} required />
           <Input label="New Password" type="password" placeholder="Min. 8 characters" value={passwords.new} onChange={e => setPasswords(p => ({ ...p, new: e.target.value }))} required />
@@ -333,7 +333,7 @@ export default function InstructorProfilePage() {
 
       {/* My Applications — recruitment history (Phase 2, Module 21). */}
       <Card>
-        <h2 className="text-white font-bold mb-1">My Applications</h2>
+        <h2 className="text-foreground font-bold mb-1">My Applications</h2>
         <p className="text-muted text-sm mb-4">Your instructor application(s), recruitment progress and onboarding information.</p>
         {appsLoading && <p className="text-muted text-sm">Loading your applications…</p>}
         {!appsLoading && myApps.length === 0 && (
@@ -345,11 +345,11 @@ export default function InstructorProfilePage() {
               <div key={app.id} className="border border-dark-border rounded-lg p-3">
                 <div className="flex items-center gap-3 flex-wrap">
                   <div className="flex-1 min-w-0">
-                    <p className="text-white text-sm font-mono truncate">{app.id}</p>
+                    <p className="text-foreground text-sm font-mono truncate">{app.id}</p>
                     <p className="text-muted text-xs mt-1">
-                      Submitted {formatDateShort(app.createdAt)} · Current stage: <span className="text-white">{app.currentStageName}</span>
+                      Submitted {formatDateShort(app.createdAt)} · Current stage: <span className="text-foreground">{app.currentStageName}</span>
                       {app.currentStageName === 'Successfully Onboarded' ? ' — onboarding complete' : ''}
-                      {app.nextStageName ? <> · Next: <span className="text-white">{app.nextStageName}</span></> : ''}
+                      {app.nextStageName ? <> · Next: <span className="text-foreground">{app.nextStageName}</span></> : ''}
                     </p>
                   </div>
                   <Badge variant={app.status === 'approved' ? 'success' : app.status === 'rejected' ? 'danger' : 'warning'}>

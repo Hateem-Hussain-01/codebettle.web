@@ -40,7 +40,7 @@ export default function DashboardClient({ users, students, instructors, courses,
   return (
     <div className="space-y-8">
       <FadeIn>
-        <h1 className="text-2xl font-black text-white">Admin Dashboard</h1>
+        <h1 className="text-2xl font-black text-foreground">Admin Dashboard</h1>
         <p className="text-muted text-sm mt-1">Platform overview and analytics</p>
       </FadeIn>
 
@@ -56,12 +56,12 @@ export default function DashboardClient({ users, students, instructors, courses,
       <div className="grid lg:grid-cols-3 gap-6">
         <FadeIn delay={0.08} className="lg:col-span-2">
         <Card>
-          <h3 className="text-white font-bold mb-4 flex items-center gap-2"><TrendingUp className="w-4 h-4 text-primary" />Enrollments (2024)</h3>
+          <h3 className="text-foreground font-bold mb-4 flex items-center gap-2"><TrendingUp className="w-4 h-4 text-primary-text" />Enrollments (2024)</h3>
           <ResponsiveContainer width="100%" height={220}>
             <BarChart data={MONTH_DATA}>
               <XAxis dataKey="month" stroke="#6B7280" tick={{ fontSize: 12 }} />
               <YAxis stroke="#6B7280" tick={{ fontSize: 12 }} />
-              <Tooltip contentStyle={{ backgroundColor: '#1C1C1C', border: '1px solid #2A2A2A', borderRadius: '8px', color: '#fff' }} />
+              <Tooltip contentStyle={{ backgroundColor: 'var(--color-dark-card)', border: '1px solid var(--color-dark-border)', borderRadius: '8px', color: 'var(--color-foreground)' }} />
               <Bar dataKey="enrollments" fill="#F5C518" radius={[4, 4, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
@@ -70,13 +70,13 @@ export default function DashboardClient({ users, students, instructors, courses,
 
         <FadeIn delay={0.12}>
         <Card>
-          <h3 className="text-white font-bold mb-4">Course Categories</h3>
+          <h3 className="text-foreground font-bold mb-4">Course Categories</h3>
           <ResponsiveContainer width="100%" height={180}>
             <PieChart>
               <Pie data={CATEGORY_DATA} cx="50%" cy="50%" innerRadius={50} outerRadius={75} dataKey="value">
                 {CATEGORY_DATA.map((entry, i) => <Cell key={i} fill={entry.color} />)}
               </Pie>
-              <Tooltip contentStyle={{ backgroundColor: '#1C1C1C', border: '1px solid #2A2A2A', borderRadius: '8px', color: '#fff' }} />
+              <Tooltip contentStyle={{ backgroundColor: 'var(--color-dark-card)', border: '1px solid var(--color-dark-border)', borderRadius: '8px', color: 'var(--color-foreground)' }} />
             </PieChart>
           </ResponsiveContainer>
           <div className="grid grid-cols-2 gap-1.5 mt-2">
@@ -94,7 +94,7 @@ export default function DashboardClient({ users, students, instructors, courses,
       {/* Recent Activity */}
       <FadeIn delay={0.15}>
       <Card>
-        <h3 className="text-white font-bold mb-4 flex items-center gap-2"><Clock className="w-4 h-4 text-primary" />Recent Enrollments</h3>
+        <h3 className="text-foreground font-bold mb-4 flex items-center gap-2"><Clock className="w-4 h-4 text-primary-text" />Recent Enrollments</h3>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
@@ -110,7 +110,7 @@ export default function DashboardClient({ users, students, instructors, courses,
                 const course = courses.find(c => c.id === enr.courseId);
                 return (
                   <tr key={enr.id} className="border-b border-dark-border/40 last:border-0">
-                    <td className="py-3 pr-4 text-white text-xs">{student?.name}</td>
+                    <td className="py-3 pr-4 text-foreground text-xs">{student?.name}</td>
                     <td className="py-3 pr-4 text-muted text-xs max-w-[160px] truncate">{course?.title}</td>
                     <td className="py-3 pr-4 text-muted text-xs">{formatDateShort(enr.enrolledAt)}</td>
                     <td className="py-3 pr-4"><span className={`text-xs px-2 py-0.5 rounded-full ${enr.isCompleted ? 'bg-green-500/20 text-green-400' : 'bg-blue-500/20 text-blue-400'}`}>{enr.isCompleted ? 'Completed' : 'Active'}</span></td>

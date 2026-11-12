@@ -183,8 +183,8 @@ export default function BecomeInstructorPage() {
           <div className="absolute inset-0 bg-gradient-to-r from-primary/5 via-transparent to-primary/5" />
           <div className="relative max-w-2xl mx-auto px-4">
             <FadeIn>
-            <span className="text-primary text-sm font-semibold uppercase tracking-wider">Become an Instructor</span>
-            <h1 className="text-4xl sm:text-5xl font-black text-white mt-2 mb-4">
+            <span className="text-primary-text text-sm font-semibold uppercase tracking-wider">Become an Instructor</span>
+            <h1 className="text-4xl sm:text-5xl font-black text-foreground mt-2 mb-4">
               Share Your <span className="gradient-text">Expertise</span>
             </h1>
             <p className="text-muted text-lg">Join our team of expert instructors and impact thousands of students' careers across Pakistan.</p>
@@ -196,8 +196,8 @@ export default function BecomeInstructorPage() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-16">
             {perks.map((perk, i) => (
               <FadeIn key={perk.title} delay={i * 0.08} className="bg-dark-card border border-dark-border rounded-xl p-6 text-center">
-                <div className="inline-flex items-center justify-center w-14 h-14 rounded-xl bg-primary/10 text-primary mb-4">{perk.icon}</div>
-                <h3 className="text-white font-bold mb-2">{perk.title}</h3>
+                <div className="inline-flex items-center justify-center w-14 h-14 rounded-xl bg-primary/10 text-primary-text mb-4">{perk.icon}</div>
+                <h3 className="text-foreground font-bold mb-2">{perk.title}</h3>
                 <p className="text-muted text-sm">{perk.desc}</p>
               </FadeIn>
             ))}
@@ -207,12 +207,12 @@ export default function BecomeInstructorPage() {
             {submitted ? (
               <div className="bg-dark-card border border-green-500/30 rounded-xl p-10 text-center">
                 <CheckCircle className="w-16 h-16 text-green-400 mx-auto mb-4" />
-                <h2 className="text-xl font-bold text-white mb-2">Application Submitted!</h2>
+                <h2 className="text-xl font-bold text-foreground mb-2">Application Submitted!</h2>
                 <p className="text-muted">Thank you for applying. Our team will review your application and reach out within 3-5 business days.</p>
               </div>
             ) : (
               <div className="bg-dark-card border border-dark-border rounded-xl p-8">
-                <h2 className="text-xl font-bold text-white mb-6">Apply to Become an Instructor</h2>
+                <h2 className="text-xl font-bold text-foreground mb-6">Apply to Become an Instructor</h2>
                 <form onSubmit={handleSubmit} className="space-y-4">
                   <div className="grid sm:grid-cols-2 gap-4">
                     <Input label="Full Name" placeholder="Your name" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} required />
@@ -230,18 +230,18 @@ export default function BecomeInstructorPage() {
                   </div>
                   <div className="grid sm:grid-cols-2 gap-4">
                     <div className="flex flex-col gap-1.5">
-                      <label className="text-sm font-medium text-white/80">Upload CV *</label>
-                      <label className="flex items-center gap-3 bg-dark-card border border-dark-border rounded-lg px-4 py-2.5 text-sm text-white cursor-pointer hover:border-primary/50 transition-colors">
-                        <FileText className="w-4 h-4 text-primary shrink-0" />
+                      <label className="text-sm font-medium text-foreground/80">Upload CV *</label>
+                      <label className="flex items-center gap-3 bg-dark-card border border-dark-border rounded-lg px-4 py-2.5 text-sm text-foreground cursor-pointer hover:border-primary/50 transition-colors">
+                        <FileText className="w-4 h-4 text-primary-text shrink-0" />
                         {cvFile ? (
                           <span className="flex-1 truncate">{cvFile.name} <span className="text-muted">({formatFileSize(cvFile.size)})</span></span>
                         ) : (
                           <span className="flex-1 text-muted">PDF, DOC or DOCX · up to 5 MB</span>
                         )}
                         {uploading === 'cv' ? (
-                          <span className="text-primary text-xs shrink-0">Uploading…</span>
+                          <span className="text-primary-text text-xs shrink-0">Uploading…</span>
                         ) : cvFile ? (
-                          <button type="button" aria-label="Remove CV" onClick={ev => { ev.preventDefault(); setCvFile(null); }} className="text-muted hover:text-white shrink-0 cursor-pointer"><X className="w-4 h-4" /></button>
+                          <button type="button" aria-label="Remove CV" onClick={ev => { ev.preventDefault(); setCvFile(null); }} className="text-muted hover:text-foreground shrink-0 cursor-pointer"><X className="w-4 h-4" /></button>
                         ) : (
                           <Upload className="w-4 h-4 text-muted shrink-0" />
                         )}
@@ -250,18 +250,18 @@ export default function BecomeInstructorPage() {
                       {cvError && <p className="text-xs text-red-400">{cvError}</p>}
                     </div>
                     <div className="flex flex-col gap-1.5">
-                      <label className="text-sm font-medium text-white/80">Demo Lecture Recording *</label>
-                      <label className="flex items-center gap-3 bg-dark-card border border-dark-border rounded-lg px-4 py-2.5 text-sm text-white cursor-pointer hover:border-primary/50 transition-colors">
-                        <Video className="w-4 h-4 text-primary shrink-0" />
+                      <label className="text-sm font-medium text-foreground/80">Demo Lecture Recording *</label>
+                      <label className="flex items-center gap-3 bg-dark-card border border-dark-border rounded-lg px-4 py-2.5 text-sm text-foreground cursor-pointer hover:border-primary/50 transition-colors">
+                        <Video className="w-4 h-4 text-primary-text shrink-0" />
                         {demoFile ? (
                           <span className="flex-1 truncate">{demoFile.name} <span className="text-muted">({formatFileSize(demoFile.size)})</span></span>
                         ) : (
                           <span className="flex-1 text-muted">MP4, WebM or MOV · up to 100 MB</span>
                         )}
                         {uploading === 'demo' ? (
-                          <span className="text-primary text-xs shrink-0">Uploading…</span>
+                          <span className="text-primary-text text-xs shrink-0">Uploading…</span>
                         ) : demoFile ? (
-                          <button type="button" aria-label="Remove demo recording" onClick={ev => { ev.preventDefault(); setDemoFile(null); }} className="text-muted hover:text-white shrink-0 cursor-pointer"><X className="w-4 h-4" /></button>
+                          <button type="button" aria-label="Remove demo recording" onClick={ev => { ev.preventDefault(); setDemoFile(null); }} className="text-muted hover:text-foreground shrink-0 cursor-pointer"><X className="w-4 h-4" /></button>
                         ) : (
                           <Upload className="w-4 h-4 text-muted shrink-0" />
                         )}

@@ -199,11 +199,11 @@ export default function TeacherMessagePopup({ messages: propMessages, heading = 
           <div className="h-1.5 bg-gradient-to-r from-primary/60 via-primary to-primary/60" />
           <div className="p-6">
             <div className="flex items-start gap-3">
-              <div className="w-10 h-10 rounded-lg bg-primary/15 text-primary flex items-center justify-center flex-shrink-0">
+              <div className="w-10 h-10 rounded-lg bg-primary/15 text-primary-text flex items-center justify-center flex-shrink-0">
                 <Megaphone className="w-5 h-5" />
               </div>
               <div className="flex-1 min-w-0">
-                <h2 className="text-lg font-bold text-white">{heading}</h2>
+                <h2 className="text-lg font-bold text-foreground">{heading}</h2>
                 {current.senderName && (
                   <p className="text-muted text-xs mt-0.5">From {current.senderName}</p>
                 )}
@@ -212,14 +212,14 @@ export default function TeacherMessagePopup({ messages: propMessages, heading = 
                 <button
                   onClick={() => void dismiss(current)}
                   aria-label="Close"
-                  className="text-muted hover:text-white transition-colors p-1 rounded-lg hover:bg-dark-border cursor-pointer"
+                  className="text-muted hover:text-foreground transition-colors p-1 rounded-lg hover:bg-dark-border cursor-pointer"
                 >
                   <X className="w-5 h-5" />
                 </button>
               )}
             </div>
 
-            <p className="text-white font-medium text-sm mt-4">{current.title}</p>
+            <p className="text-foreground font-medium text-sm mt-4">{current.title}</p>
             <p className="text-muted text-sm mt-1 whitespace-pre-line">{current.body}</p>
             <p className="text-muted text-xs mt-3">{formatDateShort(current.createdAt)}</p>
 
@@ -234,7 +234,7 @@ export default function TeacherMessagePopup({ messages: propMessages, heading = 
               {hasMore && (
                 <button
                   onClick={() => setIndex((i) => (i + 1) % visible.length)}
-                  className="px-4 py-2.5 rounded-lg border border-dark-border text-sm text-muted hover:text-white transition-colors cursor-pointer"
+                  className="px-4 py-2.5 rounded-lg border border-dark-border text-sm text-muted hover:text-foreground transition-colors cursor-pointer"
                 >
                   Next ({visible.length - index - 1} more)
                 </button>

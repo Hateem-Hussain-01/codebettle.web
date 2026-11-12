@@ -122,7 +122,7 @@ export default function ReportsClient({
   return (
     <div className="space-y-6">
       <FadeIn>
-        <h1 className="text-2xl font-black text-white">Reports</h1>
+        <h1 className="text-2xl font-black text-foreground">Reports</h1>
         <p className="text-muted text-sm mt-1">Platform analytics and CSV exports · {rangeLabel}</p>
       </FadeIn>
 
@@ -137,7 +137,7 @@ export default function ReportsClient({
               type="date"
               value={from}
               onChange={(e) => setFrom(e.target.value)}
-              className="bg-dark border border-dark-border rounded-lg px-3 py-2 text-white text-sm"
+              className="bg-dark border border-dark-border rounded-lg px-3 py-2 text-foreground text-sm"
             />
           </div>
           <div>
@@ -147,7 +147,7 @@ export default function ReportsClient({
               type="date"
               value={to}
               onChange={(e) => setTo(e.target.value)}
-              className="bg-dark border border-dark-border rounded-lg px-3 py-2 text-white text-sm"
+              className="bg-dark border border-dark-border rounded-lg px-3 py-2 text-foreground text-sm"
             />
           </div>
           <Button size="sm" onClick={applyDateFilter} loading={loading}>
@@ -170,7 +170,7 @@ export default function ReportsClient({
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {[
           { label: 'Total Students', value: overview.usersByRole.student, icon: <Users className="w-6 h-6" />, color: 'text-blue-400 bg-blue-400/10' },
-          { label: 'Total Enrollments', value: overview.totalEnrollments, icon: <BookOpen className="w-6 h-6" />, color: 'text-primary bg-primary/10' },
+          { label: 'Total Enrollments', value: overview.totalEnrollments, icon: <BookOpen className="w-6 h-6" />, color: 'text-primary-text bg-primary/10' },
           { label: 'Completion Rate', value: `${overview.completionRate}%`, icon: <BarChart2 className="w-6 h-6" />, color: 'text-green-400 bg-green-400/10' },
           { label: 'Total Revenue', value: `PKR ${overview.totalRevenue.toLocaleString()}`, icon: <DollarSign className="w-6 h-6" />, color: 'text-purple-400 bg-purple-400/10' },
           { label: 'Certificates Issued', value: overview.certificatesIssued, icon: <Award className="w-6 h-6" />, color: 'text-yellow-400 bg-yellow-400/10' },
@@ -183,7 +183,7 @@ export default function ReportsClient({
             <div className="flex items-center gap-3">
               <div className={`w-11 h-11 rounded-xl flex items-center justify-center ${s.color}`}>{s.icon}</div>
               <div>
-                <p className="text-xl font-black text-white">{s.value}</p>
+                <p className="text-xl font-black text-foreground">{s.value}</p>
                 <p className="text-muted text-xs">{s.label}</p>
               </div>
             </div>
@@ -196,12 +196,12 @@ export default function ReportsClient({
       <div className="grid lg:grid-cols-2 gap-4">
         <FadeIn delay={0.1}>
         <Card>
-          <h3 className="text-white font-bold mb-1">Course report</h3>
+          <h3 className="text-foreground font-bold mb-1">Course report</h3>
           <p className="text-muted text-xs mb-4">Enrolments, completions, revenue and ratings for one course.</p>
           <select
             value={selectedCourseId}
             onChange={(e) => selectCourse(e.target.value)}
-            className="w-full bg-dark border border-dark-border rounded-lg px-3 py-2 text-white text-sm mb-4"
+            className="w-full bg-dark border border-dark-border rounded-lg px-3 py-2 text-foreground text-sm mb-4"
           >
             <option value="">Select a course…</option>
             {courses.map(c => (
@@ -210,7 +210,7 @@ export default function ReportsClient({
           </select>
           {courseReport && (
             <div className="space-y-2 text-sm">
-              <p className="text-white font-bold">{courseReport.course.title}</p>
+              <p className="text-foreground font-bold">{courseReport.course.title}</p>
               {[
                 ['Enrollments', courseReport.enrollments],
                 ['Students enrolled', courseReport.enrolledStudents],
@@ -220,7 +220,7 @@ export default function ReportsClient({
               ].map(([label, value]) => (
                 <div key={label as string} className="flex justify-between border-b border-dark-border last:border-0 py-1">
                   <span className="text-muted">{label}</span>
-                  <span className="text-white font-medium">{value}</span>
+                  <span className="text-foreground font-medium">{value}</span>
                 </div>
               ))}
             </div>
@@ -230,12 +230,12 @@ export default function ReportsClient({
 
         <FadeIn delay={0.15}>
         <Card>
-          <h3 className="text-white font-bold mb-1">Student report</h3>
+          <h3 className="text-foreground font-bold mb-1">Student report</h3>
           <p className="text-muted text-xs mb-4">Enrolments, progress and certificates for one student.</p>
           <select
             value={selectedStudentId}
             onChange={(e) => selectStudent(e.target.value)}
-            className="w-full bg-dark border border-dark-border rounded-lg px-3 py-2 text-white text-sm mb-4"
+            className="w-full bg-dark border border-dark-border rounded-lg px-3 py-2 text-foreground text-sm mb-4"
           >
             <option value="">Select a student…</option>
             {students.map(s => (
@@ -244,7 +244,7 @@ export default function ReportsClient({
           </select>
           {studentReport && (
             <div className="space-y-2 text-sm">
-              <p className="text-white font-bold">{studentReport.student.name}</p>
+              <p className="text-foreground font-bold">{studentReport.student.name}</p>
               {[
                 ['Enrollments', studentReport.enrollments],
                 ['Completed', studentReport.completed],
@@ -253,13 +253,13 @@ export default function ReportsClient({
               ].map(([label, value]) => (
                 <div key={label as string} className="flex justify-between border-b border-dark-border last:border-0 py-1">
                   <span className="text-muted">{label}</span>
-                  <span className="text-white font-medium">{value}</span>
+                  <span className="text-foreground font-medium">{value}</span>
                 </div>
               ))}
               {studentReport.courses.map(c => (
                 <div key={c.courseId} className="flex justify-between border-b border-dark-border last:border-0 py-1">
                   <span className="text-muted truncate pr-2">{c.courseTitle}</span>
-                  <span className="text-white font-medium flex-shrink-0">
+                  <span className="text-foreground font-medium flex-shrink-0">
                     {c.completedLessons}/{c.totalLessons} lessons ({c.progressPercent}%)
                   </span>
                 </div>
@@ -274,14 +274,14 @@ export default function ReportsClient({
       <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {[
           { title: 'Student List', desc: 'All registered students with status and enrollment count', type: 'students' as const, color: 'text-blue-400' },
-          { title: 'Enrollment Report', desc: 'All enrollments in range with student, course, date, and payment info', type: 'enrollments' as const, color: 'text-primary' },
+          { title: 'Enrollment Report', desc: 'All enrollments in range with student, course, date, and payment info', type: 'enrollments' as const, color: 'text-primary-text' },
           { title: 'Course Report', desc: 'Every course with enrollments, completions and revenue', type: 'courses' as const, color: 'text-purple-400' },
           { title: 'Revenue Summary', desc: 'Revenue breakdown per course with enrollment counts', type: 'revenue' as const, color: 'text-green-400' },
         ].map((report, i) => (
           <FadeIn key={report.title} delay={0.05 + Math.min(i, 3) * 0.05}>
           <Card hover>
             <BarChart2 className={`w-8 h-8 ${report.color} mb-3`} />
-            <h3 className="text-white font-bold mb-1">{report.title}</h3>
+            <h3 className="text-foreground font-bold mb-1">{report.title}</h3>
             <p className="text-muted text-xs mb-4 leading-relaxed">{report.desc}</p>
             <Button size="sm" variant="outline" onClick={() => exportCsv(report.type)} fullWidth>
               <Download className="w-3.5 h-3.5" />Export CSV
@@ -296,7 +296,7 @@ export default function ReportsClient({
       <Card>
         <div className="flex items-center gap-2 mb-3">
           <AlertTriangle className="w-5 h-5 text-yellow-400" />
-          <h3 className="text-white font-bold">Data integrity</h3>
+          <h3 className="text-foreground font-bold">Data integrity</h3>
           <span className="text-muted text-xs">
             {integrity.totalIssues === 0 ? 'No issues found' : `${integrity.totalIssues} issue${integrity.totalIssues === 1 ? '' : 's'} found`}
           </span>

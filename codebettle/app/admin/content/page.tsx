@@ -22,13 +22,13 @@ export default function AdminContentPage() {
   return (
     <div className="space-y-6 max-w-2xl">
       <FadeIn>
-        <h1 className="text-2xl font-black text-white">Content Manager</h1>
+        <h1 className="text-2xl font-black text-foreground">Content Manager</h1>
         <p className="text-muted text-sm mt-1">Edit homepage and site-wide content</p>
       </FadeIn>
 
       <FadeIn delay={0.05}>
       <Card>
-        <h2 className="text-white font-bold mb-4 flex items-center gap-2"><FileText className="w-4 h-4 text-primary" />Hero Section</h2>
+        <h2 className="text-foreground font-bold mb-4 flex items-center gap-2"><FileText className="w-4 h-4 text-primary-text" />Hero Section</h2>
         <div className="space-y-4">
           <Input label="Top Badge Text" value={hero.tagline} onChange={e => setHero(h => ({ ...h, tagline: e.target.value }))} placeholder="e.g., Pakistan's #1 Digital Institute" />
           <Textarea label="Subtext / Description" value={hero.subtext} onChange={e => setHero(h => ({ ...h, subtext: e.target.value }))} rows={3} />
@@ -38,8 +38,8 @@ export default function AdminContentPage() {
 
       <FadeIn delay={0.1}>
       <Card>
-        <h2 className="text-white font-bold mb-4">Typewriter Words</h2>
-        <p className="text-muted text-sm mb-4">These rotate in the hero headline. Edit in <code className="text-primary text-xs bg-dark-border px-1.5 py-0.5 rounded">components/sections/HeroSection.tsx</code>.</p>
+        <h2 className="text-foreground font-bold mb-4">Typewriter Words</h2>
+        <p className="text-muted text-sm mb-4">These rotate in the hero headline. Edit in <code className="text-primary-text text-xs bg-dark-border px-1.5 py-0.5 rounded">components/sections/HeroSection.tsx</code>.</p>
         <div className="space-y-2">
           {['Web Developer', 'Mobile Developer', 'Data Scientist', 'UI/UX Designer', 'DevOps Engineer'].map(word => (
             <div key={word} className="flex items-center gap-2 text-sm text-muted bg-dark-border/30 px-3 py-2 rounded-lg">

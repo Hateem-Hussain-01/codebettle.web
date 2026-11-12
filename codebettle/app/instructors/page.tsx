@@ -28,8 +28,8 @@ export default async function InstructorsPage() {
       <main className="min-h-screen bg-background pt-16">
         <div className="py-20 bg-dark-card border-b border-dark-border text-center">
           <FadeIn className="max-w-3xl mx-auto px-4">
-            <span className="text-primary text-sm font-semibold uppercase tracking-wider">Meet Our Team</span>
-            <h1 className="text-4xl sm:text-5xl font-black text-white mt-2 mb-4">
+            <span className="text-primary-text text-sm font-semibold uppercase tracking-wider">Meet Our Team</span>
+            <h1 className="text-4xl sm:text-5xl font-black text-foreground mt-2 mb-4">
               Learn From <span className="gradient-text">Industry Experts</span>
             </h1>
             <p className="text-muted text-lg leading-relaxed">
@@ -56,8 +56,8 @@ export default async function InstructorsPage() {
                       className="w-20 h-20 rounded-full border-2 border-primary/30 flex-shrink-0"
                     />
                     <div>
-                      <h2 className="text-white font-bold text-xl">{inst.name}</h2>
-                      <p className="text-primary text-sm font-medium mt-0.5">
+                      <h2 className="text-foreground font-bold text-xl">{inst.name}</h2>
+                      <p className="text-primary-text text-sm font-medium mt-0.5">
                         {inst.expertise?.slice(0, 3).join(' · ')}
                       </p>
                       {inst.bio && (
@@ -78,7 +78,7 @@ export default async function InstructorsPage() {
                           href={`/courses/${course.slug}`}
                           className="flex items-center justify-between gap-3 text-sm group"
                         >
-                          <span className="text-white/90 group-hover:text-primary transition-colors">
+                          <span className="text-foreground/90 group-hover:text-primary-text transition-colors">
                             {course.title}
                           </span>
                           <span className="text-muted text-xs whitespace-nowrap">
@@ -94,14 +94,14 @@ export default async function InstructorsPage() {
           </div>
 
           <FadeIn delay={0.1} className="text-center mt-16 bg-dark-card border border-dark-border rounded-2xl p-8">
-            <Users className="w-8 h-8 text-primary mx-auto mb-3" />
-            <h2 className="text-2xl font-black text-white">Want to teach with us?</h2>
+            <Users className="w-8 h-8 text-primary-text mx-auto mb-3" />
+            <h2 className="text-2xl font-black text-foreground">Want to teach with us?</h2>
             <p className="text-muted text-sm mt-2 mb-5">
               {published.length} published courses and growing — join the instructor team.
             </p>
             <Link
               href="/become-instructor"
-              className="inline-flex items-center justify-center gap-2 font-semibold rounded-lg bg-primary text-dark hover:bg-primary-dark px-6 py-3 text-base transition-all"
+              className="inline-flex items-center justify-center gap-2 font-semibold rounded-lg bg-primary text-ink hover:bg-primary-dark px-6 py-3 text-base transition-all"
             >
               Become an Instructor
             </Link>

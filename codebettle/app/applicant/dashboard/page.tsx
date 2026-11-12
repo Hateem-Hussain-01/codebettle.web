@@ -61,7 +61,7 @@ export default function ApplicantDashboardPage() {
   return (
     <div className="space-y-6">
       <FadeIn>
-        <h1 className="text-2xl font-black text-white">Applicant Dashboard</h1>
+        <h1 className="text-2xl font-black text-foreground">Applicant Dashboard</h1>
         <p className="text-muted text-sm mt-1">Track your instructor application — no teacher features live here until you are onboarded.</p>
       </FadeIn>
 
@@ -69,7 +69,7 @@ export default function ApplicantDashboardPage() {
 
       {!loading && apps.length === 0 && (
         <Card>
-          <p className="text-white font-semibold mb-1">No application yet</p>
+          <p className="text-foreground font-semibold mb-1">No application yet</p>
           <p className="text-muted text-sm mb-4">You have not applied to teach at CodeBettle yet. It takes a few minutes — CV, demo lecture, LinkedIn and a short note on why you are a good fit.</p>
           <Link href="/applicant/new">
             <Button>Start a New Application</Button>
@@ -80,17 +80,17 @@ export default function ApplicantDashboardPage() {
       {!loading && apps.length > 0 && (
         <>
           <div className="grid grid-cols-3 gap-3">
-            <Card><p className="text-2xl font-black text-white">{apps.length}</p><p className="text-muted text-xs">Applications</p></Card>
-            <Card><p className="text-2xl font-black text-white">{pending}</p><p className="text-muted text-xs">Pending</p></Card>
-            <Card><p className="text-2xl font-black text-white">{approved}</p><p className="text-muted text-xs">Approved</p></Card>
+            <Card><p className="text-2xl font-black text-foreground">{apps.length}</p><p className="text-muted text-xs">Applications</p></Card>
+            <Card><p className="text-2xl font-black text-foreground">{pending}</p><p className="text-muted text-xs">Pending</p></Card>
+            <Card><p className="text-2xl font-black text-foreground">{approved}</p><p className="text-muted text-xs">Approved</p></Card>
           </div>
           {tracking && (
             <FadeIn delay={0.05}>
-              <h2 className="text-white font-semibold mb-3">Latest application</h2>
+              <h2 className="text-foreground font-semibold mb-3">Latest application</h2>
               <TrackingTimeline tracking={tracking} />
             </FadeIn>
           )}
-          <Link href="/applicant/application" className="text-primary text-sm hover:underline">
+          <Link href="/applicant/application" className="text-primary-text text-sm hover:underline">
             View all my applications →
           </Link>
         </>

@@ -143,7 +143,7 @@ export default function PaymentModal({
     <Modal isOpen={isOpen} onClose={onClose} title="Complete Payment" size="lg">
       <div className="space-y-5">
         <p className="text-muted text-sm">
-          Pay <span className="text-white font-semibold">PKR {coursePrice.toLocaleString()}</span> into one of
+          Pay <span className="text-foreground font-semibold">PKR {coursePrice.toLocaleString()}</span> into one of
           the accounts below, then submit your transaction details. An admin verifies it and unlocks the
           full course.
         </p>
@@ -174,13 +174,13 @@ export default function PaymentModal({
                     className="mt-1 accent-yellow-500"
                   />
                   <div className="flex-1 min-w-0">
-                    <p className="text-white font-semibold text-sm">{account.label}</p>
+                    <p className="text-foreground font-semibold text-sm">{account.label}</p>
                     <div className="text-xs text-muted mt-1 space-y-0.5">
-                      <p>Account Holder: <span className="text-white">{account.accountHolder}</span></p>
-                      {account.bankName && <p>Bank / Service: <span className="text-white">{account.bankName}</span></p>}
-                      {account.accountNumber && <p>Account Number: <span className="text-white font-mono">{account.accountNumber}</span></p>}
-                      {account.iban && <p>IBAN: <span className="text-white font-mono">{account.iban}</span></p>}
-                      {account.walletNumber && <p>Wallet Number: <span className="text-white font-mono">{account.walletNumber}</span></p>}
+                      <p>Account Holder: <span className="text-foreground">{account.accountHolder}</span></p>
+                      {account.bankName && <p>Bank / Service: <span className="text-foreground">{account.bankName}</span></p>}
+                      {account.accountNumber && <p>Account Number: <span className="text-foreground font-mono">{account.accountNumber}</span></p>}
+                      {account.iban && <p>IBAN: <span className="text-foreground font-mono">{account.iban}</span></p>}
+                      {account.walletNumber && <p>Wallet Number: <span className="text-foreground font-mono">{account.walletNumber}</span></p>}
                       {account.instructions && <p className="italic">{account.instructions}</p>}
                     </div>
                   </div>
@@ -199,7 +199,7 @@ export default function PaymentModal({
         )}
 
         <div className="space-y-3 border-t border-dark-border pt-4">
-          <h4 className="text-white font-semibold text-sm">Submit your transaction</h4>
+          <h4 className="text-foreground font-semibold text-sm">Submit your transaction</h4>
           <div>
             <label className="text-xs text-muted block mb-1.5">Amount paid (PKR)</label>
             <Input

@@ -34,7 +34,7 @@ export default async function InstructorDashboard() {
   return (
     <div className="space-y-8">
       <FadeIn>
-        <h1 className="text-2xl font-black text-white">Welcome back, {session!.name.split(' ')[0]}!</h1>
+        <h1 className="text-2xl font-black text-foreground">Welcome back, {session!.name.split(' ')[0]}!</h1>
         <p className="text-muted text-sm mt-1">Here's your teaching overview</p>
       </FadeIn>
 
@@ -49,7 +49,7 @@ export default async function InstructorDashboard() {
         {/* Recent Enrollments */}
         <FadeIn delay={0.1}>
         <Card>
-          <h2 className="text-white font-bold mb-4">Recent Enrollments</h2>
+          <h2 className="text-foreground font-bold mb-4">Recent Enrollments</h2>
           {myEnrollments.length === 0 ? (
             <p className="text-muted text-sm text-center py-8">No enrollments yet</p>
           ) : (
@@ -61,7 +61,7 @@ export default async function InstructorDashboard() {
                   <div key={enr.id} className="flex items-center gap-3 py-2 border-b border-dark-border last:border-0">
                     <img src={student?.avatar || ''} alt={student?.name} className="w-8 h-8 rounded-full border border-primary/20" />
                     <div className="flex-1 min-w-0">
-                      <p className="text-white text-sm font-medium truncate">{student?.name}</p>
+                      <p className="text-foreground text-sm font-medium truncate">{student?.name}</p>
                       <p className="text-muted text-xs truncate">{course?.title}</p>
                     </div>
                     <p className="text-muted text-xs flex-shrink-0">{formatDateShort(enr.enrolledAt)}</p>
@@ -76,7 +76,7 @@ export default async function InstructorDashboard() {
         {/* Recent Reviews */}
         <FadeIn delay={0.15}>
         <Card>
-          <h2 className="text-white font-bold mb-4">Recent Reviews</h2>
+          <h2 className="text-foreground font-bold mb-4">Recent Reviews</h2>
           {myReviews.length === 0 ? (
             <p className="text-muted text-sm text-center py-8">No reviews yet</p>
           ) : (
@@ -86,7 +86,7 @@ export default async function InstructorDashboard() {
                 return (
                   <div key={review.id} className="py-2 border-b border-dark-border last:border-0">
                     <div className="flex items-center justify-between mb-1">
-                      <p className="text-white text-xs font-medium">{course?.title}</p>
+                      <p className="text-foreground text-xs font-medium">{course?.title}</p>
                       <StarRating rating={review.rating} size="sm" />
                     </div>
                     <p className="text-muted text-xs line-clamp-2">{review.comment}</p>

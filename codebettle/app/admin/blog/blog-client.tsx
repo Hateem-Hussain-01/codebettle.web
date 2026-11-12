@@ -78,7 +78,7 @@ function RichTextEditor({
 
   return (
     <div>
-      <span className="text-sm font-medium text-white/80 block mb-1.5">Content (rich text)</span>
+      <span className="text-sm font-medium text-foreground/80 block mb-1.5">Content (rich text)</span>
       <div className="flex flex-wrap gap-1 mb-1 p-1 bg-dark-border/30 border border-dark-border rounded-lg">
         {tools.map((tool, i) => {
           const Icon = icons[i];
@@ -91,7 +91,7 @@ function RichTextEditor({
               disabled={disabled}
               onMouseDown={e => e.preventDefault()}
               onClick={tool.action}
-              className="flex items-center gap-1 px-2 py-1 text-xs text-white/80 hover:text-white hover:bg-dark-border rounded cursor-pointer disabled:opacity-50"
+              className="flex items-center gap-1 px-2 py-1 text-xs text-foreground/80 hover:text-foreground hover:bg-dark-border rounded cursor-pointer disabled:opacity-50"
             >
               <Icon className="w-3.5 h-3.5" />
               <span className="hidden sm:inline">{tool.label}</span>
@@ -105,7 +105,7 @@ function RichTextEditor({
         suppressContentEditableWarning
         dangerouslySetInnerHTML={{ __html: sanitizeBlogHtml(initialHtml) }}
         onInput={() => { if (ref.current) onChange(ref.current.innerHTML); }}
-        className="min-h-[180px] w-full bg-dark-card border border-dark-border rounded-lg px-4 py-2.5 text-sm text-white focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary [&_h2]:text-lg [&_h2]:font-bold [&_h2]:text-white [&_h3]:text-base [&_h3]:font-bold [&_h3]:text-white [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_a]:text-primary [&_a]:underline"
+        className="min-h-[180px] w-full bg-dark-card border border-dark-border rounded-lg px-4 py-2.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary [&_h2]:text-lg [&_h2]:font-bold [&_h2]:text-foreground [&_h3]:text-base [&_h3]:font-bold [&_h3]:text-foreground [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_a]:text-primary-text [&_a]:underline"
       />
       <p className="text-xs text-muted mt-1">Formatting is saved as HTML. Leave the text empty to publish a PDF-only article.</p>
     </div>
@@ -283,7 +283,7 @@ export default function BlogClient({ initialPosts }: BlogClientProps) {
     <div className="space-y-6">
       <FadeIn className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-black text-white">Blog / Articles</h1>
+          <h1 className="text-2xl font-black text-foreground">Blog / Articles</h1>
           <p className="text-muted text-sm mt-1">{posts.length} article{posts.length !== 1 ? 's' : ''}</p>
         </div>
         <Button onClick={openCreate}><Plus className="w-4 h-4" />New Article</Button>
@@ -305,8 +305,8 @@ export default function BlogClient({ initialPosts }: BlogClientProps) {
                   <td className="py-3 px-4">
                     <div className="flex items-center gap-3">
                       {post.thumbnail && <img src={post.thumbnail} alt="" className="w-10 h-10 rounded-lg object-cover" />}
-                      <span className="text-white text-xs font-medium max-w-[160px] truncate">{post.title}</span>
-                      {post.pdfUrl && <FileText className="w-3.5 h-3.5 text-primary shrink-0" />}
+                      <span className="text-foreground text-xs font-medium max-w-[160px] truncate">{post.title}</span>
+                      {post.pdfUrl && <FileText className="w-3.5 h-3.5 text-primary-text shrink-0" />}
                     </div>
                   </td>
                   <td className="py-3 px-4 text-muted text-xs">{post.category}</td>
@@ -315,10 +315,10 @@ export default function BlogClient({ initialPosts }: BlogClientProps) {
                   <td className="py-3 px-4"><Badge variant={post.isPublished ? 'success' : 'muted'}>{post.isPublished ? 'Published' : 'Draft'}</Badge></td>
                   <td className="py-3 px-4">
                     <div className="flex items-center gap-1">
-                      <button onClick={() => openEdit(post)} title="Edit article" className="text-muted hover:text-primary p-1 cursor-pointer disabled:opacity-50" disabled={busyId === post.id}>
+                      <button onClick={() => openEdit(post)} title="Edit article" className="text-muted hover:text-primary-text p-1 cursor-pointer disabled:opacity-50" disabled={busyId === post.id}>
                         <Pencil className="w-4 h-4" />
                       </button>
-                      <button onClick={() => togglePublish(post)} title={post.isPublished ? 'Move to drafts' : 'Publish'} className="text-muted hover:text-primary p-1 cursor-pointer disabled:opacity-50" disabled={busyId === post.id}>
+                      <button onClick={() => togglePublish(post)} title={post.isPublished ? 'Move to drafts' : 'Publish'} className="text-muted hover:text-primary-text p-1 cursor-pointer disabled:opacity-50" disabled={busyId === post.id}>
                         {post.isPublished ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                       </button>
                       <button onClick={() => deletePost(post)} title="Delete article" className="text-muted hover:text-red-400 p-1 cursor-pointer disabled:opacity-50" disabled={busyId === post.id}>
@@ -357,7 +357,7 @@ export default function BlogClient({ initialPosts }: BlogClientProps) {
           />
 
           <div>
-            <span className="text-sm font-medium text-white/80 block mb-1.5">Attached PDF (optional)</span>
+            <span className="text-sm font-medium text-foreground/80 block mb-1.5">Attached PDF (optional)</span>
             <input
               ref={fileInputRef}
               type="file"
@@ -371,8 +371,8 @@ export default function BlogClient({ initialPosts }: BlogClientProps) {
             />
             {form.pdfUrl ? (
               <div className="flex items-center gap-2 bg-dark-card border border-dark-border rounded-lg px-3 py-2">
-                <FileText className="w-4 h-4 text-primary shrink-0" />
-                <a href={form.pdfUrl} target="_blank" rel="noopener noreferrer" className="text-xs text-primary truncate flex-1 hover:underline">View uploaded PDF</a>
+                <FileText className="w-4 h-4 text-primary-text shrink-0" />
+                <a href={form.pdfUrl} target="_blank" rel="noopener noreferrer" className="text-xs text-primary-text truncate flex-1 hover:underline">View uploaded PDF</a>
                 <button
                   type="button"
                   title="Remove PDF"
@@ -391,7 +391,7 @@ export default function BlogClient({ initialPosts }: BlogClientProps) {
             <p className="text-xs text-muted mt-1">A post can have rich text, a PDF, or both. Uploads need the Supabase service-role key configured (see runbook).</p>
           </div>
 
-          <label className="flex items-center gap-2 text-sm text-white/80 cursor-pointer">
+          <label className="flex items-center gap-2 text-sm text-foreground/80 cursor-pointer">
             <input
               type="checkbox"
               checked={form.isPublished}

@@ -50,7 +50,7 @@ export default function ReceiptsTable({ recipients, loading, unavailable }: Rece
   if (unavailable) {
     return (
       <Card className="py-6 text-center">
-        <p className="text-white font-semibold text-sm mb-1">Read receipts are not available yet</p>
+        <p className="text-foreground font-semibold text-sm mb-1">Read receipts are not available yet</p>
         <p className="text-muted text-xs">
           The per-announcement receipts endpoint (GET /api/admin/announcements/[id]/receipts) is still being built, or
           the signed-in admin lacks the announcements area that endpoint requires — this table will fill in
@@ -75,7 +75,7 @@ export default function ReceiptsTable({ recipients, loading, unavailable }: Rece
         <tbody>
           {recipients.map((recipient) => (
             <tr key={recipient.userId} className="border-b border-dark-border/50 last:border-0">
-              <td className="py-2 pr-3 text-white">{recipient.name ?? 'Deleted user'}</td>
+              <td className="py-2 pr-3 text-foreground">{recipient.name ?? 'Deleted user'}</td>
               <td className="py-2 pr-3 text-muted">{recipient.email ?? '—'}</td>
               <td className="py-2">
                 <ReceiptStatusTick status={receiptStatusOf(recipient)} />

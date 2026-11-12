@@ -45,7 +45,7 @@ export default function MessagesClient({ initialMessages, total }: MessagesClien
     <div className="space-y-6">
       <FadeIn className="flex items-center justify-between flex-wrap gap-3">
         <div>
-          <h1 className="text-2xl font-black text-white">Messages</h1>
+          <h1 className="text-2xl font-black text-foreground">Messages</h1>
           <p className="text-muted text-sm mt-1">
             Contact-form messages from visitors{unreadCount > 0 ? ` — ${unreadCount} unread` : ''} ({total} total)
           </p>
@@ -58,7 +58,7 @@ export default function MessagesClient({ initialMessages, total }: MessagesClien
       {shown.length === 0 ? (
         <Card className="py-16 text-center">
           <Mail className="w-10 h-10 text-muted mx-auto mb-3" />
-          <p className="text-white font-medium">No messages{unreadOnly ? ' — nothing unread' : ' yet'}</p>
+          <p className="text-foreground font-medium">No messages{unreadOnly ? ' — nothing unread' : ' yet'}</p>
           <p className="text-muted text-sm mt-1">Messages sent through the contact form will appear here.</p>
         </Card>
       ) : (
@@ -74,12 +74,12 @@ export default function MessagesClient({ initialMessages, total }: MessagesClien
                   className="w-full text-left"
                 >
                   <div className="flex items-start gap-3">
-                    <div className={`w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 ${msg.isRead ? 'bg-dark-border text-muted' : 'bg-primary/15 text-primary'}`}>
+                    <div className={`w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 ${msg.isRead ? 'bg-dark-border text-muted' : 'bg-primary/15 text-primary-text'}`}>
                       {msg.isRead ? <MailOpen className="w-4 h-4" /> : <Mail className="w-4 h-4" />}
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
-                        <p className="text-white font-medium text-sm">{msg.name}</p>
+                        <p className="text-foreground font-medium text-sm">{msg.name}</p>
                         {!msg.isRead && <Badge variant="info">Unread</Badge>}
                         <span className="text-muted text-xs ml-auto">{formatDateShort(msg.createdAt)}</span>
                       </div>

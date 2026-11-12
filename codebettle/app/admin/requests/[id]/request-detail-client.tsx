@@ -96,10 +96,10 @@ export default function RequestDetailClient({ initialRequest }: { initialRequest
   return (
     <div className="space-y-6">
       <FadeIn>
-        <Link href="/admin/requests" className="text-muted text-sm hover:text-white inline-flex items-center gap-1">
+        <Link href="/admin/requests" className="text-muted text-sm hover:text-foreground inline-flex items-center gap-1">
           <ArrowLeft className="w-4 h-4" /> Back to requests
         </Link>
-        <h1 className="text-2xl font-black text-white mt-2">{request.subject}</h1>
+        <h1 className="text-2xl font-black text-foreground mt-2">{request.subject}</h1>
         <p className="text-muted text-sm mt-1">
           {request.studentName} · {request.studentEmail} · {formatDateShort(request.createdAt)}
         </p>
@@ -114,7 +114,7 @@ export default function RequestDetailClient({ initialRequest }: { initialRequest
             <Badge variant="muted">{requestCategoryLabel(request.category)}</Badge>
             {request.courseTitle && <Badge variant="info">{request.courseTitle}</Badge>}
           </div>
-          <p className="text-white/90 text-sm mt-4 whitespace-pre-line">{request.message}</p>
+          <p className="text-foreground/90 text-sm mt-4 whitespace-pre-line">{request.message}</p>
           {request.attachmentUrl && (
             <div className="mt-4 rounded-lg bg-dark-card border border-dark-border p-3 flex items-center gap-2 text-sm">
               <Paperclip className="w-4 h-4 text-muted flex-shrink-0" />
@@ -122,7 +122,7 @@ export default function RequestDetailClient({ initialRequest }: { initialRequest
                 type="button"
                 onClick={() => void openAttachment()}
                 disabled={openingFile}
-                className="text-primary hover:underline truncate disabled:opacity-50 cursor-pointer"
+                className="text-primary-text hover:underline truncate disabled:opacity-50 cursor-pointer"
               >
                 {openingFile ? 'Opening attachment…' : 'Open attachment'}
               </button>
@@ -133,7 +133,7 @@ export default function RequestDetailClient({ initialRequest }: { initialRequest
 
       <FadeIn delay={0.1}>
         <Card>
-          <h2 className="font-semibold text-white mb-4">Admin reply &amp; status</h2>
+          <h2 className="font-semibold text-foreground mb-4">Admin reply &amp; status</h2>
           <div className="space-y-4">
             <Select
               label="Status"

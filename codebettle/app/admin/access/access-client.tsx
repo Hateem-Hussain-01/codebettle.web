@@ -340,8 +340,8 @@ export default function AdminAccessClient() {
   return (
     <div className="space-y-6">
       <FadeIn>
-        <h1 className="text-2xl font-black text-white flex items-center gap-2">
-          <ShieldCheck className="w-6 h-6 text-primary" /> Admin Access
+        <h1 className="text-2xl font-black text-foreground flex items-center gap-2">
+          <ShieldCheck className="w-6 h-6 text-primary-text" /> Admin Access
         </h1>
         <p className="text-muted text-sm mt-1">
           Give someone admin access and choose exactly which areas they can open.
@@ -353,8 +353,8 @@ export default function AdminAccessClient() {
       {/* Module 18: Grant Admin Access — invite a new person, or grant to an existing account. */}
       <FadeIn delay={0.03}>
         <Card>
-          <h2 className="text-white font-bold flex items-center gap-2">
-            <UserPlus className="w-5 h-5 text-primary" /> Grant Admin Access
+          <h2 className="text-foreground font-bold flex items-center gap-2">
+            <UserPlus className="w-5 h-5 text-primary-text" /> Grant Admin Access
           </h2>
           <p className="text-muted text-sm mt-1">
             Invite someone to join as an admin. If they already have an account, admin access is
@@ -376,7 +376,7 @@ export default function AdminAccessClient() {
                 onChange={(e) => setInviteIsTeacher(e.target.checked)}
                 className="accent-[#F5C518]"
               />
-              <span className="text-sm text-white">Also a teacher (keeps the instructor portal alongside admin)</span>
+              <span className="text-sm text-foreground">Also a teacher (keeps the instructor portal alongside admin)</span>
             </label>
             <div className="flex gap-2">
               <Button
@@ -409,7 +409,7 @@ export default function AdminAccessClient() {
                     className="mt-1 accent-[#F5C518]"
                   />
                   <span>
-                    <span className="block text-sm font-medium text-white">{area.label}</span>
+                    <span className="block text-sm font-medium text-foreground">{area.label}</span>
                     <span className="block text-xs text-muted">{area.description}</span>
                   </span>
                 </label>
@@ -426,7 +426,7 @@ export default function AdminAccessClient() {
           </form>
           {inviteResult && (
             <div className="mt-4 rounded-lg border border-primary/40 bg-primary/10 px-4 py-3">
-              <p className="text-sm font-semibold text-white">
+              <p className="text-sm font-semibold text-foreground">
                 {inviteResult.emailSent
                   ? `Invitation sent to ${inviteResult.email}`
                   : `Invitation created for ${inviteResult.email} — email is not configured`}
@@ -441,7 +441,7 @@ export default function AdminAccessClient() {
                   readOnly
                   value={inviteResult.inviteUrl}
                   onClick={(e) => e.currentTarget.select()}
-                  className="flex-1 min-w-0 rounded-lg border border-dark-border bg-background px-3 py-2 text-xs text-white"
+                  className="flex-1 min-w-0 rounded-lg border border-dark-border bg-background px-3 py-2 text-xs text-foreground"
                 />
                 <Button
                   size="sm"
@@ -484,13 +484,13 @@ export default function AdminAccessClient() {
                     }`}
                   >
                     <div className="flex items-center justify-between gap-2">
-                      <p className="text-sm font-semibold text-white truncate">{user.name}</p>
+                      <p className="text-sm font-semibold text-foreground truncate">{user.name}</p>
                       <Badge variant={user.role === 'admin' ? 'primary' : 'muted'}>{user.role}</Badge>
                     </div>
                     <p className="text-xs text-muted truncate">{user.email}</p>
                     <p className="text-xs text-muted mt-1 flex items-center gap-1">
                       {hasAdminCapability(user)
-                        ? <ShieldCheck className="w-3 h-3 text-primary" />
+                        ? <ShieldCheck className="w-3 h-3 text-primary-text" />
                         : <ShieldAlert className="w-3 h-3" />}
                       {accessSummary(user)}
                       {user.status === 'suspended' && ' — suspended'}
@@ -510,7 +510,7 @@ export default function AdminAccessClient() {
             {selected && (
               <div className="space-y-4">
                 <div>
-                  <h2 className="text-white font-bold">{selected.name}</h2>
+                  <h2 className="text-foreground font-bold">{selected.name}</h2>
                   <p className="text-muted text-sm">{selected.email}</p>
                   <p className="text-muted text-xs mt-1">{accessSummary(selected)}</p>
                 </div>
@@ -545,7 +545,7 @@ export default function AdminAccessClient() {
                         className="mt-1 accent-[#F5C518]"
                       />
                       <span>
-                        <span className="block text-sm font-medium text-white">{area.label}</span>
+                        <span className="block text-sm font-medium text-foreground">{area.label}</span>
                         <span className="block text-xs text-muted">{area.description}</span>
                       </span>
                     </label>
@@ -572,7 +572,7 @@ export default function AdminAccessClient() {
                 {/* Module 18: edit basic details + activate/deactivate. Revoking admin
                     above never deletes the account; suspending here only blocks sign-in. */}
                 <div className="border-t border-dark-border pt-4 space-y-3">
-                  <h3 className="text-sm font-bold text-white">Basic details</h3>
+                  <h3 className="text-sm font-bold text-foreground">Basic details</h3>
                   <div className="grid gap-3 sm:grid-cols-2">
                     <Input label="Name" value={editName} onChange={(e) => setEditName(e.target.value)} />
                     <Input label="Phone" placeholder="+92 ..." value={editPhone} onChange={(e) => setEditPhone(e.target.value)} />
@@ -600,8 +600,8 @@ export default function AdminAccessClient() {
       {/* Module 18: pending / used / expired invitations. */}
       <FadeIn delay={0.15}>
         <Card>
-          <h2 className="text-white font-bold flex items-center gap-2">
-            <Mail className="w-5 h-5 text-primary" /> Invitations
+          <h2 className="text-foreground font-bold flex items-center gap-2">
+            <Mail className="w-5 h-5 text-primary-text" /> Invitations
           </h2>
           <p className="text-muted text-sm mt-1">
             People invited to join as admins who do not have an account yet. Resend mints a fresh
@@ -625,7 +625,7 @@ export default function AdminAccessClient() {
             {filteredInvitations.map((inv) => (
               <div key={inv.id} className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-dark-border px-4 py-3">
                 <div>
-                  <p className="text-sm font-semibold text-white">{inv.firstName} {inv.lastName}</p>
+                  <p className="text-sm font-semibold text-foreground">{inv.firstName} {inv.lastName}</p>
                   <p className="text-xs text-muted">{inv.email}{inv.contactNumber ? ` · ${inv.contactNumber}` : ''}</p>
                   <p className="text-xs text-muted mt-1">
                     Expires {new Date(inv.expiresAt).toLocaleDateString()}
