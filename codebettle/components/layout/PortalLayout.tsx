@@ -170,8 +170,12 @@ export default function PortalLayout({ user, navItems, children, portalName }: P
 
       {/* Main content */}
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
-        {/* Top bar */}
-        <header className="h-14 flex items-center justify-between px-4 sm:px-6 border-b border-dark-border bg-dark-card/50 backdrop-blur-sm flex-shrink-0">
+        {/* Top bar — relative z-20 so the ThemeToggle / UserMenu dropdowns
+            (absolute, z-50 inside this header's stacking context) paint
+            ABOVE the <main> content below. Without it the header's
+            backdrop-blur stacking context (z-auto) paints in DOM order
+            and <main> — which comes after it — covers the open menu. */}
+        <header className="relative z-20 h-14 flex items-center justify-between px-4 sm:px-6 border-b border-dark-border bg-dark-card/50 backdrop-blur-sm flex-shrink-0">
           <button onClick={() => setSidebarOpen(true)} aria-label="Open menu" className="lg:hidden text-muted hover:text-foreground p-1 rounded cursor-pointer">
             <Menu className="w-5 h-5" />
           </button>
