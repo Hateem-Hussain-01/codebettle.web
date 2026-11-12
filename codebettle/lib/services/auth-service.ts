@@ -46,6 +46,14 @@ export interface SessionUser {
    */
   adminPermissions?: AdminPermissions;
   /**
+   * Phase 5 (Module 23): explicit audit-log-view grant, read fresh
+   * from the user record on every request like the flags above, so
+   * the admin layout can gate /admin/audit without a DB round-trip.
+   * Optional like the flags (hand-built test sessions may omit it;
+   * absent means false). toSessionUser always populates it.
+   */
+  canViewAuditLog?: boolean;
+  /**
    * Phase 2, Module 21.4 (admin-assisted view-as): set ONLY when an
    * admin is viewing this teacher's portal through a valid view-as
    * token (see lib/auth.ts getSession). The session user is then the
@@ -69,6 +77,9 @@ export function toSessionUser(user: User | SafeUser): SessionUser {
     isAdmin: user.isAdmin ?? false,
     isTeacher: user.isTeacher ?? false,
     adminPermissions: user.adminPermissions,
+    // Phase 5: `?? false` covers records built before the column
+    // existed (same pattern as the flags above).
+    canViewAuditLog: user.canViewAuditLog ?? false,
   };
 }
 

@@ -188,6 +188,12 @@ export interface UpdateUserInput {
    */
   isAdmin?: boolean;
   isTeacher?: boolean;
+  /**
+   * Phase 5 (Module 23): explicit audit-log-view grant. Policy-checked
+   * in audit-access-service (super-admin only); the repository just
+   * applies it. Undefined leaves the stored value unchanged.
+   */
+  canViewAuditLog?: boolean;
 }
 
 /**
@@ -224,6 +230,7 @@ export async function updateUser(id: string, input: UpdateUserInput): Promise<Sa
         role: input.role,
         isAdmin: input.isAdmin,
         isTeacher: input.isTeacher,
+        canViewAuditLog: input.canViewAuditLog,
       }),
     );
   if (!row) return null;
@@ -263,6 +270,26 @@ export async function getAllUsers(): Promise<SafeUser[]> {
     .orderBy((u) => u.createdAt.desc())
     .all();
   return rows.map((r) => toSafeUser(mapUserRow(r)));
+}
+
+/**
+ * Batched actor-name lookup (Phase 5, Module 23): id -> { name, email }
+ * for a list of user ids, in one query. Used by the audit-log API to
+ * resolve actor names without one query per entry. Soft-deleted users
+ * are absent from the map; unknown ids are simply missing.
+ */
+export async function getUsersByIds(
+  ids: string[],
+): Promise<Map<string, { name: string; email: string }>> {
+  const out = new Map<string, { name: string; email: string }>();
+  if (ids.length === 0) return out;
+  const rows = await getDb()
+    .orm.public.User.where((u) => u.id.in(ids))
+    .where((u) => u.deletedAt.isNull())
+    .select('id', 'name', 'email')
+    .all();
+  for (const r of rows) out.set(r.id, { name: r.name, email: r.email });
+  return out;
 }
 
 /**

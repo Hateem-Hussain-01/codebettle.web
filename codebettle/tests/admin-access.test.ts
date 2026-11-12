@@ -40,6 +40,11 @@ function seedUser(id: string, role: string, extra: Record<string, unknown> = {})
 test.beforeEach(() => {
   fake = createFakeDb();
   __setDbClient(fake.asClient());
+  // Phase 5: only a SUPER-ADMIN (an official administrator email) may
+  // grant/revoke/list admin access. 'super-admin' is the official
+  // Muhammad Hateem Hussain; 'admin-full' is a non-official full admin
+  // and must now be refused everywhere the old gate let them through.
+  seedUser('super-admin', 'admin', { email: 'mhateemjutt1412@gmail.com', isAdmin: true });
   seedUser('admin-full', 'admin');
   seedUser('admin-restricted', 'admin', { adminPermissions: { courses: true, students: true } });
   seedUser('student-1', 'student');
@@ -182,7 +187,7 @@ test('toSessionUser carries adminPermissions from the user record', async () => 
 // ---------------------------------------------------------------------------
 
 test('grant: a student becomes a restricted admin with exactly the checked areas', async () => {
-  const result = await updateAdminAccess('admin-full', 'student-1', {
+  const result = await updateAdminAccess('super-admin', 'student-1', {
     permissions: { dashboard: true, courses: true, settings: false },
   });
   assert.ok(!('error' in result));
@@ -199,23 +204,23 @@ test('grant: a student becomes a restricted admin with exactly the checked areas
 
 test('grant: all areas checked grants FULL admin (NULL permissions)', async () => {
   const all = Object.fromEntries(ADMIN_AREAS.map((a) => [a.key, true]));
-  const result = await updateAdminAccess('admin-full', 'student-1', { permissions: all });
+  const result = await updateAdminAccess('super-admin', 'student-1', { permissions: all });
   assert.ok(!('error' in result));
   assert.equal(result.user.isAdmin, true);
   assert.equal(result.user.role, 'student');
   assert.equal(result.user.adminPermissions, undefined);
 });
 
-test('grant: zero areas, unknown user, suspended user and non-admin actor are refused', async () => {
-  const none = await updateAdminAccess('admin-full', 'student-1', { permissions: {} });
+test('grant: zero areas, unknown user, suspended user and non-super-admin actor are refused', async () => {
+  const none = await updateAdminAccess('super-admin', 'student-1', { permissions: {} });
   assert.ok('error' in none);
   assert.equal(none.status, 400);
 
-  const missing = await updateAdminAccess('admin-full', 'nobody', { permissions: { courses: true } });
+  const missing = await updateAdminAccess('super-admin', 'nobody', { permissions: { courses: true } });
   assert.ok('error' in missing);
   assert.equal(missing.status, 404);
 
-  const suspended = await updateAdminAccess('admin-full', 'suspended-1', { permissions: { courses: true } });
+  const suspended = await updateAdminAccess('super-admin', 'suspended-1', { permissions: { courses: true } });
   assert.ok('error' in suspended);
   assert.equal(suspended.status, 400);
 
@@ -226,20 +231,49 @@ test('grant: zero areas, unknown user, suspended user and non-admin actor are re
   const byRestricted = await updateAdminAccess('admin-restricted', 'instructor-1', { permissions: { courses: true } });
   assert.ok('error' in byRestricted);
   assert.equal(byRestricted.status, 403);
+
+  // Phase 5: a non-official FULL admin can no longer grant.
+  const byFullNonOfficial = await updateAdminAccess('admin-full', 'instructor-1', { permissions: { courses: true } });
+  assert.ok('error' in byFullNonOfficial);
+  assert.equal(byFullNonOfficial.status, 403);
 });
 
 test('self-edit is refused for both grant and revoke', async () => {
-  const grant = await updateAdminAccess('admin-full', 'admin-full', { permissions: { courses: true } });
+  const grant = await updateAdminAccess('super-admin', 'super-admin', { permissions: { courses: true } });
   assert.ok('error' in grant);
   assert.equal(grant.status, 403);
 
-  const revoke = await revokeAdminAccess('admin-full', 'admin-full');
+  const revoke = await revokeAdminAccess('super-admin', 'super-admin');
   assert.ok('error' in revoke);
   assert.equal(revoke.status, 403);
 });
 
+test('non-official full admin can no longer grant, revoke, or list (Phase 5)', async () => {
+  const grant = await updateAdminAccess('admin-full', 'student-1', { permissions: { courses: true } });
+  assert.ok('error' in grant);
+  assert.equal(grant.status, 403);
+
+  const revoke = await revokeAdminAccess('admin-full', 'admin-restricted');
+  assert.ok('error' in revoke);
+  assert.equal(revoke.status, 403);
+
+  const list = await listAccessUsers('admin-full');
+  assert.ok('error' in list);
+  assert.equal(list.status, 403);
+});
+
+test('official target cannot be revoked by a non-official (Phase 5 defense-in-depth)', async () => {
+  // The actor gate already refuses non-officials, so this also proves
+  // the target check holds when the actor is not a super-admin.
+  const revoke = await revokeAdminAccess('admin-full', 'super-admin');
+  assert.ok('error' in revoke);
+  assert.equal(revoke.status, 403);
+  const stored = await getUserById('super-admin');
+  assert.equal(stored?.isAdmin, true);
+});
+
 test('update: a restricted admin can gain and lose areas', async () => {
-  const result = await updateAdminAccess('admin-full', 'admin-restricted', {
+  const result = await updateAdminAccess('super-admin', 'admin-restricted', {
     permissions: { blog: true },
   });
   assert.ok(!('error' in result));
@@ -247,7 +281,7 @@ test('update: a restricted admin can gain and lose areas', async () => {
 });
 
 test('revoke: admin returns to student with permissions cleared', async () => {
-  const result = await revokeAdminAccess('admin-full', 'admin-restricted');
+  const result = await revokeAdminAccess('super-admin', 'admin-restricted');
   assert.ok(!('error' in result));
   assert.equal(result.user.role, 'student');
   assert.equal(result.user.adminPermissions, undefined);
@@ -257,15 +291,19 @@ test('revoke: admin returns to student with permissions cleared', async () => {
 });
 
 test('revoke: a non-admin cannot be revoked', async () => {
-  const result = await revokeAdminAccess('admin-full', 'student-1');
+  const result = await revokeAdminAccess('super-admin', 'student-1');
   assert.ok('error' in result);
   assert.equal(result.status, 400);
 });
 
-test('listAccessUsers: full admin sees all users; restricted admin is refused', async () => {
-  const ok = await listAccessUsers('admin-full');
+test('listAccessUsers: super-admin sees all users; full non-official and restricted admins are refused', async () => {
+  const ok = await listAccessUsers('super-admin');
   assert.ok(!('error' in ok));
-  assert.equal(ok.users.length, 5);
+  assert.equal(ok.users.length, 6);
+
+  const deniedFull = await listAccessUsers('admin-full');
+  assert.ok('error' in deniedFull);
+  assert.equal(deniedFull.status, 403);
 
   const denied = await listAccessUsers('admin-restricted');
   assert.ok('error' in denied);

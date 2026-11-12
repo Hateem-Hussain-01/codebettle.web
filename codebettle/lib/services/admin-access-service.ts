@@ -2,10 +2,16 @@
  * Admin access management service (Item G).
  *
  * The logic behind /api/admin/access. No Next.js imports — unit-testable
- * with the fake db. Only a FULL admin (admin capability with no
- * permissions restriction) may call these functions; the routes enforce
- * that too, and the service re-checks the actor from the database so
- * the rule holds even if a route forgets the gate.
+ * with the fake db.
+ *
+ * Phase 5 (Module 23) — SUPER-ADMIN gating: only a SUPER-ADMIN (one of
+ * the two official administrators, see lib/super-admin.ts) may call
+ * these functions; a non-official full admin can no longer grant,
+ * revoke, or list admin access. The routes enforce that too, and the
+ * service re-checks the actor from the database so the rule holds even
+ * if a route forgets the gate. Defense-in-depth: an official target
+ * may only be modified by a super-admin actor, checked again inside
+ * grant/revoke even though the actor gate already requires it.
  *
  * Phase 2 — flags role model: admin access is the `isAdmin` FLAG, not
  * the primary `role`. Granting admin sets isAdmin=true and PRESERVES
@@ -21,9 +27,9 @@
  * Safety rules:
  * - You cannot change your own admin access (no self-lockout, no
  *   self-escalation through this path). This ban is also what guarantees
- *   a full admin always remains: the only way to lose full-admin status
+ *   a super-admin always remains: the only way to lose admin status
  *   is through these functions, and they can only demote OTHER admins,
- *   so the acting full admin always survives.
+ *   so the acting super-admin always survives.
  * - Revoking admin access revokes all of the user's sessions at once,
  *   so they are logged out of the admin portal immediately.
  * - Granting requires at least one area checked. Checking every area
@@ -34,20 +40,20 @@ import { getAllUsers, getUserById, updateUser } from '../db/users';
 import { revokeAllSessionsForUser } from '../db/sessions';
 import { logAudit } from '../db/audit';
 import { hasAdminCapability, hasTeacherCapability, type CapabilitySubject } from '../rbac';
+import { isSuperAdmin, isSuperAdminEmail } from '../super-admin';
 import {
   ADMIN_AREA_KEYS,
-  isFullAdmin,
   normaliseAdminPermissions,
   type AdminPermissions,
 } from '../admin-access';
 import { badRequest, forbidden, notFound, type ServiceError } from './errors';
 import type { SafeUser } from '../db/types';
 
-async function getFullAdminActor(actorId: string): Promise<SafeUser | ServiceError> {
+async function getSuperAdminActor(actorId: string): Promise<SafeUser | ServiceError> {
   const actor = await getUserById(actorId);
   if (!actor) return notFound('Admin user');
-  if (!hasAdminCapability(actor) || !isFullAdmin(actor.adminPermissions)) {
-    return forbidden('Full admin access required');
+  if (!isSuperAdmin(actor)) {
+    return forbidden('Super admin access required');
   }
   return actor;
 }
@@ -61,11 +67,11 @@ export function primaryRoleAfterRevoke(user: CapabilitySubject): 'instructor' | 
   return hasTeacherCapability(user) ? 'instructor' : 'student';
 }
 
-/** All users (safe fields) for the /admin/access picker. Full admins only. */
+/** All users (safe fields) for the /admin/access picker. Super-admins only. */
 export async function listAccessUsers(
   actorId: string,
 ): Promise<{ users: SafeUser[] } | ServiceError> {
-  const actor = await getFullAdminActor(actorId);
+  const actor = await getSuperAdminActor(actorId);
   if ('error' in actor) return actor;
   return { users: await getAllUsers() };
 }
@@ -91,13 +97,18 @@ export async function updateAdminAccess(
   userId: string,
   input: UpdateAdminAccessInput,
 ): Promise<{ user: SafeUser } | ServiceError> {
-  const actor = await getFullAdminActor(actorId);
+  const actor = await getSuperAdminActor(actorId);
   if ('error' in actor) return actor;
   if (userId === actorId) {
     return forbidden('You cannot change your own admin access');
   }
   const target = await getUserById(userId);
   if (!target) return notFound('User');
+  // Defense-in-depth: an official target may only be modified by a
+  // super-admin actor, even if a future caller skips the actor gate.
+  if (isSuperAdminEmail(target.email) && !isSuperAdmin(actor)) {
+    return forbidden('Only a super admin can change an official administrator');
+  }
   if (target.status !== 'active') {
     return badRequest('Only an active account can be given admin access');
   }
@@ -143,13 +154,18 @@ export async function revokeAdminAccess(
   actorId: string,
   userId: string,
 ): Promise<{ user: SafeUser } | ServiceError> {
-  const actor = await getFullAdminActor(actorId);
+  const actor = await getSuperAdminActor(actorId);
   if ('error' in actor) return actor;
   if (userId === actorId) {
     return forbidden('You cannot revoke your own admin access');
   }
   const target = await getUserById(userId);
   if (!target) return notFound('User');
+  // Defense-in-depth: an official target may only be modified by a
+  // super-admin actor, even if a future caller skips the actor gate.
+  if (isSuperAdminEmail(target.email) && !isSuperAdmin(actor)) {
+    return forbidden('Only a super admin can change an official administrator');
+  }
   if (!hasAdminCapability(target)) {
     return badRequest('This user does not have admin access');
   }
