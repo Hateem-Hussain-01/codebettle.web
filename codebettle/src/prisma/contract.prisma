@@ -674,6 +674,20 @@ model SocialLink {
 // 'published' — only published forms are visible on the public API.
 // NO file-upload field type in v1: public file upload is an abuse
 // surface (storage cost + malware), so it is deliberately excluded.
+
+// Admin Settings persistence (Settings fix). One row per setting,
+// keyed by a dotted key (site.name, site.description, contact.email,
+// contact.phone, contact.address, maintenance.enabled). All values
+// are strings ('true' / 'false' for maintenance.enabled). NO seed
+// rows: the defaults live in code (DEFAULT_SETTINGS in
+// lib/services/settings-service.ts) and the service falls back to them
+// whenever a row is missing — including before this migration has run,
+// when the table does not exist yet and reads must never throw.
+model SiteSetting {
+  key       String   @id
+  value     String
+  updatedAt temporal.UpdatedAt
+}
 model FormDefinition {
   id          String   @id @onCreate(cuid(2))
   name        String

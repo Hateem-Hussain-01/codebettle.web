@@ -1,0 +1,51 @@
+[
+  {
+    "id": "table.SiteSetting",
+    "label": "Create table \"SiteSetting\"",
+    "summary": "Creates table \"SiteSetting\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "SiteSetting"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"SiteSetting\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"SiteSetting\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "table \"SiteSetting\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"SiteSetting\"",
+        "sql": "CREATE TABLE \"public\".\"SiteSetting\" (\n  \"key\" text NOT NULL,\n  \"updatedAt\" timestamptz(3) NOT NULL,\n  \"value\" text NOT NULL,\n  PRIMARY KEY (\"key\")\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"SiteSetting\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" WHERE (\"c\".\"oid\" = to_regclass($1) AND (\"c\".\"relkind\" = $2 OR \"c\".\"relkind\" = $3))) AS \"result\"",
+        "params": [
+          "\"public\".\"SiteSetting\"",
+          "r",
+          "p"
+        ],
+        "expectation": {
+          "expects": "present",
+          "object": "table \"SiteSetting\""
+        }
+      }
+    ]
+  }
+]
