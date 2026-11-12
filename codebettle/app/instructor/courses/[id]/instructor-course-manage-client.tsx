@@ -14,6 +14,14 @@ import {
   AlertCircle, Clock, Calendar, CheckSquare, Square
 } from 'lucide-react';
 import { formatDateShort, formatPrice } from '@/lib/utils';
+import {
+  addMaterialRow,
+  materialsPatchFragment,
+  removeMaterialRow,
+  sanitizeMaterials,
+  updateMaterialRow,
+  validateMaterials,
+} from '@/lib/lesson-materials';
 import toast from 'react-hot-toast';
 import Link from 'next/link';
 
@@ -123,6 +131,16 @@ export default function InstructorCourseManageClient({ course, enrolledStudents 
   const updateSession = (mid: string, sid: string, field: string, val: string) =>
     setModules(ms => ms.map(m => m.id === mid ? { ...m, lessons: m.lessons.map(l => l.id === sid ? { ...l, [field]: val } : l) } : m));
 
+  // Per-lesson resources (name + link, e.g. a PDF/PPT on Google Drive).
+  // Staged in the builder like the other lesson fields; saved with the
+  // curriculum — see handleSaveCurriculum / createLesson.
+  const updateMaterial = (mid: string, sid: string, index: number, field: 'name' | 'url', val: string) =>
+    setModules(ms => ms.map(m => m.id === mid ? { ...m, lessons: m.lessons.map(l => l.id === sid ? { ...l, materials: updateMaterialRow(l.materials, index, field, val) } : l) } : m));
+  const addMaterial = (mid: string, sid: string) =>
+    setModules(ms => ms.map(m => m.id === mid ? { ...m, lessons: m.lessons.map(l => l.id === sid ? { ...l, materials: addMaterialRow(l.materials) } : l) } : m));
+  const removeMaterial = (mid: string, sid: string, index: number) =>
+    setModules(ms => ms.map(m => m.id === mid ? { ...m, lessons: m.lessons.map(l => l.id === sid ? { ...l, materials: removeMaterialRow(l.materials, index) } : l) } : m));
+
   /**
    * Save the curriculum through the instructor module/lesson APIs.
    * Local add/remove/edit stays staged until this runs; the save diffs
@@ -133,6 +151,14 @@ export default function InstructorCourseManageClient({ course, enrolledStudents 
    */
   const handleSaveCurriculum = async () => {
     if (modules.length === 0) { toast.error('Add at least one module'); return; }
+    // Incomplete resource rows block the save — a row needs both a name
+    // and an http(s) link. Fully-empty rows are ignored (dropped on save).
+    for (const mod of modules) {
+      for (const lesson of mod.lessons) {
+        const error = validateMaterials(lesson.materials, lesson.title);
+        if (error) { toast.error(error); return; }
+      }
+    }
     setSavingCurriculum(true);
     try {
       const saved = savedModulesRef.current;
@@ -186,6 +212,8 @@ export default function InstructorCourseManageClient({ course, enrolledStudents 
           if (lesson.driveRecordingUrl !== savedLesson.driveRecordingUrl) patch.recordingUrl = lesson.driveRecordingUrl || null;
           if (lesson.duration !== savedLesson.duration) patch.duration = lesson.duration || null;
           if (lesson.date !== savedLesson.date) patch.date = lesson.date || null;
+          // Materials are links only — send them only when the list changed.
+          Object.assign(patch, materialsPatchFragment(lesson.materials, savedLesson.materials));
           if (Object.keys(patch).length > 0) {
             const { ok, data } = await api(`${apiBase}/modules/${mod.id}/lessons/${lesson.id}`, 'PATCH', patch);
             if (!ok) { errors.push(data.error || `Could not save lesson "${lesson.title}"`); realLessons.push(lesson); }
@@ -225,10 +253,12 @@ export default function InstructorCourseManageClient({ course, enrolledStudents 
 
   /** POST one lesson under a module; returns the saved lesson or null. */
   async function createLesson(moduleId: string, lesson: Lesson, errors: string[]): Promise<Lesson | null> {
+    const materials = sanitizeMaterials(lesson.materials);
     const { ok, data } = await api(`${apiBase}/modules/${moduleId}/lessons`, 'POST', {
       title: lesson.title,
       description: lesson.description || undefined,
       recordingUrl: lesson.driveRecordingUrl || undefined,
+      materials: materials.length > 0 ? materials : undefined,
       duration: lesson.duration || undefined,
       date: lesson.date || undefined,
     });
@@ -427,6 +457,18 @@ export default function InstructorCourseManageClient({ course, enrolledStudents 
                             <Input value={ses.duration} onChange={e => updateSession(mod.id, ses.id, 'duration', e.target.value)} placeholder="e.g. 1h 30min" />
                           </div>
                           <Input value={ses.description} onChange={e => updateSession(mod.id, ses.id, 'description', e.target.value)} placeholder="Topics covered in this class" />
+                          {/* Resources — PDFs / slides shared as links per class */}
+                          <div className="pt-1">
+                            <p className="text-muted text-xs font-medium mb-2">Resources <span className="font-normal">(PDFs, slides — shared as links)</span></p>
+                            {(ses.materials ?? []).map((mat, mi) => (
+                              <div key={mi} className="flex items-center gap-2 mb-2">
+                                <Input value={mat.name} onChange={e => updateMaterial(mod.id, ses.id, mi, 'name', e.target.value)} placeholder="Resource name, e.g. Week 1 Slides" className="flex-1 text-xs" />
+                                <Input value={mat.url} onChange={e => updateMaterial(mod.id, ses.id, mi, 'url', e.target.value)} placeholder="https://drive.google.com/..." className="flex-1 text-xs" />
+                                <button onClick={() => removeMaterial(mod.id, ses.id, mi)} aria-label="Remove resource" className="text-muted hover:text-red-400 cursor-pointer flex-shrink-0"><X className="w-3.5 h-3.5" /></button>
+                              </div>
+                            ))}
+                            <button onClick={() => addMaterial(mod.id, ses.id)} className="text-primary-text text-xs hover:underline cursor-pointer flex items-center gap-1"><Plus className="w-3.5 h-3.5" />Add resource</button>
+                          </div>
                         </div>
                       ))}
                       <button onClick={() => addSession(mod.id)} className="text-primary-text text-sm hover:underline cursor-pointer flex items-center gap-1"><Plus className="w-3.5 h-3.5" />Add Class Session</button>

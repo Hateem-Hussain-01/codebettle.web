@@ -9,6 +9,7 @@ import Button from '@/components/ui/Button';
 import FadeIn from '@/components/ui/FadeIn';
 import type { PublicCourse } from '@/lib/db/types';
 import PaymentModal from './payment-modal';
+import CourseResources from './course-resources';
 
 /**
  * Student course content — Zoom link, recordings and materials (Phase 0a,
@@ -23,7 +24,10 @@ import PaymentModal from './payment-modal';
  * locked — the lesson rows below render those with a lock and no URL.
  * Lesson titles/descriptions/dates are public curriculum data; only the
  * recording URL and materials URLs come from the gated endpoint, mapped
- * onto the public lessons by lesson id.
+ * onto the public lessons by lesson id. The Resources section below the
+ * lesson list reuses the same fetched content (no new fetch) and is
+ * additionally gated on paymentPending — a pending-payment student sees a
+ * locked notice there and no material names/URLs at all.
  *
  * While payment is pending the banner offers "Complete Payment"
  * (Phase 1b modal); once a submission is awaiting review it shows
@@ -258,6 +262,14 @@ export default function StudentCourseContent({
               </Card>
             );
           })}
+
+          {/* Resources — every material from every lesson, grouped by
+              module then lesson. Reuses the gated content fetched above
+              (no new fetch); the component itself gates on paymentPending,
+              so a pending-payment student sees a locked notice and no
+              material names/URLs here. Per-lesson materials above are
+              unchanged (Phase 1d behaviour). */}
+          <CourseResources modules={modules} lessons={content?.lessons ?? null} paymentPending={paymentPending} />
         </FadeIn>
 
         {children}
