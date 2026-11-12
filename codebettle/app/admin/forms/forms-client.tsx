@@ -2,7 +2,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import {
-  Plus, Trash2, Eye, EyeOff, Pencil, ListChecks, Inbox,
+  Plus, Trash2, Eye, EyeOff, Pencil, ListChecks, Inbox, ExternalLink,
 } from 'lucide-react';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
@@ -14,6 +14,7 @@ import FadeIn from '@/components/ui/FadeIn';
 import Select from '@/components/ui/Select';
 import Spinner from '@/components/ui/Spinner';
 import { formatDateShort } from '@/lib/utils';
+import FormShareMenu from './form-share-menu';
 import { submissionCountOf, formStatusLabel, formTypeLabel, type AdminFormListItem, type FormStatus, type FormType } from '@/lib/forms';
 import toast from 'react-hot-toast';
 
@@ -292,6 +293,16 @@ export default function FormsClient() {
                         >
                           {form.status === 'published' ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                         </button>
+                        <button
+                          onClick={() => window.open(`/forms/${form.slug}?preview=1`, '_blank', 'noopener,noreferrer')}
+                          title="Preview form in a new tab (admin preview — drafts included)"
+                          className="text-muted hover:text-primary-text p-1 cursor-pointer"
+                        >
+                          <ExternalLink className="w-4 h-4" />
+                        </button>
+                        {form.status === 'published' && (
+                          <FormShareMenu name={form.name} slug={form.slug} variant="icon" />
+                        )}
                         <button
                           onClick={() => setDeleteTarget(form)}
                           title="Delete form"

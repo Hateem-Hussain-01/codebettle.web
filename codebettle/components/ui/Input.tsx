@@ -5,13 +5,19 @@ interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   label?: string;
   error?: string;
   icon?: React.ReactNode;
+  /**
+   * Inline styles for the <label>. The label's `text-foreground/80`
+   * class fixes its colour, so callers that recolour a form (e.g. the
+   * styled public form) pass the text colour here instead.
+   */
+  labelStyle?: React.CSSProperties;
 }
 
 const Input = forwardRef<HTMLInputElement, InputProps>(
-  ({ label, error, icon, className, ...props }, ref) => {
+  ({ label, error, icon, labelStyle, className, ...props }, ref) => {
     return (
       <div className="flex flex-col gap-1.5">
-        {label && <label className="text-sm font-medium text-foreground/80">{label}</label>}
+        {label && <label className="text-sm font-medium text-foreground/80" style={labelStyle}>{label}</label>}
         <div className="relative">
           {icon && (
             <div className="absolute left-3 top-1/2 -translate-y-1/2 text-muted pointer-events-none">

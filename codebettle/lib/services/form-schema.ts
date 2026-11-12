@@ -29,6 +29,7 @@ import {
   type FormFieldType,
   type FormSchema,
 } from '../db/types';
+import { validateCoverImageUrlValue, validateFormStyleValue } from '../form-style';
 
 export type SchemaValidationResult =
   | { ok: true }
@@ -77,6 +78,13 @@ export function validateFormSchema(
       errors.push(`Schema ${key} must be a string`);
     }
   }
+  // GHL upgrade: whole-form style + cover image also travel inside the
+  // schema. Colours must be strict 6-digit hex (anything else — url(,
+  // expression(, gradients, named colours — is rejected, so no CSS
+  // injection can reach an inline style); enums are whitelisted; the
+  // cover URL must be http(s) or a same-origin path.
+  errors.push(...validateFormStyleValue(raw.style));
+  errors.push(...validateCoverImageUrlValue(raw.coverImageUrl));
   const seenIds = new Set<string>();
   fields.forEach((item, index) => {
     const where = `Field ${index + 1}`;

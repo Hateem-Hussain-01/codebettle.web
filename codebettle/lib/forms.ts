@@ -20,6 +20,8 @@
  * 'draft' | 'published'. Display labels come from formTypeLabel /
  * formStatusLabel below.
  */
+import type { FormStyle } from './form-style';
+import { validateCoverImageUrlValue, validateFormStyleValue } from './form-style';
 
 export type FormFieldType =
   | 'text'
@@ -52,12 +54,18 @@ export interface FormField {
   styling?: { width?: 'full' | 'half' };
 }
 
+export type { FormStyle, FormButtonShape, FormFont, FormWidth } from './form-style';
+
 export interface FormSchema {
   fields: FormField[];
   /** Text on the public form's submit button. */
   submitButtonText?: string;
   /** Message shown to the submitter after a successful submission. */
   successMessage?: string;
+  /** Whole-form custom styling (GHL-like). Absent = site defaults. */
+  style?: FormStyle;
+  /** Cover image banner URL (uploaded to the public `course-images` bucket, or a URL). */
+  coverImageUrl?: string;
 }
 
 export type FormType = 'registration' | 'survey';
@@ -265,6 +273,12 @@ export function validateSchema(schema: FormSchema, opts?: { requireFields?: bool
   if (fields.length === 0 && opts?.requireFields !== false) {
     errors.push('A form must have at least one field.');
   }
+  // GHL upgrade: whole-form style + cover image travel inside the
+  // schema too — same rules as the server validator (hex colours only,
+  // whitelisted enums, safe cover URL), so the builder blocks bad
+  // values before they ever reach the API.
+  errors.push(...validateFormStyleValue(schema?.style));
+  errors.push(...validateCoverImageUrlValue(schema?.coverImageUrl));
   const seenIds = new Set<string>();
 
   fields.forEach((field, index) => {

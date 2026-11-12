@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { buildCspHeader, generateNonce } from '@/lib/security';
+import { buildCspHeader, generateNonce, shouldAllowFraming } from '@/lib/security';
 
 /**
  * Route guard + security headers (Next.js 16 `proxy`, formerly middleware).
@@ -74,12 +74,41 @@ async function isMaintenanceMode(request: NextRequest): Promise<boolean> {
   }
 }
 
+/**
+ * Security headers for one page response. X-Frame-Options lives HERE,
+ * not in next.config.ts: the config's headers() matches paths, not
+ * query strings, so it cannot exempt the embed render. The proxy sees
+ * the query string, so it is the only layer that can omit DENY for
+ * `?embed=1` on /forms/[slug] — and only there. Every other page
+ * response gets DENY, exactly as the config used to give it.
+ *
+ * Why the exemption is safe: the embed render is a PUBLIC form only
+ * (published forms, no session data, no admin content — a draft or an
+ * admin page can never render in embed mode). Framing it cannot
+ * clickjack anything privileged; it only lets a site embed the same
+ * public form a visitor could open directly.
+ */
+function setPageSecurityHeaders(
+  response: NextResponse,
+  csp: string,
+  allowFraming: boolean,
+): NextResponse {
+  response.headers.set('Content-Security-Policy', csp);
+  if (!allowFraming) {
+    response.headers.set('X-Frame-Options', 'DENY');
+  }
+  return response;
+}
+
 export async function proxy(request: NextRequest) {
+  const { pathname } = request.nextUrl;
+  // Embed render only: /forms/<slug>?embed=1. Draft preview
+  // (?preview=1) is NOT an embed — it stays unframeable.
+  const allowFraming = shouldAllowFraming(pathname, request.nextUrl.searchParams.get('embed'));
   const nonce = generateNonce();
-  const csp = buildCspHeader(nonce, process.env.NODE_ENV === 'development');
+  const csp = buildCspHeader(nonce, process.env.NODE_ENV === 'development', { allowFraming });
 
   const session = request.cookies.get('cb_session');
-  const { pathname } = request.nextUrl;
 
   // 1. Maintenance gate — before the portal gate. /maintenance itself
   // must be exempt or the rewrite would loop; /admin and /auth stay
@@ -98,8 +127,8 @@ export async function proxy(request: NextRequest) {
     const response = NextResponse.rewrite(new URL('/maintenance', request.url), {
       request: { headers: requestHeaders },
     });
-    response.headers.set('Content-Security-Policy', csp);
-    return response;
+    // The maintenance page itself is never an embed render.
+    return setPageSecurityHeaders(response, csp, false);
   }
 
   const protectedRoutes = ['/student', '/instructor', '/admin'];
@@ -107,8 +136,7 @@ export async function proxy(request: NextRequest) {
 
   if (isProtected && !session) {
     const redirect = NextResponse.redirect(new URL('/auth/login', request.url));
-    redirect.headers.set('Content-Security-Policy', csp);
-    return redirect;
+    return setPageSecurityHeaders(redirect, csp, false);
   }
 
   const requestHeaders = new Headers(request.headers);
@@ -125,8 +153,7 @@ export async function proxy(request: NextRequest) {
   const response = NextResponse.next({
     request: { headers: requestHeaders },
   });
-  response.headers.set('Content-Security-Policy', csp);
-  return response;
+  return setPageSecurityHeaders(response, csp, allowFraming);
 }
 
 export const config = {

@@ -5,13 +5,18 @@ interface SelectProps extends React.SelectHTMLAttributes<HTMLSelectElement> {
   label?: string;
   error?: string;
   options: { value: string; label: string }[];
+  /**
+   * Inline styles for the <label> — see Input's labelStyle: the label
+   * class fixes its colour, so a recoloured form passes it here.
+   */
+  labelStyle?: React.CSSProperties;
 }
 
 const Select = forwardRef<HTMLSelectElement, SelectProps>(
-  ({ label, error, options, className, ...props }, ref) => {
+  ({ label, error, options, labelStyle, className, ...props }, ref) => {
     return (
       <div className="flex flex-col gap-1.5">
-        {label && <label className="text-sm font-medium text-foreground/80">{label}</label>}
+        {label && <label className="text-sm font-medium text-foreground/80" style={labelStyle}>{label}</label>}
         <select
           ref={ref}
           className={cn(

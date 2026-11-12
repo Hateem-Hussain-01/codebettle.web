@@ -119,3 +119,80 @@ export function courseImagePathFromUrl(url: string): string | null {
   if (!path.startsWith('courses/') || path === 'courses/') return null;
   return path;
 }
+
+// ---------------------------------------------------------------------------
+// Form cover images (Forms Builder GHL upgrade, Worker B).
+// ---------------------------------------------------------------------------
+//
+// Same bucket, same rules as course thumbnails — NO new bucket: a form
+// cover is public by nature (it renders in an <img> on the public form
+// page), the `course-images` bucket already exists and is public, and
+// the file-type / 5 MB limits are identical. Covers live under a
+// separate `forms/<formId>/` prefix so they can never be mistaken for
+// (or deleted as) a course thumbnail, and vice versa.
+
+export type FormCoverFile = CourseImageFile;
+
+/**
+ * Upload a form cover image to `course-images/forms/<formId>/<uuid>.<ext>`.
+ * Returns the public URL and the storage path. The URL is what gets
+ * saved to `schema.coverImageUrl`; the path is what
+ * deleteFormCoverImage needs. Validation runs before the client is
+ * built, so a bad file is a 400 even when the service-role key is
+ * missing. No database write happens here — the caller saves the URL
+ * into the form schema (the builder saves it with the rest of the
+ * form; an upload that is never saved leaves an orphaned file, which
+ * is harmless — it is unreferenced and publicly unreachable without
+ * its UUID URL).
+ */
+export async function uploadFormCoverImage(
+  formId: string,
+  file: FormCoverFile,
+  client?: SupabaseClient,
+): Promise<{ url: string; path: string }> {
+  if (!(ALLOWED_COURSE_IMAGE_TYPES as readonly string[]).includes(file.type)) {
+    throw new Error('Only JPG, PNG, WebP or GIF images are allowed');
+  }
+  if (file.size > MAX_COURSE_IMAGE_BYTES) {
+    throw new Error('Image must be 5 MB or smaller');
+  }
+  const bytes = typeof file.arrayBuffer === 'function' ? await file.arrayBuffer() : file.arrayBuffer;
+  const body = Buffer.isBuffer(bytes) ? bytes : Buffer.from(bytes);
+  if (body.byteLength > MAX_COURSE_IMAGE_BYTES) {
+    throw new Error('Image must be 5 MB or smaller');
+  }
+  const storage = client ?? getCourseImageStorageClient();
+  const path = `forms/${formId}/${randomUUID()}.${EXTENSIONS[file.type]}`;
+  const { data, error } = await storage.storage
+    .from(COURSE_IMAGE_BUCKET)
+    .upload(path, body, { contentType: file.type, upsert: false });
+  if (error || !data) {
+    throw new Error(`Form cover upload failed: ${error?.message ?? 'unknown error'}`);
+  }
+  const { data: publicUrl } = storage.storage.from(COURSE_IMAGE_BUCKET).getPublicUrl(data.path);
+  return { url: publicUrl.publicUrl, path: data.path };
+}
+
+/** Delete a previously uploaded form cover by its storage path (e.g. `forms/<id>/<uuid>.jpg`). */
+export async function deleteFormCoverImage(path: string, client?: SupabaseClient): Promise<void> {
+  const storage = client ?? getCourseImageStorageClient();
+  const { error } = await storage.storage.from(COURSE_IMAGE_BUCKET).remove([path]);
+  if (error) {
+    throw new Error(`Form cover delete failed: ${error.message}`);
+  }
+}
+
+/**
+ * Storage path for a cover URL that lives in the `course-images`
+ * bucket (e.g. `forms/<id>/<uuid>.jpg`), or null for anything else.
+ * The path must live under `forms/` — a course thumbnail or an
+ * external URL is never a form cover.
+ */
+export function formCoverImagePathFromUrl(url: string): string | null {
+  const marker = `/${COURSE_IMAGE_BUCKET}/`;
+  const idx = url.indexOf(marker);
+  if (idx === -1) return null;
+  const path = decodeURIComponent(url.slice(idx + marker.length).split(/[?#]/)[0]);
+  if (!path.startsWith('forms/') || path === 'forms/') return null;
+  return path;
+}

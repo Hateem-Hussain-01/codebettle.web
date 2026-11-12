@@ -1,12 +1,16 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { connection } from 'next/server';
-import { headers } from 'next/headers';
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
 import FadeIn from '@/components/ui/FadeIn';
 import PublicFormClient from './form-client';
 import type { PublicForm } from '@/lib/public-form';
+import { getSession } from '@/lib/auth';
+import { getFormDefinitionBySlug } from '@/lib/db/forms';
+import { getPublishedFormBySlugService, toPublicForm } from '@/lib/services/form-service';
+import { decideFormRender, isEmbedRequest } from '@/lib/form-access';
+import { formMaxWidthPx, resolveFormStyle } from '@/lib/form-style';
 
 /**
  * Public form page (Phase 6, Worker C) — /forms/[slug].
@@ -17,42 +21,56 @@ import type { PublicForm } from '@/lib/public-form';
  * `await connection()` opts out of build-time prerendering (public page,
  * slug only known at request time, and the API route does not exist yet
  * at build time — the build must not try to fetch it).
+ *
+ * GHL upgrade (Worker B) — two extra render modes, both driven by the
+ * query string:
+ * - `?preview=1` (admin only): renders ANY form — draft or published —
+ *   through the admin DB read, so the admin sees exactly what
+ *   submitters will see. A non-admin/anonymous request with
+ *   `?preview=1` 404s exactly like an unknown slug (the draft's
+ *   existence is never leaked). The preview renders the normal public
+ *   page, with its style + cover.
+ * - `?embed=1` (public, published only): the form STANDALONE — no
+ *   Navbar, no Footer, no hero chrome — for embedding on other sites.
+ *   Framing is allowed for this render only (proxy.ts + lib/security.ts).
  */
 
-/** Absolute base URL for the self-fetch: request origin first, env fallback. */
-async function getBaseUrl(): Promise<string> {
-  const envUrl = process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, '');
-  if (envUrl) return envUrl;
-  const h = await headers();
-  const host = h.get('x-forwarded-host') ?? h.get('host');
-  if (!host) return 'http://localhost:3000';
-  const proto = h.get('x-forwarded-proto') ?? 'http';
-  return `${proto}://${host}`;
+/**
+ * Resolve the form for this request. Preview (admin) reads the
+ * definition straight from the DB regardless of status; every other
+ * request goes through the published-only service. Returns null when
+ * the request must 404 — including an anonymous preview attempt,
+ * which is indistinguishable from an unknown slug by design.
+ */
+async function getFormForRequest(
+  slug: string,
+  searchParams: { preview?: string | string[]; embed?: string | string[] },
+): Promise<PublicForm | null> {
+  const decision = decideFormRender(searchParams, await getSession());
+  if (decision.render === 'not-found') return null;
+  if (decision.render === 'any-status') {
+    // Admin preview: any status renders. Read via the admin DB path,
+    // NOT the public published-only API — a draft must be previewable.
+    const form = await getFormDefinitionBySlug(slug);
+    if (!form) return null;
+    return toPublicForm(form);
+  }
+  // Published-only (normal + embed): reuse the public service rule.
+  const result = await getPublishedFormBySlugService(slug);
+  if ('error' in result) return null;
+  return result.form;
 }
 
-async function getPublishedForm(slug: string): Promise<PublicForm | null> {
-  const base = await getBaseUrl();
-  let res: Response;
-  try {
-    res = await fetch(`${base}/api/forms/${encodeURIComponent(slug)}`, {
-      cache: 'no-store',
-    });
-  } catch (err) {
-    throw new Error(`Could not reach the forms API for slug "${slug}"`, { cause: err });
-  }
-  // Unknown slug, or draft/unpublished form: the API answers 404.
-  if (res.status === 404) return null;
-  if (!res.ok) {
-    throw new Error(`Forms API returned ${res.status} for slug "${slug}"`);
-  }
-  const data = await res.json().catch(() => null);
-  if (!data || typeof data !== 'object' || !('form' in data) || !data.form) return null;
-  return data.form as PublicForm;
-}
-
-export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
+export async function generateMetadata({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ slug: string }>;
+  searchParams?: Promise<{ preview?: string | string[]; embed?: string | string[] }>;
+}): Promise<Metadata> {
   const { slug } = await params;
-  const form = await getPublishedForm(slug).catch(() => null);
+  const sp = (await searchParams) ?? {};
+  const form = await getFormForRequest(slug, sp).catch(() => null);
   if (!form) return { title: 'Form not found | CodeBettle' };
   return {
     title: `${form.name} | CodeBettle`,
@@ -60,11 +78,34 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   };
 }
 
-export default async function PublicFormPage({ params }: { params: Promise<{ slug: string }> }) {
+export default async function PublicFormPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ slug: string }>;
+  searchParams?: Promise<{ preview?: string | string[]; embed?: string | string[] }>;
+}) {
   await connection();
   const { slug } = await params;
-  const form = await getPublishedForm(slug);
+  const sp = (await searchParams) ?? {};
+  const form = await getFormForRequest(slug, sp);
   if (!form) notFound();
+
+  const style = resolveFormStyle(form.schema.style);
+  const maxWidth = formMaxWidthPx(style.formWidth);
+
+  // Embed render: standalone form only — no Navbar, no Footer, no
+  // hero chrome. The form's own style + cover still apply (they live
+  // in PublicFormClient), and the width follows the form's formWidth.
+  if (isEmbedRequest(sp)) {
+    return (
+      <main className="min-h-screen bg-background py-6">
+        <div className="mx-auto px-4 sm:px-6" style={{ maxWidth }}>
+          <PublicFormClient form={form} slug={slug} />
+        </div>
+      </main>
+    );
+  }
 
   return (
     <>
@@ -78,7 +119,7 @@ export default async function PublicFormPage({ params }: { params: Promise<{ slu
           </FadeIn>
         </div>
 
-        <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+        <div className="mx-auto px-4 sm:px-6 lg:px-8 py-16" style={{ maxWidth }}>
           <PublicFormClient form={form} slug={slug} />
         </div>
       </main>

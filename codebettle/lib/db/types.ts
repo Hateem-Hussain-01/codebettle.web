@@ -12,6 +12,7 @@
  */
 import type { Models } from '../../src/prisma/contract.d';
 import type { AdminPermissions } from '../admin-access';
+import type { FormStyle } from '../form-style';
 
 export type { AdminPermissions } from '../admin-access';
 
@@ -1324,6 +1325,10 @@ export interface FormField {
  * form-level settings. The builder stores submit-button text and the
  * success message inside the schema (next to `fields`) so they round-
  * trip to the public form through `toFormSchema` / `toPublicForm`.
+ * GHL upgrade (Worker B): `style` (whole-form colours / button shape /
+ * font / width) and `coverImageUrl` also live here — no model change,
+ * no migration. When absent, the public form renders the current
+ * dark + gold defaults.
  */
 export interface FormSchema {
   fields: FormField[];
@@ -1331,6 +1336,10 @@ export interface FormSchema {
   submitButtonText?: string;
   /** Message shown to the submitter after a successful submission. */
   successMessage?: string;
+  /** Whole-form custom styling (GHL-like). Absent = site defaults. */
+  style?: FormStyle;
+  /** Cover image banner URL (uploaded to the public `course-images` bucket, or a URL). */
+  coverImageUrl?: string;
 }
 
 /** Form kind: 'registration' | 'survey' ONLY — there is no quiz type. */
