@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Eye, EyeOff, Lock, Mail, ShieldCheck } from 'lucide-react';
+import { AlertTriangle, Eye, EyeOff, Lock, Mail, ShieldCheck } from 'lucide-react';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
 import { getSafeRedirect } from '@/lib/security';
@@ -11,9 +11,13 @@ import toast from 'react-hot-toast';
 
 /**
  * Sign In form — the left half of the sliding auth card.
- * Logic unchanged from the original login page: posts to /api/auth with
- * action 'login' and redirects to /{role}/dashboard (or ?redirect=...).
- * The Student | Instructor tabs and the Become an Instructor link are kept.
+ * Posts to /api/auth with action 'login' and redirects to
+ * /{role}/dashboard (or ?redirect=...). The Student | Instructor tabs
+ * are REAL now: the selected tab is sent as requestedRole, and the
+ * server rejects the sign-in (no session) when the account does not
+ * hold that tab's capability — the server's instruction is then shown
+ * inline under the tabs so the user sees which tab to switch to.
+ * The Become an Instructor link is kept.
  */
 export default function LoginForm() {
   const router = useRouter();
@@ -23,18 +27,35 @@ export default function LoginForm() {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  // The server's role-mismatch instruction (403). Shown inline, not as
+  // a toast, so it stays visible while the user looks at the tabs.
+  // Cleared as soon as the user switches tabs — switching is the fix.
+  const [roleMismatch, setRoleMismatch] = useState<string | null>(null);
+
+  const switchTab = (next: 'student' | 'instructor') => {
+    setRole(next);
+    setRoleMismatch(null);
+  };
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
+    setRoleMismatch(null);
     try {
       const res = await fetch('/api/auth', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'login', email, password }),
+        body: JSON.stringify({ action: 'login', email, password, requestedRole: role }),
       });
       const data = await res.json();
-      if (!res.ok) { toast.error(data.error); return; }
+      if (!res.ok) {
+        // 403 = role mismatch: the instruction goes inline under the
+        // tabs (no toast, so it is not shown twice). Every other
+        // error keeps the toast, as before.
+        if (res.status === 403) { setRoleMismatch(data.error); return; }
+        toast.error(data.error);
+        return;
+      }
       toast.success(`Welcome back, ${data.user.name}!`);
       const redirect = getSafeRedirect(searchParams.get('redirect'), `/${data.user.role}/dashboard`);
       router.push(redirect);
@@ -57,7 +78,7 @@ export default function LoginForm() {
           type="button"
           role="tab"
           aria-selected={role === 'student'}
-          onClick={() => setRole('student')}
+          onClick={() => switchTab('student')}
           className={`cursor-pointer rounded-md px-3 py-2 text-sm font-semibold transition-colors ${role === 'student' ? 'bg-primary text-ink' : 'text-muted hover:text-foreground'}`}
         >
           Student
@@ -66,12 +87,19 @@ export default function LoginForm() {
           type="button"
           role="tab"
           aria-selected={role === 'instructor'}
-          onClick={() => setRole('instructor')}
+          onClick={() => switchTab('instructor')}
           className={`cursor-pointer rounded-md px-3 py-2 text-sm font-semibold transition-colors ${role === 'instructor' ? 'bg-primary text-ink' : 'text-muted hover:text-foreground'}`}
         >
           Instructor
         </button>
       </div>
+
+      {roleMismatch && (
+        <div role="alert" className="mb-4 flex items-start gap-2 rounded-lg border border-primary/40 bg-primary/10 px-3 py-2.5 text-sm text-foreground">
+          <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-primary-text" />
+          <span>{roleMismatch}</span>
+        </div>
+      )}
 
       <form onSubmit={handleLogin} className="space-y-3">
         <Input

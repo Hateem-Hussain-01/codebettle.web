@@ -76,6 +76,33 @@ export function isStudent(user: CapabilitySubject | null | undefined): boolean {
   return user?.role === 'student';
 }
 
+/** The two portals on the sign-in page (Student | Instructor tabs). */
+export type LoginPortal = 'student' | 'instructor';
+
+/**
+ * Login role-mismatch guard: does this account hold the capability the
+ * sign-in tab asks for? Checked server-side in the login route AFTER
+ * the password is verified — never before, so the result cannot be
+ * used to enumerate accounts (a wrong password still returns the
+ * generic invalid-credentials error).
+ * - 'student' tab: the primary role must be student, OR the account
+ *   is an admin. Admins sign in through this same page (there is no
+ *   Admin tab), so admin capability passes BOTH tabs — otherwise
+ *   admins would be locked out entirely.
+ * - 'instructor' tab: the account must hold the teacher capability
+ *   (isTeacher flag or legacy instructor role), OR be an admin.
+ * - A user who is BOTH (primary role 'student' + isTeacher flag)
+ *   passes either tab.
+ */
+export function matchesLoginPortal(
+  user: CapabilitySubject | null | undefined,
+  portal: LoginPortal,
+): boolean {
+  if (!user) return false;
+  if (hasAdminCapability(user)) return true;
+  return portal === 'student' ? isStudent(user) : hasTeacherCapability(user);
+}
+
 /**
  * The effective roles a subject acts with, for the capability matrix:
  * admin (flag or legacy role), instructor (flag or legacy role), and
