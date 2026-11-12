@@ -7,9 +7,13 @@ import { motion, AnimatePresence } from 'framer-motion';
 import Button from '@/components/ui/Button';
 import ThemeToggle from '@/components/theme/ThemeToggle';
 import { primaryPortalDashboard } from '@/lib/portal-switch';
+import { portalMenuLinks } from '@/lib/user-menu';
+import UserMenu from '@/components/layout/UserMenu';
 
 interface NavbarProps {
-  session?: { name: string; role: string; avatar?: string } | null;
+  // email is optional so existing callers keep compiling; when present
+  // the avatar menu header shows it under the user's name.
+  session?: { name: string; role: string; avatar?: string; email?: string } | null;
 }
 
 export default function Navbar({ session }: NavbarProps) {
@@ -26,6 +30,18 @@ export default function Navbar({ session }: NavbarProps) {
   // (role is the primary role). A dual-role user lands on their home
   // portal here and uses the in-portal switcher to reach the other one.
   const portalLink = primaryPortalDashboard(session);
+
+  // Avatar menu destinations, role-based: the navbar sits on public
+  // pages, so there is no portal prefix in the pathname to derive
+  // from (portalMenuLinks(null, ...) falls back to the primary role).
+  const menuLinks = session ? portalMenuLinks(null, session.role) : null;
+
+  // Same logout as the portal topbar (POST /api/auth logout, then
+  // home). No new API — the endpoint already handles the action.
+  const handleLogout = async () => {
+    await fetch('/api/auth', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'logout' }) });
+    window.location.href = '/';
+  };
 
   return (
     <nav className={`fixed top-0 left-0 right-0 z-40 transition-all duration-300 ${scrolled ? 'bg-dark/95 backdrop-blur-md border-b border-dark-border shadow-lg' : 'bg-transparent'}`}>
@@ -49,12 +65,13 @@ export default function Navbar({ session }: NavbarProps) {
           {/* Auth */}
           <div className="hidden md:flex items-center gap-3">
             <ThemeToggle />
-            {session ? (
-              <Link href={portalLink!}>
-                <Button variant="primary" size="sm">
-                  {session.role === 'admin' ? 'Admin Panel' : session.role === 'instructor' ? 'Dashboard' : 'My Learning'}
-                </Button>
-              </Link>
+            {session && menuLinks ? (
+              <UserMenu
+                user={{ name: session.name, email: session.email, avatar: session.avatar }}
+                profileHref={menuLinks.profileHref}
+                settingsHref={menuLinks.settingsHref}
+                onLogout={handleLogout}
+              />
             ) : (
               <>
                 <Link href="/auth/login"><Button variant="ghost" size="sm">Login</Button></Link>

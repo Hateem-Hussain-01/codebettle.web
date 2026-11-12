@@ -271,7 +271,16 @@ test('wiring: bell and avatar follow the CURRENT portal, not the primary role', 
   const src = read('components/layout/PortalLayout.tsx');
   assert.match(src, /portalFromPathname\(pathname\)/);
   assert.match(src, /\/\$\{portalSlug\}\/notifications/);
-  assert.match(src, /\/\$\{portalSlug\}\/profile/);
+  // The avatar is now a UserMenu dropdown (not a plain link): its
+  // destinations come from portalMenuLinks(pathname, user.role),
+  // which derives from the CURRENT portal prefix in the pathname —
+  // including /applicant, which portalFromPathname does not know.
+  // The plain /${portalSlug}/profile link is gone by design.
+  assert.match(src, /portalMenuLinks\(pathname, user\.role\)/);
+  assert.match(src, /<UserMenu /);
+  assert.match(src, /profileHref=\{links\.profileHref\}/);
+  assert.match(src, /settingsHref=\{links\.settingsHref\}/);
+  assert.doesNotMatch(src, /\/\$\{portalSlug\}\/profile/);
   assert.doesNotMatch(src, /\/\$\{user\.role\}\/notifications/);
   assert.doesNotMatch(src, /\/\$\{user\.role\}\/profile/);
 });

@@ -6,6 +6,8 @@ import { Menu, X, LogOut, Bell, ChevronRight, ArrowLeftRight } from 'lucide-reac
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { getPortalSwitch, portalFromPathname } from '@/lib/portal-switch';
+import { portalMenuLinks } from '@/lib/user-menu';
+import UserMenu from '@/components/layout/UserMenu';
 import LoginNotificationPopup from '@/components/notifications/LoginNotificationPopup';
 import NotificationBadge from '@/components/notifications/NotificationBadge';
 import ThemeToggle from '@/components/theme/ThemeToggle';
@@ -22,6 +24,19 @@ interface PortalLayoutProps {
   navItems: NavItem[];
   children: React.ReactNode;
   portalName: string;
+}
+
+/**
+ * Shared logout (module-level, profile avatar menu). The sidebar's
+ * Sign Out button and the topbar UserMenu both use this one function —
+ * POST logout, then back to the public home page. Hoisted out of
+ * Sidebar for the same reason Sidebar itself was hoisted (Phase 7
+ * fix CB-15): a function defined inside a component is a new identity
+ * on every render, and the topbar needs the same logout.
+ */
+async function handleLogout() {
+  await fetch('/api/auth', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'logout' }) });
+  window.location.href = '/';
 }
 
 /**
@@ -46,11 +61,6 @@ function Sidebar({
   mobile?: boolean;
   onClose: () => void;
 }) {
-  const handleLogout = async () => {
-    await fetch('/api/auth', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'logout' }) });
-    window.location.href = '/';
-  };
-
   return (
     <div className={cn('flex flex-col h-full', mobile ? 'p-4' : '')}>
       {/* Logo */}
@@ -126,6 +136,12 @@ export default function PortalLayout({ user, navItems, children, portalName }: P
   // any portal (should not happen — this layout only renders inside
   // a portal — but keeps the old behaviour rather than a broken link).
   const portalSlug = portalFromPathname(pathname) ?? user.role;
+  // Avatar menu destinations come from the CURRENT portal prefix in
+  // the pathname (see lib/user-menu.ts) — portalFromPathname does not
+  // know /applicant, so the menu must not reuse portalSlug here. The
+  // bell above keeps using portalSlug on purpose (no
+  // /applicant/notifications page exists).
+  const links = portalMenuLinks(pathname, user.role);
 
   return (
     <div className="flex h-screen bg-background overflow-hidden">
@@ -189,9 +205,7 @@ export default function PortalLayout({ user, navItems, children, portalName }: P
               <Bell className="w-5 h-5" />
               <NotificationBadge />
             </Link>
-            <Link href={`/${portalSlug}/profile`}>
-              <img src={user.avatar || `https://api.dicebear.com/7.x/initials/svg?seed=${user.name}`} alt={user.name} className="w-8 h-8 rounded-full object-cover border-2 border-primary/40 cursor-pointer hover:border-primary transition-colors" />
-            </Link>
+            <UserMenu user={user} profileHref={links.profileHref} settingsHref={links.settingsHref} onLogout={handleLogout} />
           </div>
         </header>
 
