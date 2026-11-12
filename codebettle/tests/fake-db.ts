@@ -67,7 +67,7 @@ const NULLABLE_FIELDS: Record<string, string[]> = {
   PasswordReset: ['usedAt'],
   EmailVerification: ['usedAt'],
   Quiz: ['description', 'difficulty', 'timeLimitMin', 'passMark', 'availableFrom', 'availableUntil', 'instructions', 'pdfUrl', 'pdfStoragePath', 'parseWarnings', 'deletedAt'],
-  QuizQuestion: ['topic', 'difficulty', 'correctText', 'reviewNote'],
+  QuizQuestion: ['topic', 'difficulty', 'correctText', 'explanation', 'reviewNote'],
   QuizAttempt: ['dueAt', 'submittedAt', 'score', 'totalPoints', 'timeSpentSec'],
   QuizAnswer: ['textAnswer', 'isCorrect'],
   Note: ['courseId'],

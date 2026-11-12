@@ -438,11 +438,16 @@ model Certificate {
   issuedAt          DateTime   @default(now())
 }
 
-// Quiz models (Phase 5): a teacher creates a quiz for their own course,
-// uploads an externally-AI-generated PDF, the app parses it into
-// questions, the teacher reviews and publishes, students attempt it.
-// The answer key lives server-side only (QuizOption.isCorrect /
-// QuizQuestion.correctText) — attempt payloads must never include it.
+// Quiz models (Phase 5, text import in Phase 4 Module 8): a teacher
+// creates a quiz for their own course, pastes AI-generated quiz text
+// (or adds questions manually), and publishes it directly to students
+// — there is NO review/approval step. The answer key lives server-side
+// only (QuizOption.isCorrect / QuizQuestion.correctText) — attempt
+// payloads must never include it. QuizQuestion.explanation is
+// teacher-facing only and is never sent to students either.
+// The old PDF workflow (quiz-pdfs bucket, Quiz.pdfUrl/pdfStoragePath)
+// is retired: those columns are kept nullable for the historical rows
+// that still reference a stored PDF, but nothing writes them any more.
 model Quiz {
   id                    String            @id @onCreate(cuid(2))
   courseId              String
@@ -488,6 +493,7 @@ model QuizQuestion {
   difficulty      CourseLevel?
   correctText     String?
   acceptedAnswers String[]
+  explanation     String?
   needsReview     Boolean          @default(false)
   reviewNote      String?
 
@@ -627,6 +633,28 @@ model SupportRequest {
 
   @@index([studentId, createdAt])
   @@index([status, createdAt])
+}
+
+// Phase 4 — Module 7 (Footer): admin-managed footer social icons.
+// One row per icon the admin adds. ONLY two things are required per
+// icon: (1) Icon Name (e.g. LinkedIn), (2) Icon Link (the profile URL).
+// The icon itself is auto-fetched by name (see resolvePlatformKey in
+// lib/social.ts) — there is no image upload. `isEnabled` decides
+// whether the footer shows it; `displayOrder` decides the order.
+// The footer falls back to the hardcoded defaults in lib/social.ts
+// while this table is empty, so the site works before any admin entry
+// exists (and before this migration has run — the public API returns
+// [] when the table is missing).
+model SocialLink {
+  id           String   @id @onCreate(cuid(2))
+  name         String
+  url          String
+  displayOrder Int      @default(0)
+  isEnabled    Boolean  @default(true)
+  createdAt    DateTime @default(now()) @onCreate(now())
+  updatedAt    temporal.UpdatedAt
+
+  @@index([isEnabled, displayOrder])
 }
 
 model InstructorApplication {
