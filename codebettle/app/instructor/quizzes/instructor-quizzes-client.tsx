@@ -1,7 +1,7 @@
 'use client';
 import { useState } from 'react';
 import Link from 'next/link';
-import { FileQuestion, Plus, Download, BarChart2 } from 'lucide-react';
+import { FileQuestion, Plus, BarChart2 } from 'lucide-react';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
 import Select from '@/components/ui/Select';
@@ -60,7 +60,7 @@ export default function InstructorQuizzesClient({
         return;
       }
       setQuizzes((q) => [body.quiz, ...q]);
-      toast.success('Draft quiz created — upload a PDF or add questions');
+      toast.success('Draft quiz created — paste quiz text or add questions');
       setIsOpen(false);
       setForm({ courseId: courses[0]?.id ?? '', title: '', timeLimitMin: '30', attemptsAllowed: '1', passMark: '50' });
     } finally {
@@ -74,15 +74,10 @@ export default function InstructorQuizzesClient({
         <div>
           <h1 className="text-2xl font-black text-white">Quizzes</h1>
           <p className="text-muted text-sm mt-1">
-            Create a quiz, upload a PDF generated with an AI of your choice, review every question, then publish.
+            Create a quiz, paste AI-generated quiz text or add questions manually, then publish it to your students.
           </p>
         </div>
         <div className="flex gap-2">
-          <a href="/api/quizzes/sample" download>
-            <Button variant="outline">
-              <Download className="w-4 h-4 mr-2" /> Sample PDF template
-            </Button>
-          </a>
           <Button onClick={() => setIsOpen(true)} disabled={courses.length === 0}>
             <Plus className="w-4 h-4 mr-2" /> New Quiz
           </Button>
@@ -101,8 +96,7 @@ export default function InstructorQuizzesClient({
           <FileQuestion className="w-12 h-12 text-muted mx-auto mb-4" />
           <p className="text-white font-semibold mb-2">No quizzes yet</p>
           <p className="text-muted text-sm">
-            Download the sample PDF to see the expected format, generate your quiz PDF with any AI tool, then create
-            a quiz and upload it.
+            Create a quiz, then paste AI-generated quiz text or add questions manually on the next screen.
           </p>
         </Card>
       ) : (
@@ -124,14 +118,14 @@ export default function InstructorQuizzesClient({
               </div>
               {quiz.parseWarnings && quiz.parseWarnings.length > 0 && (
                 <p className="text-amber-400 text-xs mt-3">
-                  {quiz.parseWarnings.length} parse warning{quiz.parseWarnings.length !== 1 ? 's' : ''} — review
-                  before publishing.
+                  {quiz.parseWarnings.length} import warning{quiz.parseWarnings.length !== 1 ? 's' : ''} — check the
+                  flagged questions before publishing.
                 </p>
               )}
               <div className="flex gap-2 mt-4">
                 <Link href={`/instructor/quizzes/${quiz.id}`}>
                   <Button variant="outline" size="sm">
-                    {quiz.status === 'draft' ? 'Review & edit' : 'View'}
+                    {quiz.status === 'draft' ? 'Edit' : 'View'}
                   </Button>
                 </Link>
                 {quiz.status === 'published' && (
@@ -187,7 +181,7 @@ export default function InstructorQuizzesClient({
             />
           </div>
           <p className="text-muted text-xs">
-            The quiz starts as a draft. Upload your AI-generated PDF on the next screen, review every parsed question,
+            The quiz starts as a draft. Paste AI-generated quiz text on the next screen, or add questions manually,
             then publish.
           </p>
           <div className="flex justify-end gap-2">

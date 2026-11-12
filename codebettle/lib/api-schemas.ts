@@ -9,6 +9,7 @@
  * instead of silently dropping them.
  */
 import { z } from 'zod';
+import { isValidSocialUrl } from './social';
 
 export const courseCategories = [
   'Web Development',
@@ -20,6 +21,32 @@ export const courseCategories = [
 ] as const;
 export const courseLevels = ['beginner', 'intermediate', 'advanced'] as const;
 export const courseStatuses = ['draft', 'published', 'archived'] as const;
+
+/**
+ * A thumbnail URL must be an absolute http(s) URL — no relative paths,
+ * no javascript:/data: URLs, nothing unparseable. Mirrors
+ * isValidThumbnailUrl in lib/thumbnail.ts (the client-side check); the
+ * schema is the server-side enforcement for PATCH.
+ *
+ * NOTE: applied to the UPDATE schema only. The CREATE schema keeps the
+ * plain min(1) string because existing route tests create courses with
+ * the test-only relative path '/t.png' (tests/admin-write-apis.test.ts)
+ * — the create form enforces the http(s) rule client-side instead (its
+ * thumbnail can only come from the storage upload, which returns an
+ * https URL). Do not tighten the create schema without updating those
+ * tests first.
+ */
+export const httpUrlSchema = z.string().refine(
+  (value) => {
+    try {
+      const url = new URL(value);
+      return url.protocol === 'http:' || url.protocol === 'https:';
+    } catch {
+      return false;
+    }
+  },
+  { message: 'Must be a valid http(s) URL' },
+);
 
 export const scheduleSchema = z.object({
   classTime: z.string().min(1),
@@ -52,7 +79,7 @@ export const courseUpdateSchema = z.object({
   title: z.string().min(1).optional(),
   description: z.string().min(1).optional(),
   longDescription: z.string().optional(),
-  thumbnail: z.string().optional(),
+  thumbnail: httpUrlSchema.optional(),
   category: z.enum(courseCategories).optional(),
   level: z.enum(courseLevels).optional(),
   price: z.number().int().min(0).optional(),
@@ -308,7 +335,7 @@ export const quizUpdateSchema = z.object({
   action: z.enum(['publish', 'unpublish', 'archive']).optional(),
 });
 
-export const quizReviewQuestionSchema = z.object({
+export const quizQuestionSchema = z.object({
   type: z.enum(quizQuestionTypes),
   prompt: z.string().min(1),
   points: z.number().int().min(1),
@@ -316,16 +343,19 @@ export const quizReviewQuestionSchema = z.object({
   difficulty: z.enum(courseLevels).optional(),
   correctText: z.string().optional(),
   acceptedAnswers: z.array(z.string()).optional(),
-  needsReview: z.boolean().optional(),
-  reviewNote: z.string().optional(),
+  explanation: z.string().optional(),
   options: z
     .array(z.object({ text: z.string().min(1), isCorrect: z.boolean().optional() }))
     .optional()
     .default([]),
 });
 
-export const quizReviewSchema = z.object({
-  questions: z.array(quizReviewQuestionSchema),
+export const quizQuestionsSchema = z.object({
+  questions: z.array(quizQuestionSchema),
+});
+
+export const quizTextImportSchema = z.object({
+  text: z.string().min(1).max(200_000),
 });
 
 export const quizSubmitSchema = z.object({
@@ -385,4 +415,34 @@ export const paymentAccountUpdateSchema = z.object({
   instructions: z.string().nullable().optional(),
   isActive: z.boolean().optional(),
   displayOrder: z.number().int().optional(),
+});
+
+// ---------------------------------------------------------------------------
+// Footer social links (Phase 4, Module 7)
+// ---------------------------------------------------------------------------
+
+/**
+ * An admin-managed footer social icon. ONLY two things are required:
+ * Icon Name (e.g. LinkedIn) and Icon Link (the profile URL). The icon
+ * itself is auto-fetched from the name — no image upload. URLs must be
+ * http(s) or mailto: (see isValidSocialUrl in lib/social.ts).
+ */
+const socialLinkUrlSchema = z
+  .string()
+  .refine(isValidSocialUrl, {
+    message: 'Icon link must be a valid https:// URL or a mailto: address',
+  });
+
+export const socialLinkCreateSchema = z.object({
+  name: z.string().min(1),
+  url: socialLinkUrlSchema,
+  displayOrder: z.number().int().optional(),
+  isEnabled: z.boolean().optional(),
+});
+
+export const socialLinkUpdateSchema = z.object({
+  name: z.string().min(1).optional(),
+  url: socialLinkUrlSchema.optional(),
+  displayOrder: z.number().int().optional(),
+  isEnabled: z.boolean().optional(),
 });

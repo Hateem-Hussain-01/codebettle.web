@@ -9,7 +9,7 @@ import { NextRequest } from 'next/server';
 import { __resetDbClient, __setDbClient } from '../lib/db/client';
 import { __resetTestSession, __setTestSession } from '../lib/api-helpers';
 import { createFakeDb, type FakeDb } from './fake-db';
-import { createQuizForTeacher, publishQuiz, saveQuizReview } from '../lib/services/quiz-service';
+import { createQuizForTeacher, publishQuiz, saveQuizQuestions } from '../lib/services/quiz-service';
 import type { SessionUser } from '../lib/services/auth-service';
 
 const D = (s: string) => new Date(s);
@@ -57,7 +57,7 @@ async function seedQuiz() {
     { courseId: 'course-1', title: 'Week 1 Quiz', timeLimitMin: 30, attemptsAllowed: 2, passMark: 50 },
   );
   assert.ok('quiz' in created);
-  const saved = await saveQuizReview({ id: 'inst-1', role: 'instructor', name: 'Usman' }, created.quiz.id, QUESTIONS);
+  const saved = await saveQuizQuestions({ id: 'inst-1', role: 'instructor', name: 'Usman' }, created.quiz.id, QUESTIONS);
   assert.ok('quiz' in saved);
   const published = await publishQuiz({ id: 'inst-1', role: 'instructor', name: 'Usman' }, created.quiz.id);
   assert.ok('quiz' in published);
@@ -206,14 +206,73 @@ test('submit through the route grades and returns the result without the key', a
   assert.ok(!body.result.attempt.answers.some((a: Record<string, unknown>) => 'isCorrect' in a || 'pointsAwarded' in a));
 });
 
-test('sample PDF route returns a real PDF', async () => {
-  const { GET } = await import('../app/api/quizzes/sample/route');
-  const res = await GET();
+test('text import route: instructor imports pasted text into a draft; student is blocked; garbage is rejected', async () => {
+  const { POST } = await import('../app/api/instructor/quizzes/[id]/import-text/route');
+  const { QUIZ_TEXT_IMPORT_SAMPLE } = await import('../lib/services/quiz-text-format');
+  const created = await createQuizForTeacher(
+    { id: 'inst-1', role: 'instructor', name: 'Usman' },
+    { courseId: 'course-1', title: 'Draft for import' },
+  );
+  assert.ok('quiz' in created);
+  const draftId = created.quiz.id;
+
+  __setTestSession(STU1);
+  const asStudent = await POST(
+    jsonReq(`http://localhost/api/instructor/quizzes/${draftId}/import-text`, 'POST', { text: QUIZ_TEXT_IMPORT_SAMPLE }),
+    { params: Promise.resolve({ id: draftId }) },
+  );
+  assert.equal(asStudent.status, 403);
+
+  __setTestSession(INST1);
+  const garbage = await POST(
+    jsonReq(`http://localhost/api/instructor/quizzes/${draftId}/import-text`, 'POST', { text: 'A document about cats.' }),
+    { params: Promise.resolve({ id: draftId }) },
+  );
+  assert.equal(garbage.status, 400);
+
+  const res = await POST(
+    jsonReq(`http://localhost/api/instructor/quizzes/${draftId}/import-text`, 'POST', { text: QUIZ_TEXT_IMPORT_SAMPLE }),
+    { params: Promise.resolve({ id: draftId }) },
+  );
   assert.equal(res.status, 200);
-  assert.equal(res.headers.get('Content-Type'), 'application/pdf');
-  const buf = Buffer.from(await res.arrayBuffer());
-  assert.equal(buf.subarray(0, 4).toString('ascii'), '%PDF');
-  assert.ok(buf.length > 1000);
+  const body = await res.json();
+  assert.equal(body.parsed.questions, 3);
+  assert.equal(body.parsed.warnings, 0);
+  assert.equal(body.quiz.questions.length, 3);
+  assert.equal(body.quiz.questions[0].explanation, 'Paris is the capital of France.');
+});
+
+test('questions route: instructor saves edited questions on a draft', async () => {
+  const { POST } = await import('../app/api/instructor/quizzes/[id]/questions/route');
+  const created = await createQuizForTeacher(
+    { id: 'inst-1', role: 'instructor', name: 'Usman' },
+    { courseId: 'course-1', title: 'Draft for edit' },
+  );
+  assert.ok('quiz' in created);
+  const draftId = created.quiz.id;
+
+  __setTestSession(INST1);
+  const res = await POST(
+    jsonReq(`http://localhost/api/instructor/quizzes/${draftId}/questions`, 'POST', {
+      questions: [
+        {
+          type: 'mcq',
+          prompt: 'What is 2 + 2?',
+          points: 2,
+          explanation: '2 + 2 is 4.',
+          options: [
+            { text: '3', isCorrect: false },
+            { text: '4', isCorrect: true },
+          ],
+        },
+      ],
+    }),
+    { params: Promise.resolve({ id: draftId }) },
+  );
+  assert.equal(res.status, 200);
+  const body = await res.json();
+  assert.equal(body.quiz.questions.length, 1);
+  assert.equal(body.quiz.questions[0].explanation, '2 + 2 is 4.');
 });
 
 test('admin announcements: create fires the hook, list works, student is blocked', async () => {
