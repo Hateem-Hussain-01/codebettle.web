@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import Button from '@/components/ui/Button';
 import Badge from '@/components/ui/Badge';
+import CourseThumbnail from '@/components/ui/CourseThumbnail';
 import Input from '@/components/ui/Input';
 import Select from '@/components/ui/Select';
 import Modal from '@/components/ui/Modal';
@@ -109,7 +110,7 @@ export default function CoursesClient({ courses: allCourses, instructorNames }: 
                   <tr key={course.id} className="border-b border-dark-border/40 last:border-0 hover:bg-dark-border/10 transition-colors">
                     <td className="py-3 px-4">
                       <div className="flex items-center gap-3">
-                        <img src={course.thumbnail} alt={course.title} className="w-10 h-10 rounded-lg object-cover flex-shrink-0" />
+                        <CourseThumbnail src={course.thumbnail} alt={course.title} className="w-10 h-10 rounded-lg object-cover flex-shrink-0" />
                         <div className="min-w-0">
                           <p className="text-white text-xs font-medium truncate max-w-[160px]">{course.title}</p>
                           {course.isFeatured && <span className="text-primary text-xs">★ Featured</span>}

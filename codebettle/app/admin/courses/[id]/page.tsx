@@ -16,6 +16,7 @@ import Link from 'next/link';
 import Button from '@/components/ui/Button';
 import CourseCurriculumClient from './course-curriculum-client';
 import CourseInstructorClient from './course-instructor-client';
+import CourseThumbnailClient from './course-thumbnail-client';
 
 const DAYS = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
 
@@ -63,6 +64,10 @@ export default async function AdminCourseDetailPage({ params }: { params: Promis
           </div>
         </div>
       </FadeIn>
+
+      {/* Thumbnail (Phase 4, Module 2 — admin-managed; upload replaces the
+          current thumbnail everywhere it renders). */}
+      <CourseThumbnailClient courseId={course.id} thumbnail={course.thumbnail} />
 
       {/* Instructor info + assign control (always shown, even if the
           current instructor record is missing — the assign control is
