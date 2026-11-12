@@ -161,7 +161,7 @@ export default function FormsClient() {
     <div className="space-y-6">
       <FadeIn className="flex items-center justify-between flex-wrap gap-3">
         <div>
-          <h1 className="text-2xl font-black text-white">Forms</h1>
+          <h1 className="text-2xl font-black text-foreground">Forms</h1>
           <p className="text-muted text-sm mt-1">
             Registration and survey forms ({forms.length} total)
           </p>
@@ -210,7 +210,7 @@ export default function FormsClient() {
         </Card>
       ) : loadError ? (
         <Card className="py-16 text-center">
-          <p className="text-white font-medium">Couldn&apos;t load forms</p>
+          <p className="text-foreground font-medium">Couldn&apos;t load forms</p>
           <p className="text-muted text-sm mt-1">{loadError}</p>
           <div className="mt-4 flex justify-center">
             <Button variant="secondary" size="sm" onClick={() => void loadForms()}>Try again</Button>
@@ -219,7 +219,7 @@ export default function FormsClient() {
       ) : visibleForms.length === 0 ? (
         <Card className="py-16 text-center">
           <Inbox className="w-10 h-10 text-muted mx-auto mb-3" />
-          <p className="text-white font-medium">
+          <p className="text-foreground font-medium">
             {forms.length === 0 ? 'No forms yet' : 'No forms match these filters'}
           </p>
           <p className="text-muted text-sm mt-1">
@@ -254,7 +254,7 @@ export default function FormsClient() {
                     onClick={() => router.push(`/admin/forms/${form.id}/builder`)}
                   >
                     <td className="py-3 px-4">
-                      <p className="text-white text-sm font-medium">{form.name}</p>
+                      <p className="text-foreground text-sm font-medium">{form.name}</p>
                       <p className="text-muted text-xs mt-0.5 truncate max-w-[280px]">
                         /{form.slug}{form.description ? ` · ${form.description}` : ''}
                       </p>
@@ -272,7 +272,7 @@ export default function FormsClient() {
                         <button
                           onClick={() => router.push(`/admin/forms/${form.id}/builder`)}
                           title="Open builder"
-                          className="text-muted hover:text-primary p-1 cursor-pointer disabled:opacity-50"
+                          className="text-muted hover:text-primary-text p-1 cursor-pointer disabled:opacity-50"
                           disabled={busyId === form.id}
                         >
                           <Pencil className="w-4 h-4" />
@@ -280,14 +280,14 @@ export default function FormsClient() {
                         <button
                           onClick={() => router.push(`/admin/forms/${form.id}/submissions`)}
                           title="View submissions"
-                          className="text-muted hover:text-primary p-1 cursor-pointer"
+                          className="text-muted hover:text-primary-text p-1 cursor-pointer"
                         >
                           <ListChecks className="w-4 h-4" />
                         </button>
                         <button
                           onClick={() => void togglePublish(form)}
                           title={form.status === 'published' ? 'Move to drafts' : 'Publish'}
-                          className="text-muted hover:text-primary p-1 cursor-pointer disabled:opacity-50"
+                          className="text-muted hover:text-primary-text p-1 cursor-pointer disabled:opacity-50"
                           disabled={busyId === form.id}
                         >
                           {form.status === 'published' ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
@@ -350,8 +350,8 @@ export default function FormsClient() {
 
       <Modal isOpen={deleteTarget !== null} onClose={() => setDeleteTarget(null)} title="Delete form?">
         <div className="space-y-4">
-          <p className="text-sm text-white/90">
-            Delete <span className="font-semibold text-white">&ldquo;{deleteTarget?.name}&rdquo;</span>?
+          <p className="text-sm text-foreground/90">
+            Delete <span className="font-semibold text-foreground">&ldquo;{deleteTarget?.name}&rdquo;</span>?
             Its fields and all submitted responses will be permanently removed.
           </p>
           <div className="flex gap-3">

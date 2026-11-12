@@ -59,9 +59,9 @@ function readDragPayload(e: React.DragEvent): DragPayload | null {
 function FieldPreview({ field }: { field: FormField }) {
   const width = field.styling?.width === 'half' ? 'sm:w-[calc(50%-0.375rem)] w-full' : 'w-full';
   const inputClass =
-    'w-full bg-dark-card border border-dark-border rounded-lg px-4 py-2.5 text-sm text-white placeholder-muted focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary';
+    'w-full bg-dark-card border border-dark-border rounded-lg px-4 py-2.5 text-sm text-foreground placeholder-muted focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary';
   const label = (
-    <span className="text-sm font-medium text-white/80 block mb-1.5">
+    <span className="text-sm font-medium text-foreground/80 block mb-1.5">
       {field.label}
       {field.required && <span className="text-red-400 ml-0.5">*</span>}
     </span>
@@ -84,7 +84,7 @@ function FieldPreview({ field }: { field: FormField }) {
       ) : field.type === 'radio' ? (
         <div className="space-y-2 pt-1">
           {(field.options ?? []).map((o) => (
-            <label key={o} className="flex items-center gap-2 text-sm text-white/90 cursor-pointer">
+            <label key={o} className="flex items-center gap-2 text-sm text-foreground/90 cursor-pointer">
               <input type="radio" name={`preview-${field.id}`} value={o} className="w-4 h-4 accent-primary" />
               {o}
             </label>
@@ -93,7 +93,7 @@ function FieldPreview({ field }: { field: FormField }) {
       ) : field.type === 'checkbox' ? (
         <div className="space-y-2 pt-1">
           {(field.options ?? []).map((o) => (
-            <label key={o} className="flex items-center gap-2 text-sm text-white/90 cursor-pointer">
+            <label key={o} className="flex items-center gap-2 text-sm text-foreground/90 cursor-pointer">
               <input type="checkbox" value={o} className="w-4 h-4 accent-primary" />
               {o}
             </label>
@@ -364,7 +364,7 @@ export default function BuilderClient({ formId }: { formId: string }) {
   if (loadError || !form) {
     return (
       <Card className="py-16 text-center">
-        <p className="text-white font-medium">Couldn&apos;t load this form</p>
+        <p className="text-foreground font-medium">Couldn&apos;t load this form</p>
         <p className="text-muted text-sm mt-1">{loadError ?? 'Form not found'}</p>
         <div className="mt-4 flex justify-center gap-3">
           <Button variant="secondary" size="sm" onClick={() => void loadForm()}>Try again</Button>
@@ -381,11 +381,11 @@ export default function BuilderClient({ formId }: { formId: string }) {
       {/* Top bar */}
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div className="flex items-center gap-3 min-w-0">
-          <Link href="/admin/forms" className="text-muted hover:text-white p-1 shrink-0" title="Back to forms">
+          <Link href="/admin/forms" className="text-muted hover:text-foreground p-1 shrink-0" title="Back to forms">
             <ArrowLeft className="w-5 h-5" />
           </Link>
           <div className="min-w-0">
-            <h1 className="text-xl font-black text-white truncate">{name || 'Untitled form'}</h1>
+            <h1 className="text-xl font-black text-foreground truncate">{name || 'Untitled form'}</h1>
             <p className="text-muted text-xs mt-0.5">
               {formTypeLabel(form.type)} · /{form.slug} · {fields.length} field{fields.length !== 1 ? 's' : ''}
               {dirty && <span className="text-yellow-400 font-medium"> · Unsaved changes</span>}
@@ -421,12 +421,12 @@ export default function BuilderClient({ formId }: { formId: string }) {
       <div className="grid lg:grid-cols-[240px_1fr_300px] gap-4 items-start">
         {/* (1) LEFT — palette */}
         <Card className="lg:sticky lg:top-4">
-          <h2 className="text-sm font-bold text-white mb-1">Fields</h2>
+          <h2 className="text-sm font-bold text-foreground mb-1">Fields</h2>
           <p className="text-muted text-xs mb-3">Drag onto the canvas, or click to add.</p>
           <div className="space-y-4">
             {FORM_PALETTE.map((group) => (
               <div key={group.category}>
-                <p className="text-xs font-semibold text-primary uppercase tracking-wide mb-1.5">
+                <p className="text-xs font-semibold text-primary-text uppercase tracking-wide mb-1.5">
                   {group.category}
                 </p>
                 <div className="space-y-1">
@@ -441,7 +441,7 @@ export default function BuilderClient({ formId }: { formId: string }) {
                       }}
                       onClick={() => addFieldFromPalette(item.key)}
                       title={`Add ${item.label}`}
-                      className="flex items-center gap-2 px-3 py-2 rounded-lg border border-dark-border bg-dark-card hover:border-primary/60 hover:bg-dark-border/40 cursor-grab active:cursor-grabbing text-sm text-white/90 select-none"
+                      className="flex items-center gap-2 px-3 py-2 rounded-lg border border-dark-border bg-dark-card hover:border-primary/60 hover:bg-dark-border/40 cursor-grab active:cursor-grabbing text-sm text-foreground/90 select-none"
                     >
                       <GripVertical className="w-4 h-4 text-muted shrink-0" />
                       <span className="flex-1">{item.label}</span>
@@ -465,7 +465,7 @@ export default function BuilderClient({ formId }: { formId: string }) {
         >
         <Card className="min-h-[480px]">
           <div className="flex items-center justify-between mb-3">
-            <h2 className="text-sm font-bold text-white">Form preview</h2>
+            <h2 className="text-sm font-bold text-foreground">Form preview</h2>
             <span className="text-muted text-xs">Live preview — this is what submitters see</span>
           </div>
 
@@ -475,7 +475,7 @@ export default function BuilderClient({ formId }: { formId: string }) {
               onDragOver={(e) => e.preventDefault()}
             >
               <MousePointerClick className="w-8 h-8 text-muted mx-auto mb-2" />
-              <p className="text-white font-medium text-sm">No fields yet</p>
+              <p className="text-foreground font-medium text-sm">No fields yet</p>
               <p className="text-muted text-xs mt-1">Drag a field from the left panel, or click one to add it here.</p>
             </div>
           ) : (
@@ -532,7 +532,7 @@ export default function BuilderClient({ formId }: { formId: string }) {
                           e.stopPropagation();
                           moveField(index, -1);
                         }}
-                        className="text-muted hover:text-primary p-1 cursor-pointer disabled:opacity-30"
+                        className="text-muted hover:text-primary-text p-1 cursor-pointer disabled:opacity-30"
                       >
                         <ChevronUp className="w-4 h-4" />
                       </button>
@@ -544,7 +544,7 @@ export default function BuilderClient({ formId }: { formId: string }) {
                           e.stopPropagation();
                           moveField(index, 1);
                         }}
-                        className="text-muted hover:text-primary p-1 cursor-pointer disabled:opacity-30"
+                        className="text-muted hover:text-primary-text p-1 cursor-pointer disabled:opacity-30"
                       >
                         <ChevronDown className="w-4 h-4" />
                       </button>
@@ -555,7 +555,7 @@ export default function BuilderClient({ formId }: { formId: string }) {
                           e.stopPropagation();
                           duplicateField(index);
                         }}
-                        className="text-muted hover:text-primary p-1 cursor-pointer"
+                        className="text-muted hover:text-primary-text p-1 cursor-pointer"
                       >
                         <Copy className="w-4 h-4" />
                       </button>
@@ -595,7 +595,7 @@ export default function BuilderClient({ formId }: { formId: string }) {
         {/* (3) RIGHT — field editor + form settings */}
         <div className="space-y-4 lg:sticky lg:top-4">
           <Card>
-            <h2 className="text-sm font-bold text-white mb-3">Form settings</h2>
+            <h2 className="text-sm font-bold text-foreground mb-3">Form settings</h2>
             <div className="space-y-3">
               <Input
                 label="Title"
@@ -636,7 +636,7 @@ export default function BuilderClient({ formId }: { formId: string }) {
           </Card>
 
           <Card>
-            <h2 className="text-sm font-bold text-white mb-3">Selected field</h2>
+            <h2 className="text-sm font-bold text-foreground mb-3">Selected field</h2>
             {!selectedField ? (
               <p className="text-muted text-sm">
                 Click a field on the canvas to edit its label, options, validation and styling.
@@ -649,7 +649,7 @@ export default function BuilderClient({ formId }: { formId: string }) {
                     type="button"
                     onClick={() => setSelectedId(null)}
                     title="Deselect field"
-                    className="text-muted hover:text-white p-1 cursor-pointer"
+                    className="text-muted hover:text-foreground p-1 cursor-pointer"
                   >
                     <X className="w-4 h-4" />
                   </button>
@@ -666,7 +666,7 @@ export default function BuilderClient({ formId }: { formId: string }) {
                     updateField(selectedField.id, { placeholder: e.target.value || undefined })
                   }
                 />
-                <label className="flex items-center gap-2 text-sm text-white/80 cursor-pointer">
+                <label className="flex items-center gap-2 text-sm text-foreground/80 cursor-pointer">
                   <input
                     type="checkbox"
                     checked={selectedField.required}
@@ -678,7 +678,7 @@ export default function BuilderClient({ formId }: { formId: string }) {
 
                 {OPTION_FIELD_TYPES.includes(selectedField.type) && (
                   <div>
-                    <span className="text-sm font-medium text-white/80 block mb-1.5">Options</span>
+                    <span className="text-sm font-medium text-foreground/80 block mb-1.5">Options</span>
                     <div className="space-y-2">
                       {(selectedField.options ?? []).map((option, i) => (
                         <div key={i} className="flex items-center gap-2">
@@ -721,7 +721,7 @@ export default function BuilderClient({ formId }: { formId: string }) {
                 )}
 
                 <div>
-                  <span className="text-sm font-medium text-white/80 block mb-1.5">Validation</span>
+                  <span className="text-sm font-medium text-foreground/80 block mb-1.5">Validation</span>
                   <div className="grid grid-cols-2 gap-3">
                     {TEXT_FIELD_TYPES.includes(selectedField.type) && (
                       <>
@@ -801,7 +801,7 @@ export default function BuilderClient({ formId }: { formId: string }) {
                 </div>
 
                 <div>
-                  <span className="text-sm font-medium text-white/80 block mb-1.5">Styling</span>
+                  <span className="text-sm font-medium text-foreground/80 block mb-1.5">Styling</span>
                   <Select
                     label="Width"
                     options={[

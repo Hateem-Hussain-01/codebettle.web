@@ -57,10 +57,10 @@ export function PublicFormFieldInput({ field, value, error, disabled, onChange }
       const options = normalizeFieldOptions(field);
       return (
         <fieldset disabled={disabled} className="flex flex-col gap-1.5">
-          <legend className="text-sm font-medium text-white/80">{label}</legend>
+          <legend className="text-sm font-medium text-foreground/80">{label}</legend>
           <div className="flex flex-col gap-2 pt-1">
             {options.map((opt) => (
-              <label key={opt.value} className="flex items-center gap-2.5 text-sm text-white cursor-pointer">
+              <label key={opt.value} className="flex items-center gap-2.5 text-sm text-foreground cursor-pointer">
                 <input
                   type="radio"
                   name={field.id}
@@ -93,10 +93,10 @@ export function PublicFormFieldInput({ field, value, error, disabled, onChange }
         };
         return (
           <fieldset disabled={disabled} className="flex flex-col gap-1.5">
-            <legend className="text-sm font-medium text-white/80">{label}</legend>
+            <legend className="text-sm font-medium text-foreground/80">{label}</legend>
             <div className="flex flex-col gap-2 pt-1">
               {options.map((opt) => (
-                <label key={opt.value} className="flex items-center gap-2.5 text-sm text-white cursor-pointer">
+                <label key={opt.value} className="flex items-center gap-2.5 text-sm text-foreground cursor-pointer">
                   <input
                     type="checkbox"
                     name={field.id}
@@ -115,7 +115,7 @@ export function PublicFormFieldInput({ field, value, error, disabled, onChange }
       }
       return (
         <div className="flex flex-col gap-1.5">
-          <label className="flex items-start gap-2.5 text-sm text-white cursor-pointer pt-1">
+          <label className="flex items-start gap-2.5 text-sm text-foreground cursor-pointer pt-1">
             <input
               type="checkbox"
               id={field.id}
@@ -127,7 +127,7 @@ export function PublicFormFieldInput({ field, value, error, disabled, onChange }
             />
             <span>
               {field.label}
-              {field.required && <span className="text-primary"> *</span>}
+              {field.required && <span className="text-primary-text"> *</span>}
             </span>
           </label>
           {error && <p className="text-xs text-red-400">{error}</p>}

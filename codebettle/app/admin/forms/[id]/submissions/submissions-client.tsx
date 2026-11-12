@@ -186,11 +186,11 @@ export default function SubmissionsClient({ formId }: { formId: string }) {
     <div className="space-y-6">
       <FadeIn className="flex items-center justify-between flex-wrap gap-3">
         <div className="flex items-center gap-3 min-w-0">
-          <Link href="/admin/forms" className="text-muted hover:text-white p-1 shrink-0" title="Back to forms">
+          <Link href="/admin/forms" className="text-muted hover:text-foreground p-1 shrink-0" title="Back to forms">
             <ArrowLeft className="w-5 h-5" />
           </Link>
           <div className="min-w-0">
-            <h1 className="text-2xl font-black text-white truncate">
+            <h1 className="text-2xl font-black text-foreground truncate">
               {form ? `${form.name} — Submissions` : 'Submissions'}
             </h1>
             <p className="text-muted text-sm mt-1">
@@ -241,7 +241,7 @@ export default function SubmissionsClient({ formId }: { formId: string }) {
         </Card>
       ) : loadError ? (
         <Card className="py-16 text-center">
-          <p className="text-white font-medium">Couldn&apos;t load submissions</p>
+          <p className="text-foreground font-medium">Couldn&apos;t load submissions</p>
           <p className="text-muted text-sm mt-1">{loadError}</p>
           <div className="mt-4 flex justify-center">
             <Button variant="secondary" size="sm" onClick={() => void loadSubmissions()}>Try again</Button>
@@ -250,7 +250,7 @@ export default function SubmissionsClient({ formId }: { formId: string }) {
       ) : submissions.length === 0 ? (
         <Card className="py-16 text-center">
           <Inbox className="w-10 h-10 text-muted mx-auto mb-3" />
-          <p className="text-white font-medium">
+          <p className="text-foreground font-medium">
             {filter ? 'No submissions match this filter' : 'No submissions yet'}
           </p>
           <p className="text-muted text-sm mt-1">
@@ -278,7 +278,7 @@ export default function SubmissionsClient({ formId }: { formId: string }) {
                       onClick={() => void openSubmission(s.id)}
                       className={`border-b border-dark-border/40 last:border-0 hover:bg-dark-border/10 cursor-pointer ${selectedId === s.id ? 'bg-primary/5' : ''}`}
                     >
-                      <td className="py-3 px-4 text-white text-xs font-medium">{formatDateShort(s.submittedAt)}</td>
+                      <td className="py-3 px-4 text-foreground text-xs font-medium">{formatDateShort(s.submittedAt)}</td>
                       <td className="py-3 px-4 text-muted text-xs">
                         {s.submitterId ? s.submitterId : 'Guest'}
                       </td>
@@ -288,7 +288,7 @@ export default function SubmissionsClient({ formId }: { formId: string }) {
                         </Badge>
                       </td>
                       <td className="py-3 px-4 text-right">
-                        <span className="text-primary text-xs">View →</span>
+                        <span className="text-primary-text text-xs">View →</span>
                       </td>
                     </tr>
                   ))}
@@ -323,7 +323,7 @@ export default function SubmissionsClient({ formId }: { formId: string }) {
             {!selectedId ? (
               <div className="py-10 text-center">
                 <Inbox className="w-8 h-8 text-muted mx-auto mb-2" />
-                <p className="text-white font-medium text-sm">Select a submission</p>
+                <p className="text-foreground font-medium text-sm">Select a submission</p>
                 <p className="text-muted text-xs mt-1">Click a row to see every answer.</p>
               </div>
             ) : detailLoading ? (
@@ -335,7 +335,7 @@ export default function SubmissionsClient({ formId }: { formId: string }) {
               <div className="space-y-4">
                 <div className="flex items-start justify-between gap-2">
                   <div>
-                    <h2 className="text-sm font-bold text-white">Submission</h2>
+                    <h2 className="text-sm font-bold text-foreground">Submission</h2>
                     <p className="text-muted text-xs mt-0.5">
                       {formatDateShort(selected.submittedAt)} · {selected.submitterId ? `Submitter ${selected.submitterId}` : 'Guest'}
                     </p>
@@ -351,7 +351,7 @@ export default function SubmissionsClient({ formId }: { formId: string }) {
                     detailRows.map((row) => (
                       <div key={row.key} className="border-b border-dark-border/40 last:border-0 pb-2 last:pb-0">
                         <dt className="text-xs text-muted">{row.label}</dt>
-                        <dd className="text-sm text-white mt-0.5 break-words">
+                        <dd className="text-sm text-foreground mt-0.5 break-words">
                           {formatSubmissionValue(row.value)}
                         </dd>
                       </div>

@@ -103,7 +103,7 @@ export default function PublicFormClient({ form, slug }: { form: PublicForm; slu
       <FadeIn>
         <Card className="text-center border-primary/30">
           <CheckCircle2 className="w-12 h-12 text-green-400 mx-auto mb-4" />
-          <h2 className="text-xl font-bold text-white mb-2">Response submitted</h2>
+          <h2 className="text-xl font-bold text-foreground mb-2">Response submitted</h2>
           <p className="text-muted text-sm leading-relaxed">{getSuccessMessage(form)}</p>
           <div className="mt-6">
             <Button

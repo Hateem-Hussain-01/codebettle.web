@@ -72,8 +72,8 @@ export default async function PublicFormPage({ params }: { params: Promise<{ slu
       <main className="min-h-screen bg-background pt-16">
         <div className="py-16 bg-dark-card border-b border-dark-border text-center">
           <FadeIn className="max-w-xl mx-auto px-4">
-            <span className="text-primary text-sm font-semibold uppercase tracking-wider">CodeBettle Form</span>
-            <h1 className="text-4xl font-black text-white mt-2 mb-3">{form.name}</h1>
+            <span className="text-primary-text text-sm font-semibold uppercase tracking-wider">CodeBettle Form</span>
+            <h1 className="text-4xl font-black text-foreground mt-2 mb-3">{form.name}</h1>
             {form.description && <p className="text-muted">{form.description}</p>}
           </FadeIn>
         </div>
