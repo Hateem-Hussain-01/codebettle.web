@@ -11,6 +11,7 @@ import {
   sessionCookieOptions,
 } from '@/lib/auth';
 import { checkRateLimit, loginRateLimitKey } from '@/lib/rate-limit';
+import { matchesLoginPortal, type LoginPortal } from '@/lib/rbac';
 import { recordLoginEvent } from '@/lib/db/login-events';
 import { requestEmailVerification } from '@/lib/services/email-verification-service';
 import { VIEW_AS_COOKIE } from '@/lib/view-as';
@@ -41,7 +42,25 @@ const loginSchema = z.object({
   action: z.literal('login'),
   email: z.string().min(1),
   password: z.string().min(1),
+  // The Student | Instructor tab the sign-in page had selected. Sent by
+  // LoginForm; optional so older callers keep working. Absent = the
+  // default tab ('student') — a crafted request that omits it is
+  // treated as a Student-tab sign-in and CANNOT bypass the guard.
+  requestedRole: z.enum(['student', 'instructor']).optional(),
 });
+
+/**
+ * Role-mismatch messages, keyed by the tab the caller asked for. The
+ * account's actual role is always the other one in a mismatch (a
+ * student has no teacher capability, an instructor has no student
+ * capability), so the instruction is always accurate.
+ */
+const ROLE_MISMATCH_MESSAGES: Record<LoginPortal, string> = {
+  student:
+    'This account is registered as an Instructor. Please switch to the Instructor tab to sign in.',
+  instructor:
+    'This account is registered as a Student. Please switch to the Student tab to sign in.',
+};
 
 const registerSchema = z.object({
   action: z.literal('register'),
@@ -80,7 +99,8 @@ export async function POST(request: NextRequest) {
     if (!parsed.success) {
       return NextResponse.json({ error: 'Email and password are required' }, { status: 400 });
     }
-    const { email, password } = parsed.data;
+    const { email, password, requestedRole } = parsed.data;
+    const portal: LoginPortal = requestedRole ?? 'student';
     const ip = clientIp(request);
     const limit = checkRateLimit(
       loginRateLimitKey(ip, email),
@@ -104,6 +124,24 @@ export async function POST(request: NextRequest) {
         userAgent: request.headers.get('user-agent') ?? undefined,
       });
       return NextResponse.json({ error: 'Invalid email or password' }, { status: 401 });
+    }
+    // Role-mismatch guard — ONLY after the password is verified, so a
+    // wrong password still returns the generic error above and the
+    // message cannot be used to enumerate accounts. On mismatch NO
+    // session is created: the account stays signed out and the caller
+    // is told which tab to use instead.
+    if (!matchesLoginPortal(user, portal)) {
+      await safeRecordLoginEvent({
+        email,
+        userId: user.id,
+        success: false,
+        ip,
+        userAgent: request.headers.get('user-agent') ?? undefined,
+      });
+      return NextResponse.json(
+        { error: ROLE_MISMATCH_MESSAGES[portal] },
+        { status: 403 }
+      );
     }
     await safeRecordLoginEvent({
       email,
