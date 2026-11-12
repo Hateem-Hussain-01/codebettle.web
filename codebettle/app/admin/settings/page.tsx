@@ -68,11 +68,43 @@ export default function AdminSettingsPage() {
   });
   const [saving, setSaving] = useState(false);
 
+  // Load the persisted settings on mount. The useState defaults above
+  // are only the pre-load placeholder — the saved values replace them
+  // as soon as the fetch returns. A failed load leaves the placeholders
+  // in place and says so, instead of silently showing stale values.
+  const loadSettings = async () => {
+    try {
+      const res = await fetch('/api/admin/settings');
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error ?? 'Could not load settings');
+      if (data.settings) setSettings(data.settings);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Could not load settings');
+    }
+  };
+
+  useEffect(() => {
+    void loadSettings();
+  }, []);
+
   const handleSave = async () => {
     setSaving(true);
-    await new Promise(r => setTimeout(r, 600));
-    toast.success('Settings saved successfully!');
-    setSaving(false);
+    try {
+      const res = await fetch('/api/admin/settings', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(settings),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error ?? 'Could not save settings');
+      if (data.settings) setSettings(data.settings);
+      toast.success('Settings saved successfully!');
+    } catch (e) {
+      // Never toast success when the save failed — that was the bug.
+      toast.error(e instanceof Error ? e.message : 'Could not save settings');
+    } finally {
+      setSaving(false);
+    }
   };
 
   // --- Payment Accounts Management (real backend, Phase 1e) ---
