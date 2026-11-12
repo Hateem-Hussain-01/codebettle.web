@@ -139,14 +139,14 @@ export default function AttemptClient({
         <FadeIn>
         <Card className="p-6 text-center">
           <CheckCircle2 className="w-12 h-12 text-green-400 mx-auto mb-3" />
-          <h1 className="text-2xl font-black text-white">Quiz submitted</h1>
+          <h1 className="text-2xl font-black text-foreground">Quiz submitted</h1>
           {result.score === null ? (
             <p className="text-muted text-sm mt-2">
               Your answers are in. The teacher has chosen not to show scores here — check back later.
             </p>
           ) : (
             <>
-              <p className="text-white text-xl font-bold mt-3">
+              <p className="text-foreground text-xl font-bold mt-3">
                 {result.score} / {result.totalPoints}
               </p>
               {result.passed !== null && (
@@ -163,14 +163,14 @@ export default function AttemptClient({
         {result.perQuestion && (
           <FadeIn delay={0.08}>
           <Card className="p-5">
-            <h2 className="text-white font-bold mb-3">Your answers</h2>
+            <h2 className="text-foreground font-bold mb-3">Your answers</h2>
             <div className="space-y-3">
               {questions.map((q, i) => {
                 const pq = result.perQuestion!.find((p) => p.questionId === q.id);
                 const correct = result.correctAnswers?.find((c) => c.questionId === q.id);
                 return (
                   <div key={q.id} className="border-b border-dark-border/50 pb-3 last:border-0">
-                    <p className="text-white text-sm flex items-start gap-2">
+                    <p className="text-foreground text-sm flex items-start gap-2">
                       {pq?.isCorrect === true ? (
                         <CheckCircle2 className="w-4 h-4 text-green-400 shrink-0 mt-0.5" />
                       ) : pq?.isCorrect === false ? (
@@ -219,13 +219,13 @@ export default function AttemptClient({
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-black text-white">{quiz.title}</h1>
+          <h1 className="text-2xl font-black text-foreground">{quiz.title}</h1>
           <p className="text-muted text-sm mt-1">
             Question {current + 1} of {questions.length} · {answeredCount} answered
           </p>
         </div>
         {remaining !== null && (
-          <div className={`flex items-center gap-2 px-3 py-2 rounded-lg border ${lowTime ? 'border-red-500 text-red-400' : 'border-dark-border text-white'}`}>
+          <div className={`flex items-center gap-2 px-3 py-2 rounded-lg border ${lowTime ? 'border-red-500 text-red-400' : 'border-dark-border text-foreground'}`}>
             <Clock className="w-4 h-4" />
             <span className="font-mono font-bold">{formatRemaining(remaining)}</span>
             <span className="text-xs text-muted">left</span>
@@ -242,7 +242,7 @@ export default function AttemptClient({
             onClick={() => setCurrent(i)}
             className={`w-9 h-9 rounded-lg text-sm font-bold border ${
               i === current
-                ? 'bg-primary text-white border-primary'
+                ? 'bg-primary text-ink border-primary'
                 : isAnswered(q.id)
                   ? 'bg-green-500/20 text-green-300 border-green-500/40'
                   : 'bg-dark-card text-muted border-dark-border'
@@ -255,7 +255,7 @@ export default function AttemptClient({
 
       <Card className="p-5">
         <div className="flex items-start justify-between gap-3">
-          <h2 className="text-white font-semibold">
+          <h2 className="text-foreground font-semibold">
             Q{current + 1}. {question.prompt}
           </h2>
           <Badge variant="muted">
@@ -300,7 +300,7 @@ export default function AttemptClient({
                     disabled={disabled}
                     onChange={() => toggleOption(question.id, opt.id, question.type)}
                   />
-                  <span className="text-white text-sm">{opt.text}</span>
+                  <span className="text-foreground text-sm">{opt.text}</span>
                 </label>
               );
             })}

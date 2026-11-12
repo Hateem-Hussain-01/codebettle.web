@@ -49,9 +49,14 @@ export interface ListNotificationsOptions {
   /** Phase 3: filter by category (general | important | warning | special_notice). */
   category?: string;
   /**
-   * Phase 3: when true, return ONLY unread notifications with
-   * requiresAcknowledge=true, oldest first (the login acknowledge
-   * popup). Unread count is unaffected.
+   * Phase 3: when true, return ONLY notifications with
+   * requiresAcknowledge=true that have NOT been acknowledged yet,
+   * oldest first (the login acknowledge popup).
+   * Phase 7: acknowledgement — not read state — is the gate. Marking
+   * an ack-required notification read (card click, Mark All Read)
+   * must NOT silently discharge it: it stays pending until
+   * acknowledgedAt is set, so the login popup shows it again.
+   * Non-ack notifications never appear here, read or unread.
    */
   pending?: boolean;
 }
@@ -66,8 +71,11 @@ export async function listNotificationsForUser(
   if (opts.type) query = query.where({ type: opts.type });
   if (opts.category) query = query.where({ category: opts.category });
   if (opts.pending) {
+    // Phase 7: pending = requires acknowledgement AND not yet
+    // acknowledged, regardless of readAt. A read-but-unacknowledged
+    // row stays pending so the login popup re-shows it.
     query = query
-      .where((n) => n.readAt.isNull())
+      .where((n) => n.acknowledgedAt.isNull())
       .where((n) => n.requiresAcknowledge.eq(true));
   }
   const total = (await query.all()).length;
@@ -163,4 +171,19 @@ export async function listNotificationsByAnnouncement(
     .orderBy((n) => n.createdAt.asc())
     .all();
   return rows.map(mapNotificationRow);
+}
+
+/**
+ * Phase 7: does this user already have a notification fanned out from
+ * this announcement? notifyUser uses this to dedupe a retried or
+ * double publish — one row per (userId, announcementId).
+ */
+export async function notificationExistsForAnnouncement(
+  userId: string,
+  announcementId: string,
+): Promise<boolean> {
+  const row = await getDb()
+    .orm.public.Notification.where({ userId, announcementId })
+    .first();
+  return row !== null;
 }

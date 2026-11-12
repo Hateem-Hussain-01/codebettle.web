@@ -15,6 +15,7 @@
  */
 import { DUMMY_HASH, hashPassword, normalizeEmail, validatePassword, verifyPassword } from '../security';
 import { createUser, getUserByEmail, getUserByIdWithHash, updateUserPassword } from '../db/users';
+import { linkUnlinkedApplicationsToUser } from '../db/applications';
 import { createSessionRecord, revokeAllSessionsForUser } from '../db/sessions';
 import { logAudit } from '../db/audit';
 import { toSafeUser } from '../db/mappers';
@@ -124,6 +125,17 @@ export async function registerUser(
     role: 'student',
     avatar: `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(name)}&backgroundColor=1C1C1C&textColor=F5C518`,
   });
+  // Phase 7 (GAP #B6): the applicant may have filed via the public
+  // become-instructor form BEFORE creating an account (userId null).
+  // Link any still-unlinked applications filed under this email to
+  // the new account, so the applicant portal, stage notifications
+  // and onboarding can find them. Best-effort — a linking failure
+  // must never fail signup.
+  try {
+    await linkUnlinkedApplicationsToUser(email, user.id);
+  } catch (e) {
+    console.error('Failed to link pre-signup instructor applications', e);
+  }
   await logAudit({ actorId: user.id, action: 'user.register', entity: 'user', entityId: user.id });
   return { user };
 }

@@ -82,7 +82,7 @@ export default function CoursesClient({ courses: allCourses, instructorNames }: 
     <div className="space-y-6">
       <FadeIn className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-black text-white">Courses</h1>
+          <h1 className="text-2xl font-black text-foreground">Courses</h1>
           <p className="text-muted text-sm mt-1">{filtered.length} course{filtered.length !== 1 ? 's' : ''}</p>
         </div>
         <Link href="/admin/courses/new"><Button><Plus className="w-4 h-4" />Create Course</Button></Link>
@@ -112,14 +112,14 @@ export default function CoursesClient({ courses: allCourses, instructorNames }: 
                       <div className="flex items-center gap-3">
                         <CourseThumbnail src={course.thumbnail} alt={course.title} className="w-10 h-10 rounded-lg object-cover flex-shrink-0" />
                         <div className="min-w-0">
-                          <p className="text-white text-xs font-medium truncate max-w-[160px]">{course.title}</p>
-                          {course.isFeatured && <span className="text-primary text-xs">★ Featured</span>}
+                          <p className="text-foreground text-xs font-medium truncate max-w-[160px]">{course.title}</p>
+                          {course.isFeatured && <span className="text-primary-text text-xs">★ Featured</span>}
                         </div>
                       </div>
                     </td>
                     <td className="py-3 px-4 text-muted text-xs">{instructorNames[course.instructorId]}</td>
                     <td className="py-3 px-4 text-muted text-xs">{course.category}</td>
-                    <td className="py-3 px-4"><span className={`text-xs font-medium ${course.isFree ? 'text-green-400' : 'text-primary'}`}>{formatPrice(course.price)}</span></td>
+                    <td className="py-3 px-4"><span className={`text-xs font-medium ${course.isFree ? 'text-green-400' : 'text-primary-text'}`}>{formatPrice(course.price)}</span></td>
                     <td className="py-3 px-4 text-muted text-xs">{course.enrolledCount}</td>
                     <td className="py-3 px-4">
                       <Badge variant={course.status === 'published' ? 'success' : course.status === 'draft' ? 'warning' : 'muted'}>
@@ -131,10 +131,10 @@ export default function CoursesClient({ courses: allCourses, instructorNames }: 
                         <Link href={`/admin/courses/${course.id}`} title="View Details" className="text-muted hover:text-blue-400 transition-colors p-1">
                           <Edit className="w-4 h-4" />
                         </Link>
-                        <button onClick={() => toggleStatus(course.id)} title={course.status === 'published' ? 'Unpublish' : 'Publish'} className="text-muted hover:text-primary transition-colors p-1 cursor-pointer">
+                        <button onClick={() => toggleStatus(course.id)} title={course.status === 'published' ? 'Unpublish' : 'Publish'} className="text-muted hover:text-primary-text transition-colors p-1 cursor-pointer">
                           {course.status === 'published' ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                         </button>
-                        <button onClick={() => toggleFeatured(course.id)} title="Toggle Featured" className={`p-1 cursor-pointer transition-colors ${course.isFeatured ? 'text-primary' : 'text-muted hover:text-primary'}`}>
+                        <button onClick={() => toggleFeatured(course.id)} title="Toggle Featured" className={`p-1 cursor-pointer transition-colors ${course.isFeatured ? 'text-primary-text' : 'text-muted hover:text-primary-text'}`}>
                           <Star className="w-4 h-4" />
                         </button>
                         {course.status !== 'archived' && (

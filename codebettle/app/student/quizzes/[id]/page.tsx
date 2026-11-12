@@ -26,7 +26,7 @@ export default async function StudentQuizDetailPage({ params }: { params: Promis
   return (
     <div className="space-y-6">
       <FadeIn>
-        <h1 className="text-2xl font-black text-white">{quiz.title}</h1>
+        <h1 className="text-2xl font-black text-foreground">{quiz.title}</h1>
         <p className="text-muted text-sm mt-1">
           {quiz.questions.length} question{quiz.questions.length !== 1 ? 's' : ''}
           {quiz.timeLimitMin ? ` · ${quiz.timeLimitMin} min` : ' · no time limit'}
@@ -35,7 +35,7 @@ export default async function StudentQuizDetailPage({ params }: { params: Promis
         {quiz.description && <p className="text-muted text-sm mt-2">{quiz.description}</p>}
         {quiz.instructions && (
           <Card className="p-4 mt-4">
-            <h2 className="text-white font-semibold text-sm mb-1">Instructions</h2>
+            <h2 className="text-foreground font-semibold text-sm mb-1">Instructions</h2>
             <p className="text-muted text-sm whitespace-pre-wrap">{quiz.instructions}</p>
           </Card>
         )}
@@ -50,12 +50,12 @@ export default async function StudentQuizDetailPage({ params }: { params: Promis
       {attemptsResult.attempts.length > 0 && (
         <FadeIn delay={0.1}>
         <Card className="p-5">
-          <h2 className="text-white font-bold mb-4">My attempts</h2>
+          <h2 className="text-foreground font-bold mb-4">My attempts</h2>
           <div className="space-y-3">
             {attemptsResult.attempts.map((a) => (
               <div key={a.id} className="flex items-center justify-between gap-3 border-b border-dark-border/50 pb-3 last:border-0 last:pb-0">
                 <div>
-                  <p className="text-white text-sm">
+                  <p className="text-foreground text-sm">
                     Started {new Date(a.startedAt).toLocaleString()}
                     {a.submittedAt ? ` · submitted ${new Date(a.submittedAt).toLocaleString()}` : ''}
                   </p>

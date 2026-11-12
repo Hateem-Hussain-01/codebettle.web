@@ -165,9 +165,27 @@ export async function setPaymentAccountActive(
 }
 
 /**
+ * Detach a payment account from every submission that references it:
+ * set their paymentAccountId to NULL. The frozen accountSnapshot on
+ * each submission is NEVER touched, so payment history stays intact.
+ * Required before deleting an account: the paymentAccountId FK has
+ * no ON DELETE action, so deleting a referenced account fails live
+ * with a foreign-key violation unless its submissions are detached
+ * first. Returns the number of submissions detached.
+ */
+export async function detachPaymentSubmissionsFromAccount(accountId: string): Promise<number> {
+  const rows = await getDb()
+    .orm.public.PaymentSubmission.where({ paymentAccountId: accountId })
+    .updateAll({ paymentAccountId: null });
+  return rows.length;
+}
+
+/**
  * Delete an account. History is safe: submissions keep their
  * accountSnapshot, so deleting the account never rewrites a past
- * submission. False when not found.
+ * submission. Callers MUST detach referencing submissions first
+ * (detachPaymentSubmissionsFromAccount) — the paymentAccountId FK
+ * has no ON DELETE action. False when not found.
  */
 export async function deletePaymentAccount(id: string): Promise<boolean> {
   const row = await getDb().orm.public.PaymentAccount.where({ id }).delete();

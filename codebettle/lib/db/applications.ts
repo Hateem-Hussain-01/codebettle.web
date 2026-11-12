@@ -139,6 +139,25 @@ export async function createApplication(input: CreateApplicationInput): Promise<
 }
 
 /**
+ * Phase 7 (GAP #B6): link every still-unlinked application filed
+ * under this email to a newly created account. Only rows with userId
+ * NULL are touched — an application already linked to an account is
+ * never re-pointed. Emails are matched exactly: both the public form
+ * (submitApplication) and registration (registerUser) normalise the
+ * email first (trim + lowercase). Returns the number linked.
+ */
+export async function linkUnlinkedApplicationsToUser(
+  email: string,
+  userId: string,
+): Promise<number> {
+  const rows = await getDb()
+    .orm.public.InstructorApplication.where((a) => a.email.eq(email))
+    .where((a) => a.userId.isNull())
+    .updateAll({ userId });
+  return rows.length;
+}
+
+/**
  * Review an application. Only a pending application can move to approved
  * or rejected (the where clause enforces it); returns null otherwise.
  */

@@ -23,7 +23,7 @@ export default function CourseThumbnailClient({ courseId, thumbnail }: CourseThu
   return (
     <FadeIn delay={0.05}>
       <Card>
-        <h2 className="text-white font-bold mb-1 text-sm">Course Thumbnail</h2>
+        <h2 className="text-foreground font-bold mb-1 text-sm">Course Thumbnail</h2>
         <p className="text-muted text-xs mb-4">Upload a new thumbnail to replace the current one — it updates everywhere the course is shown.</p>
         <CourseThumbnailUploader
           uploadUrl={`/api/admin/courses/${courseId}/thumbnail`}

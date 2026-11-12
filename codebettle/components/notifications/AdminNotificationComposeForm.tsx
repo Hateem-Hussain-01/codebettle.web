@@ -27,6 +27,7 @@ interface UserPick {
   id: string;
   name: string;
   email: string;
+  role: string;
 }
 
 /**
@@ -37,9 +38,9 @@ interface UserPick {
  * mirrors those checks for a better error message.
  *
  * Specific-user search reuses the existing admin user-search endpoint
- * (GET /api/admin/users?search=). That endpoint lists students only
- * (role=student, requires the `students` area), so the picker can only
- * find registered students; a 403 there means the admin lacks the
+ * (GET /api/admin/users?search=&role=all). The picker searches ALL
+ * roles — students, instructors and admins — so a specific user of
+ * any role can be targeted. A 403 there means the admin lacks the
  * students area, and the picker explains that instead of failing
  * silently.
  */
@@ -89,7 +90,7 @@ export default function AdminNotificationComposeForm({ courses }: ComposeFormPro
     setUserSearchState('searching');
     searchTimer.current = setTimeout(async () => {
       try {
-        const res = await fetch(`/api/admin/users?search=${encodeURIComponent(q)}&limit=10`);
+        const res = await fetch(`/api/admin/users?search=${encodeURIComponent(q)}&role=all&limit=10`);
         if (res.status === 403) {
           setUserSearchState('no-access');
           setUserResults([]);
@@ -97,10 +98,11 @@ export default function AdminNotificationComposeForm({ courses }: ComposeFormPro
         }
         if (!res.ok) throw new Error('Search failed');
         const data = await res.json();
-        const users: UserPick[] = (Array.isArray(data.users) ? data.users : []).map((u: { id: string; name: string; email: string }) => ({
+        const users: UserPick[] = (Array.isArray(data.users) ? data.users : []).map((u: { id: string; name: string; email: string; role?: string }) => ({
           id: u.id,
           name: u.name,
           email: u.email,
+          role: u.role ?? 'student',
         }));
         setUserResults(users);
         setUserSearchState('done');
@@ -229,7 +231,7 @@ export default function AdminNotificationComposeForm({ courses }: ComposeFormPro
             {pickedUser ? (
               <div className="flex items-center justify-between bg-dark-card border border-dark-border rounded-lg px-4 py-2.5">
                 <span className="text-sm text-foreground">
-                  {pickedUser.name} <span className="text-muted">({pickedUser.email})</span>
+                  {pickedUser.name} <span className="text-muted">({pickedUser.email} · {pickedUser.role})</span>
                 </span>
                 <button
                   type="button"
@@ -250,7 +252,7 @@ export default function AdminNotificationComposeForm({ courses }: ComposeFormPro
                   <Search className="w-4 h-4 text-muted absolute left-3 top-1/2 -translate-y-1/2" />
                   <input
                     type="text"
-                    placeholder="Type at least 2 letters of the student's name…"
+                    placeholder="Type at least 2 letters of the user's name…"
                     value={userQuery}
                     onChange={(e) => setUserQuery(e.target.value)}
                     className="w-full bg-dark-card border border-dark-border rounded-lg pl-9 pr-4 py-2.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary"
@@ -265,7 +267,7 @@ export default function AdminNotificationComposeForm({ courses }: ComposeFormPro
                 )}
                 {userSearchState === 'done' && userResults.length === 0 && userQuery.trim().length >= 2 && (
                   <p className="text-muted text-xs">
-                    No matching student found. The search covers registered students only.
+                    No matching user found. The search covers all users — students, instructors and admins.
                   </p>
                 )}
                 {userResults.length > 0 && (
@@ -282,7 +284,7 @@ export default function AdminNotificationComposeForm({ courses }: ComposeFormPro
                           }}
                         >
                           <span className="text-sm text-foreground">{u.name}</span>
-                          <span className="text-xs text-muted block">{u.email}</span>
+                          <span className="text-xs text-muted block">{u.email} · {u.role}</span>
                         </button>
                       </li>
                     ))}

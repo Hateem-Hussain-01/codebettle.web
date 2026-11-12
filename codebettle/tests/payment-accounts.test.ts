@@ -7,6 +7,7 @@ import { createFakeDb, type FakeDb } from './fake-db';
 import { GET as listAccounts, POST as createAccount } from '../app/api/admin/payment-accounts/route';
 import { PATCH as updateAccount, DELETE as deleteAccount } from '../app/api/admin/payment-accounts/[id]/route';
 import { listActivePaymentAccounts, listPaymentAccounts } from '../lib/db/payment-accounts';
+import { getPaymentSubmissionById } from '../lib/db/payments';
 import { getAuditLog } from '../lib/db/audit';
 import type { SessionUser } from '../lib/services/auth-service';
 
@@ -105,6 +106,53 @@ test('admin CRUD: create (201) -> list -> PATCH edit -> DELETE, with audit entri
     { params: Promise.resolve({ id: createdBody.account.id }) },
   );
   assert.equal(deletedAgain.status, 404);
+});
+
+test('deleting a payment account referenced by submissions succeeds and keeps the frozen snapshot', async () => {
+  __setTestSession(ADMIN);
+  const created = await createAccount(jsonReq('http://localhost/api/admin/payment-accounts', 'POST', BANK_BODY));
+  assert.equal(created.status, 201);
+  const { account } = await created.json() as { account: { id: string } };
+
+  // Two submissions: one paid into this account, one into another account.
+  const snapshot = {
+    label: 'HBL — Main', method: 'bank', accountHolder: 'CodeBettle',
+    bankName: 'HBL', accountNumber: '12345678901234',
+  };
+  fake.seed('PaymentSubmission', [
+    {
+      id: 'sub-1', enrollmentId: 'enr-1', paymentAccountId: account.id, method: 'bank',
+      amountPkr: 5000, transactionRef: 'TXN-1', proofUrl: null, accountSnapshot: snapshot,
+      reviewStatus: 'submitted', submittedAt: D('2024-02-01'), createdAt: D('2024-02-01'), updatedAt: D('2024-02-01'),
+    },
+    {
+      id: 'sub-2', enrollmentId: 'enr-2', paymentAccountId: 'other-account', method: 'bank',
+      amountPkr: 7000, transactionRef: 'TXN-2', proofUrl: null,
+      accountSnapshot: { label: 'Other', method: 'bank', accountHolder: 'Someone' },
+      reviewStatus: 'approved', submittedAt: D('2024-02-02'), createdAt: D('2024-02-02'), updatedAt: D('2024-02-02'),
+    },
+  ]);
+
+  const deleted = await deleteAccount(
+    new NextRequest(`http://localhost/api/admin/payment-accounts/${account.id}`, { method: 'DELETE' }),
+    { params: Promise.resolve({ id: account.id }) },
+  );
+  assert.equal(deleted.status, 200);
+  assert.equal((await listPaymentAccounts()).length, 0);
+
+  // The referencing submission survives, detached, with its frozen
+  // snapshot byte-for-byte intact — history is not rewritten.
+  const kept = await getPaymentSubmissionById('sub-1');
+  assert.ok(kept);
+  assert.equal(kept.paymentAccountId, undefined);
+  assert.deepEqual(kept.accountSnapshot, snapshot);
+  assert.equal(kept.reviewStatus, 'submitted');
+  assert.equal(kept.transactionRef, 'TXN-1');
+
+  // The submission on the other account is untouched.
+  const other = await getPaymentSubmissionById('sub-2');
+  assert.ok(other);
+  assert.equal(other.paymentAccountId, 'other-account');
 });
 
 test('non-admin gets 403 on every payment-accounts route', async () => {

@@ -17,7 +17,7 @@ export default async function StudentQuizzesPage() {
   if ('error' in result) {
     return (
       <div className="space-y-6">
-        <h1 className="text-2xl font-black text-white">Quizzes</h1>
+        <h1 className="text-2xl font-black text-foreground">Quizzes</h1>
         <p className="text-muted text-sm">Could not load quizzes: {result.error}</p>
       </div>
     );
@@ -27,13 +27,13 @@ export default async function StudentQuizzesPage() {
   return (
     <div className="space-y-6">
       <FadeIn>
-        <h1 className="text-2xl font-black text-white">Quizzes</h1>
+        <h1 className="text-2xl font-black text-foreground">Quizzes</h1>
         <p className="text-muted text-sm mt-1">Published quizzes for the courses you are enrolled in.</p>
       </FadeIn>
       {quizzes.length === 0 ? (
         <Card className="py-16 text-center">
           <FileQuestion className="w-12 h-12 text-muted mx-auto mb-4" />
-          <p className="text-white font-semibold mb-2">No quizzes available</p>
+          <p className="text-foreground font-semibold mb-2">No quizzes available</p>
           <p className="text-muted text-sm">Your instructors have not published any quizzes for your courses yet.</p>
         </Card>
       ) : (
@@ -43,7 +43,7 @@ export default async function StudentQuizzesPage() {
             <Card className="p-5 h-full">
               <div className="flex items-start justify-between gap-3">
                 <div>
-                  <h2 className="text-white font-bold">{quiz.title}</h2>
+                  <h2 className="text-foreground font-bold">{quiz.title}</h2>
                   <p className="text-muted text-sm mt-1">
                     {quiz.questions.length} question{quiz.questions.length !== 1 ? 's' : ''}
                     {quiz.timeLimitMin ? ` · ${quiz.timeLimitMin} min` : ' · no time limit'}

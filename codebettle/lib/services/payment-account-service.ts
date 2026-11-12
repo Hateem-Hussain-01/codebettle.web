@@ -15,6 +15,7 @@
 import {
   createPaymentAccount,
   deletePaymentAccount,
+  detachPaymentSubmissionsFromAccount,
   getPaymentAccountById,
   listPaymentAccounts,
   updatePaymentAccount,
@@ -136,9 +137,19 @@ export async function deletePaymentAccountService(
   if (err) return err;
   const existing = await getPaymentAccountById(id);
   if (!existing) return notFound('Payment account');
-  // History is safe: submissions keep a frozen accountSnapshot, so
-  // deleting the account never rewrites a past submission.
-  await deletePaymentAccount(id);
+  try {
+    // History is safe: submissions keep a frozen accountSnapshot, so
+    // deleting the account never rewrites a past submission. The
+    // paymentAccountId FK has no ON DELETE action, so referencing
+    // submissions must be detached (paymentAccountId -> null) first —
+    // otherwise the delete fails live with a foreign-key violation.
+    await detachPaymentSubmissionsFromAccount(id);
+    await deletePaymentAccount(id);
+  } catch {
+    // Clean failure, never an unhandled 500: the account is untouched
+    // and the admin gets a retryable message.
+    return { error: 'Could not delete the payment account. Please try again.', status: 500 };
+  }
   await logAudit({
     actorId: actor.id,
     action: 'payment-account.delete',

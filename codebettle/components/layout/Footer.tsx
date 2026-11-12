@@ -78,7 +78,7 @@ export default function Footer() {
                   rel="noopener noreferrer"
                   aria-label={`CodeBettle on ${link.label}`}
                   title={link.label}
-                  className="w-9 h-9 rounded-lg bg-dark-border flex items-center justify-center text-muted hover:text-primary hover:bg-primary/10 transition-all"
+                  className="w-9 h-9 rounded-lg bg-dark-border flex items-center justify-center text-muted hover:text-primary-text hover:bg-primary/10 transition-all"
                 >
                   <SocialPlatformIcon platform={link.key} className="w-4 h-4" />
                 </a>
@@ -88,31 +88,31 @@ export default function Footer() {
 
           {/* Quick Links */}
           <div>
-            <h4 className="text-white font-semibold mb-4">Quick Links</h4>
+            <h4 className="text-foreground font-semibold mb-4">Quick Links</h4>
             <ul className="space-y-2.5">
               {[['/', 'Home'], ['/courses', 'All Courses'], ['/instructors', 'Instructors'], ['/blog', 'Blog'], ['/about', 'About Us'], ['/become-instructor', 'Become Instructor']].map(([href, label]) => (
-                <li key={href}><Link href={href} className="text-muted text-sm hover:text-primary transition-colors">{label}</Link></li>
+                <li key={href}><Link href={href} className="text-muted text-sm hover:text-primary-text transition-colors">{label}</Link></li>
               ))}
             </ul>
           </div>
 
           {/* Categories */}
           <div>
-            <h4 className="text-white font-semibold mb-4">Categories</h4>
+            <h4 className="text-foreground font-semibold mb-4">Categories</h4>
             <ul className="space-y-2.5">
               {['Web Development', 'Mobile Development', 'Data Science', 'UI/UX Design', 'DevOps', 'Programming'].map(cat => (
-                <li key={cat}><Link href={`/courses?category=${encodeURIComponent(cat)}`} className="text-muted text-sm hover:text-primary transition-colors">{cat}</Link></li>
+                <li key={cat}><Link href={`/courses?category=${encodeURIComponent(cat)}`} className="text-muted text-sm hover:text-primary-text transition-colors">{cat}</Link></li>
               ))}
             </ul>
           </div>
 
           {/* Contact */}
           <div>
-            <h4 className="text-white font-semibold mb-4">Contact</h4>
+            <h4 className="text-foreground font-semibold mb-4">Contact</h4>
             <ul className="space-y-3">
-              <li className="flex items-center gap-3 text-muted text-sm"><Mail className="w-4 h-4 text-primary flex-shrink-0" /><a href={`mailto:${CONTACT_EMAIL}`} className="hover:text-primary transition-colors">{CONTACT_EMAIL}</a></li>
-              <li className="flex items-center gap-3 text-muted text-sm"><Phone className="w-4 h-4 text-primary flex-shrink-0" /><a href={CONTACT_PHONE_LINK} className="hover:text-primary transition-colors">{CONTACT_PHONE}</a></li>
-              <li className="flex items-start gap-3 text-muted text-sm"><MapPin className="w-4 h-4 text-primary flex-shrink-0 mt-0.5" />{CONTACT_ADDRESS}</li>
+              <li className="flex items-center gap-3 text-muted text-sm"><Mail className="w-4 h-4 text-primary-text flex-shrink-0" /><a href={`mailto:${CONTACT_EMAIL}`} className="hover:text-primary-text transition-colors">{CONTACT_EMAIL}</a></li>
+              <li className="flex items-center gap-3 text-muted text-sm"><Phone className="w-4 h-4 text-primary-text flex-shrink-0" /><a href={CONTACT_PHONE_LINK} className="hover:text-primary-text transition-colors">{CONTACT_PHONE}</a></li>
+              <li className="flex items-start gap-3 text-muted text-sm"><MapPin className="w-4 h-4 text-primary-text flex-shrink-0 mt-0.5" />{CONTACT_ADDRESS}</li>
             </ul>
           </div>
         </div>
@@ -120,8 +120,8 @@ export default function Footer() {
         <div className="mt-12 pt-8 border-t border-dark-border flex flex-col sm:flex-row items-center justify-between gap-4">
           <p className="text-muted text-sm">© {new Date().getFullYear()} CodeBettle. All rights reserved.</p>
           <div className="flex items-center gap-6">
-            <Link href="/privacy" className="text-muted text-sm hover:text-primary transition-colors">Privacy Policy</Link>
-            <Link href="/terms" className="text-muted text-sm hover:text-primary transition-colors">Terms of Service</Link>
+            <Link href="/privacy" className="text-muted text-sm hover:text-primary-text transition-colors">Privacy Policy</Link>
+            <Link href="/terms" className="text-muted text-sm hover:text-primary-text transition-colors">Terms of Service</Link>
           </div>
         </div>
       </div>

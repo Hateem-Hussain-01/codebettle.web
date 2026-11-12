@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { changePassword, login, registerUser } from '../lib/auth-core';
+import { createApplication, getApplicationByEmail } from '../lib/db/applications';
 import { getUserByEmail } from '../lib/db/users';
 import { __resetDbClient, __setDbClient } from '../lib/db/client';
 import { createFakeDb } from './fake-db';
@@ -40,6 +41,28 @@ test('register -> login round-trips with a bcrypt hash; wrong password and unkno
   assert.equal(await login('nobody@example.com', 'TestPass123'), null);
   // Email lookup is case-insensitive.
   assert.ok(await login(email.toUpperCase(), 'TestPass123'));
+});
+
+test('register links a pre-existing unlinked instructor application filed under the same email', async () => {
+  const email = testEmail('link');
+  // Filed via the public become-instructor form before any account existed.
+  const unlinked = await createApplication({ name: 'Future Teacher', email });
+  assert.equal(unlinked.userId, undefined);
+  // Other rows must be untouched: a different email, and one already linked.
+  const other = await createApplication({ name: 'Other Person', email: testEmail('other') });
+  const alreadyLinked = await createApplication({
+    name: 'Taken', email: testEmail('taken'), userId: 'someone-else',
+  });
+
+  const created = await registerUser({ name: 'Future Teacher', email, password: 'TestPass123' });
+  assert.ok('user' in created, `expected success, got ${JSON.stringify(created)}`);
+
+  const linked = await getApplicationByEmail(email);
+  assert.ok(linked);
+  assert.equal(linked.userId, created.user.id);
+
+  assert.equal((await getApplicationByEmail(other.email))?.userId, undefined);
+  assert.equal((await getApplicationByEmail(alreadyLinked.email))?.userId, 'someone-else');
 });
 
 test('register rejects duplicates, bad emails and short passwords', async () => {
