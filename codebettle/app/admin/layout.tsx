@@ -6,7 +6,7 @@ import { hasAdminCapability } from '@/lib/rbac';
 import { isSuperAdmin } from '@/lib/super-admin';
 import { canSeeAuditLog } from '@/components/audit/audit-helpers';
 import PortalLayout from '@/components/layout/PortalLayout';
-import { LayoutDashboard, BookOpen, Users, GraduationCap, ClipboardList, Tag, Bell, FileText, Newspaper, BarChart2, Award, Settings, UserCheck, Mail, Megaphone, MessageSquare, ShieldCheck, ScrollText, ListChecks } from 'lucide-react';
+import { LayoutDashboard, BookOpen, Users, GraduationCap, ClipboardList, Tag, Bell, FileText, Newspaper, BarChart2, Award, Settings, UserCheck, Mail, Megaphone, MessageSquare, ShieldCheck, ScrollText, ListChecks, User } from 'lucide-react';
 
 const NAV_ICONS = {
   dashboard: <LayoutDashboard className="w-5 h-5" />,
@@ -77,6 +77,14 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   const navItems = ADMIN_AREAS.filter((area) => hasAdminArea(permissions, area.key)).map(
     (area) => ({ href: area.href, label: area.label, icon: NAV_ICONS[area.key] }),
   );
+  // Profile is not a grantable ADMIN_AREAS entry (every admin-capability
+  // user has a profile) — it sits at the end of the built list, next to
+  // Settings, like the Profile item in the other portals' sidebars.
+  navItems.push({
+    href: '/admin/profile',
+    label: 'Profile',
+    icon: <User className="w-5 h-5" />,
+  });
   if (showAuditNav) {
     const auditItem = {
       href: '/admin/audit',
