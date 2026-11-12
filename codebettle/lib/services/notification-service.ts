@@ -33,6 +33,8 @@ import type {
   Announcement,
   Certificate,
   Enrollment,
+  FormDefinition,
+  FormSubmission,
   InstructorApplication,
   Notification,
   NotificationCategory,
@@ -559,5 +561,34 @@ export async function onSupportRequestStatusChanged(
     });
   } catch (error) {
     return failure(error, 'onSupportRequestStatusChanged');
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Form-submission hook (Phase 6, Module — Forms Builder). Best-effort,
+// like every other hook here: a notification failure never blocks the
+// submission itself (the caller in lib/services/form-service.ts also
+// catches). The submitter is NOT notified — only the admins are, so
+// they can review the submission. Event: 'form_submission'.
+// ---------------------------------------------------------------------------
+
+/** A form was submitted (signed-in or anonymous). Recipients: every admin. */
+export async function onFormSubmissionCreated(
+  form: FormDefinition,
+  submission: FormSubmission,
+  submitterId?: string,
+): Promise<NotifySummary> {
+  try {
+    const who = submitterId ? ' A signed-in user submitted it.' : ' Submitted anonymously.';
+    return notifyAdmins({
+      type: 'form_submission',
+      event: 'form_submission',
+      title: `New submission: ${form.name}`,
+      body: `A new response was submitted to the “${form.name}” form.${who}`,
+      linkUrl: '/admin/forms',
+    });
+  } catch (error) {
+    console.error('[notification-service] onFormSubmissionCreated failed:', error);
+    return { ok: false, sent: 0, skipped: 0, failed: 0 };
   }
 }

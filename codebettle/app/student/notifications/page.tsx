@@ -34,7 +34,7 @@ export default async function StudentNotificationsPage({
         preferences ?? {
           inApp: true,
           email: false,
-          events: { enrollment: true, completion: true, certificate: true, application: true, announcement: true, support_request: true, request_update: true },
+          events: { enrollment: true, completion: true, certificate: true, application: true, announcement: true, support_request: true, request_update: true, form_submission: true },
         }
       }
     />

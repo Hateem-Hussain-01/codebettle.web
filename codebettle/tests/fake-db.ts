@@ -60,6 +60,8 @@ const NULLABLE_FIELDS: Record<string, string[]> = {
   ContactMessage: ['subject'],
   Notification: ['readAt', 'announcementId', 'linkUrl', 'acknowledgedAt'],
   SupportRequest: ['courseId', 'attachmentUrl', 'adminReply', 'resolvedBy', 'resolvedAt'],
+  FormDefinition: ['description'],
+  FormSubmission: ['submitterId'],
   BlogPost: ['pdfUrl'],
   Session: ['revokedAt', 'ip', 'userAgent'],
   AuditLog: ['entityId', 'detail', 'ip'],

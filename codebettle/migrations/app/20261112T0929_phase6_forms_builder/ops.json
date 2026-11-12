@@ -1,0 +1,544 @@
+[
+  {
+    "id": "table.FormDefinition",
+    "label": "Create table \"FormDefinition\"",
+    "summary": "Creates table \"FormDefinition\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "FormDefinition"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"FormDefinition\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"FormDefinition\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "table \"FormDefinition\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"FormDefinition\"",
+        "sql": "CREATE TABLE \"public\".\"FormDefinition\" (\n  \"createdAt\" timestamptz(3) DEFAULT (now()) NOT NULL,\n  \"createdById\" text NOT NULL,\n  \"description\" text,\n  \"id\" text NOT NULL,\n  \"name\" text NOT NULL,\n  \"schema\" json NOT NULL,\n  \"slug\" text NOT NULL,\n  \"status\" text DEFAULT 'draft' NOT NULL,\n  \"type\" text NOT NULL,\n  \"updatedAt\" timestamptz(3) NOT NULL,\n  PRIMARY KEY (\"id\")\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"FormDefinition\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" WHERE (\"c\".\"oid\" = to_regclass($1) AND (\"c\".\"relkind\" = $2 OR \"c\".\"relkind\" = $3))) AS \"result\"",
+        "params": [
+          "\"public\".\"FormDefinition\"",
+          "r",
+          "p"
+        ],
+        "expectation": {
+          "expects": "present",
+          "object": "table \"FormDefinition\""
+        }
+      }
+    ]
+  },
+  {
+    "id": "table.FormSubmission",
+    "label": "Create table \"FormSubmission\"",
+    "summary": "Creates table \"FormSubmission\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "FormSubmission"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"FormSubmission\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"FormSubmission\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "table \"FormSubmission\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"FormSubmission\"",
+        "sql": "CREATE TABLE \"public\".\"FormSubmission\" (\n  \"data\" json NOT NULL,\n  \"formId\" text NOT NULL,\n  \"id\" text NOT NULL,\n  \"reviewed\" bool DEFAULT false NOT NULL,\n  \"submittedAt\" timestamptz(3) DEFAULT (now()) NOT NULL,\n  \"submitterId\" text,\n  PRIMARY KEY (\"id\")\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"FormSubmission\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" WHERE (\"c\".\"oid\" = to_regclass($1) AND (\"c\".\"relkind\" = $2 OR \"c\".\"relkind\" = $3))) AS \"result\"",
+        "params": [
+          "\"public\".\"FormSubmission\"",
+          "r",
+          "p"
+        ],
+        "expectation": {
+          "expects": "present",
+          "object": "table \"FormSubmission\""
+        }
+      }
+    ]
+  },
+  {
+    "id": "unique.FormDefinition.FormDefinition_slug_key",
+    "label": "Add unique constraint on \"FormDefinition\" (slug)",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "unique",
+        "name": "FormDefinition_slug_key",
+        "table": "FormDefinition"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"FormDefinition_slug_key\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "FormDefinition_slug_key",
+          "public",
+          "\"public\".\"FormDefinition\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "constraint \"FormDefinition_slug_key\" on \"FormDefinition\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "add unique constraint \"FormDefinition_slug_key\"",
+        "sql": "ALTER TABLE \"public\".\"FormDefinition\" ADD CONSTRAINT \"FormDefinition_slug_key\" UNIQUE (\"slug\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify unique constraint \"FormDefinition_slug_key\" exists on (slug)",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3) AND \"c\".\"contype\" = $4 AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"c\".\"conkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"c\".\"conrelid\" AND key_attribute.attnum = key_column.attnum) = ($5)::jsonb)) AS \"result\"",
+        "params": [
+          "FormDefinition_slug_key",
+          "public",
+          "\"public\".\"FormDefinition\"",
+          "u",
+          "[\"slug\"]"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.FormDefinition.FormDefinition_createdById_idx_8bf640ed",
+    "label": "Create index \"FormDefinition_createdById_idx_8bf640ed\" on \"FormDefinition\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "FormDefinition_createdById_idx_8bf640ed",
+        "table": "FormDefinition"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"FormDefinition_createdById_idx_8bf640ed\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"FormDefinition_createdById_idx_8bf640ed\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "index \"FormDefinition_createdById_idx_8bf640ed\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"FormDefinition_createdById_idx_8bf640ed\"",
+        "sql": "CREATE INDEX \"FormDefinition_createdById_idx_8bf640ed\" ON \"public\".\"FormDefinition\" (\"createdById\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"FormDefinition_createdById_idx_8bf640ed\" exists on \"FormDefinition\" with the planned definition",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" INNER JOIN \"pg_index\" AS \"i\" ON \"i\".\"indexrelid\" = \"c\".\"oid\" INNER JOIN \"pg_am\" AS \"m\" ON \"m\".\"oid\" = \"c\".\"relam\" WHERE (\"c\".\"oid\" = to_regclass($1) AND (\"c\".\"relkind\" = $2 OR \"c\".\"relkind\" = $3) AND \"i\".\"indrelid\" = to_regclass($4) AND NOT (\"i\".\"indisunique\") AND \"m\".\"amname\" = $5 AND (\"i\".\"indexprs\" IS NULL AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"i\".\"indkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"i\".\"indrelid\" AND key_attribute.attnum = key_column.attnum) = ($6)::jsonb) AND \"i\".\"indpred\" IS NULL)) AS \"result\"",
+        "params": [
+          "\"public\".\"FormDefinition_createdById_idx_8bf640ed\"",
+          "i",
+          "I",
+          "\"public\".\"FormDefinition\"",
+          "btree",
+          "[\"createdById\"]"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.FormDefinition.FormDefinition_status_createdAt_idx_58610442",
+    "label": "Create index \"FormDefinition_status_createdAt_idx_58610442\" on \"FormDefinition\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "FormDefinition_status_createdAt_idx_58610442",
+        "table": "FormDefinition"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"FormDefinition_status_createdAt_idx_58610442\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"FormDefinition_status_createdAt_idx_58610442\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "index \"FormDefinition_status_createdAt_idx_58610442\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"FormDefinition_status_createdAt_idx_58610442\"",
+        "sql": "CREATE INDEX \"FormDefinition_status_createdAt_idx_58610442\" ON \"public\".\"FormDefinition\" (\"status\", \"createdAt\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"FormDefinition_status_createdAt_idx_58610442\" exists on \"FormDefinition\" with the planned definition",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" INNER JOIN \"pg_index\" AS \"i\" ON \"i\".\"indexrelid\" = \"c\".\"oid\" INNER JOIN \"pg_am\" AS \"m\" ON \"m\".\"oid\" = \"c\".\"relam\" WHERE (\"c\".\"oid\" = to_regclass($1) AND (\"c\".\"relkind\" = $2 OR \"c\".\"relkind\" = $3) AND \"i\".\"indrelid\" = to_regclass($4) AND NOT (\"i\".\"indisunique\") AND \"m\".\"amname\" = $5 AND (\"i\".\"indexprs\" IS NULL AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"i\".\"indkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"i\".\"indrelid\" AND key_attribute.attnum = key_column.attnum) = ($6)::jsonb) AND \"i\".\"indpred\" IS NULL)) AS \"result\"",
+        "params": [
+          "\"public\".\"FormDefinition_status_createdAt_idx_58610442\"",
+          "i",
+          "I",
+          "\"public\".\"FormDefinition\"",
+          "btree",
+          "[\"status\",\"createdAt\"]"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.FormSubmission.FormSubmission_formId_idx_3c13a9fa",
+    "label": "Create index \"FormSubmission_formId_idx_3c13a9fa\" on \"FormSubmission\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "FormSubmission_formId_idx_3c13a9fa",
+        "table": "FormSubmission"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"FormSubmission_formId_idx_3c13a9fa\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"FormSubmission_formId_idx_3c13a9fa\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "index \"FormSubmission_formId_idx_3c13a9fa\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"FormSubmission_formId_idx_3c13a9fa\"",
+        "sql": "CREATE INDEX \"FormSubmission_formId_idx_3c13a9fa\" ON \"public\".\"FormSubmission\" (\"formId\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"FormSubmission_formId_idx_3c13a9fa\" exists on \"FormSubmission\" with the planned definition",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" INNER JOIN \"pg_index\" AS \"i\" ON \"i\".\"indexrelid\" = \"c\".\"oid\" INNER JOIN \"pg_am\" AS \"m\" ON \"m\".\"oid\" = \"c\".\"relam\" WHERE (\"c\".\"oid\" = to_regclass($1) AND (\"c\".\"relkind\" = $2 OR \"c\".\"relkind\" = $3) AND \"i\".\"indrelid\" = to_regclass($4) AND NOT (\"i\".\"indisunique\") AND \"m\".\"amname\" = $5 AND (\"i\".\"indexprs\" IS NULL AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"i\".\"indkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"i\".\"indrelid\" AND key_attribute.attnum = key_column.attnum) = ($6)::jsonb) AND \"i\".\"indpred\" IS NULL)) AS \"result\"",
+        "params": [
+          "\"public\".\"FormSubmission_formId_idx_3c13a9fa\"",
+          "i",
+          "I",
+          "\"public\".\"FormSubmission\"",
+          "btree",
+          "[\"formId\"]"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.FormSubmission.FormSubmission_formId_submittedAt_idx_b451b238",
+    "label": "Create index \"FormSubmission_formId_submittedAt_idx_b451b238\" on \"FormSubmission\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "FormSubmission_formId_submittedAt_idx_b451b238",
+        "table": "FormSubmission"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"FormSubmission_formId_submittedAt_idx_b451b238\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"FormSubmission_formId_submittedAt_idx_b451b238\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "index \"FormSubmission_formId_submittedAt_idx_b451b238\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"FormSubmission_formId_submittedAt_idx_b451b238\"",
+        "sql": "CREATE INDEX \"FormSubmission_formId_submittedAt_idx_b451b238\" ON \"public\".\"FormSubmission\" (\"formId\", \"submittedAt\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"FormSubmission_formId_submittedAt_idx_b451b238\" exists on \"FormSubmission\" with the planned definition",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" INNER JOIN \"pg_index\" AS \"i\" ON \"i\".\"indexrelid\" = \"c\".\"oid\" INNER JOIN \"pg_am\" AS \"m\" ON \"m\".\"oid\" = \"c\".\"relam\" WHERE (\"c\".\"oid\" = to_regclass($1) AND (\"c\".\"relkind\" = $2 OR \"c\".\"relkind\" = $3) AND \"i\".\"indrelid\" = to_regclass($4) AND NOT (\"i\".\"indisunique\") AND \"m\".\"amname\" = $5 AND (\"i\".\"indexprs\" IS NULL AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"i\".\"indkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"i\".\"indrelid\" AND key_attribute.attnum = key_column.attnum) = ($6)::jsonb) AND \"i\".\"indpred\" IS NULL)) AS \"result\"",
+        "params": [
+          "\"public\".\"FormSubmission_formId_submittedAt_idx_b451b238\"",
+          "i",
+          "I",
+          "\"public\".\"FormSubmission\"",
+          "btree",
+          "[\"formId\",\"submittedAt\"]"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.FormSubmission.FormSubmission_submitterId_idx_15ca851b",
+    "label": "Create index \"FormSubmission_submitterId_idx_15ca851b\" on \"FormSubmission\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "FormSubmission_submitterId_idx_15ca851b",
+        "table": "FormSubmission"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"FormSubmission_submitterId_idx_15ca851b\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"FormSubmission_submitterId_idx_15ca851b\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "index \"FormSubmission_submitterId_idx_15ca851b\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"FormSubmission_submitterId_idx_15ca851b\"",
+        "sql": "CREATE INDEX \"FormSubmission_submitterId_idx_15ca851b\" ON \"public\".\"FormSubmission\" (\"submitterId\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"FormSubmission_submitterId_idx_15ca851b\" exists on \"FormSubmission\" with the planned definition",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" INNER JOIN \"pg_index\" AS \"i\" ON \"i\".\"indexrelid\" = \"c\".\"oid\" INNER JOIN \"pg_am\" AS \"m\" ON \"m\".\"oid\" = \"c\".\"relam\" WHERE (\"c\".\"oid\" = to_regclass($1) AND (\"c\".\"relkind\" = $2 OR \"c\".\"relkind\" = $3) AND \"i\".\"indrelid\" = to_regclass($4) AND NOT (\"i\".\"indisunique\") AND \"m\".\"amname\" = $5 AND (\"i\".\"indexprs\" IS NULL AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"i\".\"indkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"i\".\"indrelid\" AND key_attribute.attnum = key_column.attnum) = ($6)::jsonb) AND \"i\".\"indpred\" IS NULL)) AS \"result\"",
+        "params": [
+          "\"public\".\"FormSubmission_submitterId_idx_15ca851b\"",
+          "i",
+          "I",
+          "\"public\".\"FormSubmission\"",
+          "btree",
+          "[\"submitterId\"]"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.FormDefinition.FormDefinition_createdById_fkey",
+    "label": "Add foreign key \"FormDefinition_createdById_fkey\" on \"FormDefinition\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "FormDefinition_createdById_fkey",
+        "table": "FormDefinition"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"FormDefinition_createdById_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "FormDefinition_createdById_fkey",
+          "public",
+          "\"public\".\"FormDefinition\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "FK \"FormDefinition_createdById_fkey\" on \"FormDefinition\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"FormDefinition_createdById_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"FormDefinition\"\nADD CONSTRAINT \"FormDefinition_createdById_fkey\"\nFOREIGN KEY (\"createdById\")\nREFERENCES \"public\".\"User\" (\"id\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"FormDefinition_createdById_fkey\" exists with the planned columns, referenced table and actions",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3) AND \"c\".\"contype\" = $4 AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"c\".\"conkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"c\".\"conrelid\" AND key_attribute.attnum = key_column.attnum) = ($5)::jsonb AND \"c\".\"confrelid\" = to_regclass($6) AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"c\".\"confkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"c\".\"confrelid\" AND key_attribute.attnum = key_column.attnum) = ($7)::jsonb AND \"c\".\"confdeltype\" = $8 AND \"c\".\"confupdtype\" = $9)) AS \"result\"",
+        "params": [
+          "FormDefinition_createdById_fkey",
+          "public",
+          "\"public\".\"FormDefinition\"",
+          "f",
+          "[\"createdById\"]",
+          "\"public\".\"User\"",
+          "[\"id\"]",
+          "a",
+          "a"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.FormSubmission.FormSubmission_formId_fkey",
+    "label": "Add foreign key \"FormSubmission_formId_fkey\" on \"FormSubmission\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "FormSubmission_formId_fkey",
+        "table": "FormSubmission"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"FormSubmission_formId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "FormSubmission_formId_fkey",
+          "public",
+          "\"public\".\"FormSubmission\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "FK \"FormSubmission_formId_fkey\" on \"FormSubmission\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"FormSubmission_formId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"FormSubmission\"\nADD CONSTRAINT \"FormSubmission_formId_fkey\"\nFOREIGN KEY (\"formId\")\nREFERENCES \"public\".\"FormDefinition\" (\"id\")\nON DELETE CASCADE"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"FormSubmission_formId_fkey\" exists with the planned columns, referenced table and actions",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3) AND \"c\".\"contype\" = $4 AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"c\".\"conkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"c\".\"conrelid\" AND key_attribute.attnum = key_column.attnum) = ($5)::jsonb AND \"c\".\"confrelid\" = to_regclass($6) AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"c\".\"confkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"c\".\"confrelid\" AND key_attribute.attnum = key_column.attnum) = ($7)::jsonb AND \"c\".\"confdeltype\" = $8 AND \"c\".\"confupdtype\" = $9)) AS \"result\"",
+        "params": [
+          "FormSubmission_formId_fkey",
+          "public",
+          "\"public\".\"FormSubmission\"",
+          "f",
+          "[\"formId\"]",
+          "\"public\".\"FormDefinition\"",
+          "[\"id\"]",
+          "c",
+          "a"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.FormSubmission.FormSubmission_submitterId_fkey",
+    "label": "Add foreign key \"FormSubmission_submitterId_fkey\" on \"FormSubmission\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "FormSubmission_submitterId_fkey",
+        "table": "FormSubmission"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"FormSubmission_submitterId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "FormSubmission_submitterId_fkey",
+          "public",
+          "\"public\".\"FormSubmission\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "FK \"FormSubmission_submitterId_fkey\" on \"FormSubmission\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"FormSubmission_submitterId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"FormSubmission\"\nADD CONSTRAINT \"FormSubmission_submitterId_fkey\"\nFOREIGN KEY (\"submitterId\")\nREFERENCES \"public\".\"User\" (\"id\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"FormSubmission_submitterId_fkey\" exists with the planned columns, referenced table and actions",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3) AND \"c\".\"contype\" = $4 AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"c\".\"conkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"c\".\"conrelid\" AND key_attribute.attnum = key_column.attnum) = ($5)::jsonb AND \"c\".\"confrelid\" = to_regclass($6) AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"c\".\"confkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"c\".\"confrelid\" AND key_attribute.attnum = key_column.attnum) = ($7)::jsonb AND \"c\".\"confdeltype\" = $8 AND \"c\".\"confupdtype\" = $9)) AS \"result\"",
+        "params": [
+          "FormSubmission_submitterId_fkey",
+          "public",
+          "\"public\".\"FormSubmission\"",
+          "f",
+          "[\"submitterId\"]",
+          "\"public\".\"User\"",
+          "[\"id\"]",
+          "a",
+          "a"
+        ]
+      }
+    ]
+  }
+]

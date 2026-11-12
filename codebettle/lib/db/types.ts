@@ -57,7 +57,8 @@ export type NotificationEventKey =
   | 'application'
   | 'announcement'
   | 'support_request'
-  | 'request_update';
+  | 'request_update'
+  | 'form_submission';
 
 export type NotificationPrefs = {
   inApp: boolean;
@@ -70,6 +71,7 @@ export type NotificationPrefs = {
     announcement: boolean;
     support_request: boolean;
     request_update: boolean;
+    form_submission: boolean;
   };
 };
 
@@ -81,6 +83,7 @@ export const NOTIFICATION_EVENT_KEYS: readonly NotificationEventKey[] = [
   'announcement',
   'support_request',
   'request_update',
+  'form_submission',
 ] as const;
 
 /** Defaults applied when the stored prefs are NULL (or a field is missing). */
@@ -95,6 +98,7 @@ export const DEFAULT_NOTIFICATION_PREFS: NotificationPrefs = {
     announcement: true,
     support_request: true,
     request_update: true,
+    form_submission: true,
   },
 };
 
@@ -1250,4 +1254,157 @@ export type SupportRequestRow = Pick<
   | 'resolvedAt'
   | 'createdAt'
   | 'updatedAt'
+>;
+
+// ---------------------------------------------------------------------------
+// Phase 6 — Forms Builder (registration + survey forms).
+// ---------------------------------------------------------------------------
+
+/**
+ * One field in a form. This is the SHARED shape every Phase 6 worker
+ * uses — do not invent a different one. `type` is the input kind;
+ * `options` is required (non-empty) for select/radio/checkbox;
+ * `validation` holds the per-field rules; `styling.width` is 'full'
+ * (default) or 'half'. There is deliberately NO file-upload type in
+ * v1 (public file upload is an abuse surface).
+ */
+export type FormFieldType =
+  | 'text'
+  | 'email'
+  | 'tel'
+  | 'textarea'
+  | 'number'
+  | 'date'
+  | 'select'
+  | 'radio'
+  | 'checkbox'
+  | 'password';
+
+export const FORM_FIELD_TYPES: readonly FormFieldType[] = [
+  'text',
+  'email',
+  'tel',
+  'textarea',
+  'number',
+  'date',
+  'select',
+  'radio',
+  'checkbox',
+  'password',
+] as const;
+
+/** Field types whose value must come from `options`. */
+export const FORM_OPTION_FIELD_TYPES: readonly FormFieldType[] = [
+  'select',
+  'radio',
+  'checkbox',
+] as const;
+
+export interface FormFieldValidation {
+  minLength?: number;
+  maxLength?: number;
+  pattern?: string;
+  min?: number;
+  max?: number;
+}
+
+export interface FormField {
+  id: string;
+  type: FormFieldType;
+  label: string;
+  placeholder?: string;
+  required: boolean;
+  options?: string[];
+  validation?: FormFieldValidation;
+  styling?: { width?: 'full' | 'half' };
+}
+
+/**
+ * The stored `FormDefinition.schema` Json value: ordered fields plus
+ * form-level settings. The builder stores submit-button text and the
+ * success message inside the schema (next to `fields`) so they round-
+ * trip to the public form through `toFormSchema` / `toPublicForm`.
+ */
+export interface FormSchema {
+  fields: FormField[];
+  /** Text on the public form's submit button. */
+  submitButtonText?: string;
+  /** Message shown to the submitter after a successful submission. */
+  successMessage?: string;
+}
+
+/** Form kind: 'registration' | 'survey' ONLY — there is no quiz type. */
+export type FormType = 'registration' | 'survey';
+
+export const FORM_TYPES: readonly FormType[] = ['registration', 'survey'] as const;
+
+/** Form lifecycle: 'draft' | 'published'. Only published forms are public. */
+export type FormStatus = 'draft' | 'published';
+
+export const FORM_STATUSES: readonly FormStatus[] = ['draft', 'published'] as const;
+
+/**
+ * A registration/survey form definition (Phase 6). `slug` is the
+ * URL-safe public key (/forms/[slug]); `schema` is the stored
+ * { fields: FormField[] } — submissions are ALWAYS validated against
+ * this stored schema, never a client-sent one.
+ */
+export interface FormDefinition {
+  id: string;
+  name: string;
+  slug: string;
+  type: FormType;
+  description?: string;
+  schema: FormSchema;
+  status: FormStatus;
+  createdById: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/** The public shape of a published form — no internal fields. */
+export interface PublicForm {
+  id: string;
+  name: string;
+  description?: string;
+  type: FormType;
+  schema: FormSchema;
+}
+
+/**
+ * One filled-in form. `data` is keyed by field id
+ * ({ [fieldId]: value }); `submitterId` is null for anonymous
+ * (signed-out) submissions.
+ */
+export interface FormSubmission {
+  id: string;
+  formId: string;
+  submitterId?: string;
+  data: Record<string, unknown>;
+  reviewed: boolean;
+  submittedAt: string;
+}
+
+export type FormDefinitionRow = Pick<
+  Models.public_FormDefinition,
+  | 'id'
+  | 'name'
+  | 'slug'
+  | 'type'
+  | 'description'
+  | 'schema'
+  | 'status'
+  | 'createdById'
+  | 'createdAt'
+  | 'updatedAt'
+>;
+
+export type FormSubmissionRow = Pick<
+  Models.public_FormSubmission,
+  | 'id'
+  | 'formId'
+  | 'submitterId'
+  | 'data'
+  | 'reviewed'
+  | 'submittedAt'
 >;

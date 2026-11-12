@@ -189,6 +189,8 @@ model User {
   wishlist           Wishlist[]
   supportRequests    SupportRequest[]   @relation("SupportRequestStudent")
   supportRequestsResolved SupportRequest[] @relation("SupportRequestResolver")
+  createdForms       FormDefinition[] @relation("FormDefinitionCreator")
+  formSubmissions    FormSubmission[] @relation("FormSubmissionSubmitter")
   paymentSubmissionsReviewed PaymentSubmission[] @relation("PaymentSubmissionReviewer")
   invitationsSent    Invitation[]            @relation("InvitationInviter")
   stageHistory       ApplicationStageHistory[] @relation("StageHistoryActor")
@@ -661,6 +663,50 @@ model SocialLink {
   updatedAt    temporal.UpdatedAt
 
   @@index([isEnabled, displayOrder])
+}
+
+// Phase 6 — Forms Builder (registration + survey forms only; NO quiz
+// type — quizzes live in the Quiz models). A form's fields live in the
+// `schema` Json column as { fields: FormField[] } (see
+// lib/services/form-schema.ts for the exact shape + validation).
+// `slug` is the URL-safe public identifier (/forms/[slug]); unique.
+// `type` is 'registration' | 'survey', `status` is 'draft' |
+// 'published' — only published forms are visible on the public API.
+// NO file-upload field type in v1: public file upload is an abuse
+// surface (storage cost + malware), so it is deliberately excluded.
+model FormDefinition {
+  id          String   @id @onCreate(cuid(2))
+  name        String
+  slug        String   @unique
+  type        String
+  description String?
+  schema      Json
+  status      String   @default("draft")
+  createdById String
+  createdBy   User     @relation("FormDefinitionCreator", fields: [createdById], references: [id])
+  createdAt   DateTime @default(now()) @onCreate(now())
+  updatedAt   temporal.UpdatedAt
+
+  submissions FormSubmission[]
+
+  @@index([status, createdAt])
+}
+
+// One filled-in form. `data` is a Json object keyed by field id
+// ({ [fieldId]: value }) and is ALWAYS validated against the STORED
+// form schema at submit time — never trust a client-sent schema.
+// `submitterId` is null for anonymous (signed-out) submissions.
+model FormSubmission {
+  id          String         @id @onCreate(cuid(2))
+  formId      String
+  form        FormDefinition @relation(fields: [formId], references: [id], onDelete: Cascade)
+  submitterId String?
+  submitter   User?          @relation("FormSubmissionSubmitter", fields: [submitterId], references: [id])
+  data        Json
+  reviewed    Boolean        @default(false)
+  submittedAt DateTime       @default(now()) @onCreate(now())
+
+  @@index([formId, submittedAt])
 }
 
 model InstructorApplication {

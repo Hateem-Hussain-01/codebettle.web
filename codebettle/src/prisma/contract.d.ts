@@ -23,9 +23,9 @@ import type {
 } from '@prisma/orm-postgres/contract/types';
 
 export type StorageHash =
-  StorageHashBase<'7c805afa9e4fbef914a66aae13de2740343b2c1d64d98a42fbe12937165385f5'>;
+  StorageHashBase<'0af7fadc85431fbf0451e1d9a675ab1ed1182c04701562503f386d75ad3f16be'>;
 export type ExecutionHash =
-  ExecutionHashBase<'d8dedd49153c74bc46848ff157274826b9693ff2b12fe3a18c9b0cd948a537f3'>;
+  ExecutionHashBase<'d742767ac0816cc20b46ff412f9ac438d9362600d07f034aabeba9afd79091af'>;
 export type ProfileHash =
   ProfileHashBase<'3916f444a8a17ad749191acf9e08dad97d1a327b88c2f1d45d12f240296aa8b2'>;
 
@@ -751,6 +751,32 @@ export namespace Models {
     readonly [RelationKeys]?:
       'certificate' | 'course' | 'lessonProgress' | 'paymentSubmissions' | 'payments' | 'student';
   };
+  export type public_FormDefinition = {
+    createdAt: FieldOutputTypes['public']['FormDefinition']['createdAt'];
+    createdById: FieldOutputTypes['public']['FormDefinition']['createdById'];
+    description: FieldOutputTypes['public']['FormDefinition']['description'];
+    id: FieldOutputTypes['public']['FormDefinition']['id'];
+    name: FieldOutputTypes['public']['FormDefinition']['name'];
+    schema: FieldOutputTypes['public']['FormDefinition']['schema'];
+    slug: FieldOutputTypes['public']['FormDefinition']['slug'];
+    status: FieldOutputTypes['public']['FormDefinition']['status'];
+    type: FieldOutputTypes['public']['FormDefinition']['type'];
+    updatedAt: FieldOutputTypes['public']['FormDefinition']['updatedAt'];
+    createdBy: public_User;
+    submissions: public_FormSubmission[];
+    readonly [RelationKeys]?: 'createdBy' | 'submissions';
+  };
+  export type public_FormSubmission = {
+    data: FieldOutputTypes['public']['FormSubmission']['data'];
+    formId: FieldOutputTypes['public']['FormSubmission']['formId'];
+    id: FieldOutputTypes['public']['FormSubmission']['id'];
+    reviewed: FieldOutputTypes['public']['FormSubmission']['reviewed'];
+    submittedAt: FieldOutputTypes['public']['FormSubmission']['submittedAt'];
+    submitterId: FieldOutputTypes['public']['FormSubmission']['submitterId'];
+    form: public_FormDefinition;
+    submitter: public_User | null;
+    readonly [RelationKeys]?: 'form' | 'submitter';
+  };
   export type public_InstructorApplication = {
     additionalInfo: FieldOutputTypes['public']['InstructorApplication']['additionalInfo'];
     createdAt: FieldOutputTypes['public']['InstructorApplication']['createdAt'];
@@ -1102,8 +1128,10 @@ export namespace Models {
     blogPosts: public_BlogPost[];
     certificates: public_Certificate[];
     coursesTaught: public_Course[];
+    createdForms: public_FormDefinition[];
     emailVerifications: public_EmailVerification[];
     enrollments: public_Enrollment[];
+    formSubmissions: public_FormSubmission[];
     invitationsSent: public_Invitation[];
     loginEvents: public_LoginEvent[];
     notes: public_Note[];
@@ -1127,8 +1155,10 @@ export namespace Models {
       | 'blogPosts'
       | 'certificates'
       | 'coursesTaught'
+      | 'createdForms'
       | 'emailVerifications'
       | 'enrollments'
+      | 'formSubmissions'
       | 'invitationsSent'
       | 'loginEvents'
       | 'notes'
@@ -1170,6 +1200,8 @@ export declare const models: {
     Course: Models.public_Course;
     EmailVerification: Models.public_EmailVerification;
     Enrollment: Models.public_Enrollment;
+    FormDefinition: Models.public_FormDefinition;
+    FormSubmission: Models.public_FormSubmission;
     InstructorApplication: Models.public_InstructorApplication;
     Invitation: Models.public_Invitation;
     Lesson: Models.public_Lesson;
@@ -2535,6 +2567,201 @@ type ContractBase = Omit<
                   readonly target: {
                     readonly namespaceId: 'public' & NamespaceId;
                     readonly tableName: 'Course';
+                    readonly columns: readonly ['id'];
+                  };
+                },
+              ];
+            };
+            readonly FormDefinition: {
+              columns: {
+                readonly createdAt: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly nullable: false;
+                  readonly default: { readonly kind: 'function'; readonly expression: 'now()' };
+                  readonly typeParams: { readonly precision: 3 };
+                  readonly many: false;
+                };
+                readonly createdById: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly description: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly id: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly name: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly schema: {
+                  readonly dataType: 'pg/json';
+                  readonly codecId: 'pg/json@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly slug: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly status: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'literal';
+                    readonly value: DefaultLiteralValue<'pg/text@1', 'draft'>;
+                  };
+                  readonly many: false;
+                };
+                readonly type: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly updatedAt: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly nullable: false;
+                  readonly typeParams: { readonly precision: 3 };
+                  readonly many: false;
+                };
+              };
+              primaryKey: { readonly columns: readonly ['id'] };
+              uniques: readonly [{ readonly columns: readonly ['slug'] }];
+              indexes: readonly [
+                {
+                  readonly name: 'FormDefinition_createdById_idx_8bf640ed';
+                  readonly prefix: 'FormDefinition_createdById_idx';
+                  readonly columns: readonly ['createdById'];
+                  readonly unique: false;
+                },
+                {
+                  readonly name: 'FormDefinition_status_createdAt_idx_58610442';
+                  readonly prefix: 'FormDefinition_status_createdAt_idx';
+                  readonly columns: readonly ['status', 'createdAt'];
+                  readonly unique: false;
+                },
+              ];
+              foreignKeys: readonly [
+                {
+                  readonly source: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'FormDefinition';
+                    readonly columns: readonly ['createdById'];
+                  };
+                  readonly target: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'User';
+                    readonly columns: readonly ['id'];
+                  };
+                },
+              ];
+            };
+            readonly FormSubmission: {
+              columns: {
+                readonly data: {
+                  readonly dataType: 'pg/json';
+                  readonly codecId: 'pg/json@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly formId: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly id: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly reviewed: {
+                  readonly dataType: 'pg/bool';
+                  readonly codecId: 'pg/bool@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'literal';
+                    readonly value: DefaultLiteralValue<'pg/bool@1', false>;
+                  };
+                  readonly many: false;
+                };
+                readonly submittedAt: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly nullable: false;
+                  readonly default: { readonly kind: 'function'; readonly expression: 'now()' };
+                  readonly typeParams: { readonly precision: 3 };
+                  readonly many: false;
+                };
+                readonly submitterId: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+              };
+              primaryKey: { readonly columns: readonly ['id'] };
+              uniques: readonly [];
+              indexes: readonly [
+                {
+                  readonly name: 'FormSubmission_formId_idx_3c13a9fa';
+                  readonly prefix: 'FormSubmission_formId_idx';
+                  readonly columns: readonly ['formId'];
+                  readonly unique: false;
+                },
+                {
+                  readonly name: 'FormSubmission_formId_submittedAt_idx_b451b238';
+                  readonly prefix: 'FormSubmission_formId_submittedAt_idx';
+                  readonly columns: readonly ['formId', 'submittedAt'];
+                  readonly unique: false;
+                },
+                {
+                  readonly name: 'FormSubmission_submitterId_idx_15ca851b';
+                  readonly prefix: 'FormSubmission_submitterId_idx';
+                  readonly columns: readonly ['submitterId'];
+                  readonly unique: false;
+                },
+              ];
+              foreignKeys: readonly [
+                {
+                  readonly source: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'FormSubmission';
+                    readonly columns: readonly ['formId'];
+                  };
+                  readonly target: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'FormDefinition';
+                    readonly columns: readonly ['id'];
+                  };
+                },
+                {
+                  readonly source: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'FormSubmission';
+                    readonly columns: readonly ['submitterId'];
+                  };
+                  readonly target: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'User';
                     readonly columns: readonly ['id'];
                   };
                 },
@@ -5195,6 +5422,14 @@ type ContractBase = Omit<
       readonly namespace: 'public' & NamespaceId;
       readonly model: 'Enrollment';
     };
+    readonly FormDefinition: {
+      readonly namespace: 'public' & NamespaceId;
+      readonly model: 'FormDefinition';
+    };
+    readonly FormSubmission: {
+      readonly namespace: 'public' & NamespaceId;
+      readonly model: 'FormSubmission';
+    };
     readonly InstructorApplication: {
       readonly namespace: 'public' & NamespaceId;
       readonly model: 'InstructorApplication';
@@ -6526,6 +6761,163 @@ type ContractBase = Omit<
                 readonly paymentStatus: { readonly column: 'paymentStatus' };
                 readonly studentId: { readonly column: 'studentId' };
                 readonly updatedAt: { readonly column: 'updatedAt' };
+              };
+            };
+          };
+          readonly FormDefinition: {
+            readonly fields: {
+              readonly createdAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly typeParams: { readonly precision: 3 };
+                };
+              };
+              readonly createdById: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly description: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly id: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly name: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly schema: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/json@1' };
+              };
+              readonly slug: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly status: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly type: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly updatedAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly typeParams: { readonly precision: 3 };
+                };
+              };
+            };
+            readonly relations: {
+              readonly createdBy: {
+                readonly to: { readonly namespace: 'public' & NamespaceId; readonly model: 'User' };
+                readonly cardinality: 'N:1';
+                readonly nullable: false;
+                readonly on: {
+                  readonly localFields: readonly ['createdById'];
+                  readonly targetFields: readonly ['id'];
+                };
+              };
+              readonly submissions: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'FormSubmission';
+                };
+                readonly cardinality: '1:N';
+                readonly on: {
+                  readonly localFields: readonly ['id'];
+                  readonly targetFields: readonly ['formId'];
+                };
+              };
+            };
+            readonly storage: {
+              readonly table: 'FormDefinition';
+              readonly namespaceId: 'public';
+              readonly fields: {
+                readonly createdAt: { readonly column: 'createdAt' };
+                readonly createdById: { readonly column: 'createdById' };
+                readonly description: { readonly column: 'description' };
+                readonly id: { readonly column: 'id' };
+                readonly name: { readonly column: 'name' };
+                readonly schema: { readonly column: 'schema' };
+                readonly slug: { readonly column: 'slug' };
+                readonly status: { readonly column: 'status' };
+                readonly type: { readonly column: 'type' };
+                readonly updatedAt: { readonly column: 'updatedAt' };
+              };
+            };
+          };
+          readonly FormSubmission: {
+            readonly fields: {
+              readonly data: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/json@1' };
+              };
+              readonly formId: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly id: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly reviewed: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/bool@1' };
+              };
+              readonly submittedAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly typeParams: { readonly precision: 3 };
+                };
+              };
+              readonly submitterId: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+            };
+            readonly relations: {
+              readonly form: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'FormDefinition';
+                };
+                readonly cardinality: 'N:1';
+                readonly nullable: false;
+                readonly on: {
+                  readonly localFields: readonly ['formId'];
+                  readonly targetFields: readonly ['id'];
+                };
+              };
+              readonly submitter: {
+                readonly to: { readonly namespace: 'public' & NamespaceId; readonly model: 'User' };
+                readonly cardinality: 'N:1';
+                readonly nullable: true;
+                readonly on: {
+                  readonly localFields: readonly ['submitterId'];
+                  readonly targetFields: readonly ['id'];
+                };
+              };
+            };
+            readonly storage: {
+              readonly table: 'FormSubmission';
+              readonly namespaceId: 'public';
+              readonly fields: {
+                readonly data: { readonly column: 'data' };
+                readonly formId: { readonly column: 'formId' };
+                readonly id: { readonly column: 'id' };
+                readonly reviewed: { readonly column: 'reviewed' };
+                readonly submittedAt: { readonly column: 'submittedAt' };
+                readonly submitterId: { readonly column: 'submitterId' };
               };
             };
           };
@@ -8666,6 +9058,17 @@ type ContractBase = Omit<
                   readonly targetFields: readonly ['instructorId'];
                 };
               };
+              readonly createdForms: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'FormDefinition';
+                };
+                readonly cardinality: '1:N';
+                readonly on: {
+                  readonly localFields: readonly ['id'];
+                  readonly targetFields: readonly ['createdById'];
+                };
+              };
               readonly emailVerifications: {
                 readonly to: {
                   readonly namespace: 'public' & NamespaceId;
@@ -8686,6 +9089,17 @@ type ContractBase = Omit<
                 readonly on: {
                   readonly localFields: readonly ['id'];
                   readonly targetFields: readonly ['studentId'];
+                };
+              };
+              readonly formSubmissions: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'FormSubmission';
+                };
+                readonly cardinality: '1:N';
+                readonly on: {
+                  readonly localFields: readonly ['id'];
+                  readonly targetFields: readonly ['submitterId'];
                 };
               };
               readonly invitationsSent: {
@@ -9478,6 +9892,63 @@ type ContractBase = Omit<
           readonly ref: {
             readonly entry: 'Enrollment';
             readonly field: 'updatedAt';
+            readonly namespace: 'public';
+          };
+        },
+        {
+          readonly onCreate: {
+            readonly id: 'timestampNow';
+            readonly kind: 'generator';
+            readonly params: { readonly precision: 3 };
+          };
+          readonly ref: {
+            readonly entry: 'FormDefinition';
+            readonly field: 'createdAt';
+            readonly namespace: 'public';
+          };
+        },
+        {
+          readonly onCreate: { readonly id: 'cuid2'; readonly kind: 'generator' };
+          readonly ref: {
+            readonly entry: 'FormDefinition';
+            readonly field: 'id';
+            readonly namespace: 'public';
+          };
+        },
+        {
+          readonly onCreate: {
+            readonly id: 'timestampNow';
+            readonly kind: 'generator';
+            readonly params: { readonly precision: 3 };
+          };
+          readonly onUpdate: {
+            readonly id: 'timestampNow';
+            readonly kind: 'generator';
+            readonly params: { readonly precision: 3 };
+          };
+          readonly ref: {
+            readonly entry: 'FormDefinition';
+            readonly field: 'updatedAt';
+            readonly namespace: 'public';
+          };
+        },
+        {
+          readonly onCreate: { readonly id: 'cuid2'; readonly kind: 'generator' };
+          readonly ref: {
+            readonly entry: 'FormSubmission';
+            readonly field: 'id';
+            readonly namespace: 'public';
+          };
+        },
+        {
+          readonly onCreate: {
+            readonly id: 'timestampNow';
+            readonly kind: 'generator';
+            readonly params: { readonly precision: 3 };
+          };
+          readonly ref: {
+            readonly entry: 'FormSubmission';
+            readonly field: 'submittedAt';
             readonly namespace: 'public';
           };
         },
