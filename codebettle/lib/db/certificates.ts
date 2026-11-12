@@ -5,6 +5,19 @@
  * are issued against a completed enrolment; the verification token is a
  * random 32-hex string generated at issue time (seed tokens were
  * generated the same way). Issue is admin-only (enforced in the route).
+ *
+ * FAIL-SAFE (Phase 2 migration): the `batch` and `revokedAt` columns
+ * arrive via migration 20261112T1945_add_certificate_batch_revoked_at,
+ * which Eman runs himself in the Supabase SQL Editor. Until it runs,
+ * the live table has neither column — but the generated client selects
+ * them, so a plain lookup would throw Postgres 42703 (undefined
+ * column). The public read paths (getCertificateByToken,
+ * getCertificateById) catch exactly that error and retry selecting
+ * only the pre-migration columns, treating the certificate as
+ * "no batch / not revoked" — the same fail-safe shape as the settings
+ * service (lib/services/settings-service.ts). The revoke write is the
+ * exception: it needs the column and fails with a clear message
+ * (see revokeCertificate) instead of pretending it worked.
  */
 import { randomBytes } from 'node:crypto';
 import { getDb } from './client';
@@ -12,11 +25,71 @@ import { mapCertificateRow } from './mappers';
 import { parsePageParams, toPage, type Page } from './pagination';
 import type { Certificate } from './types';
 
+/** Columns that existed before the Phase 2 migration (batch/revokedAt excluded). */
+const LEGACY_CERTIFICATE_FIELDS = [
+  'id',
+  'studentId',
+  'courseId',
+  'enrollmentId',
+  'certificateNumber',
+  'verificationToken',
+  'issuedAt',
+] as const;
+
+/**
+ * Is this error a "column does not exist" failure for one of the given
+ * columns? Postgres reports it as code 42703 with a message naming the
+ * column. Anything else is a real failure and must propagate.
+ */
+export function isMissingColumnError(error: unknown, columns: string[]): boolean {
+  if (!error || typeof error !== 'object') return false;
+  const code = (error as { code?: unknown }).code;
+  const message = (error as { message?: unknown }).message;
+  const text = typeof message === 'string' ? message : '';
+  const namesColumn = columns.some((c) => text.includes(`"${c}"`) || text.includes(c));
+  if (code === '42703' && namesColumn) return true;
+  return /column .* does not exist/i.test(text) && namesColumn;
+}
+
+/** Phase 2 Certificate columns — the ones a pre-migration table lacks. */
+const PHASE2_CERTIFICATE_COLUMNS = ['batch', 'revokedAt'];
+
+/**
+ * Run a certificate read, retrying without the Phase 2 columns when the
+ * migration has not run yet. `fetch` receives a query builder flag and
+ * returns the raw result (row, rows, or null).
+ */
+async function withCertificateColumnFallback<T>(
+  fetch: (legacyOnly: boolean) => Promise<T>,
+): Promise<T> {
+  try {
+    return await fetch(false);
+  } catch (error) {
+    if (!isMissingColumnError(error, PHASE2_CERTIFICATE_COLUMNS)) throw error;
+    return fetch(true);
+  }
+}
+
+export async function getCertificateById(id: string): Promise<Certificate | null> {
+  const row = await withCertificateColumnFallback(async (legacyOnly) => {
+    const base = getDb().orm.public.Certificate.where({ id });
+    // Separate branches (not a reassigned `let`): .select() narrows the
+    // collection's row type, so assigning it back is a type error.
+    return legacyOnly
+      ? base.select(...LEGACY_CERTIFICATE_FIELDS).first()
+      : base.first();
+  });
+  if (!row) return null;
+  return mapCertificateRow(row);
+}
+
 export async function getCertificatesByStudent(studentId: string): Promise<Certificate[]> {
-  const rows = await getDb()
-    .orm.public.Certificate.where({ studentId })
-    .orderBy((c) => c.issuedAt.desc())
-    .all();
+  const rows = await withCertificateColumnFallback(async (legacyOnly) => {
+    const base = getDb().orm.public.Certificate.where({ studentId });
+    return legacyOnly
+      ? base.select(...LEGACY_CERTIFICATE_FIELDS).orderBy((c) => c.issuedAt.desc()).all()
+      : base.orderBy((c) => c.issuedAt.desc()).all();
+  });
   return rows.map(mapCertificateRow);
 }
 
@@ -42,11 +115,14 @@ export async function getCertificatesByStudentAndCourses(
 ): Promise<Certificate[]> {
   const unique = [...new Set(courseIds)];
   if (unique.length === 0) return [];
-  const rows = await getDb()
-    .orm.public.Certificate.where({ studentId })
-    .where((c) => c.courseId.in(unique))
-    .orderBy((c) => c.issuedAt.desc())
-    .all();
+  const rows = await withCertificateColumnFallback(async (legacyOnly) => {
+    const base = getDb()
+      .orm.public.Certificate.where({ studentId })
+      .where((c) => c.courseId.in(unique));
+    return legacyOnly
+      ? base.select(...LEGACY_CERTIFICATE_FIELDS).orderBy((c) => c.issuedAt.desc()).all()
+      : base.orderBy((c) => c.issuedAt.desc()).all();
+  });
   return rows.map(mapCertificateRow);
 }
 
@@ -60,15 +136,51 @@ export async function getCertificateByNumber(
   return mapCertificateRow(row);
 }
 
-/** Look up a certificate by its verification token (public verify page). */
+/** Look up a certificate by its verification token (public verify page). Fail-safe: see the header note. */
 export async function getCertificateByToken(
   verificationToken: string,
 ): Promise<Certificate | null> {
-  const row = await getDb()
-    .orm.public.Certificate.where({ verificationToken })
-    .first();
+  const row = await withCertificateColumnFallback(async (legacyOnly) => {
+    const base = getDb().orm.public.Certificate.where({ verificationToken });
+    return legacyOnly
+      ? base.select(...LEGACY_CERTIFICATE_FIELDS).first()
+      : base.first();
+  });
   if (!row) return null;
   return mapCertificateRow(row);
+}
+
+/**
+ * Revoke a certificate (admin only). Sets revokedAt to now; the verify
+ * page/API then show it as revoked/invalid. Idempotent: revoking an
+ * already-revoked certificate returns it unchanged.
+ *
+ * This write NEEDS the Phase 2 migration: unlike the reads above it
+ * cannot fall back, so a missing revokedAt column surfaces as a clear
+ * error telling the admin to run the migration SQL first — never a
+ * silent success.
+ */
+export async function revokeCertificate(
+  id: string,
+): Promise<{ certificate: Certificate } | { error: string }> {
+  const existing = await getCertificateById(id);
+  if (!existing) return { error: 'Certificate not found' };
+  if (existing.revokedAt) return { certificate: existing };
+  try {
+    const updated = await getDb()
+      .orm.public.Certificate.where({ id })
+      .update({ revokedAt: new Date() });
+    if (!updated) return { error: 'Certificate not found' };
+    return { certificate: mapCertificateRow(updated) };
+  } catch (error) {
+    if (isMissingColumnError(error, PHASE2_CERTIFICATE_COLUMNS)) {
+      return {
+        error:
+          'The certificate migration has not run yet — run codebettle-certificate-migration.sql in the Supabase SQL Editor, then try revoking again.',
+      };
+    }
+    throw error;
+  }
 }
 
 export interface ListCertificatesOptions {
@@ -100,6 +212,8 @@ export interface IssueCertificateInput {
   courseId: string;
   enrollmentId: string;
   certificateNumber: string;
+  /** Cohort batch printed on the certificate (e.g. "BATCH-8"). Optional. */
+  batch?: string;
 }
 
 /** Issue a certificate for a completed enrolment. */
@@ -125,6 +239,7 @@ export async function issueCertificate(
     enrollmentId: input.enrollmentId,
     certificateNumber: input.certificateNumber,
     verificationToken: randomBytes(16).toString('hex'),
+    ...(input.batch ? { batch: input.batch } : {}),
   });
   return { certificate: mapCertificateRow(row) };
 }

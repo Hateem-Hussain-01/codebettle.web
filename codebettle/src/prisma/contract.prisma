@@ -226,6 +226,13 @@ model Course {
   deletedAt       DateTime?
   createdAt       DateTime           @default(now()) @onCreate(now())
   updatedAt       temporal.UpdatedAt
+  // Per-course certificate template (Phase 2): the FULL HTML template
+  // for this course's certificates, pasted/uploaded by an admin in the
+  // course form. Null = no template attached — PDF generation falls
+  // back to the default Python design (lib/certificates/template.html).
+  // Stored as plain text in the DB (no Storage bucket, no repo-file
+  // coupling); rendered server-side to PDF only, never served as HTML.
+  certificateTemplateHtml String?
 
   modules         Module[]
   enrollments     Enrollment[]
@@ -444,6 +451,14 @@ model Certificate {
   certificateNumber String     @unique
   verificationToken String     @unique
   issuedAt          DateTime   @default(now())
+  // Certificate PDF (Phase 2): the cohort batch printed on the
+  // certificate (e.g. "BATCH-8"). Null for certificates issued before
+  // batches were recorded — the PDF falls back to the course default.
+  batch             String?
+  // Revocation (Phase 2): set when an admin revokes the certificate.
+  // Null = valid. The verify page/API show a revoked certificate as
+  // revoked/invalid; the row is kept for audit history.
+  revokedAt         DateTime?
 }
 
 // Quiz models (Phase 5, text import in Phase 4 Module 8): a teacher

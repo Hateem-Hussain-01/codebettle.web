@@ -1,0 +1,122 @@
+[
+  {
+    "id": "column.public.Certificate.batch",
+    "label": "Add column \"batch\" to \"Certificate\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "batch",
+        "table": "Certificate"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"batch\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "Certificate",
+          "batch"
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "column \"batch\" on \"Certificate\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"batch\"",
+        "sql": "ALTER TABLE \"public\".\"Certificate\" ADD COLUMN \"batch\" text"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"batch\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "Certificate",
+          "batch"
+        ],
+        "expectation": {
+          "expects": "present",
+          "object": "column \"batch\" on \"Certificate\""
+        }
+      },
+      {
+        "description": "verify column \"batch\" has type \"text\"",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_attribute\" AS \"a\" INNER JOIN \"pg_class\" AS \"c\" ON \"c\".\"oid\" = \"a\".\"attrelid\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"relnamespace\" WHERE (\"n\".\"nspname\" = $1 AND \"c\".\"relname\" = $2 AND \"a\".\"attname\" = $3 AND (format_type(\"a\".\"atttypid\", \"a\".\"atttypmod\")) = $4 AND NOT (\"a\".\"attisdropped\"))) AS \"result\"",
+        "params": [
+          "public",
+          "Certificate",
+          "batch",
+          "text"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "column.public.Certificate.revokedAt",
+    "label": "Add column \"revokedAt\" to \"Certificate\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "revokedAt",
+        "table": "Certificate"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"revokedAt\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "Certificate",
+          "revokedAt"
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "column \"revokedAt\" on \"Certificate\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"revokedAt\"",
+        "sql": "ALTER TABLE \"public\".\"Certificate\" ADD COLUMN \"revokedAt\" timestamptz(3)"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"revokedAt\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "Certificate",
+          "revokedAt"
+        ],
+        "expectation": {
+          "expects": "present",
+          "object": "column \"revokedAt\" on \"Certificate\""
+        }
+      },
+      {
+        "description": "verify column \"revokedAt\" has type \"timestamp(3) with time zone\"",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_attribute\" AS \"a\" INNER JOIN \"pg_class\" AS \"c\" ON \"c\".\"oid\" = \"a\".\"attrelid\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"relnamespace\" WHERE (\"n\".\"nspname\" = $1 AND \"c\".\"relname\" = $2 AND \"a\".\"attname\" = $3 AND (format_type(\"a\".\"atttypid\", \"a\".\"atttypmod\")) = $4 AND NOT (\"a\".\"attisdropped\"))) AS \"result\"",
+        "params": [
+          "public",
+          "Certificate",
+          "revokedAt",
+          "timestamp(3) with time zone"
+        ]
+      }
+    ]
+  }
+]

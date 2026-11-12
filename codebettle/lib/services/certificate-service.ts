@@ -27,6 +27,8 @@ export interface IssueCertificateWithRetryInput {
   enrollmentId: string;
   /** When given, this exact number is used (single attempt, no retry). */
   certificateNumber?: string;
+  /** Cohort batch stored on the certificate and printed on the PDF. */
+  batch?: string;
 }
 
 export interface IssueCertificateWithRetryOptions {
@@ -56,6 +58,7 @@ export async function issueCertificateWithRetry(
       courseId: input.courseId,
       enrollmentId: input.enrollmentId,
       certificateNumber: input.certificateNumber,
+      batch: input.batch,
     });
     if ('error' in issued) return badRequest(issued.error);
     return { certificate: issued.certificate };

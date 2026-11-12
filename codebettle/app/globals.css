@@ -207,6 +207,18 @@ body {
   to { --neon-angle: 360deg; }
 }
 
+/* Verified seal: the check badge pops in on the verify page (Phase 2).
+   A short scale + fade — no JavaScript animation, no new dependency. */
+@keyframes seal-pop {
+  0% { transform: scale(0.5); opacity: 0; }
+  60% { transform: scale(1.12); opacity: 1; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+.animate-seal-pop {
+  animation: seal-pop 0.5s ease-out both;
+}
+
 .neon-btn {
   position: relative;
   isolation: isolate;

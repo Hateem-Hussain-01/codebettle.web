@@ -78,6 +78,8 @@ export interface CreateCourseServiceInput {
   requirements?: string[];
   whatYouLearn?: string[];
   tags?: string[];
+  /** Optional full HTML certificate template for this course. */
+  certificateTemplateHtml?: string;
 }
 
 export async function createCourseService(
@@ -116,6 +118,7 @@ export async function createCourseService(
     requirements: input.requirements,
     whatYouLearn: input.whatYouLearn,
     tags: input.tags,
+    certificateTemplateHtml: input.certificateTemplateHtml ?? null,
   });
   await logAudit({ actorId: actor.id, action: 'course.create', entity: 'course', entityId: course.id, detail: slug });
   return { course };
@@ -139,6 +142,8 @@ export interface UpdateCourseServiceInput {
   requirements?: string[];
   whatYouLearn?: string[];
   tags?: string[];
+  /** Full HTML certificate template for this course; null clears an attached template. */
+  certificateTemplateHtml?: string | null;
 }
 
 export async function updateCourseService(
@@ -179,6 +184,7 @@ export async function updateCourseService(
     requirements: input.requirements,
     whatYouLearn: input.whatYouLearn,
     tags: input.tags,
+    certificateTemplateHtml: input.certificateTemplateHtml,
   });
   if (!updated) return notFound('Course');
   await logAudit({ actorId: actor.id, action: 'course.update', entity: 'course', entityId: courseId });

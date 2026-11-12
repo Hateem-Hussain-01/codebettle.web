@@ -11,7 +11,58 @@
 import { getDb } from './client';
 import { categoryToStorage, mapCourseRow, mapLessonRow, mapModuleRow, stringToDate, stripUndefined } from './mappers';
 import { parsePageParams, toPage, type Page } from './pagination';
+import { isMissingColumnError } from './certificates';
 import type { Course, CourseCategory, CourseLevel, CourseSchedule, CourseStatus, Lesson, Module } from './types';
+
+/**
+ * Certificate-path course reads (Phase 2) — fail-safe for the migration
+ * not having run yet.
+ *
+ * getCourseById / getCoursesByIds select every Course column (the
+ * generated client fetches all scalar fields), so before the Phase 2
+ * migration runs they would throw Postgres 42703 on the new
+ * certificateTemplateHtml column. The certificate paths must not crash
+ * on that (see the fail-safe note in lib/db/certificates.ts), so they
+ * use the two narrow reads below instead:
+ * - getCourseCertificateInfo selects only pre-migration columns, so it
+ *   works identically before and after the migration.
+ * - getCourseCertificateTemplate selects only the new column and
+ *   catches a missing-column error, returning null ("no template" ->
+ *   default Python design).
+ */
+export interface CourseCertificateInfo {
+  id: string;
+  slug: string;
+  title: string;
+  thumbnail: string;
+}
+
+/** id/slug/title/thumbnail only — the certificate PDF needs nothing else. Never touches the Phase 2 column. */
+export async function getCourseCertificateInfo(courseId: string): Promise<CourseCertificateInfo | null> {
+  const row = await getDb()
+    .orm.public.Course.where({ id: courseId })
+    .where((c) => c.deletedAt.isNull())
+    .select('id', 'slug', 'title', 'thumbnail')
+    .first();
+  if (!row) return null;
+  return { id: row.id, slug: row.slug, title: row.title, thumbnail: row.thumbnail };
+}
+
+/** The attached per-course HTML template, or null when none is attached (or the migration has not run yet). */
+export async function getCourseCertificateTemplate(courseId: string): Promise<string | null> {
+  try {
+    const row = await getDb()
+      .orm.public.Course.where({ id: courseId })
+      .where((c) => c.deletedAt.isNull())
+      .select('certificateTemplateHtml')
+      .first();
+    if (!row) return null;
+    return row.certificateTemplateHtml ?? null;
+  } catch (error) {
+    if (isMissingColumnError(error, ['certificateTemplateHtml'])) return null;
+    throw error;
+  }
+}
 
 export async function getCourseById(id: string): Promise<Course | null> {
   const row = await getDb()
@@ -177,6 +228,8 @@ export interface CreateCourseInput {
   requirements?: string[];
   whatYouLearn?: string[];
   tags?: string[];
+  /** Full HTML certificate template for this course (optional; null = default Python design). */
+  certificateTemplateHtml?: string | null;
 }
 
 /** Create a course (draft). Curriculum (modules/lessons) is added separately in Phase 3. */
@@ -198,6 +251,7 @@ export async function createCourse(input: CreateCourseInput): Promise<Course> {
     requirements: input.requirements ?? [],
     whatYouLearn: input.whatYouLearn ?? [],
     tags: input.tags ?? [],
+    certificateTemplateHtml: input.certificateTemplateHtml ?? null,
   });
   return mapCourseRow(row, []);
 }
@@ -223,6 +277,8 @@ export interface UpdateCourseInput {
   /** Rating stats — maintained by the review service (Phase 7), not by editors. */
   rating?: number;
   reviewCount?: number;
+  /** Full HTML certificate template (optional; null clears an attached template). */
+  certificateTemplateHtml?: string | null;
 }
 
 export async function updateCourse(id: string, input: UpdateCourseInput): Promise<Course | null> {

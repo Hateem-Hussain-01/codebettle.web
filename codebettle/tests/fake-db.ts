@@ -56,6 +56,7 @@ const NULLABLE_FIELDS: Record<string, string[]> = {
   Course: ['longDescription', 'thumbnail', 'zoomLink', 'schedule', 'completedAt'],
   Lesson: ['videoUrl', 'content', 'date'],
   Enrollment: ['completedAt', 'couponUsed', 'deletedAt'],
+  Certificate: ['batch', 'revokedAt'],
   Announcement: ['courseId'],
   ContactMessage: ['subject'],
   Notification: ['readAt', 'announcementId', 'linkUrl', 'acknowledgedAt'],
