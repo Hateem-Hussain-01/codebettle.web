@@ -157,6 +157,13 @@ export interface User {
    * to `true`. Only meaningful when role is `admin`.
    */
   adminPermissions?: AdminPermissions;
+  /**
+   * Phase 5 (Module 23): explicit grant to view the audit log,
+   * separate from adminPermissions. Default false; never seeded true.
+   * The two official administrators always have audit-log access,
+   * with or without this flag (see lib/super-admin.ts).
+   */
+  canViewAuditLog: boolean;
   status: UserStatus;
   joinedAt: string;
   /** Course ids the student is enrolled in. Populated by list/getStudents and getUserByIdWithEnrollments; undefined otherwise. */
@@ -450,6 +457,7 @@ export type UserRow = Pick<
   | 'socialLinks'
   | 'notificationPrefs'
   | 'adminPermissions'
+  | 'canViewAuditLog'
   | 'status'
   | 'joinedAt'
   | 'deletedAt'

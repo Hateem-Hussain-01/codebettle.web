@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { requireFullAdmin, serviceError } from '@/lib/api-helpers';
+import { requireSuperAdmin, serviceError } from '@/lib/api-helpers';
 import { resendInvitation } from '@/lib/services/invitation-service';
 
 /**
  * POST /api/admin/access/invitations/[id]/resend — send a fresh
- * invitation for the same person. Full admins only. The old
+ * invitation for the same person. Official administrators only. The old
  * invitation is revoked (its link stops working) and a new one is
  * created with the same name/contact/grants, a new token and a new
  * 7-day window. A used invitation cannot be resent (400) — the
@@ -18,7 +18,7 @@ export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
-  const auth = await requireFullAdmin();
+  const auth = await requireSuperAdmin();
   if ('error' in auth) return auth.error;
   const { id } = await params;
   const result = await resendInvitation(auth.session.id, id, {

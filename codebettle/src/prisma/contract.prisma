@@ -157,6 +157,12 @@ model User {
   socialLinks        Json?
   notificationPrefs  Json?
   adminPermissions   Json?
+  // Phase 5 (Module 23, Super Admin & Audit): explicit grant to view
+  // the audit log, separate from adminPermissions. Only super-admins
+  // (the two OFFICIAL_ADMINS) and users granted this flag may open
+  // /admin/audit. Officials always have access, with or without the
+  // flag; the flag is never seeded true.
+  canViewAuditLog    Boolean                 @default(false)
   status             UserStatus              @default(active)
   emailVerifiedAt    DateTime?
   joinedAt           DateTime                @default(now())

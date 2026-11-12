@@ -13,7 +13,8 @@ import { getEnrollmentsByStudent } from '@/lib/db/enrollments';
  * (e.g. `Course.introLessonCount`); until then the number lives here
  * in one place so the endpoint and the student page agree.
  */
-export const PRE_VERIFICATION_LESSON_LIMIT = 2;
+/** First N lessons are free before verification (module-local: route files may not export non-route values). */
+const PRE_VERIFICATION_LESSON_LIMIT = 2;
 
 /**
  * GET /api/student/courses/[id]/content — the gated course content for

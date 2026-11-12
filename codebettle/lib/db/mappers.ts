@@ -226,6 +226,9 @@ export function mapUserRow(row: UserRow, enrolledCourseIds?: string[]): User {
     socialLinks: toSocialLinks(row.socialLinks),
     notificationPrefs: toNotificationPrefs(row.notificationPrefs),
     adminPermissions: toAdminPermissions(row.adminPermissions),
+    // Phase 5: `?? false` covers rows written before the column
+    // existed (fake-db rows in tests, pre-migration rows).
+    canViewAuditLog: row.canViewAuditLog ?? false,
     status: row.status,
     joinedAt: dateToString(row.joinedAt),
     enrolledCourses: enrolledCourseIds ?? [],

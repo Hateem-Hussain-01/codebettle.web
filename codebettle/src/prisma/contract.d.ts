@@ -23,7 +23,7 @@ import type {
 } from '@prisma/orm-postgres/contract/types';
 
 export type StorageHash =
-  StorageHashBase<'354f04bc914218afbaecf1860816c3eb17265df49166f0e49a2bdea59c846cba'>;
+  StorageHashBase<'7c805afa9e4fbef914a66aae13de2740343b2c1d64d98a42fbe12937165385f5'>;
 export type ExecutionHash =
   ExecutionHashBase<'d8dedd49153c74bc46848ff157274826b9693ff2b12fe3a18c9b0cd948a537f3'>;
 export type ProfileHash =
@@ -1076,6 +1076,7 @@ export namespace Models {
     adminPermissions: FieldOutputTypes['public']['User']['adminPermissions'];
     avatar: FieldOutputTypes['public']['User']['avatar'];
     bio: FieldOutputTypes['public']['User']['bio'];
+    canViewAuditLog: FieldOutputTypes['public']['User']['canViewAuditLog'];
     createdAt: FieldOutputTypes['public']['User']['createdAt'];
     deletedAt: FieldOutputTypes['public']['User']['deletedAt'];
     email: FieldOutputTypes['public']['User']['email'];
@@ -4855,6 +4856,16 @@ type ContractBase = Omit<
                   readonly nullable: true;
                   readonly many: false;
                 };
+                readonly canViewAuditLog: {
+                  readonly dataType: 'pg/bool';
+                  readonly codecId: 'pg/bool@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'literal';
+                    readonly value: DefaultLiteralValue<'pg/bool@1', false>;
+                  };
+                  readonly many: false;
+                };
                 readonly createdAt: {
                   readonly dataType: 'pg/timestamptz';
                   readonly codecId: 'pg/timestamptz-date@1';
@@ -8472,6 +8483,10 @@ type ContractBase = Omit<
                 readonly nullable: true;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
               };
+              readonly canViewAuditLog: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/bool@1' };
+              };
               readonly createdAt: {
                 readonly nullable: false;
                 readonly type: {
@@ -8829,6 +8844,7 @@ type ContractBase = Omit<
                 readonly adminPermissions: { readonly column: 'adminPermissions' };
                 readonly avatar: { readonly column: 'avatar' };
                 readonly bio: { readonly column: 'bio' };
+                readonly canViewAuditLog: { readonly column: 'canViewAuditLog' };
                 readonly createdAt: { readonly column: 'createdAt' };
                 readonly deletedAt: { readonly column: 'deletedAt' };
                 readonly email: { readonly column: 'email' };

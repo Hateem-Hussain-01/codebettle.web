@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
-import { invalidBody, readJson, requireFullAdmin, serviceError } from '@/lib/api-helpers';
+import { invalidBody, readJson, requireSuperAdmin, serviceError } from '@/lib/api-helpers';
 import {
   revokeAdminAccess,
   updateAdminAccess,
@@ -8,7 +8,7 @@ import {
 
 /**
  * PATCH /api/admin/access/users/[id] — grant admin access or update a
- * restricted admin's areas. Full admins only.
+ * restricted admin's areas. Official administrators only.
  *
  * Body: { permissions: { dashboard: true, courses: false, ... } }
  *   Grants admin access (or updates the areas) — at least one area must
@@ -24,7 +24,7 @@ const patchSchema = z.object({
 });
 
 export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const auth = await requireFullAdmin();
+  const auth = await requireSuperAdmin();
   if ('error' in auth) return auth.error;
   const { id } = await params;
 

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
-import { invalidBody, readJson, requireFullAdmin, serviceError } from '@/lib/api-helpers';
+import { invalidBody, readJson, requireSuperAdmin, serviceError } from '@/lib/api-helpers';
 import {
   createInvitationForAdmin,
   listInvitationsForAdmin,
@@ -8,12 +8,14 @@ import {
 
 /**
  * GET /api/admin/access/invitations — every invitation (newest first)
- * with a computed status (pending / used / expired). Full admins only.
+ * with a computed status (pending / used / expired). Official
+ * administrators only.
  * The token hash is never returned; the raw token is only ever in the
  * create/resend response, inside the invite URL.
  *
  * POST /api/admin/access/invitations — invite a person with no account
- * yet (Case B of the "Grant Admin Access" flow). Full admins only.
+ * yet (Case B of the "Grant Admin Access" flow). Official administrators
+ * only.
  *
  * Body: { firstName, lastName, email, contactNumber?, isTeacher?,
  *         permissions?: { dashboard: true, ... } }
@@ -37,7 +39,7 @@ const createSchema = z.object({
 });
 
 export async function GET() {
-  const auth = await requireFullAdmin();
+  const auth = await requireSuperAdmin();
   if ('error' in auth) return auth.error;
   const result = await listInvitationsForAdmin(auth.session.id);
   if ('error' in result) return serviceError(result);
@@ -45,7 +47,7 @@ export async function GET() {
 }
 
 export async function POST(request: NextRequest) {
-  const auth = await requireFullAdmin();
+  const auth = await requireSuperAdmin();
   if ('error' in auth) return auth.error;
   const body = await readJson(request);
   if (body === null) return invalidBody();
