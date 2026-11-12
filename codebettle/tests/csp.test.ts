@@ -54,9 +54,9 @@ test('generateNonce is unpredictable and unique per call', () => {
   assert.equal(buildCspHeader(a).includes(`'nonce-${a}'`), true);
 });
 
-test('proxy: a public page gets a CSP header with a fresh nonce per request', () => {
-  const first = proxy(new NextRequest('http://localhost/auth/login'));
-  const second = proxy(new NextRequest('http://localhost/auth/login'));
+test('proxy: a public page gets a CSP header with a fresh nonce per request', async () => {
+  const first = await proxy(new NextRequest('http://localhost/auth/login'));
+  const second = await proxy(new NextRequest('http://localhost/auth/login'));
   const n1 = nonceOf(first.headers.get('Content-Security-Policy'));
   const n2 = nonceOf(second.headers.get('Content-Security-Policy'));
   assert.ok(n1, 'first response has a nonce');
@@ -65,13 +65,13 @@ test('proxy: a public page gets a CSP header with a fresh nonce per request', ()
   assert.equal(first.status, 200);
 });
 
-test('proxy: the portal gate still works — no cookie redirects, cookie passes with CSP', () => {
-  const anon = proxy(new NextRequest('http://localhost/student/dashboard'));
+test('proxy: the portal gate still works — no cookie redirects, cookie passes with CSP', async () => {
+  const anon = await proxy(new NextRequest('http://localhost/student/dashboard'));
   assert.equal(anon.status, 307);
   assert.equal(anon.headers.get('location'), 'http://localhost/auth/login');
   assert.ok(nonceOf(anon.headers.get('Content-Security-Policy')), 'redirect also carries CSP');
 
-  const authed = proxy(
+  const authed = await proxy(
     new NextRequest('http://localhost/student/dashboard', {
       headers: { cookie: 'cb_session=opaque-token' },
     }),
