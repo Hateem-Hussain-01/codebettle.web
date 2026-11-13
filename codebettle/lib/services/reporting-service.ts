@@ -118,7 +118,10 @@ async function loadReportData(): Promise<ReportData> {
       getDb().orm.public.LessonProgress.all(),
       getDb().orm.public.Certificate.all(),
       getDb().orm.public.User.all(),
-      getDb().orm.public.Course.all(),
+      // Narrow read (id + deletedAt only): a plain .all() selects every
+      // Course column and would throw 42703 on certificateTemplateHtml
+      // before the Phase 2 migration runs.
+      getDb().orm.public.Course.select('id', 'deletedAt').all(),
     ]);
   const enrollments = enrollmentRows
     .filter((r) => r.deletedAt === null || r.deletedAt === undefined)

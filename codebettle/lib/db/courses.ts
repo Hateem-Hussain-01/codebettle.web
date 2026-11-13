@@ -18,18 +18,70 @@ import type { Course, CourseCategory, CourseLevel, CourseSchedule, CourseStatus,
  * Certificate-path course reads (Phase 2) — fail-safe for the migration
  * not having run yet.
  *
- * getCourseById / getCoursesByIds select every Course column (the
- * generated client fetches all scalar fields), so before the Phase 2
- * migration runs they would throw Postgres 42703 on the new
- * certificateTemplateHtml column. The certificate paths must not crash
- * on that (see the fail-safe note in lib/db/certificates.ts), so they
- * use the two narrow reads below instead:
+ * The generated client selects every Course column when no .select()
+ * is given, so before the Phase 2 migration runs a plain course read
+ * would throw Postgres 42703 on the new certificateTemplateHtml
+ * column. Every general course read below therefore runs through
+ * withCourseTemplateColumnFallback: on a missing-column error it
+ * retries selecting only the pre-migration columns, and the mapper
+ * reads the template as null ("no template" -> default Python design).
+ * The two narrow reads below exist for the certificate paths, which
+ * never need the full row:
  * - getCourseCertificateInfo selects only pre-migration columns, so it
  *   works identically before and after the migration.
  * - getCourseCertificateTemplate selects only the new column and
  *   catches a missing-column error, returning null ("no template" ->
  *   default Python design).
  */
+
+/** Columns that existed before the Phase 2 migration (certificateTemplateHtml excluded). */
+const LEGACY_COURSE_FIELDS = [
+  'id',
+  'slug',
+  'title',
+  'description',
+  'longDescription',
+  'thumbnail',
+  'category',
+  'level',
+  'pricePkr',
+  'isFree',
+  'instructorId',
+  'zoomLink',
+  'schedule',
+  'status',
+  'isFeatured',
+  'isCompleted',
+  'completedAt',
+  'requirements',
+  'whatYouLearn',
+  'tags',
+  'enrolledCount',
+  'rating',
+  'reviewCount',
+  'createdAt',
+  'updatedAt',
+] as const;
+
+/** Phase 2 Course column — the one a pre-migration table lacks. */
+const PHASE2_COURSE_COLUMNS = ['certificateTemplateHtml'];
+
+/**
+ * Run a course read, retrying without the Phase 2 column when the
+ * migration has not run yet. `fetch` receives a query builder flag and
+ * returns the raw result (row, rows, or null). Same shape as
+ * withCertificateColumnFallback in lib/db/certificates.ts.
+ */
+async function withCourseTemplateColumnFallback<T>(
+  fetch: (legacyOnly: boolean) => Promise<T>,
+): Promise<T> {
+  try {
+    return await fetch(false);
+  } catch (error) {
+    if (!isMissingColumnError(error, PHASE2_COURSE_COLUMNS)) throw error;
+    return fetch(true);
+  }
+}
 export interface CourseCertificateInfo {
   id: string;
   slug: string;
@@ -65,15 +117,29 @@ export async function getCourseCertificateTemplate(courseId: string): Promise<st
 }
 
 export async function getCourseById(id: string): Promise<Course | null> {
-  const row = await getDb()
-    .orm.public.Course.where({ id })
-    .where((c) => c.deletedAt.isNull())
-    .include('modules', (m) =>
-      m
-        .orderBy((mod) => mod.position.asc())
-        .include('lessons', (l) => l.orderBy((les) => les.position.asc())),
-    )
-    .first();
+  const row = await withCourseTemplateColumnFallback(async (legacyOnly) => {
+    const base = getDb()
+      .orm.public.Course.where({ id })
+      .where((c) => c.deletedAt.isNull());
+    // Separate branches (not a reassigned `let`): .select() narrows the
+    // collection's row type, so assigning it back is a type error.
+    return legacyOnly
+      ? base
+          .select(...LEGACY_COURSE_FIELDS)
+          .include('modules', (m) =>
+            m
+              .orderBy((mod) => mod.position.asc())
+              .include('lessons', (l) => l.orderBy((les) => les.position.asc())),
+          )
+          .first()
+      : base
+          .include('modules', (m) =>
+            m
+              .orderBy((mod) => mod.position.asc())
+              .include('lessons', (l) => l.orderBy((les) => les.position.asc())),
+          )
+          .first();
+  });
   if (!row) return null;
   return mapCourseRow(row, row.modules);
 }
@@ -86,29 +152,57 @@ export async function getCourseById(id: string): Promise<Course | null> {
 export async function getCoursesByIds(ids: string[]): Promise<Course[]> {
   const unique = [...new Set(ids)];
   if (unique.length === 0) return [];
-  const rows = await getDb()
-    .orm.public.Course.where((c) => c.id.in(unique))
-    .where((c) => c.deletedAt.isNull())
-    .include('modules', (m) =>
-      m
-        .orderBy((mod) => mod.position.asc())
-        .include('lessons', (l) => l.orderBy((les) => les.position.asc())),
-    )
-    .all();
+  const rows = await withCourseTemplateColumnFallback(async (legacyOnly) => {
+    const base = getDb()
+      .orm.public.Course.where((c) => c.id.in(unique))
+      .where((c) => c.deletedAt.isNull());
+    // Separate branches (not a reassigned `let`): .select() narrows the
+    // collection's row type, so assigning it back is a type error.
+    return legacyOnly
+      ? base
+          .select(...LEGACY_COURSE_FIELDS)
+          .include('modules', (m) =>
+            m
+              .orderBy((mod) => mod.position.asc())
+              .include('lessons', (l) => l.orderBy((les) => les.position.asc())),
+          )
+          .all()
+      : base
+          .include('modules', (m) =>
+            m
+              .orderBy((mod) => mod.position.asc())
+              .include('lessons', (l) => l.orderBy((les) => les.position.asc())),
+          )
+          .all();
+  });
   const byId = new Map(rows.map((r) => [r.id, mapCourseRow(r, r.modules)]));
   return unique.map((id) => byId.get(id)).filter((c): c is Course => c !== undefined);
 }
 
 export async function getCourseBySlug(slug: string): Promise<Course | null> {
-  const row = await getDb()
-    .orm.public.Course.where({ slug })
-    .where((c) => c.deletedAt.isNull())
-    .include('modules', (m) =>
-      m
-        .orderBy((mod) => mod.position.asc())
-        .include('lessons', (l) => l.orderBy((les) => les.position.asc())),
-    )
-    .first();
+  const row = await withCourseTemplateColumnFallback(async (legacyOnly) => {
+    const base = getDb()
+      .orm.public.Course.where({ slug })
+      .where((c) => c.deletedAt.isNull());
+    // Separate branches (not a reassigned `let`): .select() narrows the
+    // collection's row type, so assigning it back is a type error.
+    return legacyOnly
+      ? base
+          .select(...LEGACY_COURSE_FIELDS)
+          .include('modules', (m) =>
+            m
+              .orderBy((mod) => mod.position.asc())
+              .include('lessons', (l) => l.orderBy((les) => les.position.asc())),
+          )
+          .first()
+      : base
+          .include('modules', (m) =>
+            m
+              .orderBy((mod) => mod.position.asc())
+              .include('lessons', (l) => l.orderBy((les) => les.position.asc())),
+          )
+          .first();
+  });
   if (!row) return null;
   return mapCourseRow(row, row.modules);
 }
@@ -116,72 +210,143 @@ export async function getCourseBySlug(slug: string): Promise<Course | null> {
 async function listWithCurriculum(
   base: ReturnType<typeof getDb>['orm']['public']['Course'],
   params: { limit: number; offset: number },
+  legacyOnly = false,
 ): Promise<Course[]> {
-  const rows = await base
-    .include('modules', (m) =>
-      m
-        .orderBy((mod) => mod.position.asc())
-        .include('lessons', (l) => l.orderBy((les) => les.position.asc())),
-    )
-    .limit(params.limit)
-    .offset(params.offset)
-    .all();
+  const rows = legacyOnly
+    ? await base
+        .select(...LEGACY_COURSE_FIELDS)
+        .include('modules', (m) =>
+          m
+            .orderBy((mod) => mod.position.asc())
+            .include('lessons', (l) => l.orderBy((les) => les.position.asc())),
+        )
+        .limit(params.limit)
+        .offset(params.offset)
+        .all()
+    : await base
+        .include('modules', (m) =>
+          m
+            .orderBy((mod) => mod.position.asc())
+            .include('lessons', (l) => l.orderBy((les) => les.position.asc())),
+        )
+        .limit(params.limit)
+        .offset(params.offset)
+        .all();
   return rows.map((r) => mapCourseRow(r, r.modules));
 }
 
 export async function getPublishedCourses(): Promise<Course[]> {
-  const rows = await getDb()
-    .orm.public.Course.where({ status: 'published' })
-    .where((c) => c.deletedAt.isNull())
-    .include('modules', (m) =>
-      m
-        .orderBy((mod) => mod.position.asc())
-        .include('lessons', (l) => l.orderBy((les) => les.position.asc())),
-    )
-    .orderBy((c) => c.createdAt.desc())
-    .all();
+  const rows = await withCourseTemplateColumnFallback(async (legacyOnly) => {
+    const base = getDb()
+      .orm.public.Course.where({ status: 'published' })
+      .where((c) => c.deletedAt.isNull());
+    // Separate branches (not a reassigned `let`): .select() narrows the
+    // collection's row type, so assigning it back is a type error.
+    return legacyOnly
+      ? base
+          .select(...LEGACY_COURSE_FIELDS)
+          .include('modules', (m) =>
+            m
+              .orderBy((mod) => mod.position.asc())
+              .include('lessons', (l) => l.orderBy((les) => les.position.asc())),
+          )
+          .orderBy((c) => c.createdAt.desc())
+          .all()
+      : base
+          .include('modules', (m) =>
+            m
+              .orderBy((mod) => mod.position.asc())
+              .include('lessons', (l) => l.orderBy((les) => les.position.asc())),
+          )
+          .orderBy((c) => c.createdAt.desc())
+          .all();
+  });
   return rows.map((r) => mapCourseRow(r, r.modules));
 }
 
 export async function getFeaturedCourses(): Promise<Course[]> {
-  const rows = await getDb()
-    .orm.public.Course.where({ status: 'published' })
-    .where((c) => c.deletedAt.isNull())
-    .where((c) => c.isFeatured.eq(true))
-    .include('modules', (m) =>
-      m
-        .orderBy((mod) => mod.position.asc())
-        .include('lessons', (l) => l.orderBy((les) => les.position.asc())),
-    )
-    .orderBy((c) => c.createdAt.desc())
-    .all();
+  const rows = await withCourseTemplateColumnFallback(async (legacyOnly) => {
+    const base = getDb()
+      .orm.public.Course.where({ status: 'published' })
+      .where((c) => c.deletedAt.isNull())
+      .where((c) => c.isFeatured.eq(true));
+    // Separate branches (not a reassigned `let`): .select() narrows the
+    // collection's row type, so assigning it back is a type error.
+    return legacyOnly
+      ? base
+          .select(...LEGACY_COURSE_FIELDS)
+          .include('modules', (m) =>
+            m
+              .orderBy((mod) => mod.position.asc())
+              .include('lessons', (l) => l.orderBy((les) => les.position.asc())),
+          )
+          .orderBy((c) => c.createdAt.desc())
+          .all()
+      : base
+          .include('modules', (m) =>
+            m
+              .orderBy((mod) => mod.position.asc())
+              .include('lessons', (l) => l.orderBy((les) => les.position.asc())),
+          )
+          .orderBy((c) => c.createdAt.desc())
+          .all();
+  });
   return rows.map((r) => mapCourseRow(r, r.modules));
 }
 
 export async function getCoursesByInstructor(instructorId: string): Promise<Course[]> {
-  const rows = await getDb()
-    .orm.public.Course.where({ instructorId })
-    .where((c) => c.deletedAt.isNull())
-    .include('modules', (m) =>
-      m
-        .orderBy((mod) => mod.position.asc())
-        .include('lessons', (l) => l.orderBy((les) => les.position.asc())),
-    )
-    .orderBy((c) => c.createdAt.desc())
-    .all();
+  const rows = await withCourseTemplateColumnFallback(async (legacyOnly) => {
+    const base = getDb()
+      .orm.public.Course.where({ instructorId })
+      .where((c) => c.deletedAt.isNull());
+    // Separate branches (not a reassigned `let`): .select() narrows the
+    // collection's row type, so assigning it back is a type error.
+    return legacyOnly
+      ? base
+          .select(...LEGACY_COURSE_FIELDS)
+          .include('modules', (m) =>
+            m
+              .orderBy((mod) => mod.position.asc())
+              .include('lessons', (l) => l.orderBy((les) => les.position.asc())),
+          )
+          .orderBy((c) => c.createdAt.desc())
+          .all()
+      : base
+          .include('modules', (m) =>
+            m
+              .orderBy((mod) => mod.position.asc())
+              .include('lessons', (l) => l.orderBy((les) => les.position.asc())),
+          )
+          .orderBy((c) => c.createdAt.desc())
+          .all();
+  });
   return rows.map((r) => mapCourseRow(r, r.modules));
 }
 
 export async function getAllCourses(): Promise<Course[]> {
-  const rows = await getDb()
-    .orm.public.Course.where((c) => c.deletedAt.isNull())
-    .include('modules', (m) =>
-      m
-        .orderBy((mod) => mod.position.asc())
-        .include('lessons', (l) => l.orderBy((les) => les.position.asc())),
-    )
-    .orderBy((c) => c.createdAt.desc())
-    .all();
+  const rows = await withCourseTemplateColumnFallback(async (legacyOnly) => {
+    const base = getDb().orm.public.Course.where((c) => c.deletedAt.isNull());
+    // Separate branches (not a reassigned `let`): .select() narrows the
+    // collection's row type, so assigning it back is a type error.
+    return legacyOnly
+      ? base
+          .select(...LEGACY_COURSE_FIELDS)
+          .include('modules', (m) =>
+            m
+              .orderBy((mod) => mod.position.asc())
+              .include('lessons', (l) => l.orderBy((les) => les.position.asc())),
+          )
+          .orderBy((c) => c.createdAt.desc())
+          .all()
+      : base
+          .include('modules', (m) =>
+            m
+              .orderBy((mod) => mod.position.asc())
+              .include('lessons', (l) => l.orderBy((les) => les.position.asc())),
+          )
+          .orderBy((c) => c.createdAt.desc())
+          .all();
+  });
   return rows.map((r) => mapCourseRow(r, r.modules));
 }
 
@@ -207,8 +372,13 @@ export async function listCourses(opts: ListCoursesOptions = {}): Promise<Page<C
     const term = opts.search.trim();
     if (term) query = query.where((c) => c.title.ilike(`%${term}%`));
   }
-  const total = (await query.all()).length;
-  const items = await listWithCurriculum(query.orderBy((c) => c.createdAt.desc()), params);
+  // The total count is a plain all-columns read too — it must fall back
+  // with the page items, not crash on its own.
+  const { total, items } = await withCourseTemplateColumnFallback(async (legacyOnly) => {
+    const total = (await (legacyOnly ? query.select(...LEGACY_COURSE_FIELDS).all() : query.all())).length;
+    const items = await listWithCurriculum(query.orderBy((c) => c.createdAt.desc()), params, legacyOnly);
+    return { total, items };
+  });
   return toPage(items, total, params);
 }
 
@@ -251,7 +421,10 @@ export async function createCourse(input: CreateCourseInput): Promise<Course> {
     requirements: input.requirements ?? [],
     whatYouLearn: input.whatYouLearn ?? [],
     tags: input.tags ?? [],
-    certificateTemplateHtml: input.certificateTemplateHtml ?? null,
+    // Only send the Phase 2 column when a template is actually
+    // attached (same shape as issueCertificate's batch): a plain create
+    // must not fail with 42703 before the migration runs.
+    ...(input.certificateTemplateHtml ? { certificateTemplateHtml: input.certificateTemplateHtml } : {}),
   });
   return mapCourseRow(row, []);
 }

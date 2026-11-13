@@ -506,6 +506,14 @@ export type CourseRow = Pick<
   | 'certificateTemplateHtml'
 >;
 
+/**
+ * A course row as read from the DB. certificateTemplateHtml is optional
+ * here: the legacy select (pre-migration fallback) does not return it,
+ * and the mapper treats a missing value as null.
+ */
+export type CourseRowLike = Omit<CourseRow, 'certificateTemplateHtml'> &
+  Partial<Pick<CourseRow, 'certificateTemplateHtml'>>;
+
 export type ModuleRow = Pick<Models.public_Module, 'id' | 'courseId' | 'title' | 'position'>;
 
 export type LessonRow = Pick<
