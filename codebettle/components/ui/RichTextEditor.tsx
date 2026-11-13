@@ -1,5 +1,5 @@
 'use client';
-import { useRef } from 'react';
+import { useEffect, useRef } from 'react';
 import {
   Bold, Italic, Underline, Heading2, Heading3, List, ListOrdered,
   Link2, Eraser, MousePointerClick, ImagePlus,
@@ -11,6 +11,16 @@ import { sanitizeEmailHtml } from '@/lib/sanitize';
  * A contentEditable area with a small execCommand toolbar — the same
  * pattern as the blog editor (app/admin/blog/blog-client.tsx), no
  * editor library installed and none added.
+ *
+ * The editor is UNCONTROLLED: the DOM is the source of truth while
+ * typing. React must NOT re-apply `initialHtml` on every keystroke —
+ * the old code did exactly that (dangerouslySetInnerHTML driven by
+ * parent state), which reset the DOM and dropped the caret to the
+ * start on every input, so text typed backwards and backspace did
+ * nothing. Instead the content is written into the DOM only when it
+ * changes from OUTSIDE the editor (loading a template, switching
+ * posts, form reset); the sync effect below tells editor-driven
+ * changes apart from outside ones via `lastEmittedRef`.
  *
  * Tools: bold, italic, underline, headings, bullet/numbered lists,
  * link, gold CTA button, image insert, clear formatting. The image
@@ -61,23 +71,55 @@ export default function RichTextEditor({
 }: RichTextEditorProps) {
   const ref = useRef<HTMLDivElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
+  // Last HTML this editor emitted (sanitized). Compared against the
+  // sanitized `initialHtml` prop so the sync effect below can tell an
+  // editor-driven change (leave the DOM alone — the caret stays put)
+  // from an outside change (load a template, reset the form — rewrite
+  // the DOM). Both sides are sanitized, so the comparison is
+  // apples-to-apples even if the sanitizer normalizes the markup.
+  const lastEmittedRef = useRef<string | null>(null);
+
+  // Emit the editor's current HTML: record it (sanitized) first so the
+  // sync effect recognises this change as editor-driven, then notify
+  // the parent. Every path that mutates the DOM goes through here.
+  const emit = () => {
+    if (!ref.current) return;
+    lastEmittedRef.current = sanitizeEmailHtml(ref.current.innerHTML);
+    onChange(ref.current.innerHTML);
+  };
+
+  // Sync content ONLY when it changed from outside the editor. On
+  // mount this writes the initial HTML into the (otherwise empty) div;
+  // afterwards it fires when the parent passes genuinely new HTML.
+  // When the change came from this editor itself, the DOM already
+  // holds it — doing nothing here is what keeps the caret in place
+  // while typing (and makes backspace work).
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const next = sanitizeEmailHtml(initialHtml);
+    if (lastEmittedRef.current !== next) {
+      el.innerHTML = next;
+      lastEmittedRef.current = next;
+    }
+  }, [initialHtml]);
 
   const run = (command: string, value?: string) => {
     ref.current?.focus();
     document.execCommand(command, false, value);
-    if (ref.current) onChange(ref.current.innerHTML);
+    emit();
   };
 
   const insertAtCaret = (html: string) => {
     ref.current?.focus();
     document.execCommand('insertHTML', false, html);
-    if (ref.current) onChange(ref.current.innerHTML);
+    emit();
   };
 
   const insertPlaceholder = (key: string) => {
     ref.current?.focus();
     document.execCommand('insertText', false, `{{${key}}}`);
-    if (ref.current) onChange(ref.current.innerHTML);
+    emit();
   };
 
   const addLink = () => {
@@ -119,7 +161,7 @@ export default function RichTextEditor({
           img.style.maxWidth = '100%';
           img.style.height = 'auto';
         });
-        onChange(ref.current.innerHTML);
+        emit();
       }
     };
     reader.readAsDataURL(file);
@@ -196,10 +238,7 @@ export default function RichTextEditor({
         ref={ref}
         contentEditable={!disabled}
         suppressContentEditableWarning
-        dangerouslySetInnerHTML={{ __html: sanitizeEmailHtml(initialHtml) }}
-        onInput={() => {
-          if (ref.current) onChange(ref.current.innerHTML);
-        }}
+        onInput={emit}
         className="min-h-[220px] w-full bg-dark-card border border-dark-border rounded-lg px-4 py-2.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary [&_h2]:text-lg [&_h2]:font-bold [&_h2]:text-foreground [&_h3]:text-base [&_h3]:font-bold [&_h3]:text-foreground [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_a]:text-primary-text [&_a]:underline [&_img]:max-w-full [&_img]:h-auto"
       />
       <p className="text-xs text-muted mt-1.5">
