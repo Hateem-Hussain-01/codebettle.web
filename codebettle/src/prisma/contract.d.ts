@@ -23,9 +23,9 @@ import type {
 } from '@prisma/orm-postgres/contract/types';
 
 export type StorageHash =
-  StorageHashBase<'863ca981dd2f9f8343107dd2540c590a3e2dbecad4a22e090020151661358546'>;
+  StorageHashBase<'b3738a68e6895c897d9ef37f79cf2fbdcf4788bc5ea29c2bfb20057e4fe2de83'>;
 export type ExecutionHash =
-  ExecutionHashBase<'652e62e98d64878cdd97fef1913fe155339f63ea3e5124e6cac0472bb88d218f'>;
+  ExecutionHashBase<'9f26db1f17a796e77f027d8ecdec15bfdc221051d2f511007950e89c26c2a210'>;
 export type ProfileHash =
   ProfileHashBase<'3916f444a8a17ad749191acf9e08dad97d1a327b88c2f1d45d12f240296aa8b2'>;
 
@@ -284,6 +284,12 @@ type FieldTypeOverrides = {
           readonly input: 'site_wide' | 'course';
         };
       };
+      readonly Batch: {
+        readonly status: {
+          readonly output: 'upcoming' | 'ongoing' | 'completed';
+          readonly input: 'upcoming' | 'ongoing' | 'completed';
+        };
+      };
       readonly Coupon: {
         readonly type: {
           readonly output: 'percentage' | 'fixed';
@@ -415,6 +421,12 @@ type ColumnTypeOverrides = {
       readonly type: {
         readonly output: 'site_wide' | 'course';
         readonly input: 'site_wide' | 'course';
+      };
+    };
+    readonly Batch: {
+      readonly status: {
+        readonly output: 'upcoming' | 'ongoing' | 'completed';
+        readonly input: 'upcoming' | 'ongoing' | 'completed';
       };
     };
     readonly Coupon: {
@@ -602,6 +614,22 @@ export namespace Models {
     actor: public_User | null;
     readonly [RelationKeys]?: 'actor';
   };
+  export type public_Batch = {
+    batchNumber: FieldOutputTypes['public']['Batch']['batchNumber'];
+    capacity: FieldOutputTypes['public']['Batch']['capacity'];
+    courseId: FieldOutputTypes['public']['Batch']['courseId'];
+    createdAt: FieldOutputTypes['public']['Batch']['createdAt'];
+    endDate: FieldOutputTypes['public']['Batch']['endDate'];
+    id: FieldOutputTypes['public']['Batch']['id'];
+    instructorId: FieldOutputTypes['public']['Batch']['instructorId'];
+    startDate: FieldOutputTypes['public']['Batch']['startDate'];
+    status: FieldOutputTypes['public']['Batch']['status'];
+    updatedAt: FieldOutputTypes['public']['Batch']['updatedAt'];
+    course: public_Course;
+    enrollments: public_Enrollment[];
+    instructor: public_User | null;
+    readonly [RelationKeys]?: 'course' | 'enrollments' | 'instructor';
+  };
   export type public_BlogPost = {
     authorId: FieldOutputTypes['public']['BlogPost']['authorId'];
     authorName: FieldOutputTypes['public']['BlogPost']['authorName'];
@@ -701,6 +729,7 @@ export namespace Models {
     whatYouLearn: FieldOutputTypes['public']['Course']['whatYouLearn'];
     zoomLink: FieldOutputTypes['public']['Course']['zoomLink'];
     announcements: public_Announcement[];
+    batches: public_Batch[];
     certificates: public_Certificate[];
     enrollments: public_Enrollment[];
     instructor: public_User;
@@ -712,6 +741,7 @@ export namespace Models {
     wishlistEntries: public_Wishlist[];
     readonly [RelationKeys]?:
       | 'announcements'
+      | 'batches'
       | 'certificates'
       | 'enrollments'
       | 'instructor'
@@ -747,6 +777,7 @@ export namespace Models {
   };
   export type public_Enrollment = {
     amountPaid: FieldOutputTypes['public']['Enrollment']['amountPaid'];
+    batchId: FieldOutputTypes['public']['Enrollment']['batchId'];
     certificateEligible: FieldOutputTypes['public']['Enrollment']['certificateEligible'];
     completedAt: FieldOutputTypes['public']['Enrollment']['completedAt'];
     couponUsed: FieldOutputTypes['public']['Enrollment']['couponUsed'];
@@ -759,6 +790,7 @@ export namespace Models {
     paymentStatus: FieldOutputTypes['public']['Enrollment']['paymentStatus'];
     studentId: FieldOutputTypes['public']['Enrollment']['studentId'];
     updatedAt: FieldOutputTypes['public']['Enrollment']['updatedAt'];
+    batch: public_Batch | null;
     certificate: public_Certificate | null;
     course: public_Course;
     lessonProgress: public_LessonProgress[];
@@ -766,7 +798,13 @@ export namespace Models {
     payments: public_Payment[];
     student: public_User;
     readonly [RelationKeys]?:
-      'certificate' | 'course' | 'lessonProgress' | 'paymentSubmissions' | 'payments' | 'student';
+      | 'batch'
+      | 'certificate'
+      | 'course'
+      | 'lessonProgress'
+      | 'paymentSubmissions'
+      | 'payments'
+      | 'student';
   };
   export type public_FormDefinition = {
     createdAt: FieldOutputTypes['public']['FormDefinition']['createdAt'];
@@ -1148,6 +1186,7 @@ export namespace Models {
     applications: public_InstructorApplication[];
     applicationsReview: public_InstructorApplication[];
     auditLogs: public_AuditLog[];
+    batchesTaught: public_Batch[];
     blogPosts: public_BlogPost[];
     certificates: public_Certificate[];
     coursesTaught: public_Course[];
@@ -1176,6 +1215,7 @@ export namespace Models {
       | 'applications'
       | 'applicationsReview'
       | 'auditLogs'
+      | 'batchesTaught'
       | 'blogPosts'
       | 'certificates'
       | 'coursesTaught'
@@ -1217,6 +1257,7 @@ export declare const models: {
     ApplicationStage: Models.public_ApplicationStage;
     ApplicationStageHistory: Models.public_ApplicationStageHistory;
     AuditLog: Models.public_AuditLog;
+    Batch: Models.public_Batch;
     BlogPost: Models.public_BlogPost;
     Certificate: Models.public_Certificate;
     ContactMessage: Models.public_ContactMessage;
@@ -1717,6 +1758,121 @@ type ContractBase = Omit<
                     readonly namespaceId: 'public' & NamespaceId;
                     readonly tableName: 'AuditLog';
                     readonly columns: readonly ['actorId'];
+                  };
+                  readonly target: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'User';
+                    readonly columns: readonly ['id'];
+                  };
+                },
+              ];
+            };
+            readonly Batch: {
+              columns: {
+                readonly batchNumber: {
+                  readonly dataType: 'pg/int4';
+                  readonly codecId: 'pg/int4@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly capacity: {
+                  readonly dataType: 'pg/int4';
+                  readonly codecId: 'pg/int4@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly courseId: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly createdAt: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly nullable: false;
+                  readonly default: { readonly kind: 'function'; readonly expression: 'now()' };
+                  readonly typeParams: { readonly precision: 3 };
+                  readonly many: false;
+                };
+                readonly endDate: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly nullable: true;
+                  readonly typeParams: { readonly precision: 3 };
+                  readonly many: false;
+                };
+                readonly id: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly instructorId: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly startDate: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly nullable: true;
+                  readonly typeParams: { readonly precision: 3 };
+                  readonly many: false;
+                };
+                readonly status: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'literal';
+                    readonly value: DefaultLiteralValue<'pg/text@1', 'upcoming'>;
+                  };
+                  readonly many: false;
+                };
+                readonly updatedAt: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly nullable: false;
+                  readonly typeParams: { readonly precision: 3 };
+                  readonly many: false;
+                };
+              };
+              primaryKey: { readonly columns: readonly ['id'] };
+              uniques: readonly [{ readonly columns: readonly ['courseId', 'batchNumber'] }];
+              indexes: readonly [
+                {
+                  readonly name: 'Batch_courseId_idx_12f72d2a';
+                  readonly prefix: 'Batch_courseId_idx';
+                  readonly columns: readonly ['courseId'];
+                  readonly unique: false;
+                },
+                {
+                  readonly name: 'Batch_instructorId_idx_6b1d9b50';
+                  readonly prefix: 'Batch_instructorId_idx';
+                  readonly columns: readonly ['instructorId'];
+                  readonly unique: false;
+                },
+              ];
+              foreignKeys: readonly [
+                {
+                  readonly source: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'Batch';
+                    readonly columns: readonly ['courseId'];
+                  };
+                  readonly target: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'Course';
+                    readonly columns: readonly ['id'];
+                  };
+                },
+                {
+                  readonly source: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'Batch';
+                    readonly columns: readonly ['instructorId'];
                   };
                   readonly target: {
                     readonly namespaceId: 'public' & NamespaceId;
@@ -2592,6 +2748,12 @@ type ContractBase = Omit<
                   };
                   readonly many: false;
                 };
+                readonly batchId: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
                 readonly certificateEligible: {
                   readonly dataType: 'pg/bool';
                   readonly codecId: 'pg/bool@1';
@@ -2684,6 +2846,12 @@ type ContractBase = Omit<
               uniques: readonly [{ readonly columns: readonly ['studentId', 'courseId'] }];
               indexes: readonly [
                 {
+                  readonly name: 'Enrollment_batchId_idx_84d4b0b9';
+                  readonly prefix: 'Enrollment_batchId_idx';
+                  readonly columns: readonly ['batchId'];
+                  readonly unique: false;
+                },
+                {
                   readonly name: 'Enrollment_courseId_idx_12f72d2a';
                   readonly prefix: 'Enrollment_courseId_idx';
                   readonly columns: readonly ['courseId'];
@@ -2718,6 +2886,18 @@ type ContractBase = Omit<
                   readonly target: {
                     readonly namespaceId: 'public' & NamespaceId;
                     readonly tableName: 'Course';
+                    readonly columns: readonly ['id'];
+                  };
+                },
+                {
+                  readonly source: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'Enrollment';
+                    readonly columns: readonly ['batchId'];
+                  };
+                  readonly target: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'Batch';
                     readonly columns: readonly ['id'];
                   };
                 },
@@ -5480,6 +5660,10 @@ type ContractBase = Omit<
               readonly kind: 'valueSet';
               readonly values: readonly ['pending', 'approved', 'rejected'];
             };
+            readonly BatchStatus: {
+              readonly kind: 'valueSet';
+              readonly values: readonly ['upcoming', 'ongoing', 'completed'];
+            };
             readonly CouponType: {
               readonly kind: 'valueSet';
               readonly values: readonly ['percentage', 'fixed'];
@@ -5577,6 +5761,7 @@ type ContractBase = Omit<
       readonly model: 'ApplicationStageHistory';
     };
     readonly AuditLog: { readonly namespace: 'public' & NamespaceId; readonly model: 'AuditLog' };
+    readonly Batch: { readonly namespace: 'public' & NamespaceId; readonly model: 'Batch' };
     readonly BlogPost: { readonly namespace: 'public' & NamespaceId; readonly model: 'BlogPost' };
     readonly Certificate: {
       readonly namespace: 'public' & NamespaceId;
@@ -6057,6 +6242,116 @@ type ContractBase = Omit<
                 readonly entityId: { readonly column: 'entityId' };
                 readonly id: { readonly column: 'id' };
                 readonly ip: { readonly column: 'ip' };
+              };
+            };
+          };
+          readonly Batch: {
+            readonly fields: {
+              readonly batchNumber: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/int4@1' };
+              };
+              readonly capacity: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/int4@1' };
+              };
+              readonly courseId: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly createdAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly typeParams: { readonly precision: 3 };
+                };
+              };
+              readonly endDate: {
+                readonly nullable: true;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly typeParams: { readonly precision: 3 };
+                };
+              };
+              readonly id: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly instructorId: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly startDate: {
+                readonly nullable: true;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly typeParams: { readonly precision: 3 };
+                };
+              };
+              readonly status: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly updatedAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly typeParams: { readonly precision: 3 };
+                };
+              };
+            };
+            readonly relations: {
+              readonly course: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'Course';
+                };
+                readonly cardinality: 'N:1';
+                readonly nullable: false;
+                readonly on: {
+                  readonly localFields: readonly ['courseId'];
+                  readonly targetFields: readonly ['id'];
+                };
+              };
+              readonly enrollments: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'Enrollment';
+                };
+                readonly cardinality: '1:N';
+                readonly on: {
+                  readonly localFields: readonly ['id'];
+                  readonly targetFields: readonly ['batchId'];
+                };
+              };
+              readonly instructor: {
+                readonly to: { readonly namespace: 'public' & NamespaceId; readonly model: 'User' };
+                readonly cardinality: 'N:1';
+                readonly nullable: true;
+                readonly on: {
+                  readonly localFields: readonly ['instructorId'];
+                  readonly targetFields: readonly ['id'];
+                };
+              };
+            };
+            readonly storage: {
+              readonly table: 'Batch';
+              readonly namespaceId: 'public';
+              readonly fields: {
+                readonly batchNumber: { readonly column: 'batchNumber' };
+                readonly capacity: { readonly column: 'capacity' };
+                readonly courseId: { readonly column: 'courseId' };
+                readonly createdAt: { readonly column: 'createdAt' };
+                readonly endDate: { readonly column: 'endDate' };
+                readonly id: { readonly column: 'id' };
+                readonly instructorId: { readonly column: 'instructorId' };
+                readonly startDate: { readonly column: 'startDate' };
+                readonly status: { readonly column: 'status' };
+                readonly updatedAt: { readonly column: 'updatedAt' };
               };
             };
           };
@@ -6621,6 +6916,17 @@ type ContractBase = Omit<
                   readonly targetFields: readonly ['courseId'];
                 };
               };
+              readonly batches: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'Batch';
+                };
+                readonly cardinality: '1:N';
+                readonly on: {
+                  readonly localFields: readonly ['id'];
+                  readonly targetFields: readonly ['courseId'];
+                };
+              };
               readonly certificates: {
                 readonly to: {
                   readonly namespace: 'public' & NamespaceId;
@@ -6891,6 +7197,10 @@ type ContractBase = Omit<
                 readonly nullable: false;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/int4@1' };
               };
+              readonly batchId: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
               readonly certificateEligible: {
                 readonly nullable: true;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/bool@1' };
@@ -6961,6 +7271,18 @@ type ContractBase = Omit<
               };
             };
             readonly relations: {
+              readonly batch: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'Batch';
+                };
+                readonly cardinality: 'N:1';
+                readonly nullable: true;
+                readonly on: {
+                  readonly localFields: readonly ['batchId'];
+                  readonly targetFields: readonly ['id'];
+                };
+              };
               readonly certificate: {
                 readonly to: {
                   readonly namespace: 'public' & NamespaceId;
@@ -7033,6 +7355,7 @@ type ContractBase = Omit<
               readonly namespaceId: 'public';
               readonly fields: {
                 readonly amountPaid: { readonly column: 'amountPaid' };
+                readonly batchId: { readonly column: 'batchId' };
                 readonly certificateEligible: { readonly column: 'certificateEligible' };
                 readonly completedAt: { readonly column: 'completedAt' };
                 readonly couponUsed: { readonly column: 'couponUsed' };
@@ -9339,6 +9662,17 @@ type ContractBase = Omit<
                   readonly targetFields: readonly ['actorId'];
                 };
               };
+              readonly batchesTaught: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'Batch';
+                };
+                readonly cardinality: '1:N';
+                readonly on: {
+                  readonly localFields: readonly ['id'];
+                  readonly targetFields: readonly ['instructorId'];
+                };
+              };
               readonly blogPosts: {
                 readonly to: {
                   readonly namespace: 'public' & NamespaceId;
@@ -9678,6 +10012,14 @@ type ContractBase = Omit<
               { readonly name: 'rejected'; readonly value: 'rejected' },
             ];
           };
+          readonly BatchStatus: {
+            readonly codecId: 'pg/text@1';
+            readonly members: readonly [
+              { readonly name: 'upcoming'; readonly value: 'upcoming' },
+              { readonly name: 'ongoing'; readonly value: 'ongoing' },
+              { readonly name: 'completed'; readonly value: 'completed' },
+            ];
+          };
           readonly CouponType: {
             readonly codecId: 'pg/text@1';
             readonly members: readonly [
@@ -9804,6 +10146,11 @@ type ContractBase = Omit<
             { readonly name: 'pending'; readonly value: 'pending' },
             { readonly name: 'approved'; readonly value: 'approved' },
             { readonly name: 'rejected'; readonly value: 'rejected' },
+          ];
+          readonly BatchStatus: readonly [
+            { readonly name: 'upcoming'; readonly value: 'upcoming' },
+            { readonly name: 'ongoing'; readonly value: 'ongoing' },
+            { readonly name: 'completed'; readonly value: 'completed' },
           ];
           readonly CouponType: readonly [
             { readonly name: 'percentage'; readonly value: 'percentage' },
@@ -10030,6 +10377,43 @@ type ContractBase = Omit<
           readonly ref: {
             readonly entry: 'AuditLog';
             readonly field: 'id';
+            readonly namespace: 'public';
+          };
+        },
+        {
+          readonly onCreate: {
+            readonly id: 'timestampNow';
+            readonly kind: 'generator';
+            readonly params: { readonly precision: 3 };
+          };
+          readonly ref: {
+            readonly entry: 'Batch';
+            readonly field: 'createdAt';
+            readonly namespace: 'public';
+          };
+        },
+        {
+          readonly onCreate: { readonly id: 'cuid2'; readonly kind: 'generator' };
+          readonly ref: {
+            readonly entry: 'Batch';
+            readonly field: 'id';
+            readonly namespace: 'public';
+          };
+        },
+        {
+          readonly onCreate: {
+            readonly id: 'timestampNow';
+            readonly kind: 'generator';
+            readonly params: { readonly precision: 3 };
+          };
+          readonly onUpdate: {
+            readonly id: 'timestampNow';
+            readonly kind: 'generator';
+            readonly params: { readonly precision: 3 };
+          };
+          readonly ref: {
+            readonly entry: 'Batch';
+            readonly field: 'updatedAt';
             readonly namespace: 'public';
           };
         },

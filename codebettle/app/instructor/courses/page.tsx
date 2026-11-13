@@ -1,4 +1,5 @@
 import { getSession } from '@/lib/auth';
+import { getBatchesByCourse } from '@/lib/db/batches';
 import { getCoursesByInstructor } from '@/lib/db/courses';
 import { getEnrollmentsByCourse } from '@/lib/db/enrollments';
 import Link from 'next/link';
@@ -15,16 +16,19 @@ export default async function InstructorCoursesPage() {
 
   // Enrollment counts fetched once per course (was a sync call inside .map).
   const enrolledCountByCourse = new Map<string, number>();
+  const batchesByCourse = new Map<string, Awaited<ReturnType<typeof getBatchesByCourse>>>();
   await Promise.all(
     myCourses.map(async (c) => {
       const enrollments = await getEnrollmentsByCourse(c.id);
       enrolledCountByCourse.set(c.id, enrollments.length);
+      batchesByCourse.set(c.id, await getBatchesByCourse(c.id));
     }),
   );
 
   const coursesWithStats = myCourses.map(c => ({
     ...c,
     enrolledCount: enrolledCountByCourse.get(c.id) ?? 0,
+    batches: batchesByCourse.get(c.id) ?? [],
   }));
 
   return (
@@ -80,6 +84,17 @@ export default async function InstructorCoursesPage() {
                     {course.modules.reduce((a, m) => a + m.lessons.length, 0)} sessions
                   </span>
                 </div>
+
+                {/* Batches — the teacher's batches for this course. */}
+                {course.batches.length > 0 && (
+                  <div className="flex flex-wrap gap-1.5 mb-4">
+                    {course.batches.map(b => (
+                      <span key={b.id} className="text-xs px-2 py-0.5 rounded-full bg-primary/10 text-primary-text border border-primary/20">
+                        Batch {b.batchNumber} · {b.status} · {b.enrolledCount ?? 0} students
+                      </span>
+                    ))}
+                  </div>
+                )}
 
                 <Link href={`/instructor/courses/${course.id}`}>
                   <Button fullWidth variant="outline" size="sm">

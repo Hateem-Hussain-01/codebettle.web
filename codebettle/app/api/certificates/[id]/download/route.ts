@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getRequestSession, hasAdminCapability } from '@/lib/api-helpers';
 import { getCertificateById } from '@/lib/db/certificates';
+import { getEnrollmentBatchLabel } from '@/lib/db/batches';
 import { getCourseCertificateInfo, getCourseCertificateTemplate } from '@/lib/db/courses';
 import { getUserById } from '@/lib/db/users';
 import { buildCertificateHtml } from '@/lib/certificates/template';
@@ -49,6 +50,12 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
   ]);
   if (!course || !student) return NextResponse.json({ error: 'Certificate not found' }, { status: 404 });
 
+  // The enrolment's batch ("BATCH-<n>") is the fallback for
+  // certificates issued before batches existed (stored batch null).
+  // A failure here never blocks the download — the stored batch (or
+  // the legacy Python default) still applies.
+  const enrollmentBatch = await getEnrollmentBatchLabel(certificate.enrollmentId).catch(() => null);
+
   let built: Awaited<ReturnType<typeof buildCertificateHtml>>;
   try {
     built = await buildCertificateHtml({
@@ -58,6 +65,7 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
       courseThumbnail: course.thumbnail,
       courseTemplateHtml,
       batch: certificate.batch ?? null,
+      enrollmentBatch,
       certificateNumber: certificate.certificateNumber,
       verificationToken: certificate.verificationToken,
     });

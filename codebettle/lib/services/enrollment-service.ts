@@ -6,6 +6,7 @@
  * unit-testable with the fake db. Every mutation writes an audit entry.
  */
 import { createEnrollment, getEnrollmentById, isEnrolled, softDeleteEnrollment, updateEnrollment } from '../db/enrollments';
+import { getBatchById, getOpenBatchForCourse } from '../db/batches';
 import { listPaymentSubmissionsForEnrollment } from '../db/payments';
 import { getCertificateByCourseAndStudent } from '../db/certificates';
 import { getCourseById } from '../db/courses';
@@ -28,6 +29,8 @@ function requireAdmin(actor: Actor): ServiceError | null {
 export interface CreateEnrollmentServiceInput {
   studentId: string;
   courseId: string;
+  /** Batch the student enrols in. When omitted, the course's open batch is used (null = no open batch, enrolment without a batch). */
+  batchId?: string;
   paymentStatus: EnrollmentPaymentStatus;
   amountPaid: number;
   couponUsed?: string;
@@ -50,6 +53,23 @@ export async function createEnrollmentService(
   if (!Number.isInteger(input.amountPaid) || input.amountPaid < 0) {
     return badRequest('Amount paid must be a non-negative number');
   }
+  // Resolve the batch: the requested one (must belong to this course
+  // and be open), else the course's open batch, else no batch.
+  let batchId: string | undefined;
+  if (input.batchId !== undefined) {
+    const batch = await getBatchById(input.batchId);
+    if (!batch) return notFound('Batch');
+    if (batch.courseId !== input.courseId) {
+      return badRequest('This batch does not belong to the course');
+    }
+    if (batch.status === 'completed') {
+      return badRequest('This batch has ended — enrol in the open batch instead');
+    }
+    batchId = batch.id;
+  } else {
+    const open = await getOpenBatchForCourse(input.courseId);
+    batchId = open?.id;
+  }
   // Phase 2 (paid-with-no-proof fix): a brand-new enrolment cannot have
   // a linked approved payment submission, so 'paid' is not creatable
   // here. Create as 'pending' and let the payment verification flow
@@ -63,6 +83,7 @@ export async function createEnrollmentService(
   const created = await createEnrollment({
     studentId: input.studentId,
     courseId: input.courseId,
+    batchId,
     paymentStatus: input.paymentStatus,
     amountPaid: input.amountPaid,
     couponUsed: input.couponUsed,
@@ -73,7 +94,7 @@ export async function createEnrollmentService(
     action: 'enrollment.create',
     entity: 'enrollment',
     entityId: created.enrollment.id,
-    detail: `${input.studentId} -> ${input.courseId}`,
+    detail: `${input.studentId} -> ${input.courseId}${batchId ? ` (batch ${batchId})` : ''}`,
   });
   // Notify the student (Phase 4 hook — best-effort, never throws).
   await onEnrollmentCreated(created.enrollment);
@@ -88,6 +109,8 @@ export interface UpdateEnrollmentServiceInput {
   paymentStatus?: EnrollmentPaymentStatus;
   amountPaid?: number;
   certificateEligible?: boolean;
+  /** Move the enrolment to another batch of the same course (null clears the batch link). */
+  batchId?: string | null;
 }
 
 /**
@@ -114,6 +137,8 @@ export interface UpdateEnrollmentServiceInput {
  */
 export interface EnrollSelfServiceInput {
   courseId: string;
+  /** Batch to enrol in. When omitted, the course's open batch is used. */
+  batchId?: string;
   couponCode?: string;
 }
 
@@ -132,6 +157,23 @@ export async function enrollSelfService(
   if (await isEnrolled(actor.id, input.courseId)) {
     return conflict('You are already enrolled in this course');
   }
+  // Resolve the batch: the requested one (must belong to this course
+  // and be open), else the course's open batch, else no batch.
+  let batchId: string | undefined;
+  if (input.batchId !== undefined) {
+    const batch = await getBatchById(input.batchId);
+    if (!batch) return notFound('Batch');
+    if (batch.courseId !== input.courseId) {
+      return badRequest('This batch does not belong to the course');
+    }
+    if (batch.status === 'completed') {
+      return badRequest('This batch has ended — enrol in the open batch instead');
+    }
+    batchId = batch.id;
+  } else {
+    const open = await getOpenBatchForCourse(input.courseId);
+    batchId = open?.id;
+  }
   let couponUsed: string | undefined;
   const couponCode = input.couponCode?.trim();
   if (couponCode) {
@@ -143,6 +185,7 @@ export async function enrollSelfService(
   const created = await createEnrollment({
     studentId: actor.id,
     courseId: input.courseId,
+    batchId,
     paymentStatus,
     amountPaid: 0,
     couponUsed,
@@ -153,7 +196,7 @@ export async function enrollSelfService(
     action: 'enrollment.create',
     entity: 'enrollment',
     entityId: created.enrollment.id,
-    detail: `self: ${actor.id} -> ${input.courseId} (${paymentStatus})`,
+    detail: `self: ${actor.id} -> ${input.courseId} (${paymentStatus})${batchId ? ` (batch ${batchId})` : ''}`,
   });
   // Notify the student (Phase 4 hook — best-effort, never throws).
   await onEnrollmentCreated(created.enrollment);
@@ -173,6 +216,18 @@ export async function updateEnrollmentService(
   if (!existing) return notFound('Enrollment');
   if (input.amountPaid !== undefined && (!Number.isInteger(input.amountPaid) || input.amountPaid < 0)) {
     return badRequest('Amount paid must be a non-negative number');
+  }
+  // Moving to another batch: the batch must belong to the same course
+  // and not have ended.
+  if (input.batchId !== undefined && input.batchId !== null) {
+    const batch = await getBatchById(input.batchId);
+    if (!batch) return notFound('Batch');
+    if (batch.courseId !== existing.courseId) {
+      return badRequest('This batch does not belong to the enrolment’s course');
+    }
+    if (batch.status === 'completed') {
+      return badRequest('This batch has ended');
+    }
   }
   // Phase 1c gap fix: an enrolment for a PAID course may only be flipped
   // to `paid` when a linked PaymentSubmission has been approved for it —
@@ -211,6 +266,7 @@ export async function updateEnrollmentService(
     paymentStatus: input.paymentStatus,
     amountPaid,
     certificateEligible: input.certificateEligible,
+    batchId: input.batchId,
   });
   if (!updated) return notFound('Enrollment');
   await logAudit({ actorId: actor.id, action: 'enrollment.update', entity: 'enrollment', entityId: enrollmentId });

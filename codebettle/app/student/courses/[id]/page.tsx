@@ -1,5 +1,6 @@
 import { notFound } from 'next/navigation';
 import { getSession } from '@/lib/auth';
+import { getBatchById } from '@/lib/db/batches';
 import { getCourseById } from '@/lib/db/courses';
 import { getEnrollmentsByStudent } from '@/lib/db/enrollments';
 import { getPendingSubmissionForEnrollment } from '@/lib/db/payments';
@@ -13,6 +14,7 @@ import FadeIn from '@/components/ui/FadeIn';
 import CourseThumbnail from '@/components/ui/CourseThumbnail';
 import Link from 'next/link';
 import { toPublicCourse } from '@/lib/db/mappers';
+import { formatDate } from '@/lib/utils';
 import StudentCourseContent from './student-course-content';
 
 const DAYS = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
@@ -26,6 +28,9 @@ export default async function StudentCourseViewPage({ params }: { params: Promis
   const enrollments = await getEnrollmentsByStudent(session!.id);
   const enrollment = enrollments.find(e => e.courseId === id);
   if (!enrollment) notFound();
+  // The batch this student enrolled in (name + schedule). Null for
+  // enrolments made before batches existed.
+  const myBatch = enrollment.batchId ? await getBatchById(enrollment.batchId) : null;
   // Paid courses enrol as 'pending' until an admin confirms the payment
   // (Phase 7 self-enrolment). Until then the Zoom link, recordings and
   // materials stay locked — the student can see the course exists and
@@ -146,6 +151,11 @@ export default async function StudentCourseViewPage({ params }: { params: Promis
             <div className="space-y-1.5 text-xs text-muted">
               <p>Category: <span className="text-foreground">{course.category}</span></p>
               <p>Level: <span className="text-foreground capitalize">{course.level}</span></p>
+              {myBatch && (
+                <p>Your Batch: <span className="text-foreground">Batch {myBatch.batchNumber}
+                  {myBatch.startDate ? ` — starts ${formatDate(myBatch.startDate)}` : ''}
+                  {myBatch.endDate ? ` — ends ${formatDate(myBatch.endDate)}` : ''}</span></p>
+              )}
               <p>Total Classes: <span className="text-foreground">{totalSessions}</span></p>
               <p>Recordings: {paymentPending ? <span className="text-yellow-400 font-medium">Locked until payment is confirmed</span> : <span className="text-green-400 font-medium">{uploadedCount} available</span>}</p>
               <p>Status: <span className={course.isCompleted ? 'text-green-400 font-medium' : 'text-primary-text font-medium'}>{course.isCompleted ? 'Completed' : 'Active'}</span></p>

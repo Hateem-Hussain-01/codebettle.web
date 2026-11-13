@@ -16,6 +16,7 @@
  * with the fake db.
  */
 import { countCertificates, getCertificateByNumber, issueCertificate } from '../db/certificates';
+import { getEnrollmentBatchLabel } from '../db/batches';
 import type { Certificate } from '../db/types';
 import { badRequest, type ServiceError } from './errors';
 
@@ -50,6 +51,15 @@ export async function issueCertificateWithRetry(
 ): Promise<Result<{ certificate: Certificate }>> {
   const maxAttempts = options.maxAttempts ?? 5;
 
+  // Batch: an explicit batch wins; otherwise the enrolment's Batch
+  // supplies it ("BATCH-<n>"), so new certificates store the batch
+  // the student actually enrolled in. Pre-batch enrolments (no batch
+  // linked) store nothing here — the PDF falls back to the enrolment
+  // batch, then the legacy Python default.
+  const batch =
+    input.batch ??
+    (await getEnrollmentBatchLabel(input.enrollmentId).catch(() => null));
+
   // An explicitly requested number is used as-is: inventing a different
   // number than the admin asked for would be worse than failing loudly.
   if (input.certificateNumber !== undefined) {
@@ -58,7 +68,7 @@ export async function issueCertificateWithRetry(
       courseId: input.courseId,
       enrollmentId: input.enrollmentId,
       certificateNumber: input.certificateNumber,
-      batch: input.batch,
+      batch: batch ?? undefined,
     });
     if ('error' in issued) return badRequest(issued.error);
     return { certificate: issued.certificate };
@@ -78,7 +88,7 @@ export async function issueCertificateWithRetry(
     }
     let issued: Awaited<ReturnType<typeof issueCertificate>>;
     try {
-      issued = await issueCertificate({ ...input, certificateNumber });
+      issued = await issueCertificate({ ...input, certificateNumber, batch: batch ?? undefined });
     } catch {
       // Real-DB unique violation (or any create failure that looks like a
       // collision): try the next number instead of failing the issue.

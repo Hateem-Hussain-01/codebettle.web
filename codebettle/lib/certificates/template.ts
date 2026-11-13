@@ -17,11 +17,13 @@
  * {{BATCH}} {{CERTIFICATE_NUMBER}} {{SIGNATURE_NAME}}
  * {{SIGNATURE_TITLE}} {{QR_CODE}}.
  *
- * BATCH: certificate.batch when set; otherwise "BATCH-8" for the
- * Python course (the approved design's batch for its current cohort);
- * otherwise no batch — and the batch row is HIDDEN (a
- * `.batch-row{display:none}` style is injected), never left as an
- * empty gold row.
+ * BATCH: the stored certificate batch wins (already-issued
+ * certificates keep their recorded batch); else the enrolment's
+ * batch ("BATCH-<n>" from the Batch the student enrolled in); else
+ * "BATCH-8" for the Python course (legacy fallback for certificates
+ * issued before batches existed); otherwise no batch — and the batch
+ * row is HIDDEN (a `.batch-row{display:none}` style is injected),
+ * never left as an empty gold row.
  *
  * COURSE NAME casing: the default design prints the course in
  * capitals ("PYTHON"), so the default template gets the title
@@ -49,7 +51,7 @@ import { buildVerifyQrPng, verifyUrlForToken } from './qr';
 
 export const DEFAULT_SIGNATURE_NAME = 'Ahmad';
 export const DEFAULT_SIGNATURE_TITLE = 'CEO';
-/** Approved batch for the Python course's current cohort. */
+/** Legacy fallback batch for the Python course's pre-batch certificates. New certificates take their batch from the enrolment's Batch. */
 export const PYTHON_DEFAULT_BATCH = 'BATCH-8';
 
 /** 1x1 transparent PNG — the {{COURSE_ICON}} fallback when a course has no usable image. */
@@ -95,9 +97,15 @@ export function chooseCertificateTemplate(courseTemplateHtml: string | null | un
   return { html: getDefaultTemplateHtml(), isDefault: true };
 }
 
-/** Batch to print: the stored batch, else BATCH-8 for Python, else none. */
-export function resolveBatch(storedBatch: string | null | undefined, slug: string, title: string): string | null {
+/** Batch to print: the stored batch, else the enrolment's batch, else BATCH-8 for Python (legacy), else none. */
+export function resolveBatch(
+  storedBatch: string | null | undefined,
+  enrollmentBatch: string | null | undefined,
+  slug: string,
+  title: string,
+): string | null {
   if (storedBatch && storedBatch.trim().length > 0) return storedBatch.trim();
+  if (enrollmentBatch && enrollmentBatch.trim().length > 0) return enrollmentBatch.trim();
   if (isPythonCourse(slug, title)) return PYTHON_DEFAULT_BATCH;
   return null;
 }
@@ -238,6 +246,8 @@ export interface BuildCertificateHtmlInput {
   courseTemplateHtml: string | null;
   /** Stored batch on the certificate (may be null). */
   batch: string | null;
+  /** Batch from the enrolment's Batch ("BATCH-<n>"), used when the certificate has no stored batch. */
+  enrollmentBatch?: string | null;
   certificateNumber: string;
   verificationToken: string;
   signatureName?: string;
@@ -259,7 +269,7 @@ export interface BuiltCertificateHtml {
  */
 export async function buildCertificateHtml(input: BuildCertificateHtmlInput): Promise<BuiltCertificateHtml> {
   const chosen = chooseCertificateTemplate(input.courseTemplateHtml);
-  const batch = resolveBatch(input.batch, input.courseSlug, input.courseTitle);
+  const batch = resolveBatch(input.batch, input.enrollmentBatch ?? null, input.courseSlug, input.courseTitle);
   const verifyUrl = verifyUrlForToken(input.verificationToken);
   const [courseIcon, qr] = await Promise.all([
     resolveCourseIcon(input.courseSlug, input.courseTitle, input.courseThumbnail),

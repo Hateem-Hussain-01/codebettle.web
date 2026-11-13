@@ -55,6 +55,13 @@ enum CourseStatus {
   archived
 }
 
+// Batch lifecycle: a batch is created upcoming, starts (ongoing), then ends (completed).
+enum BatchStatus {
+  upcoming
+  ongoing
+  completed
+}
+
 enum EnrollmentPaymentStatus {
   paid
   free
@@ -171,6 +178,7 @@ model User {
   updatedAt          temporal.UpdatedAt
 
   coursesTaught      Course[]                @relation("InstructorCourses")
+  batchesTaught      Batch[]                 @relation("BatchInstructor")
   enrollments        Enrollment[]
   certificates       Certificate[]
   reviews            Review[]
@@ -243,6 +251,7 @@ model Course {
   outlineUrl String?
 
   modules         Module[]
+  batches         Batch[]
   enrollments     Enrollment[]
   reviews         Review[]
   certificates    Certificate[]
@@ -282,6 +291,33 @@ model Lesson {
   @@unique([moduleId, position])
 }
 
+// A Batch is one run/cohort of a Course (e.g. Python "Batch 08",
+// "Batch 09"). A Course is the subject (created once); each Batch is
+// a dated run with its own instructor, capacity and lifecycle.
+// Students enrol in a specific Batch; the certificate batch comes
+// from the enrolment's Batch (batchNumber -> "BATCH-<n>"). One
+// certificate template per Course — only the batch number changes.
+model Batch {
+  id           String      @id @onCreate(cuid(2))
+  courseId     String
+  course       Course      @relation(fields: [courseId], references: [id])
+  batchNumber  Int
+  status       BatchStatus @default(upcoming)
+  startDate    DateTime?
+  endDate      DateTime?
+  capacity     Int?
+  instructorId String?
+  instructor   User?       @relation("BatchInstructor", fields: [instructorId], references: [id])
+  createdAt    DateTime    @default(now()) @onCreate(now())
+  updatedAt    temporal.UpdatedAt
+
+  enrollments  Enrollment[]
+
+  @@unique([courseId, batchNumber])
+  @@index([courseId])
+  @@index([instructorId])
+}
+
 model Enrollment {
   id                  String                  @id @onCreate(cuid(2))
   studentId           String
@@ -303,10 +339,17 @@ model Enrollment {
   payments            Payment[]
   paymentSubmissions  PaymentSubmission[]
   certificate         Certificate?
+  // Batch this enrolment belongs to (null = enrolled before batches
+  // existed). The certificate batch comes from this batch
+  // (batchNumber -> "BATCH-<n>"); courseId is kept for compatibility
+  // (existing queries, the student+course duplicate check).
+  batchId             String?
+  batch               Batch?                  @relation(fields: [batchId], references: [id])
 
   @@unique([studentId, courseId])
   @@index([studentId])
   @@index([courseId])
+  @@index([batchId])
 }
 
 model LessonProgress {

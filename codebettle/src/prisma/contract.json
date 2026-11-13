@@ -24,6 +24,10 @@
       "model": "AuditLog",
       "namespace": "public"
     },
+    "Batch": {
+      "model": "Batch",
+      "namespace": "public"
+    },
     "BlogPost": {
       "model": "BlogPost",
       "namespace": "public"
@@ -200,6 +204,23 @@
               {
                 "name": "rejected",
                 "value": "rejected"
+              }
+            ]
+          },
+          "BatchStatus": {
+            "codecId": "pg/text@1",
+            "members": [
+              {
+                "name": "upcoming",
+                "value": "upcoming"
+              },
+              {
+                "name": "ongoing",
+                "value": "ongoing"
+              },
+              {
+                "name": "completed",
+                "value": "completed"
               }
             ]
           },
@@ -1059,6 +1080,183 @@
               },
               "namespaceId": "public",
               "table": "AuditLog"
+            }
+          },
+          "Batch": {
+            "fields": {
+              "batchNumber": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
+              "capacity": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
+              "courseId": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "createdAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "precision": 3
+                  }
+                }
+              },
+              "endDate": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "precision": 3
+                  }
+                }
+              },
+              "id": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "instructorId": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "startDate": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "precision": 3
+                  }
+                }
+              },
+              "status": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                },
+                "valueSet": {
+                  "entityKind": "enum",
+                  "entityName": "BatchStatus",
+                  "namespaceId": "public",
+                  "plane": "domain"
+                }
+              },
+              "updatedAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "precision": 3
+                  }
+                }
+              }
+            },
+            "relations": {
+              "course": {
+                "cardinality": "N:1",
+                "nullable": false,
+                "on": {
+                  "localFields": [
+                    "courseId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "Course",
+                  "namespace": "public"
+                }
+              },
+              "enrollments": {
+                "cardinality": "1:N",
+                "on": {
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "batchId"
+                  ]
+                },
+                "to": {
+                  "model": "Enrollment",
+                  "namespace": "public"
+                }
+              },
+              "instructor": {
+                "cardinality": "N:1",
+                "nullable": true,
+                "on": {
+                  "localFields": [
+                    "instructorId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "User",
+                  "namespace": "public"
+                }
+              }
+            },
+            "storage": {
+              "fields": {
+                "batchNumber": {
+                  "column": "batchNumber"
+                },
+                "capacity": {
+                  "column": "capacity"
+                },
+                "courseId": {
+                  "column": "courseId"
+                },
+                "createdAt": {
+                  "column": "createdAt"
+                },
+                "endDate": {
+                  "column": "endDate"
+                },
+                "id": {
+                  "column": "id"
+                },
+                "instructorId": {
+                  "column": "instructorId"
+                },
+                "startDate": {
+                  "column": "startDate"
+                },
+                "status": {
+                  "column": "status"
+                },
+                "updatedAt": {
+                  "column": "updatedAt"
+                }
+              },
+              "namespaceId": "public",
+              "table": "Batch"
             }
           },
           "BlogPost": {
@@ -1999,6 +2197,21 @@
                   "namespace": "public"
                 }
               },
+              "batches": {
+                "cardinality": "1:N",
+                "on": {
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "courseId"
+                  ]
+                },
+                "to": {
+                  "model": "Batch",
+                  "namespace": "public"
+                }
+              },
               "certificates": {
                 "cardinality": "1:N",
                 "on": {
@@ -2457,6 +2670,13 @@
                   "kind": "scalar"
                 }
               },
+              "batchId": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
               "certificateEligible": {
                 "nullable": true,
                 "type": {
@@ -2564,6 +2784,22 @@
               }
             },
             "relations": {
+              "batch": {
+                "cardinality": "N:1",
+                "nullable": true,
+                "on": {
+                  "localFields": [
+                    "batchId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "Batch",
+                  "namespace": "public"
+                }
+              },
               "certificate": {
                 "cardinality": "1:1",
                 "nullable": true,
@@ -2662,6 +2898,9 @@
               "fields": {
                 "amountPaid": {
                   "column": "amountPaid"
+                },
+                "batchId": {
+                  "column": "batchId"
                 },
                 "certificateEligible": {
                   "column": "certificateEligible"
@@ -6512,6 +6751,21 @@
                   "namespace": "public"
                 }
               },
+              "batchesTaught": {
+                "cardinality": "1:N",
+                "on": {
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "instructorId"
+                  ]
+                },
+                "to": {
+                  "model": "Batch",
+                  "namespace": "public"
+                }
+              },
               "blogPosts": {
                 "cardinality": "1:N",
                 "on": {
@@ -7569,6 +7823,164 @@
                 ]
               },
               "uniques": []
+            },
+            "Batch": {
+              "checks": [
+                {
+                  "expression": "\"status\" IN ('upcoming', 'ongoing', 'completed')",
+                  "name": "Batch_status_check_b09b7536",
+                  "prefix": "Batch_status_check"
+                }
+              ],
+              "columns": {
+                "batchNumber": {
+                  "codecId": "pg/int4@1",
+                  "dataType": "pg/int4",
+                  "nullable": false
+                },
+                "capacity": {
+                  "codecId": "pg/int4@1",
+                  "dataType": "pg/int4",
+                  "nullable": true
+                },
+                "courseId": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                },
+                "createdAt": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "dataType": "pg/timestamptz",
+                  "default": {
+                    "expression": "now()",
+                    "kind": "function"
+                  },
+                  "nullable": false,
+                  "typeParams": {
+                    "precision": 3
+                  }
+                },
+                "endDate": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "dataType": "pg/timestamptz",
+                  "nullable": true,
+                  "typeParams": {
+                    "precision": 3
+                  }
+                },
+                "id": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                },
+                "instructorId": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": true
+                },
+                "startDate": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "dataType": "pg/timestamptz",
+                  "nullable": true,
+                  "typeParams": {
+                    "precision": 3
+                  }
+                },
+                "status": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "default": {
+                    "kind": "literal",
+                    "value": "upcoming"
+                  },
+                  "nullable": false,
+                  "valueSet": {
+                    "entityKind": "valueSet",
+                    "entityName": "BatchStatus",
+                    "namespaceId": "public",
+                    "plane": "storage"
+                  }
+                },
+                "updatedAt": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "dataType": "pg/timestamptz",
+                  "nullable": false,
+                  "typeParams": {
+                    "precision": 3
+                  }
+                }
+              },
+              "foreignKeys": [
+                {
+                  "index": {
+                    "name": "Batch_courseId_idx_12f72d2a"
+                  },
+                  "source": {
+                    "columns": [
+                      "courseId"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "Batch"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "Course"
+                  }
+                },
+                {
+                  "index": {
+                    "name": "Batch_instructorId_idx_6b1d9b50"
+                  },
+                  "source": {
+                    "columns": [
+                      "instructorId"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "Batch"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "User"
+                  }
+                }
+              ],
+              "indexes": [
+                {
+                  "columns": [
+                    "courseId"
+                  ],
+                  "name": "Batch_courseId_idx_12f72d2a",
+                  "prefix": "Batch_courseId_idx",
+                  "unique": false
+                },
+                {
+                  "columns": [
+                    "instructorId"
+                  ],
+                  "name": "Batch_instructorId_idx_6b1d9b50",
+                  "prefix": "Batch_instructorId_idx",
+                  "unique": false
+                }
+              ],
+              "primaryKey": {
+                "columns": [
+                  "id"
+                ]
+              },
+              "uniques": [
+                {
+                  "columns": [
+                    "courseId",
+                    "batchNumber"
+                  ]
+                }
+              ]
             },
             "BlogPost": {
               "checks": [
@@ -8663,6 +9075,11 @@
                   },
                   "nullable": false
                 },
+                "batchId": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": true
+                },
                 "certificateEligible": {
                   "codecId": "pg/bool@1",
                   "dataType": "pg/bool",
@@ -8799,9 +9216,36 @@
                     "namespaceId": "public",
                     "tableName": "Course"
                   }
+                },
+                {
+                  "index": {
+                    "name": "Enrollment_batchId_idx_84d4b0b9"
+                  },
+                  "source": {
+                    "columns": [
+                      "batchId"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "Enrollment"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "Batch"
+                  }
                 }
               ],
               "indexes": [
+                {
+                  "columns": [
+                    "batchId"
+                  ],
+                  "name": "Enrollment_batchId_idx_84d4b0b9",
+                  "prefix": "Enrollment_batchId_idx",
+                  "unique": false
+                },
                 {
                   "columns": [
                     "courseId"
@@ -12289,6 +12733,14 @@
                 "rejected"
               ]
             },
+            "BatchStatus": {
+              "kind": "valueSet",
+              "values": [
+                "upcoming",
+                "ongoing",
+                "completed"
+              ]
+            },
             "CouponType": {
               "kind": "valueSet",
               "values": [
@@ -12411,10 +12863,10 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "863ca981dd2f9f8343107dd2540c590a3e2dbecad4a22e090020151661358546"
+    "storageHash": "b3738a68e6895c897d9ef37f79cf2fbdcf4788bc5ea29c2bfb20057e4fe2de83"
   },
   "execution": {
-    "executionHash": "652e62e98d64878cdd97fef1913fe155339f63ea3e5124e6cac0472bb88d218f",
+    "executionHash": "9f26db1f17a796e77f027d8ecdec15bfdc221051d2f511007950e89c26c2a210",
     "mutations": {
       "defaults": [
         {
@@ -12560,6 +13012,52 @@
           "ref": {
             "entry": "AuditLog",
             "field": "id",
+            "namespace": "public"
+          }
+        },
+        {
+          "onCreate": {
+            "id": "timestampNow",
+            "kind": "generator",
+            "params": {
+              "precision": 3
+            }
+          },
+          "ref": {
+            "entry": "Batch",
+            "field": "createdAt",
+            "namespace": "public"
+          }
+        },
+        {
+          "onCreate": {
+            "id": "cuid2",
+            "kind": "generator"
+          },
+          "ref": {
+            "entry": "Batch",
+            "field": "id",
+            "namespace": "public"
+          }
+        },
+        {
+          "onCreate": {
+            "id": "timestampNow",
+            "kind": "generator",
+            "params": {
+              "precision": 3
+            }
+          },
+          "onUpdate": {
+            "id": "timestampNow",
+            "kind": "generator",
+            "params": {
+              "precision": 3
+            }
+          },
+          "ref": {
+            "entry": "Batch",
+            "field": "updatedAt",
             "namespace": "public"
           }
         },

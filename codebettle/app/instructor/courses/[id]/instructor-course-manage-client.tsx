@@ -1,7 +1,7 @@
 'use client';
 import { useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import type { Course, Enrollment, Lesson, Module, SafeUser } from '@/lib/db/types';
+import type { Batch, Course, Enrollment, Lesson, Module, SafeUser } from '@/lib/db/types';
 import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
 import FadeIn from '@/components/ui/FadeIn';
@@ -35,10 +35,13 @@ interface EnrolledStudent {
 interface InstructorCourseManageClientProps {
   course: Course;
   enrolledStudents: EnrolledStudent[];
+  /** Batches of this course, by id — so each student row can show their batch. */
+  batches: Batch[];
 }
 
-export default function InstructorCourseManageClient({ course, enrolledStudents }: InstructorCourseManageClientProps) {
+export default function InstructorCourseManageClient({ course, enrolledStudents, batches }: InstructorCourseManageClientProps) {
   const router = useRouter();
+  const batchById = new Map(batches.map(b => [b.id, b]));
 
   /* ── State ── */
   const [activeTab, setActiveTab] = useState<'recordings' | 'curriculum' | 'schedule'>('recordings');
@@ -549,17 +552,20 @@ export default function InstructorCourseManageClient({ course, enrolledStudents 
               <p className="text-muted text-sm text-center py-6">No students enrolled yet</p>
             ) : (
               <div className="space-y-2">
-                {enrolledStudents.map(({ enrollment, student }) => (
+                {enrolledStudents.map(({ enrollment, student }) => {
+                  const batch = enrollment.batchId ? batchById.get(enrollment.batchId) : null;
+                  return (
                   <div key={enrollment.id} className="flex items-center gap-3 py-2 border-b border-dark-border/40 last:border-0">
                     <img src={student?.avatar || ''} alt={student?.name} className="w-8 h-8 rounded-full border border-primary/20" />
                     <div className="flex-1">
                       <p className="text-foreground text-sm font-medium">{student?.name}</p>
-                      <p className="text-muted text-xs">Enrolled {formatDateShort(enrollment.enrolledAt)}</p>
+                      <p className="text-muted text-xs">Enrolled {formatDateShort(enrollment.enrolledAt)}{batch ? ` · Batch ${batch.batchNumber}` : ''}</p>
                     </div>
                     {enrollment.certificateEligible === true && <Badge variant="success">Certificate Eligible</Badge>}
                     {enrollment.certificateEligible === false && <Badge variant="danger">Not Eligible</Badge>}
                   </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </Card>

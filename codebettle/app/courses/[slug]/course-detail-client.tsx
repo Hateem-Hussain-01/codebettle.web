@@ -7,9 +7,9 @@ import Badge from '@/components/ui/Badge';
 import StarRating from '@/components/ui/StarRating';
 import CourseThumbnail from '@/components/ui/CourseThumbnail';
 import Input from '@/components/ui/Input';
-import type { PublicCourse, Review, SafeUser } from '@/lib/db/types';
+import type { Batch, PublicCourse, Review, SafeUser } from '@/lib/db/types';
 import { formatPrice, getLevelColor, getCategoryColor, formatDate, getTotalLessonsCount, getCourseDuration } from '@/lib/utils';
-import { ChevronDown, ChevronUp, BookOpen, Clock, Users, Award, CheckCircle, Tag, Play, Heart, Download } from 'lucide-react';
+import { ChevronDown, ChevronUp, BookOpen, Clock, Users, Award, CheckCircle, Tag, Play, Heart, Download, CalendarDays } from 'lucide-react';
 import FadeIn from '@/components/ui/FadeIn';
 import { useWishlist } from '@/hooks/use-wishlist';
 import toast from 'react-hot-toast';
@@ -21,9 +21,13 @@ interface CourseDetailClientProps {
   slug: string;
   /** True when the signed-in student is already enrolled (false for visitors / other roles). */
   enrolled: boolean;
+  /** The open batch (latest upcoming/ongoing) — what new students enrol in. Null when no batches exist yet. */
+  openBatch: Batch | null;
+  /** All batches, newest first (open batch + history). */
+  batches: Batch[];
 }
 
-export default function CourseDetailClient({ course, instructor, reviews, slug, enrolled }: CourseDetailClientProps) {
+export default function CourseDetailClient({ course, instructor, reviews, slug, enrolled, openBatch, batches }: CourseDetailClientProps) {
   const totalLessons = getTotalLessonsCount(course.modules);
   const duration = getCourseDuration(course.modules);
 
@@ -82,6 +86,7 @@ export default function CourseDetailClient({ course, instructor, reviews, slug, 
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           courseId: course.id,
+          batchId: openBatch?.id,
           couponCode: appliedCoupon ? couponCode : undefined,
         }),
       });
@@ -170,6 +175,14 @@ export default function CourseDetailClient({ course, instructor, reviews, slug, 
                     <Button fullWidth size="lg" neon onClick={handleEnroll} disabled={enrolling} className="mb-3">
                       {enrolled ? 'Continue Learning' : enrolling ? 'Enrolling…' : course.isFree ? 'Enroll for Free' : 'Enroll Now'}
                     </Button>
+                    {/* Open batch — the batch the Enroll button enrols into. */}
+                    {openBatch && (
+                      <p className="flex items-center justify-center gap-1.5 text-xs text-muted mb-3">
+                        <CalendarDays className="w-3.5 h-3.5 text-primary-text" />
+                        Batch {openBatch.batchNumber}
+                        {openBatch.status === 'ongoing' ? ' — in progress' : openBatch.startDate ? ` — starts ${formatDate(openBatch.startDate)}` : ' — enrolment open'}
+                      </p>
+                    )}
                     {signedIn && loaded && (
                       <Button fullWidth variant="outline" onClick={() => toggle(course.id)} className="mb-3">
                         <Heart className={`w-4 h-4 ${isWishlisted ? 'fill-primary-text text-primary-text' : ''}`} />
@@ -257,6 +270,31 @@ export default function CourseDetailClient({ course, instructor, reviews, slug, 
                 </div>
               </section>
               </FadeIn>
+
+              {/* Batches — the open batch plus past batches as history. */}
+              {batches.length > 0 && (
+                <FadeIn delay={0.05}>
+                <section>
+                  <h2 className="text-xl font-bold text-foreground mb-4">Batches</h2>
+                  <div className="space-y-3">
+                    {batches.map(batch => (
+                      <div key={batch.id} className="bg-dark-card border border-dark-border rounded-xl px-5 py-4 flex flex-wrap items-center gap-3">
+                        <span className="font-semibold text-foreground text-sm">Batch {batch.batchNumber}</span>
+                        <Badge variant={batch.status === 'ongoing' ? 'success' : batch.status === 'upcoming' ? 'info' : 'danger'}>
+                          {batch.status === 'ongoing' ? 'Ongoing' : batch.status === 'upcoming' ? 'Upcoming' : 'Completed'}
+                        </Badge>
+                        {batch.startDate && <span className="text-xs text-muted">Starts {formatDate(batch.startDate)}</span>}
+                        {batch.endDate && <span className="text-xs text-muted">Ends {formatDate(batch.endDate)}</span>}
+                        {batch.enrolledCount !== undefined && <span className="text-xs text-muted">{batch.enrolledCount} enrolled</span>}
+                        {openBatch?.id === batch.id && !enrolled && (
+                          <span className="text-xs text-primary-text ml-auto">Enrol in this batch — use the Enroll button above</span>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </section>
+                </FadeIn>
+              )}
 
               {/* Reviews */}
               {reviews.length > 0 && (

@@ -39,6 +39,32 @@ export async function getEnrollmentsByCourse(courseId: string): Promise<Enrollme
   return rows.map((r) => mapEnrollmentRow(r, progress));
 }
 
+/** Enrolments in one batch (the batch detail view). Empty when the batch has no enrolments. */
+export async function getEnrollmentsByBatch(batchId: string): Promise<Enrollment[]> {
+  let rows;
+  try {
+    rows = await getDb()
+      .orm.public.Enrollment.where({ batchId })
+      .where((e) => e.deletedAt.isNull())
+      .orderBy((e) => e.enrolledAt.desc())
+      .all();
+  } catch (error) {
+    // The batchId column arrives with the batch migration — before it
+    // runs there are no batch enrolments to list.
+    if (error && typeof error === 'object') {
+      const code = (error as { code?: unknown }).code;
+      const text = typeof (error as { message?: unknown }).message === 'string' ? (error as { message: string }).message : '';
+      const namesColumn = text.includes('"batchId"') || text.includes('batchId');
+      if ((code === '42703' && namesColumn) || (/column .* does not exist/i.test(text) && namesColumn)) {
+        return [];
+      }
+    }
+    throw error;
+  }
+  const progress = await progressFor(rows.map((r) => r.id));
+  return rows.map((r) => mapEnrollmentRow(r, progress));
+}
+
 /**
  * Fetch enrolments for several courses in ONE query (Phase 7 perf —
  * replaces the per-course getEnrollmentsByCourse loops in the
@@ -83,6 +109,8 @@ export async function getEnrollmentById(id: string): Promise<Enrollment | null> 
 export interface CreateEnrollmentInput {
   studentId: string;
   courseId: string;
+  /** Batch the student enrols in (undefined = pre-batch enrolment, no batch linked). */
+  batchId?: string;
   paymentStatus: 'paid' | 'free' | 'pending';
   amountPaid: number;
   couponUsed?: string;
@@ -98,6 +126,10 @@ export async function createEnrollment(
   const row = await getDb().orm.public.Enrollment.create({
     studentId: input.studentId,
     courseId: input.courseId,
+    // Only send batchId when one is actually linked (same shape as
+    // createCourse's certificateTemplateHtml): a plain create must not
+    // fail with 42703 before the batch migration runs.
+    ...(input.batchId ? { batchId: input.batchId } : {}),
     paymentStatus: input.paymentStatus,
     amountPaid: input.amountPaid,
     couponUsed: input.couponUsed ?? null,
@@ -131,6 +163,8 @@ export interface UpdateEnrollmentInput {
   paymentStatus?: EnrollmentPaymentStatus;
   amountPaid?: number;
   certificateEligible?: boolean | null;
+  /** Move the enrolment to another batch (null clears the batch link). */
+  batchId?: string | null;
 }
 
 /** Update an enrolment. Returns null when it does not exist (or is soft-deleted). */
@@ -141,6 +175,7 @@ export async function updateEnrollment(id: string, input: UpdateEnrollmentInput)
   if (input.paymentStatus !== undefined) data.paymentStatus = input.paymentStatus;
   if (input.amountPaid !== undefined) data.amountPaid = input.amountPaid;
   if (input.certificateEligible !== undefined) data.certificateEligible = input.certificateEligible;
+  if (input.batchId !== undefined) data.batchId = input.batchId;
   const row = await getDb()
     .orm.public.Enrollment.where({ id })
     .where((e) => e.deletedAt.isNull())
@@ -161,6 +196,7 @@ export async function softDeleteEnrollment(id: string): Promise<boolean> {
 export interface ListEnrollmentsOptions {
   studentId?: string;
   courseId?: string;
+  batchId?: string;
   page?: string | string[];
   limit?: string | string[];
 }
@@ -171,6 +207,7 @@ export async function listEnrollments(opts: ListEnrollmentsOptions = {}): Promis
   let query = getDb().orm.public.Enrollment.where((e) => e.deletedAt.isNull());
   if (opts.studentId) query = query.where({ studentId: opts.studentId });
   if (opts.courseId) query = query.where({ courseId: opts.courseId });
+  if (opts.batchId) query = query.where({ batchId: opts.batchId });
   const total = (await query.all()).length;
   const rows = await query.orderBy((e) => e.enrolledAt.desc()).limit(params.limit).offset(params.offset).all();
   const progress = await progressFor(rows.map((r) => r.id));
