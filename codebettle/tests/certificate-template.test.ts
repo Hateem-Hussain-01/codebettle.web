@@ -10,6 +10,7 @@ import {
   resolveBatch,
   resolveCourseIcon,
   substituteCertificatePlaceholders,
+  toTitleCaseName,
 } from '../lib/certificates/template';
 
 /**
@@ -19,6 +20,41 @@ import {
  */
 
 const TOKEN = 'b'.repeat(32);
+
+test('toTitleCaseName capitalises every first letter of the student name', () => {
+  assert.equal(toTitleCaseName('huffy'), 'Huffy');
+  assert.equal(toTitleCaseName('muhammad hateem hussain'), 'Muhammad Hateem Hussain');
+  assert.equal(toTitleCaseName('zainab nadeem'), 'Zainab Nadeem');
+  // All-uppercase normalises too.
+  assert.equal(toTitleCaseName('MUHAMMAD HATEEM'), 'Muhammad Hateem');
+  // Already mixed-case is left alone — never break a correct "McDonald".
+  assert.equal(toTitleCaseName('McDonald'), 'McDonald');
+  assert.equal(toTitleCaseName("O'Brien"), "O'Brien");
+  // Hyphenated and apostrophe parts capitalise separately.
+  assert.equal(toTitleCaseName('mary-jane watson'), 'Mary-Jane Watson');
+  assert.equal(toTitleCaseName("o'brien"), "O'Brien");
+  // Extra spaces collapse; leading/trailing space is trimmed.
+  assert.equal(toTitleCaseName('  muhammad   hateem  '), 'Muhammad Hateem');
+  // Empty stays empty.
+  assert.equal(toTitleCaseName(''), '');
+  assert.equal(toTitleCaseName('   '), '');
+});
+
+test('buildCertificateHtml title-cases a lowercase student name', async () => {
+  const built = await buildCertificateHtml({
+    studentName: 'muhammad hateem hussain',
+    courseSlug: 'python-crash-course',
+    courseTitle: 'Python Crash Course',
+    courseThumbnail: '',
+    courseTemplateHtml: null,
+    batch: 'BATCH-8',
+    certificateNumber: 'CB-2026-008',
+    verificationToken: TOKEN,
+  });
+  const bodyHtml = built.html.split('<body>')[1];
+  assert.ok(bodyHtml.includes('Muhammad Hateem Hussain'), 'name must render title-cased');
+  assert.ok(!bodyHtml.includes('muhammad hateem hussain'), 'lowercase name must not leak through');
+});
 
 test('isPythonCourse matches slug or title, case-insensitively', () => {
   assert.equal(isPythonCourse('python', 'Python'), true);

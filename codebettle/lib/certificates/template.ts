@@ -104,6 +104,38 @@ function escapeHtml(value: string): string {
     .replace(/'/g, '&#39;');
 }
 
+/**
+ * Title-case a student name for the certificate: capitalise the first
+ * letter of every word ("muhammad hateem hussain" -> "Muhammad Hateem
+ * Hussain", "huffy" -> "Huffy"). Words that are already mixed-case
+ * (e.g. "McDonald") are left alone so correct casing is never broken.
+ * Hyphenated parts and apostrophe parts capitalise separately
+ * ("mary-jane" -> "Mary-Jane", "o'brien" -> "O'Brien"). Leading/trailing
+ * space is trimmed and runs of spaces collapse to one. Empty stays empty.
+ * Only the student name is title-cased — never the course name, batch,
+ * certificate number or signature.
+ */
+export function toTitleCaseName(name: string): string {
+  return name
+    .trim()
+    .split(/\s+/)
+    .filter((word) => word.length > 0)
+    .map((word) => {
+      // Already mixed-case (e.g. "McDonald") — trust the stored casing.
+      if (word !== word.toLowerCase() && word !== word.toUpperCase()) return word;
+      return word
+        .split('-')
+        .map((part) =>
+          part
+            .split("'")
+            .map((p) => (p.length === 0 ? p : p[0].toUpperCase() + p.slice(1).toLowerCase()))
+            .join("'"),
+        )
+        .join('-');
+    })
+    .join(' ');
+}
+
 export interface CertificateHtmlValues {
   studentName: string;
   courseName: string;
@@ -212,7 +244,7 @@ export async function buildCertificateHtml(input: BuildCertificateHtmlInput): Pr
     ? input.courseTitle.toUpperCase()
     : input.courseTitle;
   const html = substituteCertificatePlaceholders(chosen.html, {
-    studentName: input.studentName,
+    studentName: toTitleCaseName(input.studentName),
     courseName,
     courseIcon,
     batch,
