@@ -234,6 +234,13 @@ model Course {
   // coupling); rendered server-side to PDF only, never served as HTML.
   certificateTemplateHtml String?
 
+  // Public course outline PDF URL (e.g. a Supabase Storage public URL).
+  // Null = no outline attached. Shown as a "Download Course Outline"
+  // link on the public course detail page (visible to prospective
+  // students, not gated to enrolled students). Set by an admin in the
+  // course form; the PDF itself lives in Storage, only the URL is stored.
+  outlineUrl String?
+
   modules         Module[]
   enrollments     Enrollment[]
   reviews         Review[]

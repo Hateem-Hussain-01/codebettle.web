@@ -48,6 +48,9 @@ export default function NewCourseClient({ instructors: allInstructors }: NewCour
     // Empty = the course uses the default Python certificate design;
     // a template can be attached later from the course page.
     certificateTemplateHtml: '',
+    // Optional public course outline PDF URL. Empty = no outline
+    // attached; an outline can be added later from the course page.
+    outlineUrl: '',
   });
 
   const [schedule, setSchedule] = useState({
@@ -143,6 +146,11 @@ export default function NewCourseClient({ instructors: allInstructors }: NewCour
           // or leave it empty (default Python design) and attach it later.
           ...(form.certificateTemplateHtml.trim()
             ? { certificateTemplateHtml: form.certificateTemplateHtml }
+            : {}),
+          // Optional: public course outline PDF URL (e.g. a Supabase
+          // Storage public URL). Leave empty for no outline.
+          ...(form.outlineUrl.trim()
+            ? { outlineUrl: form.outlineUrl.trim() }
             : {}),
         }),
       });
@@ -406,6 +414,20 @@ export default function NewCourseClient({ instructors: allInstructors }: NewCour
             </p>
           )}
         </div>
+      </Card>
+      </FadeIn>
+
+      {/* Course Outline — optional */}
+      <FadeIn delay={0.23}>
+      <Card>
+        <h2 className="text-foreground font-bold mb-1">Course Outline <span className="text-muted text-sm font-normal">(Optional)</span></h2>
+        <p className="text-muted text-xs mb-4">Public outline PDF for this course (a URL, e.g. a Supabase Storage public link). It shows as a &ldquo;Download Course Outline (PDF)&rdquo; button on the public course page for everyone to see. Leave empty for no outline — you can add one later from the course page.</p>
+        <Input
+          label="Outline PDF URL"
+          placeholder="https://…/course-outline.pdf"
+          value={form.outlineUrl}
+          onChange={set('outlineUrl')}
+        />
       </Card>
       </FadeIn>
 

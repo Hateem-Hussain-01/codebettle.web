@@ -9,7 +9,7 @@ import CourseThumbnail from '@/components/ui/CourseThumbnail';
 import Input from '@/components/ui/Input';
 import type { PublicCourse, Review, SafeUser } from '@/lib/db/types';
 import { formatPrice, getLevelColor, getCategoryColor, formatDate, getTotalLessonsCount, getCourseDuration } from '@/lib/utils';
-import { ChevronDown, ChevronUp, BookOpen, Clock, Users, Award, CheckCircle, Tag, Play, Heart } from 'lucide-react';
+import { ChevronDown, ChevronUp, BookOpen, Clock, Users, Award, CheckCircle, Tag, Play, Heart, Download } from 'lucide-react';
 import FadeIn from '@/components/ui/FadeIn';
 import { useWishlist } from '@/hooks/use-wishlist';
 import toast from 'react-hot-toast';
@@ -182,6 +182,20 @@ export default function CourseDetailClient({ course, instructor, reviews, slug, 
                       <p className="flex items-center gap-2"><CheckCircle className="w-3.5 h-3.5 text-primary-text" />Downloadable materials</p>
                       <p className="flex items-center gap-2"><Award className="w-3.5 h-3.5 text-primary-text" />Certificate of completion</p>
                     </div>
+                    {/* Course outline PDF — visible to everyone (prospective
+                        students need it to decide), not gated to enrolled
+                        students. Shown only when the course has one. */}
+                    {course.outlineUrl && (
+                      <a
+                        href={course.outlineUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="mt-4 flex items-center justify-center gap-2 w-full px-4 py-2.5 text-sm font-medium border border-primary/40 text-primary-text rounded-lg hover:bg-primary/10 transition-colors"
+                      >
+                        <Download className="w-4 h-4" />
+                        Download Course Outline (PDF)
+                      </a>
+                    )}
                   </div>
                 </div>
               </div>

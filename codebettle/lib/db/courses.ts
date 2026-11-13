@@ -63,11 +63,13 @@ const LEGACY_COURSE_FIELDS = [
   'updatedAt',
 ] as const;
 
-/** Phase 2 Course column — the one a pre-migration table lacks. */
-const PHASE2_COURSE_COLUMNS = ['certificateTemplateHtml'];
+/** Course columns added after the legacy set — the ones a pre-migration
+ * table lacks (certificateTemplateHtml from Phase 2, outlineUrl from the
+ * course-outline feature). */
+const NEW_COURSE_COLUMNS = ['certificateTemplateHtml', 'outlineUrl'];
 
 /**
- * Run a course read, retrying without the Phase 2 column when the
+ * Run a course read, retrying without the newer columns when the
  * migration has not run yet. `fetch` receives a query builder flag and
  * returns the raw result (row, rows, or null). Same shape as
  * withCertificateColumnFallback in lib/db/certificates.ts.
@@ -78,7 +80,7 @@ async function withCourseTemplateColumnFallback<T>(
   try {
     return await fetch(false);
   } catch (error) {
-    if (!isMissingColumnError(error, PHASE2_COURSE_COLUMNS)) throw error;
+    if (!isMissingColumnError(error, NEW_COURSE_COLUMNS)) throw error;
     return fetch(true);
   }
 }
@@ -112,6 +114,22 @@ export async function getCourseCertificateTemplate(courseId: string): Promise<st
     return row.certificateTemplateHtml ?? null;
   } catch (error) {
     if (isMissingColumnError(error, ['certificateTemplateHtml'])) return null;
+    throw error;
+  }
+}
+
+/** The course outline PDF URL, or null when none is attached (or the migration has not run yet). */
+export async function getCourseOutlineUrl(courseId: string): Promise<string | null> {
+  try {
+    const row = await getDb()
+      .orm.public.Course.where({ id: courseId })
+      .where((c) => c.deletedAt.isNull())
+      .select('outlineUrl')
+      .first();
+    if (!row) return null;
+    return row.outlineUrl ?? null;
+  } catch (error) {
+    if (isMissingColumnError(error, ['outlineUrl'])) return null;
     throw error;
   }
 }
@@ -400,6 +418,8 @@ export interface CreateCourseInput {
   tags?: string[];
   /** Full HTML certificate template for this course (optional; null = default Python design). */
   certificateTemplateHtml?: string | null;
+  /** Public course outline PDF URL (optional; null = no outline attached). */
+  outlineUrl?: string | null;
 }
 
 /** Create a course (draft). Curriculum (modules/lessons) is added separately in Phase 3. */
@@ -425,6 +445,9 @@ export async function createCourse(input: CreateCourseInput): Promise<Course> {
     // attached (same shape as issueCertificate's batch): a plain create
     // must not fail with 42703 before the migration runs.
     ...(input.certificateTemplateHtml ? { certificateTemplateHtml: input.certificateTemplateHtml } : {}),
+    // Same shape for the outline URL: only send it when one is actually
+    // provided, so a plain create does not fail before its migration runs.
+    ...(input.outlineUrl ? { outlineUrl: input.outlineUrl } : {}),
   });
   return mapCourseRow(row, []);
 }
@@ -452,6 +475,8 @@ export interface UpdateCourseInput {
   reviewCount?: number;
   /** Full HTML certificate template (optional; null clears an attached template). */
   certificateTemplateHtml?: string | null;
+  /** Public course outline PDF URL (optional; null clears an attached outline). */
+  outlineUrl?: string | null;
 }
 
 export async function updateCourse(id: string, input: UpdateCourseInput): Promise<Course | null> {

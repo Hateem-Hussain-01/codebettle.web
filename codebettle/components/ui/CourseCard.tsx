@@ -14,9 +14,15 @@ interface CourseCardProps {
   isWishlisted?: boolean;
   onWishlist?: (id: string) => void;
   index?: number;
+  /**
+   * Show the price in the card footer. Default true. The home-page
+   * featured-courses section passes false — the fee is revealed only
+   * on the course detail page, not on the home page.
+   */
+  showPrice?: boolean;
 }
 
-export default function CourseCard({ course, instructorName, isWishlisted, onWishlist, index = 0 }: CourseCardProps) {
+export default function CourseCard({ course, instructorName, isWishlisted, onWishlist, index = 0, showPrice = true }: CourseCardProps) {
   const totalLessons = course.modules.reduce((acc, m) => acc + m.lessons.length, 0);
 
   return (
@@ -77,11 +83,15 @@ export default function CourseCard({ course, instructorName, isWishlisted, onWis
               <span className="flex items-center gap-1"><BookOpen className="w-3 h-3" />{totalLessons} lessons</span>
             </div>
 
-            {/* Price */}
-            <div className="flex items-center justify-between mt-auto pt-3 border-t border-dark-border">
-              <span className={`text-base font-bold ${course.isFree ? 'text-green-400' : 'text-primary-text'}`}>
-                {formatPrice(course.price)}
-              </span>
+            {/* Price (hidden when showPrice is false — the home page
+                hides the fee; the detail page is where it is revealed).
+                Without the price the Enroll button stays right-aligned. */}
+            <div className={`flex items-center ${showPrice ? 'justify-between' : 'justify-end'} mt-auto pt-3 border-t border-dark-border`}>
+              {showPrice && (
+                <span className={`text-base font-bold ${course.isFree ? 'text-green-400' : 'text-primary-text'}`}>
+                  {formatPrice(course.price)}
+                </span>
+              )}
               <span className="text-xs px-3 py-1.5 bg-primary/10 text-primary-text rounded-lg font-medium group-hover:bg-primary group-hover:text-ink transition-all">
                 Enroll Now →
               </span>

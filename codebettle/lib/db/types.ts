@@ -241,6 +241,8 @@ export interface Course {
   updatedAt: string;
   /** Full HTML certificate template attached to this course, or null when none is attached (use the default Python design). */
   certificateTemplateHtml?: string | null;
+  /** Public course outline PDF URL, or null when no outline is attached. */
+  outlineUrl?: string | null;
 }
 
 /**
@@ -504,15 +506,16 @@ export type CourseRow = Pick<
   | 'createdAt'
   | 'updatedAt'
   | 'certificateTemplateHtml'
+  | 'outlineUrl'
 >;
 
 /**
- * A course row as read from the DB. certificateTemplateHtml is optional
- * here: the legacy select (pre-migration fallback) does not return it,
- * and the mapper treats a missing value as null.
+ * A course row as read from the DB. certificateTemplateHtml and outlineUrl
+ * are optional here: the legacy select (pre-migration fallback) does not
+ * return them, and the mapper treats a missing value as null.
  */
-export type CourseRowLike = Omit<CourseRow, 'certificateTemplateHtml'> &
-  Partial<Pick<CourseRow, 'certificateTemplateHtml'>>;
+export type CourseRowLike = Omit<CourseRow, 'certificateTemplateHtml' | 'outlineUrl'> &
+  Partial<Pick<CourseRow, 'certificateTemplateHtml' | 'outlineUrl'>>;
 
 export type ModuleRow = Pick<Models.public_Module, 'id' | 'courseId' | 'title' | 'position'>;
 

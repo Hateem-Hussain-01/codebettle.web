@@ -1862,6 +1862,13 @@
                   "kind": "scalar"
                 }
               },
+              "outlineUrl": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
               "pricePkr": {
                 "nullable": false,
                 "type": {
@@ -2168,6 +2175,9 @@
                 },
                 "longDescription": {
                   "column": "longDescription"
+                },
+                "outlineUrl": {
+                  "column": "outlineUrl"
                 },
                 "pricePkr": {
                   "column": "pricePkr"
@@ -8143,6 +8153,11 @@
                   "dataType": "pg/text",
                   "nullable": false
                 },
+                "outlineUrl": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": true
+                },
                 "pricePkr": {
                   "codecId": "pg/int4@1",
                   "dataType": "pg/int4",
@@ -12140,7 +12155,7 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "ad006496b129389a93658010687e2868f5e6e2b87c15bd94c1e830fa0cfbee23"
+    "storageHash": "4cd11d9a7a815172acad0e2917f296636ac6f62ff6ca7da0a655434cc668d75c"
   },
   "execution": {
     "executionHash": "67b5ac48cddfa323043b0f23a573a25fa0a3d5b31c32799505176ecb8d2a1a8e",
