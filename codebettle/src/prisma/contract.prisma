@@ -1293,3 +1293,19 @@ model Session {
 
   @@index([userId, expiresAt])
 }
+
+// Custom pages built in Admin > Page Builder (PR #34). Blocks are stored
+// as JSON on the row (no per-block tables) so the builder adds no extra
+// tables and no extra load; the public page server-renders them.
+// status: "draft" | "published" — drafts return 404 publicly.
+model Page {
+  id        String   @id @onCreate(cuid(2))
+  title     String
+  slug      String   @unique
+  status    String   @default("draft")
+  blocks    Json
+  createdAt DateTime @default(now()) @onCreate(now())
+  updatedAt temporal.UpdatedAt
+
+  @@index([status, createdAt])
+}

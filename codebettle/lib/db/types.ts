@@ -1947,3 +1947,31 @@ export type EmailTemplateRow = Pick<
   | 'createdAt'
   | 'updatedAt'
 >;
+
+/**
+ * A custom page built in Admin > Page Builder (PR #34). `blocks` is the
+ * stored JSON array of PageBlock values (lib/page-builder.ts) — parsed
+ * and sanitised on read by mapPageRow, never trusted as-is. `status`
+ * is 'draft' (not publicly accessible) or 'published' (live at
+ * /pages/<slug>).
+ */
+export interface Page {
+  id: string;
+  title: string;
+  slug: string;
+  status: 'draft' | 'published';
+  blocks: import('../page-builder').PageBlock[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type PageRow = Pick<
+  Models.public_Page,
+  | 'id'
+  | 'title'
+  | 'slug'
+  | 'status'
+  | 'blocks'
+  | 'createdAt'
+  | 'updatedAt'
+>;

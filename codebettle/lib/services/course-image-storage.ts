@@ -421,3 +421,65 @@ export async function uploadNavbarLogoImage(
   const { data: publicUrl } = storage.storage.from(COURSE_IMAGE_BUCKET).getPublicUrl(data.path);
   return { url: publicUrl.publicUrl, path: data.path };
 }
+
+// ---------------------------------------------------------------------------
+// Page Builder images (PR #34).
+// ---------------------------------------------------------------------------
+//
+// Same bucket, same rules as course thumbnails and form covers — NO new
+// bucket: a page image is public by nature (it renders in an <img> on
+// the public page), the `course-images` bucket already exists and is
+// public, and the file-type / 5 MB limits are identical. Page images
+// live under a separate `pages/<pageId>/` prefix so they can never be
+// mistaken for (or deleted as) a course thumbnail, and vice versa.
+
+export type PageImageFile = CourseImageFile;
+
+/**
+ * Upload a Page Builder block image to
+ * `course-images/pages/<pageId>/<uuid>.<ext>`. Returns the public URL
+ * and the storage path. The URL is what gets saved into the block
+ * content; the path is what deletePageImage needs. Validation runs
+ * before the client is built, so a bad file is a 400 even when the
+ * service-role key is missing. No database write happens here — the
+ * caller saves the URL into the block (the builder saves it with the
+ * rest of the page; an upload that is never saved leaves an orphaned
+ * file, which is harmless — it is unreferenced and publicly
+ * unreachable without its UUID URL).
+ */
+export async function uploadPageImage(
+  pageId: string,
+  file: PageImageFile,
+  client?: SupabaseClient,
+): Promise<{ url: string; path: string }> {
+  if (!(ALLOWED_COURSE_IMAGE_TYPES as readonly string[]).includes(file.type)) {
+    throw new Error('Only JPG, PNG, WebP or GIF images are allowed');
+  }
+  if (file.size > MAX_COURSE_IMAGE_BYTES) {
+    throw new Error('Image must be 5 MB or smaller');
+  }
+  const bytes = typeof file.arrayBuffer === 'function' ? await file.arrayBuffer() : file.arrayBuffer;
+  const body = Buffer.isBuffer(bytes) ? bytes : Buffer.from(bytes);
+  if (body.byteLength > MAX_COURSE_IMAGE_BYTES) {
+    throw new Error('Image must be 5 MB or smaller');
+  }
+  const storage = client ?? getCourseImageStorageClient();
+  const path = `pages/${pageId}/${randomUUID()}.${EXTENSIONS[file.type]}`;
+  const { data, error } = await storage.storage
+    .from(COURSE_IMAGE_BUCKET)
+    .upload(path, body, { contentType: file.type, upsert: false });
+  if (error || !data) {
+    throw new Error(`Page image upload failed: ${error?.message ?? 'unknown error'}`);
+  }
+  const { data: publicUrl } = storage.storage.from(COURSE_IMAGE_BUCKET).getPublicUrl(data.path);
+  return { url: publicUrl.publicUrl, path: data.path };
+}
+
+/** Delete a previously uploaded page image by its storage path (e.g. `pages/<id>/<uuid>.jpg`). */
+export async function deletePageImage(path: string, client?: SupabaseClient): Promise<void> {
+  const storage = client ?? getCourseImageStorageClient();
+  const { error } = await storage.storage.from(COURSE_IMAGE_BUCKET).remove([path]);
+  if (error) {
+    throw new Error(`Page image delete failed: ${error.message}`);
+  }
+}

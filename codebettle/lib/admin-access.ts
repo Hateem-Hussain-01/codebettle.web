@@ -59,7 +59,8 @@ export type AdminAreaKey =
   | 'book-a-call'
   | 'ambassadors'
   | 'subscribers'
-  | 'settings';
+  | 'settings'
+  | 'page-builder';
 
 /**
  * Every admin area, in sidebar order — this list is the single source of
@@ -132,6 +133,12 @@ export const ADMIN_AREAS: readonly AdminArea[] = [
   { key: 'ambassadors', label: 'Ambassadors', href: '/admin/ambassadors', description: 'Campus ambassador applications (review, approve/reject)' },
   { key: 'subscribers', label: 'Subscribers', href: '/admin/subscribers', description: 'Newsletter subscribers from the footer' },
   { key: 'settings', label: 'Settings', href: '/admin/settings', description: 'Site settings' },
+  // Page Builder: block-based custom pages (title + slug + blocks,
+  // published live at /pages/<slug>). A NEW area, placed LAST in the
+  // sidebar by Eman's instruction (13 Nov 2026) — its own section, not
+  // mixed into another one. Restricted admins do NOT get it by default
+  // (secure default: missing keys are denied).
+  { key: 'page-builder', label: 'Page Builder', href: '/admin/page-builder', description: 'Block-based custom pages (published live at /pages/<slug>)' },
 ] as const;
 
 export const ADMIN_AREA_KEYS: readonly AdminAreaKey[] = ADMIN_AREAS.map((a) => a.key);
@@ -223,7 +230,7 @@ export function areaForAdminPath(pathname: string): AdminAreaKey | 'access' | nu
 /**
  * Normalise a permissions map received from the access UI before saving.
  * - Unknown keys are dropped; non-boolean values are dropped.
- * - All 23 areas true collapses to undefined (full admin), so "grant
+ * - All 27 areas true collapses to undefined (full admin), so "grant
  *   everything" stays a real full admin.
  * - No areas true stays `{}` (restricted admin with nothing granted).
  * Returns undefined for full admin, otherwise the restricted map.
