@@ -335,6 +335,8 @@ export function mapCourseRow(
     reviewCount: row.reviewCount,
     // Rows read before the Phase 2 migration ran carry no template column.
     certificateTemplateHtml: row.certificateTemplateHtml ?? null,
+    // Rows read before the outline migration ran carry no outline column.
+    outlineUrl: row.outlineUrl ?? null,
     createdAt: dateToString(row.createdAt),
     updatedAt: dateToString(row.updatedAt),
   };

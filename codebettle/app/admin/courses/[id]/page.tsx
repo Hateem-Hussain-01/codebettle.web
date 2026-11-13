@@ -18,6 +18,7 @@ import CourseCurriculumClient from './course-curriculum-client';
 import CourseInstructorClient from './course-instructor-client';
 import CourseThumbnailClient from './course-thumbnail-client';
 import CourseCertificateTemplateClient from './course-certificate-template-client';
+import CourseOutlineClient from './course-outline-client';
 
 const DAYS = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
 
@@ -73,6 +74,10 @@ export default async function AdminCourseDetailPage({ params }: { params: Promis
       {/* Certificate template (Phase 2 — per-course HTML template;
           without one the course uses the default design). */}
       <CourseCertificateTemplateClient courseId={course.id} initialTemplate={course.certificateTemplateHtml ?? null} />
+
+      {/* Course outline PDF (public download link on the course page;
+          without one no button renders). */}
+      <CourseOutlineClient courseId={course.id} initialOutlineUrl={course.outlineUrl ?? null} />
 
       {/* Instructor info + assign control (always shown, even if the
           current instructor record is missing — the assign control is

@@ -75,6 +75,8 @@ export const courseCreateSchema = z.object({
   tags: z.array(z.string()).optional(),
   /** Optional full HTML certificate template for this course. Absent = the default Python design. */
   certificateTemplateHtml: z.string().optional(),
+  /** Optional public course outline PDF URL. Absent = no outline attached. */
+  outlineUrl: httpUrlSchema.optional(),
 });
 
 export const courseUpdateSchema = z.object({
@@ -97,6 +99,8 @@ export const courseUpdateSchema = z.object({
   tags: z.array(z.string()).optional(),
   /** Full HTML certificate template for this course; null clears an attached template. */
   certificateTemplateHtml: z.string().nullable().optional(),
+  /** Public course outline PDF URL; null clears an attached outline. */
+  outlineUrl: httpUrlSchema.nullable().optional(),
 });
 
 export const courseStatusSchema = z.object({

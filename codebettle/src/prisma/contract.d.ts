@@ -23,7 +23,7 @@ import type {
 } from '@prisma/orm-postgres/contract/types';
 
 export type StorageHash =
-  StorageHashBase<'ad006496b129389a93658010687e2868f5e6e2b87c15bd94c1e830fa0cfbee23'>;
+  StorageHashBase<'4cd11d9a7a815172acad0e2917f296636ac6f62ff6ca7da0a655434cc668d75c'>;
 export type ExecutionHash =
   ExecutionHashBase<'67b5ac48cddfa323043b0f23a573a25fa0a3d5b31c32799505176ecb8d2a1a8e'>;
 export type ProfileHash =
@@ -686,6 +686,7 @@ export namespace Models {
     isFree: FieldOutputTypes['public']['Course']['isFree'];
     level: FieldOutputTypes['public']['Course']['level'];
     longDescription: FieldOutputTypes['public']['Course']['longDescription'];
+    outlineUrl: FieldOutputTypes['public']['Course']['outlineUrl'];
     pricePkr: FieldOutputTypes['public']['Course']['pricePkr'];
     rating: FieldOutputTypes['public']['Course']['rating'];
     requirements: FieldOutputTypes['public']['Course']['requirements'];
@@ -2271,6 +2272,12 @@ type ContractBase = Omit<
                   readonly dataType: 'pg/text';
                   readonly codecId: 'pg/text@1';
                   readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly outlineUrl: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
                   readonly many: false;
                 };
                 readonly pricePkr: {
@@ -6419,6 +6426,10 @@ type ContractBase = Omit<
                 readonly nullable: false;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
               };
+              readonly outlineUrl: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
               readonly pricePkr: {
                 readonly nullable: false;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/int4@1' };
@@ -6601,6 +6612,7 @@ type ContractBase = Omit<
                 readonly isFree: { readonly column: 'isFree' };
                 readonly level: { readonly column: 'level' };
                 readonly longDescription: { readonly column: 'longDescription' };
+                readonly outlineUrl: { readonly column: 'outlineUrl' };
                 readonly pricePkr: { readonly column: 'pricePkr' };
                 readonly rating: { readonly column: 'rating' };
                 readonly requirements: { readonly column: 'requirements' };

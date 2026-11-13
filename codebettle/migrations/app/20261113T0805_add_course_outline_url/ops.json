@@ -1,0 +1,62 @@
+[
+  {
+    "id": "column.public.Course.outlineUrl",
+    "label": "Add column \"outlineUrl\" to \"Course\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "outlineUrl",
+        "table": "Course"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"outlineUrl\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "Course",
+          "outlineUrl"
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "column \"outlineUrl\" on \"Course\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"outlineUrl\"",
+        "sql": "ALTER TABLE \"public\".\"Course\" ADD COLUMN \"outlineUrl\" text"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"outlineUrl\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "Course",
+          "outlineUrl"
+        ],
+        "expectation": {
+          "expects": "present",
+          "object": "column \"outlineUrl\" on \"Course\""
+        }
+      },
+      {
+        "description": "verify column \"outlineUrl\" has type \"text\"",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_attribute\" AS \"a\" INNER JOIN \"pg_class\" AS \"c\" ON \"c\".\"oid\" = \"a\".\"attrelid\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"relnamespace\" WHERE (\"n\".\"nspname\" = $1 AND \"c\".\"relname\" = $2 AND \"a\".\"attname\" = $3 AND (format_type(\"a\".\"atttypid\", \"a\".\"atttypmod\")) = $4 AND NOT (\"a\".\"attisdropped\"))) AS \"result\"",
+        "params": [
+          "public",
+          "Course",
+          "outlineUrl",
+          "text"
+        ]
+      }
+    ]
+  }
+]
