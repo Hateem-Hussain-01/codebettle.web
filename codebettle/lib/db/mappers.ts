@@ -26,6 +26,7 @@ import type {
   Course,
   CourseCategory,
   CourseRow,
+  CourseRowLike,
   Enrollment,
   EnrollmentRow,
   FormDefinition,
@@ -302,7 +303,7 @@ export function mapModuleRow(row: ModuleRow, lessons: LessonRow[]): Module {
 }
 
 export function mapCourseRow(
-  row: CourseRow,
+  row: CourseRowLike,
   modulesWithLessons: Array<ModuleRow & { lessons: LessonRow[] }>,
 ): Course {
   return {
@@ -332,8 +333,8 @@ export function mapCourseRow(
     enrolledCount: row.enrolledCount,
     rating: row.rating,
     reviewCount: row.reviewCount,
-    // Defensive: rows read before the Phase 2 migration ran carry no template column.
-    certificateTemplateHtml: (row as Partial<CourseRow>).certificateTemplateHtml ?? null,
+    // Rows read before the Phase 2 migration ran carry no template column.
+    certificateTemplateHtml: row.certificateTemplateHtml ?? null,
     createdAt: dateToString(row.createdAt),
     updatedAt: dateToString(row.updatedAt),
   };
