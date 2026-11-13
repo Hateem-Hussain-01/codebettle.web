@@ -4,24 +4,42 @@
 <meta charset="UTF-8">
 <title>CodeBettle Certificate of Completion</title>
 <!--
-  CodeBettle Certificate Template — exact replica of the approved Canva design (PB8-_Sample.pdf).
-  Page: A4 landscape (1122 x 796 px @ 96dpi). All positions/sizes measured from the PDF.
-  Fonts: Montserrat (Google Fonts, variable), Photograph Signature (name), Amsterdam Four (signature).
-  Colours: black #000000, white #ffffff, gold #ffd529, dark purple #42354c (background hexagons).
+  CodeBettle Certificate Template — "Python Crash Course" revision.
+  Based on the approved Python design (PB8-_Sample.pdf), with layout fixes:
+    * Student name smaller: Photograph Signature 28pt (was 33.81pt).
+    * Course name is now "Python Crash Course" (short, one line) so it no
+      longer wraps and overlaps BATCH-8 / "for successfully completing the".
+    * Course row is truly centred (the old -23px left shift removed).
+      The Python logo next to the course name was removed at the user's
+      request (13 Nov 2026) — the course name now stands alone, centred.
+    * Gold name-underline moved below the script descender (tails reach ~425px).
+    * "for successfully completing the" shifted down to clear the moved line.
+    * Signature gold line + "CEO" moved down so the "Ahmad" swash clears them
+      (sig 44px, was 51.1px; block moved up so everything stays inside the frame).
+  Page: A4 landscape (1122 x 796 px @ 96dpi).
+  Fonts: Montserrat (Google Fonts, variable), Photograph Signature (name),
+  Amsterdam Four (signature). Colours: black #000000, white #ffffff,
+  gold #ffd529, dark purple #42354c (background hexagons).
   DYNAMIC FIELDS (replace at certificate generation time):
-    Student name ......... "Zohaib Hassan"      -> {{STUDENT_NAME}}
-    Course name .......... "PYTHON"              -> {{COURSE_NAME}}
-    Course icon .......... python logo image     -> {{COURSE_ICON}}
+    Student name ......... "Huffy"              -> {{STUDENT_NAME}}
+    Course name .......... "PYTHON CRASH COURSE" -> {{COURSE_NAME}}
     Batch ................ "BATCH-8"             -> {{BATCH}}
-    Certificate number ... "CBB8CNo801"          -> {{CERTIFICATE_NUMBER}}
+    Certificate number ... "CB-2026-008"         -> {{CERTIFICATE_NUMBER}}
     Signature name ....... "Ahmad"               -> {{SIGNATURE_NAME}}
     Signature title ...... "CEO"                 -> {{SIGNATURE_TITLE}}
-    QR code .............. sample QR below       -> {{QR_CODE}} (data URI of the per-certificate QR,
+    QR code .............. per-certificate QR    -> {{QR_CODE}} (data URI of the QR,
                                                         encoding https://codebettle-web.vercel.app/verify/<token>)
-  NOTE (Phase 2): the body below uses the placeholders listed above, NOT the
-  sample values — the sample QR / sample values were replaced when this file
-  was wired into the certificate system. Do not paste sample values back in.
+  PREVIEW VALUES (used for the preview PNG only — the template itself keeps
+  the placeholders above): student "Huffy", course "PYTHON CRASH COURSE",
+  batch "BATCH-8", certificate number "CB-2026-008", signature "Ahmad" / "CEO",
+  QR = the real QR for verify token 6006cac7b8547d94150a5ea2daceda97.
+  NOTE: for a LIVE certificate to show "Python Crash Course", either rename the
+  course to "Python Crash Course" or attach this file as the course's custom
+  template (its {{COURSE_NAME}} then still follows the course title — the
+  course title itself must read "Python Crash Course").
 -->
+
+
 <style>
   @font-face {
     font-family: 'Montserrat';
@@ -85,22 +103,20 @@
   }
   .name {
     position: absolute; top: 330px; left: 0; width: 100%; text-align: center;
-    font-family: 'Photograph Signature', cursive; font-size: 90.4px; font-weight: 400;
+    font-family: 'Photograph Signature', cursive; font-size: 74.9px; font-weight: 400;
     color: #fff; line-height: 1; white-space: nowrap;
   }
   .gold-line { position: absolute; height: 2px; background: #ffd529; }
-  .name-line { top: 399px; left: 171px; width: 786px; }
+  .name-line { top: 432px; left: 171px; width: 786px; }
   .completing {
-    position: absolute; top: 439px; left: 0; width: 100%; text-align: center;
+    position: absolute; top: 447px; left: 0; width: 100%; text-align: center;
     font-size: 16.7px; font-style: italic; font-weight: 400; color: #fff; line-height: 1;
   }
   .course-row {
     position: absolute; top: 454px; left: 0; width: 100%; height: 81px;
     display: flex; align-items: center; justify-content: center; gap: 27px;
-    transform: translateX(-23px);
   }
-  .course-row img { width: 75px; height: 75px; flex: none; }
-  .course-row .course-name { font-size: 62px; font-weight: 800; color: #fff; line-height: 1; }
+  .course-row .course-name { font-size: 62px; font-weight: 800; color: #fff; line-height: 1; white-space: nowrap; }
   .batch-row {
     position: absolute; top: 533px; left: 0; width: 100%;
     display: flex; align-items: center; justify-content: center; gap: 12px;
@@ -120,17 +136,17 @@
   .qr { position: absolute; top: 642px; left: 518px; width: 85px; height: 85px; background: #fff; }
   .qr img { width: 100%; height: 100%; display: block; }
   .bottom-right {
-    position: absolute; top: 672px; left: 671px; width: 210px; text-align: center;
+    position: absolute; top: 658px; left: 671px; width: 210px; text-align: center;
   }
   .bottom-right .sig {
-    font-family: 'Amsterdam Four', cursive; font-size: 51.1px; font-weight: 400;
+    font-family: 'Amsterdam Four', cursive; font-size: 44px; font-weight: 400;
     color: #fff; line-height: 1; white-space: nowrap;
   }
   .bottom-right .line {
-    width: 193px; height: 2px; background: #ffd529; margin: -12px auto 0;
+    width: 193px; height: 2px; background: #ffd529; margin: 28px auto 0;
   }
   .bottom-right .sig-title {
-    font-size: 16px; font-weight: 700; color: #fff; line-height: 1;
+    font-size: 16px; font-weight: 700; color: #fff; line-height: 1; margin-top: 10px;
   }
   @media print {
     body { background: #fff; }
@@ -160,7 +176,6 @@
     <div class="completing">for successfully completing the</div>
 
     <div class="course-row">
-      <img src="{{COURSE_ICON}}" alt="Python">
       <span class="course-name">{{COURSE_NAME}}</span>
     </div>
 
