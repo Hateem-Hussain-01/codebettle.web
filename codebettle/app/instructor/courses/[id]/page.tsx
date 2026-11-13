@@ -1,4 +1,5 @@
 import { notFound } from 'next/navigation';
+import { getBatchesByCourse } from '@/lib/db/batches';
 import { getCourseById } from '@/lib/db/courses';
 import { getEnrollmentsByCourse } from '@/lib/db/enrollments';
 import { getUserById } from '@/lib/db/users';
@@ -22,5 +23,9 @@ export default async function InstructorCourseManagePage({ params }: { params: P
     )
   ).filter((item): item is { enrollment: typeof item.enrollment; student: NonNullable<typeof item.student> } => item.student !== null);
 
-  return <InstructorCourseManageClient course={course} enrolledStudents={enrolledStudents} />;
+  // Batches of this course (for the per-student batch label). Empty when
+  // the Batch table has not been created yet.
+  const batches = await getBatchesByCourse(id);
+
+  return <InstructorCourseManageClient course={course} enrolledStudents={enrolledStudents} batches={batches} />;
 }

@@ -19,6 +19,7 @@ import CourseInstructorClient from './course-instructor-client';
 import CourseThumbnailClient from './course-thumbnail-client';
 import CourseCertificateTemplateClient from './course-certificate-template-client';
 import CourseOutlineClient from './course-outline-client';
+import CourseBatchesClient from './course-batches-client';
 
 const DAYS = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
 
@@ -78,6 +79,17 @@ export default async function AdminCourseDetailPage({ params }: { params: Promis
       {/* Course outline PDF (public download link on the course page;
           without one no button renders). */}
       <CourseOutlineClient courseId={course.id} initialOutlineUrl={course.outlineUrl ?? null} />
+
+      {/* Batches — one course, many runs. Students enrol in the open
+          batch; certificates take the batch number from the enrolment.
+          (When the Batch table has not been created yet, the section
+          shows a "run the SQL" state instead of failing.) */}
+      <CourseBatchesClient
+        courseId={course.id}
+        instructors={instructors}
+        enrollments={enrollments}
+        studentMap={Object.fromEntries(studentMap)}
+      />
 
       {/* Instructor info + assign control (always shown, even if the
           current instructor record is missing — the assign control is

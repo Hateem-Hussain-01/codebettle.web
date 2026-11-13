@@ -5,7 +5,8 @@ import { enrollSelfService } from '@/lib/services/enrollment-service';
 
 /**
  * POST /api/student/enrollments — enrol yourself in a course (Phase 7).
- * Student-only. Body: { courseId: string, couponCode?: string }.
+ * Student-only. Body: { courseId: string, batchId?: string, couponCode?: string }.
+ * Enrols in the requested batch when given, else the course's open batch.
  * Free courses enrol as 'free'; paid courses enrol as 'pending' — there
  * is no payment gateway, so an admin confirms the payment later (admin
  * enrolment update flips 'pending' to 'paid'). Until then the student
@@ -15,6 +16,7 @@ import { enrollSelfService } from '@/lib/services/enrollment-service';
  */
 const enrollSchema = z.object({
   courseId: z.string().min(1),
+  batchId: z.string().min(1).optional(),
   couponCode: z.string().min(1).max(50).optional(),
 });
 

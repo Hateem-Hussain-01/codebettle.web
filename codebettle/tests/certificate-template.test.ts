@@ -92,11 +92,13 @@ test('findMissingPlaceholders lists what a template lacks (warn-only)', () => {
   assert.deepEqual(findMissingPlaceholders(getDefaultTemplateHtml()), ['{{COURSE_ICON}}']);
 });
 
-test('resolveBatch: stored batch wins, else BATCH-8 for Python, else none', () => {
-  assert.equal(resolveBatch('BATCH-3', 'python', 'Python'), 'BATCH-3');
-  assert.equal(resolveBatch(null, 'python', 'Python'), 'BATCH-8');
-  assert.equal(resolveBatch(undefined, 'web-101', 'Web 101'), null);
-  assert.equal(resolveBatch('  ', 'web-101', 'Web 101'), null);
+test('resolveBatch: stored batch wins, else enrolment batch, else BATCH-8 for Python, else none', () => {
+  assert.equal(resolveBatch('BATCH-3', null, 'python', 'Python'), 'BATCH-3');
+  assert.equal(resolveBatch(null, 'BATCH-9', 'python', 'Python'), 'BATCH-9');
+  assert.equal(resolveBatch(null, null, 'python', 'Python'), 'BATCH-8');
+  assert.equal(resolveBatch(undefined, undefined, 'web-101', 'Web 101'), null);
+  assert.equal(resolveBatch('  ', '  ', 'web-101', 'Web 101'), null);
+  assert.equal(resolveBatch(null, 'BATCH-2', 'web-101', 'Web 101'), 'BATCH-2');
 });
 
 test('substituteCertificatePlaceholders replaces all eight and escapes text', () => {
@@ -251,4 +253,38 @@ test('buildCertificateHtml: a custom template is used as-is (title casing kept)'
   assert.equal(built.batch, 'BATCH 1');
   assert.ok(built.html.includes('GHL Automation'), 'custom template keeps the title as-is');
   assert.ok(!built.html.includes('{{'));
+});
+
+test('buildCertificateHtml: the enrolment batch prints when the certificate has no stored batch', async () => {
+  const built = await buildCertificateHtml({
+    studentName: 'huffy',
+    courseSlug: 'web-101',
+    courseTitle: 'Web 101',
+    courseThumbnail: '/t.png',
+    courseTemplateHtml: null,
+    batch: null,
+    enrollmentBatch: 'BATCH-9',
+    certificateNumber: 'CB-2026-001',
+    verificationToken: 'tok-123',
+  });
+  // The template header comment mentions BATCH-8 as an example, so
+  // assert on the rendered batch element, not the whole document.
+  assert.ok(built.html.includes('<span class="batch">BATCH-9</span>'));
+  assert.ok(!built.html.includes('<span class="batch">BATCH-8</span>'));
+});
+
+test('buildCertificateHtml: a stored batch wins over the enrolment batch', async () => {
+  const built = await buildCertificateHtml({
+    studentName: 'huffy',
+    courseSlug: 'web-101',
+    courseTitle: 'Web 101',
+    courseThumbnail: '/t.png',
+    courseTemplateHtml: null,
+    batch: 'BATCH-3',
+    enrollmentBatch: 'BATCH-9',
+    certificateNumber: 'CB-2026-001',
+    verificationToken: 'tok-123',
+  });
+  assert.ok(built.html.includes('<span class="batch">BATCH-3</span>'));
+  assert.ok(!built.html.includes('<span class="batch">BATCH-9</span>'));
 });

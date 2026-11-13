@@ -103,3 +103,38 @@ test('issuing twice for the same enrolment is an error, not a new number', async
   assert.ok('error' in again && again.status === 400, JSON.stringify(again));
   assert.match(again.error, /already exists/);
 });
+
+test('issuing a certificate stores the enrolment batch (BATCH-<n>) on the certificate', async () => {
+  fake.seed('Batch', [
+    { id: 'batch-8', courseId: 'course-1', batchNumber: 8, status: 'ongoing', startDate: null, endDate: null, capacity: null, instructorId: null, createdAt: D('2024-04-01'), updatedAt: D('2024-04-01') },
+  ]);
+  // Point the enrolment at the batch (the seed has no batchId).
+  const { getEnrollmentById } = await import('../lib/db/enrollments');
+  const { updateEnrollment } = await import('../lib/db/enrollments');
+  await updateEnrollment('enr-1', { batchId: 'batch-8' });
+  assert.equal((await getEnrollmentById('enr-1'))?.batchId, 'batch-8');
+
+  const issued = await issueCertificateWithRetry({ studentId: 'stu-1', courseId: 'course-1', enrollmentId: 'enr-1' });
+  assert.ok('certificate' in issued, JSON.stringify(issued));
+  assert.equal(issued.certificate.batch, 'BATCH-8');
+});
+
+test('issuing a certificate for an enrolment without a batch stores no batch (legacy fallback applies at render)', async () => {
+  const issued = await issueCertificateWithRetry({ studentId: 'stu-1', courseId: 'course-1', enrollmentId: 'enr-1' });
+  assert.ok('certificate' in issued, JSON.stringify(issued));
+  assert.equal(issued.certificate.batch, null);
+});
+
+test('an explicitly requested batch wins over the enrolment batch', async () => {
+  fake.seed('Batch', [
+    { id: 'batch-8', courseId: 'course-1', batchNumber: 8, status: 'ongoing', startDate: null, endDate: null, capacity: null, instructorId: null, createdAt: D('2024-04-01'), updatedAt: D('2024-04-01') },
+  ]);
+  const { updateEnrollment } = await import('../lib/db/enrollments');
+  await updateEnrollment('enr-1', { batchId: 'batch-8' });
+
+  const issued = await issueCertificateWithRetry({
+    studentId: 'stu-1', courseId: 'course-1', enrollmentId: 'enr-1', batch: 'BATCH-3',
+  });
+  assert.ok('certificate' in issued, JSON.stringify(issued));
+  assert.equal(issued.certificate.batch, 'BATCH-3');
+});

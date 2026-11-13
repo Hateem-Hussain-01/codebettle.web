@@ -1,4 +1,5 @@
 import { getSession } from '@/lib/auth';
+import { getBatchById } from '@/lib/db/batches';
 import { getEnrollmentsByStudent } from '@/lib/db/enrollments';
 import { getCoursesByIds } from '@/lib/db/courses';
 import { getCertificatesByStudent } from '@/lib/db/certificates';
@@ -23,6 +24,15 @@ export default async function StudentDashboard() {
   const enrolledCourses = enrollments
     .map((e) => ({ enrollment: e, course: coursesById.get(e.courseId) }))
     .filter((item): item is { enrollment: (typeof enrollments)[number]; course: NonNullable<ReturnType<typeof coursesById.get>> } => item.course !== undefined);
+
+  // The batch each enrolment is in (name + start date), fetched once per
+  // distinct batch. Enrolments made before batches existed have none.
+  const batchById = new Map<string, Awaited<ReturnType<typeof getBatchById>>>();
+  await Promise.all(
+    [...new Set(enrollments.map((e) => e.batchId).filter((b): b is string => Boolean(b)))].map(async (batchId) => {
+      batchById.set(batchId, await getBatchById(batchId));
+    }),
+  );
 
   const completed = enrollments.filter(e => e.isCompleted).length;
 
@@ -68,7 +78,9 @@ export default async function StudentDashboard() {
             </Card>
           ) : (
             <div className="space-y-3">
-              {enrolledCourses.slice(0, 4).map(({ enrollment, course }) => (
+              {enrolledCourses.slice(0, 4).map(({ enrollment, course }) => {
+                const batch = enrollment.batchId ? batchById.get(enrollment.batchId) : null;
+                return (
                 <Link key={enrollment.id} href={`/student/courses/${enrollment.courseId}`}>
                   <Card hover glow className="p-4">
                     <div className="flex items-center gap-4">
@@ -76,6 +88,7 @@ export default async function StudentDashboard() {
                       <div className="flex-1 min-w-0">
                         <p className="text-foreground font-semibold text-sm truncate">{course!.title}</p>
                         <p className="text-muted text-xs">{enrollment.completedLessons.length} lessons accessed</p>
+                        {batch && <p className="text-muted text-xs">Batch {batch.batchNumber}{batch.startDate ? ` — starts ${formatDateShort(batch.startDate)}` : ''}</p>}
                       </div>
                       {enrollment.isCompleted
                         ? <Badge variant="success">Completed</Badge>
@@ -84,7 +97,8 @@ export default async function StudentDashboard() {
                     </div>
                   </Card>
                 </Link>
-              ))}
+                );
+              })}
             </div>
           )}
         </FadeIn>

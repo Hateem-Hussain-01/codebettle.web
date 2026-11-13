@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { connection } from 'next/server';
 import { getSession } from '@/lib/auth';
+import { getBatchesByCourse, getOpenBatchForCourse } from '@/lib/db/batches';
 import { getCourseBySlug } from '@/lib/db/courses';
 import { isEnrolled } from '@/lib/db/enrollments';
 import { toPublicCourse } from '@/lib/db/mappers';
@@ -49,5 +50,13 @@ export default async function CourseDetailPage({ params }: { params: Promise<{ s
   // enrol button (the page itself stays public — no session = not enrolled).
   const session = await getSession();
   const enrolled = session?.role === 'student' ? await isEnrolled(session.id, course.id) : false;
-  return <CourseDetailClient course={toPublicCourse(course)} instructor={instructor} reviews={reviews} slug={slug} enrolled={enrolled} />;
+  // Batches: the open batch (latest upcoming/ongoing) is what new
+  // students enrol in; older batches are shown as history. When the
+  // batch table has not been created yet (SQL not run), both are empty
+  // and the page enrols without a batch, exactly as before.
+  const [openBatch, batches] = await Promise.all([
+    getOpenBatchForCourse(course.id),
+    getBatchesByCourse(course.id),
+  ]);
+  return <CourseDetailClient course={toPublicCourse(course)} instructor={instructor} reviews={reviews} slug={slug} enrolled={enrolled} openBatch={openBatch} batches={batches} />;
 }

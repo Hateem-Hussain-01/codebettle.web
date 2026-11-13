@@ -14,6 +14,8 @@ import type {
   Announcement,
   AnnouncementRow,
   AnnouncementType,
+  Batch,
+  BatchRow,
   BlogPost,
   BlogPostRow,
   Certificate,
@@ -349,6 +351,7 @@ export function mapEnrollmentRow(row: EnrollmentRow, progress: LessonProgressRow
     id: row.id,
     studentId: row.studentId,
     courseId: row.courseId,
+    batchId: row.batchId ?? undefined,
     enrolledAt: dateToString(row.enrolledAt),
     completedLessons: progress
       .filter((p) => p.enrollmentId === row.id)
@@ -359,6 +362,23 @@ export function mapEnrollmentRow(row: EnrollmentRow, progress: LessonProgressRow
     couponUsed: row.couponUsed ?? undefined,
     amountPaid: row.amountPaid,
     certificateEligible: row.certificateEligible ?? undefined,
+  };
+}
+
+/** Map a Batch row to the domain shape. */
+export function mapBatchRow(row: BatchRow, enrolledCount?: number): Batch {
+  return {
+    id: row.id,
+    courseId: row.courseId,
+    batchNumber: row.batchNumber,
+    status: row.status,
+    startDate: row.startDate ? dateToString(row.startDate) : undefined,
+    endDate: row.endDate ? dateToString(row.endDate) : undefined,
+    capacity: row.capacity ?? undefined,
+    instructorId: row.instructorId ?? undefined,
+    createdAt: dateToString(row.createdAt),
+    updatedAt: dateToString(row.updatedAt),
+    enrolledCount,
   };
 }
 

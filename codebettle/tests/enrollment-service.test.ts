@@ -138,3 +138,50 @@ test('admin soft-deletes; it disappears from lists; second delete is 404', async
   const asInstructor = await deleteEnrollmentService(INST, 'enr-1');
   assert.ok('error' in asInstructor && asInstructor.status === 403, JSON.stringify(asInstructor));
 });
+
+test('admin creates an enrollment in a specific batch; the batch must belong to the course and be open', async () => {
+  fake.seed('Batch', [
+    { id: 'batch-1', courseId: 'course-1', batchNumber: 1, status: 'ongoing', startDate: null, endDate: null, capacity: null, instructorId: null, createdAt: D('2024-04-01'), updatedAt: D('2024-04-01') },
+    { id: 'batch-done', courseId: 'course-1', batchNumber: 2, status: 'completed', startDate: null, endDate: null, capacity: null, instructorId: null, createdAt: D('2024-04-01'), updatedAt: D('2024-04-01') },
+  ]);
+  const created = await createEnrollmentService(ADMIN, {
+    studentId: 'stu-2', courseId: 'course-1', batchId: 'batch-1', paymentStatus: 'free', amountPaid: 0,
+  });
+  assert.ok('enrollment' in created, JSON.stringify(created));
+  assert.equal(created.enrollment.batchId, 'batch-1');
+
+  const done = await createEnrollmentService(ADMIN, {
+    studentId: 'stu-2', courseId: 'course-1', batchId: 'batch-done', paymentStatus: 'free', amountPaid: 0,
+  });
+  assert.ok('error' in done && done.status === 400, JSON.stringify(done));
+  assert.match(done.error, /has ended/);
+
+  const missing = await createEnrollmentService(ADMIN, {
+    studentId: 'stu-2', courseId: 'course-1', batchId: 'no-such-batch', paymentStatus: 'free', amountPaid: 0,
+  });
+  assert.ok('error' in missing && missing.status === 404, JSON.stringify(missing));
+});
+
+test('admin creates an enrollment without a batchId enrols in the open batch', async () => {
+  fake.seed('Batch', [
+    { id: 'batch-1', courseId: 'course-1', batchNumber: 1, status: 'ongoing', startDate: null, endDate: null, capacity: null, instructorId: null, createdAt: D('2024-04-01'), updatedAt: D('2024-04-01') },
+  ]);
+  const created = await createEnrollmentService(ADMIN, {
+    studentId: 'stu-2', courseId: 'course-1', paymentStatus: 'free', amountPaid: 0,
+  });
+  assert.ok('enrollment' in created, JSON.stringify(created));
+  assert.equal(created.enrollment.batchId, 'batch-1');
+});
+
+test('admin can move an enrollment to another batch of the same course', async () => {
+  fake.seed('Batch', [
+    { id: 'batch-1', courseId: 'course-1', batchNumber: 1, status: 'ongoing', startDate: null, endDate: null, capacity: null, instructorId: null, createdAt: D('2024-04-01'), updatedAt: D('2024-04-01') },
+    { id: 'batch-2', courseId: 'course-1', batchNumber: 2, status: 'upcoming', startDate: null, endDate: null, capacity: null, instructorId: null, createdAt: D('2024-04-01'), updatedAt: D('2024-04-01') },
+  ]);
+  const moved = await updateEnrollmentService(ADMIN, 'enr-1', { batchId: 'batch-2' });
+  assert.ok('enrollment' in moved, JSON.stringify(moved));
+  assert.equal(moved.enrollment.batchId, 'batch-2');
+
+  const missing = await updateEnrollmentService(ADMIN, 'enr-1', { batchId: 'no-such-batch' });
+  assert.ok('error' in missing && missing.status === 404, JSON.stringify(missing));
+});

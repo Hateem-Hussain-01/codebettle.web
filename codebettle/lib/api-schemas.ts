@@ -140,6 +140,7 @@ export const lessonUpdateSchema = z.object({
 export const enrollmentCreateSchema = z.object({
   studentId: z.string().min(1),
   courseId: z.string().min(1),
+  batchId: z.string().min(1).optional(),
   // Phase 2 (paid-with-no-proof fix): an admin creating an enrolment
   // directly may NOT set it to 'paid' — a brand-new enrolment cannot
   // have a linked approved payment submission yet. 'paid' is only
@@ -157,6 +158,25 @@ export const enrollmentUpdateSchema = z.object({
   paymentStatus: z.enum(['paid', 'free', 'pending']).optional(),
   amountPaid: z.number().int().min(0).optional(),
   certificateEligible: z.boolean().optional(),
+  batchId: z.string().min(1).nullable().optional(),
+});
+
+export const batchCreateSchema = z.object({
+  courseId: z.string().min(1),
+  batchNumber: z.number().int().min(1).optional(),
+  status: z.enum(['upcoming', 'ongoing', 'completed']).optional(),
+  startDate: z.string().nullable().optional(),
+  endDate: z.string().nullable().optional(),
+  capacity: z.number().int().min(1).nullable().optional(),
+  instructorId: z.string().min(1).nullable().optional(),
+});
+
+export const batchUpdateSchema = z.object({
+  status: z.enum(['upcoming', 'ongoing', 'completed']).optional(),
+  startDate: z.string().nullable().optional(),
+  endDate: z.string().nullable().optional(),
+  capacity: z.number().int().min(1).nullable().optional(),
+  instructorId: z.string().min(1).nullable().optional(),
 });
 
 /**

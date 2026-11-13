@@ -26,6 +26,7 @@
  * file does NOT call into enrollment/application/certificate code.
  */
 import { getCourseById } from '../db/courses';
+import { getBatchById } from '../db/batches';
 import { getEnrollmentsByCourse } from '../db/enrollments';
 import { createNotification, notificationExistsForAnnouncement } from '../db/notifications';
 import { getAllUsers, getUserById, getUserNotificationPrefs } from '../db/users';
@@ -259,11 +260,17 @@ export async function onEnrollmentCreatedForInstructor(
     if (!course) return { ok: false, reason: 'course-not-found' };
     const student = await getUserById(enrollment.studentId);
     const studentName = student?.name?.trim() || 'A student';
+    // Name the batch when the enrolment is in one (still never the fee).
+    let batchLabel = '';
+    if (enrollment.batchId) {
+      const batch = await getBatchById(enrollment.batchId).catch(() => null);
+      if (batch) batchLabel = ` (Batch ${batch.batchNumber})`;
+    }
     return notifyUser(course.instructorId, {
       type: 'enrollment',
       event: 'enrollment',
       title: `New enrollment from ${studentName}`,
-      body: `New enrollment from ${studentName} in ${course.title}.`,
+      body: `New enrollment from ${studentName} in ${course.title}${batchLabel}.`,
       linkUrl: `/instructor/courses/${course.id}`,
     });
   } catch (error) {

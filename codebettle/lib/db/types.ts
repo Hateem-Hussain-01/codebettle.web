@@ -20,6 +20,8 @@ export type UserRole = 'student' | 'instructor' | 'admin';
 export type UserStatus = 'active' | 'suspended';
 export type CourseLevel = 'beginner' | 'intermediate' | 'advanced';
 export type CourseStatus = 'draft' | 'published' | 'archived';
+/** Batch lifecycle: created upcoming, starts (ongoing), then ends (completed). */
+export type BatchStatus = 'upcoming' | 'ongoing' | 'completed';
 export type CourseCategory =
   | 'Web Development'
   | 'Mobile Development'
@@ -259,6 +261,8 @@ export interface Enrollment {
   id: string;
   studentId: string;
   courseId: string;
+  /** Batch this enrolment belongs to (undefined = enrolled before batches existed). */
+  batchId?: string;
   enrolledAt: string;
   completedLessons: string[];
   isCompleted: boolean;
@@ -267,6 +271,32 @@ export interface Enrollment {
   couponUsed?: string;
   amountPaid: number;
   certificateEligible?: boolean;
+}
+
+/**
+ * A Batch is one run/cohort of a Course (e.g. Python "Batch 08").
+ * The Course is the subject; each Batch is a dated run with its own
+ * instructor, capacity and lifecycle. Students enrol in a Batch;
+ * the certificate batch comes from the enrolment's Batch.
+ */
+export interface Batch {
+  id: string;
+  courseId: string;
+  batchNumber: number;
+  status: BatchStatus;
+  startDate?: string;
+  endDate?: string;
+  capacity?: number;
+  instructorId?: string;
+  createdAt: string;
+  updatedAt: string;
+  /** Enrolled-student count (only when the repository was asked to count). */
+  enrolledCount?: number;
+}
+
+/** "BATCH-8" — the certificate label for a batch number. */
+export function formatBatchLabel(batchNumber: number): string {
+  return `BATCH-${batchNumber}`;
 }
 
 export interface Certificate {
@@ -529,6 +559,7 @@ export type EnrollmentRow = Pick<
   | 'id'
   | 'studentId'
   | 'courseId'
+  | 'batchId'
   | 'enrolledAt'
   | 'completedAt'
   | 'isCompleted'
@@ -536,6 +567,20 @@ export type EnrollmentRow = Pick<
   | 'couponUsed'
   | 'amountPaid'
   | 'certificateEligible'
+>;
+
+export type BatchRow = Pick<
+  Models.public_Batch,
+  | 'id'
+  | 'courseId'
+  | 'batchNumber'
+  | 'status'
+  | 'startDate'
+  | 'endDate'
+  | 'capacity'
+  | 'instructorId'
+  | 'createdAt'
+  | 'updatedAt'
 >;
 
 export type LessonProgressRow = Pick<
