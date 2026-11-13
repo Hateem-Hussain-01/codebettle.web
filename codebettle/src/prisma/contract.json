@@ -7592,6 +7592,13 @@
                   }
                 }
               },
+              "department": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
               "designation": {
                 "nullable": false,
                 "type": {
@@ -7630,7 +7637,7 @@
               "level": {
                 "nullable": false,
                 "type": {
-                  "codecId": "pg/int4@1",
+                  "codecId": "pg/text@1",
                   "kind": "scalar"
                 }
               },
@@ -7688,6 +7695,9 @@
                 },
                 "createdAt": {
                   "column": "createdAt"
+                },
+                "department": {
+                  "column": "department"
                 },
                 "designation": {
                   "column": "designation"
@@ -14515,6 +14525,11 @@
                     "precision": 3
                   }
                 },
+                "department": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": true
+                },
                 "designation": {
                   "codecId": "pg/text@1",
                   "dataType": "pg/text",
@@ -14545,11 +14560,11 @@
                   "nullable": false
                 },
                 "level": {
-                  "codecId": "pg/int4@1",
-                  "dataType": "pg/int4",
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
                   "default": {
                     "kind": "literal",
-                    "value": 1
+                    "value": "management"
                   },
                   "nullable": false
                 },
@@ -15119,7 +15134,7 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "890e963fcb2b37f0e9b69c2ea3701646c87a59f5ff6f05d1362daf00fa9214df"
+    "storageHash": "d34358cf5bd579183fc13b0a5b0f47beacaf9f97a39905517fcabf05db278e56"
   },
   "execution": {
     "executionHash": "c03532fd4320ed019690564f3dce857d65213fe23762255c9be9388dac920442",

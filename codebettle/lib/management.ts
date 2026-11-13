@@ -5,6 +5,53 @@
  * /success-stories page, the home reviews carousel, the admin
  * management tab, the Reviews admin section and the Navbar Editor.
  */
+import type { TeamMemberLevel } from './db/types';
+
+export type { TeamMemberLevel } from './db/types';
+
+// ---------------------------------------------------------------------------
+// Team hierarchy (Eman's 13 Nov 2026 change): Management at the top,
+// then all departments/teams, then Trainers at the bottom. The order
+// below is the single source of truth for sorting and grouping.
+// ---------------------------------------------------------------------------
+
+/** Hierarchy order, top first. */
+export const TEAM_LEVEL_ORDER: readonly TeamMemberLevel[] = ['management', 'department', 'trainer'];
+
+const TEAM_LEVEL_RANK: Record<TeamMemberLevel, number> = {
+  management: 0,
+  department: 1,
+  trainer: 2,
+};
+
+export function isTeamMemberLevel(value: unknown): value is TeamMemberLevel {
+  return value === 'management' || value === 'department' || value === 'trainer';
+}
+
+/** Rank for sorting: lower = higher in the hierarchy. Unknown levels sort last. */
+export function teamLevelRank(level: string): number {
+  return isTeamMemberLevel(level) ? TEAM_LEVEL_RANK[level] : TEAM_LEVEL_ORDER.length;
+}
+
+/** Group heading for a level: 'Management', the department name, or 'Trainers'. */
+export function teamLevelLabel(level: TeamMemberLevel, department?: string | null): string {
+  if (level === 'management') return 'Management';
+  if (level === 'trainer') return 'Trainers';
+  const name = department?.trim();
+  return name ? name : 'Departments';
+}
+
+/** Sort team members hierarchy-first: level rank, then order in level, then id. */
+export function compareTeamMembers(
+  a: { level: string; orderInLevel: number; id: string },
+  b: { level: string; orderInLevel: number; id: string },
+): number {
+  return (
+    teamLevelRank(a.level) - teamLevelRank(b.level) ||
+    a.orderInLevel - b.orderInLevel ||
+    a.id.localeCompare(b.id)
+  );
+}
 
 // ---------------------------------------------------------------------------
 // Video & Vision layout config (stored as SiteSetting keys, read through
@@ -85,78 +132,87 @@ export function videoAspectClass(orientation: VideoOrientation): string {
 }
 
 // ---------------------------------------------------------------------------
-// Stats (small cards on /success-stories, after Team, before stories).
-// Eman's stated numbers from his reference image are the defaults;
-// an admin can edit them from the management tab (stored as settings).
+// Stats (3 wide cards on /success-stories, above the stories grid).
+// Eman's 13 Nov 2026 change: these are the home page numbers from
+// components/sections/StatsSection.tsx (the 4th home stat, 8+ Expert
+// Courses, is NOT shown here). An admin can edit them from the
+// management tab (stored as settings).
 // ---------------------------------------------------------------------------
 
 export interface PageStats {
-  happyStudents: string;
+  activeStudents: string;
+  certificatesIssued: string;
   averageRating: string;
-  recommendRate: string;
-  hoursOfLearning: string;
 }
 
 export const DEFAULT_PAGE_STATS: PageStats = {
-  happyStudents: '1500+',
-  averageRating: '4.9/5',
-  recommendRate: '98%',
-  hoursOfLearning: '5000+',
+  activeStudents: '1500+',
+  certificatesIssued: '300+',
+  averageRating: '4.8',
 };
 
 export const PAGE_STAT_LABELS: Record<keyof PageStats, string> = {
-  happyStudents: 'Happy Students',
+  activeStudents: 'Active Students',
+  certificatesIssued: 'Certificates Issued',
   averageRating: 'Average Rating',
-  recommendRate: 'Recommend Us',
-  hoursOfLearning: 'Hours of Learning',
 };
 
 /** Normalise stored stats: a blank stored value falls back to its default. */
 export function parsePageStats(
-  input: { happyStudents?: unknown; averageRating?: unknown; recommendRate?: unknown; hoursOfLearning?: unknown } | null | undefined,
+  input: { activeStudents?: unknown; certificatesIssued?: unknown; averageRating?: unknown } | null | undefined,
 ): PageStats {
   const pick = (key: keyof PageStats): string => {
     const value = input?.[key];
     return typeof value === 'string' && value.trim() !== '' ? value.trim() : DEFAULT_PAGE_STATS[key];
   };
   return {
-    happyStudents: pick('happyStudents'),
+    activeStudents: pick('activeStudents'),
+    certificatesIssued: pick('certificatesIssued'),
     averageRating: pick('averageRating'),
-    recommendRate: pick('recommendRate'),
-    hoursOfLearning: pick('hoursOfLearning'),
   };
 }
 
 // ---------------------------------------------------------------------------
-// Team grouping (public page): enabled members only, grouped by level
-// top-to-bottom, cards ordered within each level.
+// Team grouping (public About page): enabled members only, grouped by
+// level in hierarchy order — Management, then one group per department
+// (alphabetical), then Trainers — cards ordered within each group.
 // ---------------------------------------------------------------------------
 
 export interface TeamMemberLike {
   id: string;
-  level: number;
+  level: TeamMemberLevel;
+  department?: string | null;
   orderInLevel: number;
   enabled: boolean;
 }
 
 export interface TeamLevelGroup<T extends TeamMemberLike> {
-  level: number;
+  level: TeamMemberLevel;
+  /** Department name for department-level groups; null otherwise. */
+  department: string | null;
   members: T[];
 }
 
 export function groupTeamByLevel<T extends TeamMemberLike>(members: T[]): TeamLevelGroup<T>[] {
   const enabled = members.filter((m) => m.enabled);
-  const byLevel = new Map<number, T[]>();
+  const groups = new Map<string, TeamLevelGroup<T>>();
   for (const m of enabled) {
-    const list = byLevel.get(m.level) ?? [];
-    list.push(m);
-    byLevel.set(m.level, list);
+    const department = m.level === 'department' ? (m.department?.trim() || null) : null;
+    const key = `${m.level}:${department ?? ''}`;
+    const group = groups.get(key) ?? { level: m.level, department, members: [] };
+    group.members.push(m);
+    groups.set(key, group);
   }
-  return [...byLevel.entries()]
-    .sort((a, b) => a[0] - b[0])
-    .map(([level, list]) => ({
-      level,
-      members: [...list].sort(
+  return [...groups.values()]
+    .sort((a, b) => {
+      const rank = teamLevelRank(a.level) - teamLevelRank(b.level);
+      if (rank !== 0) return rank;
+      // Within the department level: groups alphabetical by department.
+      return (a.department ?? '').localeCompare(b.department ?? '');
+    })
+    .map((group) => ({
+      ...group,
+      members: [...group.members].sort(
         (a, b) => a.orderInLevel - b.orderInLevel || a.id.localeCompare(b.id),
       ),
     }));
@@ -226,7 +282,8 @@ export function validateTeamMember(input: {
   linkedinUrl?: string | null;
   githubUrl?: string | null;
   websiteUrl?: string | null;
-  level?: number;
+  level?: string;
+  department?: string | null;
   orderInLevel?: number;
 }): string | null {
   if (!input.fullName.trim()) return 'Full name is required';
@@ -245,8 +302,14 @@ export function validateTeamMember(input: {
       return `${field} must be a valid http(s) URL`;
     }
   }
-  if (input.level !== undefined && (!Number.isInteger(input.level) || input.level < 1)) {
-    return 'Level must be a whole number of 1 or more';
+  if (input.level !== undefined && !isTeamMemberLevel(input.level)) {
+    return 'Level must be Management, Department or Trainer';
+  }
+  if (input.level === 'department' && (!input.department || !input.department.trim())) {
+    return 'Department name is required for department-level members';
+  }
+  if (input.department && input.department.trim().length > 50) {
+    return 'Department name must be 50 characters or fewer';
   }
   if (input.orderInLevel !== undefined && (!Number.isInteger(input.orderInLevel) || input.orderInLevel < 0)) {
     return 'Order must be a whole number of 0 or more';

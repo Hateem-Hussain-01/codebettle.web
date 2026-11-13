@@ -1096,10 +1096,13 @@ model SuccessStoryEvidence {
 // empty (or the migration has not run yet).
 // ---------------------------------------------------------------------------
 
-// One person on the /success-stories Team section. `level` is the
-// hierarchy level (1 = top, e.g. CEO); `orderInLevel` orders cards
-// within a level. `enabled` false hides the card from the public page
-// while keeping it in admin. Photos live in the public `course-images`
+// One person on the About page Team section (moved from
+// /success-stories by Eman's 13 Nov 2026 change). `level` is the
+// hierarchy level — 'management' (top) | 'department' | 'trainer'
+// (bottom); `department` names the department for department-level
+// members (e.g. 'Design'); `orderInLevel` orders cards within a
+// level. `enabled` false hides the card from the public page while
+// keeping it in admin. Photos live in the public `course-images`
 // bucket under `team/`; only the public URL is stored here.
 model TeamMember {
   id           String   @id @onCreate(cuid(2))
@@ -1111,7 +1114,8 @@ model TeamMember {
   linkedinUrl  String?
   githubUrl    String?
   websiteUrl   String?
-  level        Int      @default(1)
+  level        String   @default("management")
+  department   String?
   orderInLevel Int      @default(0)
   enabled      Boolean  @default(true)
   createdAt    DateTime @default(now()) @onCreate(now())

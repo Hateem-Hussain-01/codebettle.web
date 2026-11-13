@@ -6,7 +6,8 @@ import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
 import type { TeamMember } from '@/lib/db/types';
 import type { SuccessStorySubmission } from '@/lib/db/types';
-import type { VideoLayout, VideoOrientation, VideoPosition } from '@/lib/management';
+import type { TeamMemberLevel, VideoLayout, VideoOrientation, VideoPosition } from '@/lib/management';
+import { compareTeamMembers, teamLevelLabel } from '@/lib/management';
 import {
   AlertTriangle,
   ArrowDown,
@@ -27,12 +28,14 @@ import {
 
 /**
  * Admin > Success Stories Management (PR #32) — the single management
- * surface for the whole /success-stories page:
+ * surface for the Success Stories page and the About page team:
  * - CEO Message: edited in Settings (linked, not duplicated here).
  * - Video & Vision: upload/replace the video (signed upload, 100 MB),
  *   layout (side-by-side / vertical), position swap, orientation.
- * - Team: CRUD + enable/disable + reorder.
- * - Stats: the four small stat cards.
+ * - Team: CRUD + enable/disable + reorder. The team shows on the
+ *   ABOUT page (Eman's 13 Nov 2026 change), grouped Management →
+ *   Departments → Trainers.
+ * - Stats: the three wide stat cards on /success-stories.
  * - Stories: approved submissions + admin-created stories, with
  *   enable/disable + reorder + add-directly. Review workflow stays in
  *   Admin > Success Stories (linked).
@@ -42,7 +45,7 @@ const VIDEO_MIMES = ['video/mp4', 'video/webm', 'video/quicktime'];
 
 interface ConfigResponse {
   video: { videoUrl: string; videoLayout: VideoLayout; videoPosition: VideoPosition; videoOrientation: VideoOrientation };
-  stats: { happyStudents: string; averageRating: string; recommendRate: string; hoursOfLearning: string };
+  stats: { activeStudents: string; certificatesIssued: string; averageRating: string };
   tablesReady: boolean;
 }
 
@@ -59,7 +62,19 @@ interface StoriesResponse {
   error?: string;
 }
 
-const EMPTY_TEAM_FORM = {
+const EMPTY_TEAM_FORM: {
+  fullName: string;
+  designation: string;
+  bio: string;
+  photoUrl: string;
+  xUrl: string;
+  linkedinUrl: string;
+  githubUrl: string;
+  websiteUrl: string;
+  level: TeamMemberLevel;
+  department: string;
+  orderInLevel: number;
+} = {
   fullName: '',
   designation: '',
   bio: '',
@@ -68,7 +83,8 @@ const EMPTY_TEAM_FORM = {
   linkedinUrl: '',
   githubUrl: '',
   websiteUrl: '',
-  level: 1,
+  level: 'management',
+  department: '',
   orderInLevel: 0,
 };
 
@@ -110,7 +126,7 @@ export default function ManagementClient() {
   const [videoBusy, setVideoBusy] = useState(false);
   const [videoFile, setVideoFile] = useState<File | null>(null);
   // Stats form
-  const [statsForm, setStatsForm] = useState({ happyStudents: '', averageRating: '', recommendRate: '', hoursOfLearning: '' });
+  const [statsForm, setStatsForm] = useState({ activeStudents: '', certificatesIssued: '', averageRating: '' });
   const [statsBusy, setStatsBusy] = useState(false);
   // Team form
   const [teamForm, setTeamForm] = useState(EMPTY_TEAM_FORM);
@@ -282,7 +298,7 @@ export default function ManagementClient() {
     try {
       const payload = {
         ...teamForm,
-        level: Number(teamForm.level) || 1,
+        department: teamForm.level === 'department' ? teamForm.department.trim() : null,
         orderInLevel: Number(teamForm.orderInLevel) || 0,
       };
       const res = await fetch(
@@ -322,24 +338,27 @@ export default function ManagementClient() {
   };
 
   const moveTeamMember = async (member: TeamMember, direction: 'up' | 'down') => {
-    const sorted = [...team].sort((a, b) => a.level - b.level || a.orderInLevel - b.orderInLevel);
-    const idx = sorted.findIndex((m) => m.id === member.id);
-    const other = direction === 'up' ? sorted[idx - 1] : sorted[idx + 1];
+    const sorted = [...team].sort(compareTeamMembers);
+    // Reorder within the member's own group (same level, and same
+    // department for department-level members): swapping order values
+    // only. Moving across levels would leave a member with the wrong
+    // level/department, so level changes happen in the edit form.
+    const group = sorted.filter(
+      (m) => m.level === member.level && (m.department ?? null) === (member.department ?? null),
+    );
+    const idx = group.findIndex((m) => m.id === member.id);
+    const other = direction === 'up' ? group[idx - 1] : group[idx + 1];
     if (!other) return;
-    // Swap the (level, orderInLevel) pair — this reorders within a level
-    // and moves across levels at the boundary.
-    const a = { level: member.level, orderInLevel: member.orderInLevel };
-    const b = { level: other.level, orderInLevel: other.orderInLevel };
     const [r1, r2] = await Promise.all([
       fetch(`/api/admin/success-stories-management/team/${member.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(b),
+        body: JSON.stringify({ orderInLevel: other.orderInLevel }),
       }),
       fetch(`/api/admin/success-stories-management/team/${other.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(a),
+        body: JSON.stringify({ orderInLevel: member.orderInLevel }),
       }),
     ]);
     if (!r1.ok || !r2.ok) {
@@ -442,7 +461,7 @@ export default function ManagementClient() {
       <div>
         <h1 className="text-2xl font-black text-foreground">Success Stories Management</h1>
         <p className="text-muted text-sm mt-1">
-          One place for the whole Success Stories page — video &amp; vision, team, stats and story visibility. Changes show on the public page with no deploy.
+          One place for the Success Stories page (video &amp; vision, stats, story visibility) and the team shown on the About page. Changes show on the public pages with no deploy.
         </p>
       </div>
 
@@ -588,14 +607,28 @@ export default function ManagementClient() {
           </Button>
         </div>
         {team.length === 0 && (
-          <p className="text-sm text-muted">No team members yet — add the real team here. Nothing is shown on the public page until you do.</p>
+          <p className="text-sm text-muted">No team members yet — add the real team here. Nothing is shown on the About page until you do.</p>
         )}
         {showTeamForm && (
           <div className="rounded-lg border border-dark-border bg-background p-4 space-y-3">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <Input label="Full name *" value={teamForm.fullName} onChange={(e) => setTeamForm({ ...teamForm, fullName: e.target.value })} placeholder="e.g. Ahmad Hassan" />
               <Input label="Designation *" value={teamForm.designation} onChange={(e) => setTeamForm({ ...teamForm, designation: e.target.value })} placeholder="e.g. Chief Executive Officer" />
-              <Input label="Level (1 = top)" type="number" min={1} value={teamForm.level} onChange={(e) => setTeamForm({ ...teamForm, level: Number(e.target.value) })} />
+              <label className="flex flex-col gap-1.5 text-sm font-medium text-foreground/80">
+                Level *
+                <select
+                  value={teamForm.level}
+                  onChange={(e) => setTeamForm({ ...teamForm, level: e.target.value as TeamMemberLevel })}
+                  className="w-full bg-dark-card border border-dark-border rounded-lg px-4 py-2.5 text-sm text-foreground"
+                >
+                  <option value="management">Management (top)</option>
+                  <option value="department">Department / team</option>
+                  <option value="trainer">Trainer (bottom)</option>
+                </select>
+              </label>
+              {teamForm.level === 'department' && (
+                <Input label="Department *" value={teamForm.department} onChange={(e) => setTeamForm({ ...teamForm, department: e.target.value })} placeholder="e.g. Design" />
+              )}
               <Input label="Order within level" type="number" min={0} value={teamForm.orderInLevel} onChange={(e) => setTeamForm({ ...teamForm, orderInLevel: Number(e.target.value) })} />
             </div>
             <label className="flex flex-col gap-1.5 text-sm font-medium text-foreground/80">
@@ -659,15 +692,15 @@ export default function ManagementClient() {
                 <p className="text-sm font-semibold text-foreground truncate">
                   {member.fullName} <span className="text-muted font-normal">· {member.designation}</span>
                 </p>
-                <p className="text-xs text-muted">Level {member.level} · Order {member.orderInLevel} · {member.enabled ? 'Shown on the public page' : 'Hidden from the public page'}</p>
+                <p className="text-xs text-muted">{teamLevelLabel(member.level, member.department)} · Order {member.orderInLevel} · {member.enabled ? 'Shown on the About page' : 'Hidden from the About page'}</p>
               </div>
               <div className="flex items-center gap-1 shrink-0">
                 <button onClick={() => void moveTeamMember(member, 'up')} aria-label="Move up" className="p-1.5 text-muted hover:text-foreground"><ArrowUp className="w-4 h-4" /></button>
                 <button onClick={() => void moveTeamMember(member, 'down')} aria-label="Move down" className="p-1.5 text-muted hover:text-foreground"><ArrowDown className="w-4 h-4" /></button>
                 <button
                   onClick={() => void toggleTeamMember(member)}
-                  aria-label={member.enabled ? 'Hide from public page' : 'Show on public page'}
-                  title={member.enabled ? 'Hide from public page' : 'Show on public page'}
+                  aria-label={member.enabled ? 'Hide from About page' : 'Show on About page'}
+                  title={member.enabled ? 'Hide from About page' : 'Show on About page'}
                   className="p-1.5 text-muted hover:text-foreground"
                 >
                   {member.enabled ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
@@ -684,6 +717,7 @@ export default function ManagementClient() {
                       githubUrl: member.githubUrl ?? '',
                       websiteUrl: member.websiteUrl ?? '',
                       level: member.level,
+                      department: member.department ?? '',
                       orderInLevel: member.orderInLevel,
                     });
                     setEditingTeamId(member.id);
@@ -705,12 +739,11 @@ export default function ManagementClient() {
 
       {/* Stats */}
       <section className="bg-dark-card border border-dark-border rounded-xl p-6 space-y-4">
-        <h2 className="text-lg font-bold text-foreground">Stats (small cards on the Success Stories page)</h2>
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-          <Input label="Happy Students" value={statsForm.happyStudents} onChange={(e) => setStatsForm({ ...statsForm, happyStudents: e.target.value })} />
+        <h2 className="text-lg font-bold text-foreground">Stats (wide cards on the Success Stories page)</h2>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <Input label="Active Students" value={statsForm.activeStudents} onChange={(e) => setStatsForm({ ...statsForm, activeStudents: e.target.value })} />
+          <Input label="Certificates Issued" value={statsForm.certificatesIssued} onChange={(e) => setStatsForm({ ...statsForm, certificatesIssued: e.target.value })} />
           <Input label="Average Rating" value={statsForm.averageRating} onChange={(e) => setStatsForm({ ...statsForm, averageRating: e.target.value })} />
-          <Input label="Recommend Us" value={statsForm.recommendRate} onChange={(e) => setStatsForm({ ...statsForm, recommendRate: e.target.value })} />
-          <Input label="Hours of Learning" value={statsForm.hoursOfLearning} onChange={(e) => setStatsForm({ ...statsForm, hoursOfLearning: e.target.value })} />
         </div>
         <Button variant="primary" size="sm" loading={statsBusy} onClick={() => void saveStats()}>Save stats</Button>
       </section>

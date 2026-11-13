@@ -76,14 +76,14 @@ export type SiteSettings = {
   videoPosition: string;
   videoOrientation: string;
   /**
-   * Success Stories page: the four small stat cards after the Team
-   * section (PR #32). Defaults are Eman's stated numbers from his
-   * reference image; an admin can edit them from the management tab.
+   * Success Stories page: the three wide stat cards above the stories
+   * grid (Eman's 13 Nov 2026 change). Defaults are the home page
+   * numbers from components/sections/StatsSection.tsx; an admin can
+   * edit them from the management tab.
    */
-  statsHappyStudents: string;
+  statsActiveStudents: string;
+  statsCertificatesIssued: string;
   statsAverageRating: string;
-  statsRecommendRate: string;
-  statsHoursOfLearning: string;
   /**
    * Navbar logo URL (PR #32, managed from Admin > Navbar Editor).
    * Default is the horizontal CodeBettle logo, resized for navbar use
@@ -117,11 +117,10 @@ export const DEFAULT_SETTINGS: SiteSettings = {
   videoLayout: 'side-by-side',
   videoPosition: 'video-left',
   videoOrientation: 'portrait',
-  // Stat cards: Eman's stated numbers from his reference image.
-  statsHappyStudents: '1500+',
-  statsAverageRating: '4.9/5',
-  statsRecommendRate: '98%',
-  statsHoursOfLearning: '5000+',
+  // Stat cards: the home page numbers (StatsSection.tsx).
+  statsActiveStudents: '1500+',
+  statsCertificatesIssued: '300+',
+  statsAverageRating: '4.8',
   // Navbar logo: horizontal logo resized to 260x80 and uploaded
   // 13 Nov 2026 to the PUBLIC course-images bucket (verified live).
   navbarLogoUrl:
@@ -143,10 +142,9 @@ export const SETTING_KEYS: Record<keyof SiteSettings, string> = {
   videoLayout: 'successStories.videoLayout',
   videoPosition: 'successStories.videoPosition',
   videoOrientation: 'successStories.videoOrientation',
-  statsHappyStudents: 'successStories.stats.happyStudents',
+  statsActiveStudents: 'successStories.stats.activeStudents',
+  statsCertificatesIssued: 'successStories.stats.certificatesIssued',
   statsAverageRating: 'successStories.stats.averageRating',
-  statsRecommendRate: 'successStories.stats.recommendRate',
-  statsHoursOfLearning: 'successStories.stats.hoursOfLearning',
   navbarLogoUrl: 'navbar.logoUrl',
 };
 
@@ -163,10 +161,9 @@ const STRING_FIELDS: Array<keyof SiteSettings> = [
   'videoLayout',
   'videoPosition',
   'videoOrientation',
-  'statsHappyStudents',
+  'statsActiveStudents',
+  'statsCertificatesIssued',
   'statsAverageRating',
-  'statsRecommendRate',
-  'statsHoursOfLearning',
   'navbarLogoUrl',
 ];
 
@@ -342,10 +339,9 @@ function rowsToSettings(rows: Array<{ key: string; value: string }>): SiteSettin
     videoLayout: pickString('videoLayout'),
     videoPosition: pickString('videoPosition'),
     videoOrientation: pickString('videoOrientation'),
-    statsHappyStudents: pickString('statsHappyStudents'),
+    statsActiveStudents: pickString('statsActiveStudents'),
+    statsCertificatesIssued: pickString('statsCertificatesIssued'),
     statsAverageRating: pickString('statsAverageRating'),
-    statsRecommendRate: pickString('statsRecommendRate'),
-    statsHoursOfLearning: pickString('statsHoursOfLearning'),
     navbarLogoUrl: pickString('navbarLogoUrl'),
   };
 }

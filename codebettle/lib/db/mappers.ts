@@ -85,6 +85,7 @@ import type {
   UserRow,
 } from './types';
 import { DEFAULT_NOTIFICATION_PREFS, FORM_FIELD_TYPES, FORM_STATUSES, NOTIFICATION_EVENT_KEYS } from './types';
+import { isTeamMemberLevel } from '../management';
 import { isUploadVariant } from '../form-uploads';
 import { toAdminPermissions } from '../admin-access';
 
@@ -747,7 +748,11 @@ export function mapTeamMemberRow(row: TeamMemberRow): TeamMember {
     linkedinUrl: row.linkedinUrl ?? undefined,
     githubUrl: row.githubUrl ?? undefined,
     websiteUrl: row.websiteUrl ?? undefined,
-    level: row.level,
+    // Stored level is a plain string: an unexpected value (e.g. a
+    // pre-migration '1') falls back to 'department' so the public
+    // page never breaks on a bad row.
+    level: isTeamMemberLevel(row.level) ? row.level : 'department',
+    department: row.department ?? undefined,
     orderInLevel: row.orderInLevel,
     enabled: row.enabled,
     createdAt: dateToString(row.createdAt),

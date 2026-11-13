@@ -2,6 +2,10 @@ import { NextRequest, NextResponse } from 'next/server';
 import { invalidBody, readJson, requireAdminArea, requireFullAdmin } from '@/lib/api-helpers';
 import { deleteTeamMember, getTeamMemberById, updateTeamMember } from '@/lib/db/team-members';
 import { validateTeamMember } from '@/lib/management';
+import {
+  deleteTeamMemberPhotoImage,
+  teamMemberPhotoPathFromUrl,
+} from '@/lib/services/course-image-storage';
 
 /**
  * PATCH /api/admin/success-stories-management/team/[id] — edit a team
@@ -32,12 +36,16 @@ export async function PATCH(
     linkedinUrl: typeof v.linkedinUrl === 'string' ? v.linkedinUrl : v.linkedinUrl === null ? null : current.linkedinUrl ?? null,
     githubUrl: typeof v.githubUrl === 'string' ? v.githubUrl : v.githubUrl === null ? null : current.githubUrl ?? null,
     websiteUrl: typeof v.websiteUrl === 'string' ? v.websiteUrl : v.websiteUrl === null ? null : current.websiteUrl ?? null,
-    level: typeof v.level === 'number' ? v.level : current.level,
+    level: typeof v.level === 'string' ? v.level : current.level,
+    department:
+      typeof v.department === 'string' ? v.department : v.department === null ? null : (current.department ?? null),
     orderInLevel: typeof v.orderInLevel === 'number' ? v.orderInLevel : current.orderInLevel,
   };
   const error = validateTeamMember(merged);
   if (error) return NextResponse.json({ error }, { status: 400 });
   const patch: Record<string, unknown> = { ...merged };
+  // A member that leaves the department level keeps no department.
+  if (merged.level !== 'department') patch.department = null;
   if (typeof v.enabled === 'boolean') patch.enabled = v.enabled;
   try {
     const member = await updateTeamMember(id, patch);
@@ -60,8 +68,21 @@ export async function DELETE(
   if ('error' in auth) return auth.error;
   const { id } = await params;
   try {
+    const current = await getTeamMemberById(id);
+    if (!current) return NextResponse.json({ error: 'Team member not found' }, { status: 404 });
     const deleted = await deleteTeamMember(id);
     if (!deleted) return NextResponse.json({ error: 'Team member not found' }, { status: 404 });
+    // Best-effort: remove the member's photo from Storage too. The
+    // row is already gone, so a storage failure must not turn this
+    // into an error — the delete itself succeeded.
+    if (current.photoUrl) {
+      const path = teamMemberPhotoPathFromUrl(current.photoUrl);
+      if (path) {
+        await deleteTeamMemberPhotoImage(path).catch((e) => {
+          console.warn(`Could not delete team member photo ${path}:`, e instanceof Error ? e.message : e);
+        });
+      }
+    }
     return NextResponse.json({ ok: true });
   } catch (e) {
     const message = e instanceof Error ? e.message : 'Could not delete the team member';

@@ -10,7 +10,8 @@
  */
 import { getDb } from './client';
 import { mapTeamMemberRow, stripUndefined } from './mappers';
-import type { TeamMember, TeamMemberRow } from './types';
+import type { TeamMember, TeamMemberLevel, TeamMemberRow } from './types';
+import { compareTeamMembers } from '../management';
 
 /** True when the error is "relation does not exist" for the TeamMember table (migration not run yet). */
 export function isMissingTeamMemberTableError(error: unknown): boolean {
@@ -61,7 +62,8 @@ export interface CreateTeamMemberInput {
   linkedinUrl?: string | null;
   githubUrl?: string | null;
   websiteUrl?: string | null;
-  level?: number;
+  level?: TeamMemberLevel;
+  department?: string | null;
   orderInLevel?: number;
   enabled?: boolean;
 }
@@ -77,7 +79,8 @@ export async function createTeamMember(input: CreateTeamMemberInput): Promise<Te
       linkedinUrl: input.linkedinUrl ?? null,
       githubUrl: input.githubUrl ?? null,
       websiteUrl: input.websiteUrl ?? null,
-      level: input.level ?? 1,
+      level: input.level ?? 'management',
+      department: input.department?.trim() || null,
       orderInLevel: input.orderInLevel ?? 0,
       enabled: input.enabled ?? true,
     });
@@ -94,14 +97,18 @@ export async function getTeamMemberById(id: string): Promise<TeamMember | null> 
   }, null);
 }
 
-/** Admin list: every member, hierarchy order (level, then order in level). */
+/**
+ * Admin list: every member, hierarchy order (Management → Departments
+ * → Trainers, then order in level). Sorted in memory: the DB stores
+ * level as text, and alphabetical text order ('department' <
+ * 'management') is NOT the hierarchy order.
+ */
 export async function listTeamMembers(): Promise<TeamMember[]> {
   return withTeamMemberTableFallback(async () => {
-    const rows = await getDb()
-      .orm.public.TeamMember.orderBy((m) => m.level.asc())
-      .orderBy((m) => m.orderInLevel.asc())
-      .all();
-    return rows.map((r) => mapTeamMemberRow(r as TeamMemberRow));
+    const rows = await getDb().orm.public.TeamMember.all();
+    return rows
+      .map((r) => mapTeamMemberRow(r as TeamMemberRow))
+      .sort(compareTeamMembers);
   }, []);
 }
 
@@ -120,7 +127,8 @@ export interface UpdateTeamMemberInput {
   linkedinUrl?: string | null;
   githubUrl?: string | null;
   websiteUrl?: string | null;
-  level?: number;
+  level?: TeamMemberLevel;
+  department?: string | null;
   orderInLevel?: number;
   enabled?: boolean;
 }

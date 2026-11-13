@@ -2,6 +2,10 @@ import { NextRequest, NextResponse } from 'next/server';
 import { invalidBody, readJson, requireAdminArea, requireFullAdmin } from '@/lib/api-helpers';
 import { deleteStudentReview, getStudentReviewById, updateStudentReview } from '@/lib/db/student-reviews';
 import { validateStudentReview } from '@/lib/management';
+import {
+  deleteStudentReviewPhotoImage,
+  studentReviewPhotoPathFromUrl,
+} from '@/lib/services/course-image-storage';
 
 /**
  * PATCH /api/admin/reviews/[id] — edit a review (any subset of fields,
@@ -58,8 +62,21 @@ export async function DELETE(
   if ('error' in auth) return auth.error;
   const { id } = await params;
   try {
+    const current = await getStudentReviewById(id);
+    if (!current) return NextResponse.json({ error: 'Review not found' }, { status: 404 });
     const deleted = await deleteStudentReview(id);
     if (!deleted) return NextResponse.json({ error: 'Review not found' }, { status: 404 });
+    // Best-effort: remove the review's photo from Storage too. The
+    // row is already gone, so a storage failure must not turn this
+    // into an error — the delete itself succeeded.
+    if (current.photoUrl) {
+      const path = studentReviewPhotoPathFromUrl(current.photoUrl);
+      if (path) {
+        await deleteStudentReviewPhotoImage(path).catch((e) => {
+          console.warn(`Could not delete student review photo ${path}:`, e instanceof Error ? e.message : e);
+        });
+      }
+    }
     return NextResponse.json({ ok: true });
   } catch (e) {
     const message = e instanceof Error ? e.message : 'Could not delete the review';

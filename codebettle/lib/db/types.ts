@@ -535,7 +535,7 @@ export interface BlogPost {
 // Success Stories Management (PR #32): TeamMember, StudentReview, NavItem.
 // ---------------------------------------------------------------------------
 
-/** One person on the /success-stories Team section. */
+/** One person on the About page Team section. */
 export interface TeamMember {
   id: string;
   photoUrl?: string;
@@ -546,8 +546,13 @@ export interface TeamMember {
   linkedinUrl?: string;
   githubUrl?: string;
   websiteUrl?: string;
-  /** Hierarchy level, 1 = top (e.g. CEO). Public page groups by level, top first. */
-  level: number;
+  /**
+   * Hierarchy level, top first: 'management' → 'department' →
+   * 'trainer'. The public About page groups in exactly this order.
+   */
+  level: TeamMemberLevel;
+  /** Department name for department-level members (e.g. 'Design'); null otherwise. */
+  department?: string;
   /** Order within the level (lower first). */
   orderInLevel: number;
   /** False hides the card from the public page while keeping it in admin. */
@@ -555,6 +560,9 @@ export interface TeamMember {
   createdAt: string;
   updatedAt: string;
 }
+
+/** Team hierarchy level (see lib/management.ts TEAM_LEVEL_ORDER). */
+export type TeamMemberLevel = 'management' | 'department' | 'trainer';
 
 /** One review in the home page "What Our Students Say" carousel. */
 export interface StudentReview {
@@ -904,6 +912,7 @@ export type TeamMemberRow = Pick<
   | 'githubUrl'
   | 'websiteUrl'
   | 'level'
+  | 'department'
   | 'orderInLevel'
   | 'enabled'
   | 'createdAt'

@@ -5,7 +5,7 @@ import {
   createTeamMember,
   listTeamMembers,
 } from '@/lib/db/team-members';
-import { validateTeamMember } from '@/lib/management';
+import { validateTeamMember, isTeamMemberLevel } from '@/lib/management';
 
 /**
  * GET /api/admin/success-stories-management/team — list all team members.
@@ -26,6 +26,10 @@ export async function POST(request: NextRequest) {
   const body = await readJson(request);
   if (body === null) return invalidBody();
   const v = body as Record<string, unknown>;
+  const levelRaw = typeof v.level === 'string' ? v.level : undefined;
+  if (levelRaw !== undefined && !isTeamMemberLevel(levelRaw)) {
+    return NextResponse.json({ error: 'Level must be Management, Department or Trainer' }, { status: 400 });
+  }
   const input = {
     fullName: typeof v.fullName === 'string' ? v.fullName : '',
     designation: typeof v.designation === 'string' ? v.designation : '',
@@ -35,10 +39,13 @@ export async function POST(request: NextRequest) {
     linkedinUrl: typeof v.linkedinUrl === 'string' ? v.linkedinUrl : null,
     githubUrl: typeof v.githubUrl === 'string' ? v.githubUrl : null,
     websiteUrl: typeof v.websiteUrl === 'string' ? v.websiteUrl : null,
-    level: typeof v.level === 'number' ? v.level : 1,
+    level: levelRaw ?? 'management',
+    department: typeof v.department === 'string' ? v.department : null,
     orderInLevel: typeof v.orderInLevel === 'number' ? v.orderInLevel : 0,
     enabled: typeof v.enabled === 'boolean' ? v.enabled : true,
   };
+  // A member that is not department-level keeps no department.
+  if (input.level !== 'department') input.department = null;
   const error = validateTeamMember(input);
   if (error) return NextResponse.json({ error }, { status: 400 });
   try {

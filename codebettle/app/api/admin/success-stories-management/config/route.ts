@@ -6,8 +6,8 @@ import { areTeamMemberTablesReady } from '@/lib/db/team-members';
 
 /**
  * GET /api/admin/success-stories-management/config — the page-level
- * config the management tab edits: video + vision layout and the four
- * stat cards (all SiteSetting keys). Guard:
+ * config the management tab edits: video + vision layout and the three
+ * wide stat cards (all SiteSetting keys). Guard:
  * requireAdminArea('success-stories-management'). Includes
  * `tablesReady` (team + story tables) so the UI can show a "run the
  * SQL" state when the migration has not run yet. getSiteSettings()
@@ -29,10 +29,9 @@ export async function GET() {
       videoOrientation: settings.videoOrientation,
     },
     stats: {
-      happyStudents: settings.statsHappyStudents,
+      activeStudents: settings.statsActiveStudents,
+      certificatesIssued: settings.statsCertificatesIssued,
       averageRating: settings.statsAverageRating,
-      recommendRate: settings.statsRecommendRate,
-      hoursOfLearning: settings.statsHoursOfLearning,
     },
     tablesReady: storiesReady && teamReady,
     storiesTablesReady: storiesReady,

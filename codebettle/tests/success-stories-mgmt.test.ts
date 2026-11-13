@@ -1,21 +1,26 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import type { SupabaseClient } from '@supabase/supabase-js';
 import { __resetDbClient, __setDbClient } from '../lib/db/client';
 import { createFakeDb, type FakeDb } from './fake-db';
 import {
   DEFAULT_PAGE_STATS,
   DEFAULT_VIDEO_CONFIG,
+  compareTeamMembers,
   groupTeamByLevel,
+  isTeamMemberLevel,
   moveItem,
   orderValuesAfterMove,
   parsePageStats,
   parseVideoConfig,
   resolveNavItems,
+  teamLevelLabel,
   validateNavItem,
   validateStudentReview,
   validateTeamMember,
   visibleCount,
 } from '../lib/management';
+import { STORY_SEED_MEMBERS, TEAM_SEED_MEMBERS } from '../lib/seed-data';
 import {
   createTeamMember,
   deleteTeamMember,
@@ -27,6 +32,7 @@ import {
 import {
   createStudentReview,
   deleteStudentReview,
+  getStudentReviewById,
   listEnabledStudentReviews,
   listStudentReviews,
   updateStudentReview,
@@ -41,9 +47,16 @@ import {
 import { DEFAULT_SETTINGS } from '../lib/services/settings-service';
 import {
   createAdminSuccessStory,
+  deleteSuccessStory,
   listPublicSuccessStories,
 } from '../lib/services/success-story-service';
-import { updateSuccessStorySubmission } from '../lib/db/success-stories';
+import { getSuccessStorySubmissionById, updateSuccessStorySubmission } from '../lib/db/success-stories';
+import {
+  deleteStudentReviewPhotoImage,
+  deleteTeamMemberPhotoImage,
+  studentReviewPhotoPathFromUrl,
+  teamMemberPhotoPathFromUrl,
+} from '../lib/services/course-image-storage';
 
 let fake: FakeDb;
 
@@ -99,18 +112,16 @@ test('video config: a valid vertical landscape config survives', () => {
 // Stats (pure)
 // ---------------------------------------------------------------------------
 
-test('stats: defaults are Eman\'s numbers; blank stored values fall back', () => {
+test('stats: defaults are the home page numbers; blank stored values fall back', () => {
   assert.deepEqual(DEFAULT_PAGE_STATS, {
-    happyStudents: '1500+',
-    averageRating: '4.9/5',
-    recommendRate: '98%',
-    hoursOfLearning: '5000+',
+    activeStudents: '1500+',
+    certificatesIssued: '300+',
+    averageRating: '4.8',
   });
-  assert.deepEqual(parsePageStats({ happyStudents: '  ', averageRating: '5/5' }), {
-    happyStudents: '1500+',
-    averageRating: '5/5',
-    recommendRate: '98%',
-    hoursOfLearning: '5000+',
+  assert.deepEqual(parsePageStats({ activeStudents: '  ', averageRating: '5' }), {
+    activeStudents: '1500+',
+    certificatesIssued: '300+',
+    averageRating: '5',
   });
 });
 
@@ -118,20 +129,41 @@ test('stats: defaults are Eman\'s numbers; blank stored values fall back', () =>
 // Team grouping + Load More + reorder (pure)
 // ---------------------------------------------------------------------------
 
-test('team grouping: enabled only, levels top-to-bottom, ordered within a level', () => {
+test('team grouping: enabled only, Management → Departments → Trainers, ordered within a group', () => {
   const groups = groupTeamByLevel([
-    { id: 'b', level: 2, orderInLevel: 1, enabled: true },
-    { id: 'a', level: 1, orderInLevel: 0, enabled: true },
-    { id: 'c', level: 2, orderInLevel: 0, enabled: true },
-    { id: 'd', level: 1, orderInLevel: 0, enabled: false },
+    { id: 't1', level: 'trainer', orderInLevel: 0, enabled: true },
+    { id: 'd2', level: 'department', department: 'Engineering', orderInLevel: 1, enabled: true },
+    { id: 'm1', level: 'management', orderInLevel: 0, enabled: true },
+    { id: 'd1', level: 'department', department: 'Design', orderInLevel: 0, enabled: true },
+    { id: 'd3', level: 'department', department: 'Design', orderInLevel: 1, enabled: true },
+    { id: 'x', level: 'management', orderInLevel: 0, enabled: false },
   ]);
   assert.deepEqual(
-    groups.map((g) => ({ level: g.level, ids: g.members.map((m) => m.id) })),
+    groups.map((g) => ({ level: g.level, department: g.department, ids: g.members.map((m) => m.id) })),
     [
-      { level: 1, ids: ['a'] },
-      { level: 2, ids: ['c', 'b'] },
+      { level: 'management', department: null, ids: ['m1'] },
+      { level: 'department', department: 'Design', ids: ['d1', 'd3'] },
+      { level: 'department', department: 'Engineering', ids: ['d2'] },
+      { level: 'trainer', department: null, ids: ['t1'] },
     ],
   );
+  // Group headings + level guard.
+  assert.equal(teamLevelLabel('management'), 'Management');
+  assert.equal(teamLevelLabel('department', 'Design'), 'Design');
+  assert.equal(teamLevelLabel('department', null), 'Departments');
+  assert.equal(teamLevelLabel('trainer'), 'Trainers');
+  assert.equal(isTeamMemberLevel('management'), true);
+  assert.equal(isTeamMemberLevel('bogus'), false);
+  assert.equal(isTeamMemberLevel(1), false);
+});
+
+test('team sorting: hierarchy order beats alphabetical level names', () => {
+  const members = [
+    { id: 't', level: 'trainer', orderInLevel: 0 },
+    { id: 'd', level: 'department', orderInLevel: 0 },
+    { id: 'm', level: 'management', orderInLevel: 0 },
+  ];
+  assert.deepEqual([...members].sort(compareTeamMembers).map((m) => m.id), ['m', 'd', 't']);
 });
 
 test('load more: first 5, then 5 more per click, never past the total', () => {
@@ -159,14 +191,26 @@ test('reorder: up/down moves one step, edges return null', () => {
 // Validation (pure)
 // ---------------------------------------------------------------------------
 
-test('team validation: name + designation required, bad URLs rejected', () => {
+test('team validation: name + designation required, level must be named, department needs a name', () => {
   assert.equal(validateTeamMember({ fullName: '', designation: 'CEO' }), 'Full name is required');
   assert.equal(validateTeamMember({ fullName: 'Ahmad', designation: '' }), 'Designation is required');
   assert.equal(
     validateTeamMember({ fullName: 'Ahmad', designation: 'CEO', linkedinUrl: 'not-a-url' }),
     'LinkedIn URL must be a valid http(s) URL',
   );
-  assert.equal(validateTeamMember({ fullName: 'Ahmad', designation: 'CEO', level: 0 }), 'Level must be a whole number of 1 or more');
+  assert.equal(
+    validateTeamMember({ fullName: 'Ahmad', designation: 'CEO', level: 'bogus' }),
+    'Level must be Management, Department or Trainer',
+  );
+  assert.equal(
+    validateTeamMember({ fullName: 'Ahmad', designation: 'Designer', level: 'department', department: '  ' }),
+    'Department name is required for department-level members',
+  );
+  assert.equal(
+    validateTeamMember({ fullName: 'Ahmad', designation: 'Designer', level: 'department', department: 'Design' }),
+    null,
+  );
+  assert.equal(validateTeamMember({ fullName: 'Ahmad', designation: 'CEO', level: 'management' }), null);
   assert.equal(validateTeamMember({ fullName: 'Ahmad', designation: 'CEO' }), null);
 });
 
@@ -230,24 +274,51 @@ test('team: CRUD + enabled visibility (disabled stays in admin, hidden publicly)
     fullName: 'Ahmad Hassan',
     designation: 'Chief Executive Officer',
     bio: 'Founder',
-    level: 1,
+    level: 'management',
     orderInLevel: 0,
   });
   assert.equal(member.fullName, 'Ahmad Hassan');
+  assert.equal(member.level, 'management');
+  assert.equal(member.department, undefined);
   assert.equal(member.enabled, true);
   assert.equal((await listEnabledTeamMembers()).length, 1);
   assert.equal((await listTeamMembers()).length, 1);
 
+  // Department level stores its department; leaving the level clears it.
+  const designer = await createTeamMember({
+    fullName: 'Sara Designer',
+    designation: 'Designer',
+    level: 'department',
+    department: 'Design',
+    orderInLevel: 0,
+  });
+  assert.equal(designer.department, 'Design');
+  const moved = await updateTeamMember(designer.id, { level: 'trainer', department: null });
+  assert.equal(moved?.level, 'trainer');
+  assert.equal(moved?.department, undefined);
+
+  // Admin list is hierarchy order (management before trainer).
+  assert.deepEqual(
+    (await listTeamMembers()).map((m) => m.fullName),
+    ['Ahmad Hassan', 'Sara Designer'],
+  );
+
   const updated = await updateTeamMember(member.id, { enabled: false });
   assert.equal(updated?.enabled, false);
-  assert.equal((await listEnabledTeamMembers()).length, 0);
+  assert.equal((await listEnabledTeamMembers()).length, 1);
   // Still in the admin list.
-  assert.equal((await listTeamMembers()).length, 1);
+  assert.equal((await listTeamMembers()).length, 2);
   assert.equal((await getTeamMemberById(member.id))?.fullName, 'Ahmad Hassan');
 
+  // REAL DELETE: the row is gone, not just hidden.
   assert.equal(await deleteTeamMember(member.id), true);
-  assert.equal((await listTeamMembers()).length, 0);
+  assert.equal(await getTeamMemberById(member.id), null);
+  assert.equal((await listTeamMembers()).length, 1);
   assert.equal(await deleteTeamMember(member.id), false);
+
+  assert.equal(await deleteTeamMember(designer.id), true);
+  assert.equal(await getTeamMemberById(designer.id), null);
+  assert.equal((await listTeamMembers()).length, 0);
 });
 
 // ---------------------------------------------------------------------------
@@ -275,7 +346,9 @@ test('reviews: CRUD + enabled visibility (disabled stays in admin, hidden from t
   assert.equal(enabled[0].rating, 4);
 
   assert.equal(await deleteStudentReview(review.id), true);
+  assert.equal(await getStudentReviewById(review.id), null);
   assert.equal((await listStudentReviews()).length, 0);
+  assert.equal(await deleteStudentReview(review.id), false);
 });
 
 // ---------------------------------------------------------------------------
@@ -338,17 +411,156 @@ test('admin-created story: published immediately, hidden when disabled', async (
 // Settings defaults (PR #32)
 // ---------------------------------------------------------------------------
 
-test('settings defaults: no video yet, Eman\'s stats, navbar logo URL', () => {
+test('settings defaults: no video yet, home page stats, navbar logo URL', () => {
   assert.equal(DEFAULT_SETTINGS.videoUrl, '');
   assert.equal(DEFAULT_SETTINGS.videoLayout, 'side-by-side');
   assert.equal(DEFAULT_SETTINGS.videoPosition, 'video-left');
   assert.equal(DEFAULT_SETTINGS.videoOrientation, 'portrait');
-  assert.equal(DEFAULT_SETTINGS.statsHappyStudents, '1500+');
-  assert.equal(DEFAULT_SETTINGS.statsAverageRating, '4.9/5');
-  assert.equal(DEFAULT_SETTINGS.statsRecommendRate, '98%');
-  assert.equal(DEFAULT_SETTINGS.statsHoursOfLearning, '5000+');
+  assert.equal(DEFAULT_SETTINGS.statsActiveStudents, '1500+');
+  assert.equal(DEFAULT_SETTINGS.statsCertificatesIssued, '300+');
+  assert.equal(DEFAULT_SETTINGS.statsAverageRating, '4.8');
   assert.equal(
     DEFAULT_SETTINGS.navbarLogoUrl,
     'https://phuzoxshzdfzjvephlhq.supabase.co/storage/v1/object/public/course-images/brand/navbar-logo.png',
   );
+});
+
+// ---------------------------------------------------------------------------
+// Seed data (lib/seed-data.ts — same rows as the migration + SQL twin)
+// ---------------------------------------------------------------------------
+
+test('seed data: exact placeholder names, one team member per level, no placeholder word', () => {
+  assert.deepEqual(
+    TEAM_SEED_MEMBERS.map((m) => [m.fullName, m.designation, m.level, m.department]),
+    [
+      ['Ali Raza', 'Managing Director', 'management', null],
+      ['Fatima Khan', 'Design Lead', 'department', 'Design'],
+      ['Usman Ali', 'Python Trainer', 'trainer', null],
+    ],
+  );
+  assert.deepEqual(
+    STORY_SEED_MEMBERS.map((s) => s.fullName),
+    ['Ayesha Khan', 'Omar Farooq', 'Sara Ahmed', 'Ahmed Raza', 'Hira Malik'],
+  );
+  assert.equal(STORY_SEED_MEMBERS.length, 5);
+  // No 'Demo' word anywhere in the seeded data.
+  const blob = JSON.stringify([...TEAM_SEED_MEMBERS, ...STORY_SEED_MEMBERS]).toLowerCase();
+  assert.equal(blob.includes('demo'), false);
+  // Every seeded story has a real story text and an approved status to show.
+  for (const s of STORY_SEED_MEMBERS) {
+    assert.ok(s.story.length > 40, s.fullName);
+    assert.ok(!s.story.toLowerCase().includes('demo'), s.fullName);
+  }
+});
+
+test('seeded team: fixed ids land in the DB and the About page groups them Management → Design → Trainers', async () => {
+  const now = new Date();
+  fake.seed(
+    'TeamMember',
+    TEAM_SEED_MEMBERS.map((m) => ({ ...m, photoUrl: null, enabled: true, createdAt: now, updatedAt: now })),
+  );
+  const groups = groupTeamByLevel(await listEnabledTeamMembers());
+  assert.deepEqual(
+    groups.map((g) => ({ level: g.level, department: g.department, names: g.members.map((m) => m.fullName) })),
+    [
+      { level: 'management', department: null, names: ['Ali Raza'] },
+      { level: 'department', department: 'Design', names: ['Fatima Khan'] },
+      { level: 'trainer', department: null, names: ['Usman Ali'] },
+    ],
+  );
+  // The seeded rows are disable-able and delete-able from admin.
+  await updateTeamMember('seed-team-ali-raza', { enabled: false });
+  assert.equal((await listEnabledTeamMembers()).length, 2);
+  assert.equal(await deleteTeamMember('seed-team-ali-raza'), true);
+  assert.equal(await getTeamMemberById('seed-team-ali-raza'), null);
+});
+
+test('seeded stories: approved + enabled, so the public page shows all five in order', async () => {
+  // The seeded rows carry displayOrder 0-4 (see lib/seed-data.ts);
+  // createAdminSuccessStory defaults it to 0, so set it like the seed.
+  const created = [];
+  for (const s of STORY_SEED_MEMBERS) {
+    created.push(
+      await createAdminSuccessStory({
+        fullName: s.fullName,
+        email: s.email,
+        country: 'Pakistan',
+        courseTitle: s.courseTitle,
+        skillsLearned: s.skillsLearned,
+        experience: s.experience,
+        story: s.story,
+      }),
+    );
+  }
+  for (let i = 0; i < created.length; i++) {
+    await updateSuccessStorySubmission(created[i].id, { displayOrder: i });
+  }
+  const publicStories = await listPublicSuccessStories();
+  assert.equal(publicStories.length, 5);
+  assert.deepEqual(
+    publicStories.map((s) => s.fullName),
+    ['Ayesha Khan', 'Omar Farooq', 'Sara Ahmed', 'Ahmed Raza', 'Hira Malik'],
+  );
+  // Five stories fill the first Load More page exactly.
+  assert.equal(visibleCount(publicStories.length, 5, 0), 5);
+});
+
+// ---------------------------------------------------------------------------
+// Real delete — stories (row gone, not just hidden)
+// ---------------------------------------------------------------------------
+
+test('story delete is a real DB delete: row gone, public list empty', async () => {
+  const story = await createAdminSuccessStory({
+    fullName: 'Sara Khan',
+    email: 'sara@example.com',
+    country: 'Pakistan',
+    courseTitle: 'Python',
+    skillsLearned: 'Python, Django',
+    experience: 'Great experience.',
+    story: 'My journey.',
+  });
+  assert.equal((await listPublicSuccessStories()).length, 1);
+  assert.equal(await deleteSuccessStory(story.id), true);
+  assert.equal(await getSuccessStorySubmissionById(story.id), null);
+  assert.equal((await listPublicSuccessStories()).length, 0);
+  assert.equal(await deleteSuccessStory(story.id), false);
+});
+
+// ---------------------------------------------------------------------------
+// Photo file delete (mock storage client — same pattern as
+// tests/course-thumbnail.test.ts)
+// ---------------------------------------------------------------------------
+
+function mockStorageClient(): SupabaseClient & { __calls: { bucket: string; path?: string }[] } {
+  const calls: { bucket: string; path?: string }[] = [];
+  const client = {
+    __calls: calls,
+    storage: {
+      from: (bucket: string) => ({
+        remove: async (paths: string[]) => {
+          calls.push({ bucket, path: paths[0] });
+          return { data: [], error: null };
+        },
+      }),
+    },
+  };
+  return client as unknown as SupabaseClient & { __calls: { bucket: string; path?: string }[] };
+}
+
+test('photo delete: path helpers resolve only their own prefix; delete removes by path', async () => {
+  const base = 'https://example.supabase.co/storage/v1/object/public/course-images/';
+  assert.equal(teamMemberPhotoPathFromUrl(`${base}team/members/abc.jpg`), 'team/members/abc.jpg');
+  assert.equal(teamMemberPhotoPathFromUrl(`${base}courses/x.jpg`), null);
+  assert.equal(teamMemberPhotoPathFromUrl('https://images.unsplash.com/x.jpg'), null);
+  assert.equal(studentReviewPhotoPathFromUrl(`${base}reviews/def.png`), 'reviews/def.png');
+  assert.equal(studentReviewPhotoPathFromUrl(`${base}team/members/abc.jpg`), null);
+  assert.equal(studentReviewPhotoPathFromUrl('https://example.com/t.png'), null);
+
+  const client = mockStorageClient();
+  await deleteTeamMemberPhotoImage('team/members/abc.jpg', client);
+  await deleteStudentReviewPhotoImage('reviews/def.png', client);
+  assert.deepEqual(client.__calls, [
+    { bucket: 'course-images', path: 'team/members/abc.jpg' },
+    { bucket: 'course-images', path: 'reviews/def.png' },
+  ]);
 });

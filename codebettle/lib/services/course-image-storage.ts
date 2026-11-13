@@ -333,6 +333,15 @@ export function teamMemberPhotoPathFromUrl(url: string): string | null {
   return path;
 }
 
+/** Delete a previously uploaded team member photo by its storage path (e.g. `team/members/<uuid>.jpg`). */
+export async function deleteTeamMemberPhotoImage(path: string, client?: SupabaseClient): Promise<void> {
+  const storage = client ?? getCourseImageStorageClient();
+  const { error } = await storage.storage.from(COURSE_IMAGE_BUCKET).remove([path]);
+  if (error) {
+    throw new Error(`Team member photo delete failed: ${error.message}`);
+  }
+}
+
 export const STUDENT_REVIEW_PHOTO_TYPES = ['image/jpeg', 'image/png', 'image/webp'] as const;
 export type StudentReviewPhotoFile = CourseImageFile;
 
@@ -370,6 +379,15 @@ export function studentReviewPhotoPathFromUrl(url: string): string | null {
   const path = decodeURIComponent(url.slice(idx + marker.length).split(/[?#]/)[0]);
   if (!path.startsWith('reviews/') || path === 'reviews/') return null;
   return path;
+}
+
+/** Delete a previously uploaded student review photo by its storage path (e.g. `reviews/<uuid>.jpg`). */
+export async function deleteStudentReviewPhotoImage(path: string, client?: SupabaseClient): Promise<void> {
+  const storage = client ?? getCourseImageStorageClient();
+  const { error } = await storage.storage.from(COURSE_IMAGE_BUCKET).remove([path]);
+  if (error) {
+    throw new Error(`Student review photo delete failed: ${error.message}`);
+  }
 }
 
 /** Navbar logo: JPG/PNG/WebP only, 2 MB max (a logo is small by nature). */

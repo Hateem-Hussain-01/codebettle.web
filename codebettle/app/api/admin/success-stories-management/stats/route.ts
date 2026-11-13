@@ -6,10 +6,10 @@ import {
 } from '@/lib/services/settings-service';
 
 /**
- * PATCH /api/admin/success-stories-management/stats — save the four
- * small stat cards shown on /success-stories after the Team section
+ * PATCH /api/admin/success-stories-management/stats — save the three
+ * wide stat cards shown on /success-stories above the stories grid
  * (admin only, `success-stories-management` area). Body: any subset of
- * { happyStudents, averageRating, recommendRate, hoursOfLearning }
+ * { activeStudents, certificatesIssued, averageRating }
  * (non-empty strings, e.g. '1500+'). Saved as SiteSetting keys, so the
  * public page shows them with no deploy.
  */
@@ -21,10 +21,9 @@ export async function PATCH(request: NextRequest) {
   const v = body as Record<string, unknown>;
   const patch: Record<string, string> = {};
   for (const [key, field] of [
-    ['happyStudents', 'statsHappyStudents'],
+    ['activeStudents', 'statsActiveStudents'],
+    ['certificatesIssued', 'statsCertificatesIssued'],
     ['averageRating', 'statsAverageRating'],
-    ['recommendRate', 'statsRecommendRate'],
-    ['hoursOfLearning', 'statsHoursOfLearning'],
   ] as const) {
     if (v[key] !== undefined) {
       if (typeof v[key] !== 'string' || v[key].trim() === '') {
@@ -43,10 +42,9 @@ export async function PATCH(request: NextRequest) {
     const settings = await updateSiteSettings(patch);
     return NextResponse.json({
       stats: {
-        happyStudents: settings.statsHappyStudents,
+        activeStudents: settings.statsActiveStudents,
+        certificatesIssued: settings.statsCertificatesIssued,
         averageRating: settings.statsAverageRating,
-        recommendRate: settings.statsRecommendRate,
-        hoursOfLearning: settings.statsHoursOfLearning,
       },
     });
   } catch (e) {

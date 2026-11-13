@@ -23,7 +23,7 @@ import type {
 } from '@prisma/orm-postgres/contract/types';
 
 export type StorageHash =
-  StorageHashBase<'890e963fcb2b37f0e9b69c2ea3701646c87a59f5ff6f05d1362daf00fa9214df'>;
+  StorageHashBase<'d34358cf5bd579183fc13b0a5b0f47beacaf9f97a39905517fcabf05db278e56'>;
 export type ExecutionHash =
   ExecutionHashBase<'c03532fd4320ed019690564f3dce857d65213fe23762255c9be9388dac920442'>;
 export type ProfileHash =
@@ -1277,6 +1277,7 @@ export namespace Models {
   export type public_TeamMember = {
     bio: FieldOutputTypes['public']['TeamMember']['bio'];
     createdAt: FieldOutputTypes['public']['TeamMember']['createdAt'];
+    department: FieldOutputTypes['public']['TeamMember']['department'];
     designation: FieldOutputTypes['public']['TeamMember']['designation'];
     enabled: FieldOutputTypes['public']['TeamMember']['enabled'];
     fullName: FieldOutputTypes['public']['TeamMember']['fullName'];
@@ -6284,6 +6285,12 @@ type ContractBase = Omit<
                   readonly typeParams: { readonly precision: 3 };
                   readonly many: false;
                 };
+                readonly department: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
                 readonly designation: {
                   readonly dataType: 'pg/text';
                   readonly codecId: 'pg/text@1';
@@ -6319,12 +6326,12 @@ type ContractBase = Omit<
                   readonly many: false;
                 };
                 readonly level: {
-                  readonly dataType: 'pg/int4';
-                  readonly codecId: 'pg/int4@1';
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
                   readonly nullable: false;
                   readonly default: {
                     readonly kind: 'literal';
-                    readonly value: DefaultLiteralValue<'pg/int4@1', 1>;
+                    readonly value: DefaultLiteralValue<'pg/text@1', 'management'>;
                   };
                   readonly many: false;
                 };
@@ -11143,6 +11150,10 @@ type ContractBase = Omit<
                   readonly typeParams: { readonly precision: 3 };
                 };
               };
+              readonly department: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
               readonly designation: {
                 readonly nullable: false;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
@@ -11165,7 +11176,7 @@ type ContractBase = Omit<
               };
               readonly level: {
                 readonly nullable: false;
-                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/int4@1' };
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
               };
               readonly linkedinUrl: {
                 readonly nullable: true;
@@ -11203,6 +11214,7 @@ type ContractBase = Omit<
               readonly fields: {
                 readonly bio: { readonly column: 'bio' };
                 readonly createdAt: { readonly column: 'createdAt' };
+                readonly department: { readonly column: 'department' };
                 readonly designation: { readonly column: 'designation' };
                 readonly enabled: { readonly column: 'enabled' };
                 readonly fullName: { readonly column: 'fullName' };
