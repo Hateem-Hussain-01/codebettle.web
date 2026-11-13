@@ -11,7 +11,7 @@ import {
  * GET /api/admin/settings — current site settings (admin only,
  * `settings` area — same area as the payment accounts and social
  * links managed on the same settings page).
- * PATCH /api/admin/settings — update any subset of the six settings
+ * PATCH /api/admin/settings — update any subset of the nine settings
  * (admin only). Business logic lives in
  * lib/services/settings-service.ts. Reads are fail-safe (defaults
  * when the table is missing); saves surface errors — a failed save

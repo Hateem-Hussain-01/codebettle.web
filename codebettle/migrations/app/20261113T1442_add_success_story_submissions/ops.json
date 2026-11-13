@@ -1,0 +1,841 @@
+[
+  {
+    "id": "table.SuccessStoryAchievement",
+    "label": "Create table \"SuccessStoryAchievement\"",
+    "summary": "Creates table \"SuccessStoryAchievement\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "SuccessStoryAchievement"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"SuccessStoryAchievement\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"SuccessStoryAchievement\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "table \"SuccessStoryAchievement\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"SuccessStoryAchievement\"",
+        "sql": "CREATE TABLE \"public\".\"SuccessStoryAchievement\" (\n  \"achievedAt\" timestamptz(3),\n  \"category\" text NOT NULL,\n  \"createdAt\" timestamptz(3) DEFAULT (now()) NOT NULL,\n  \"description\" text,\n  \"id\" text NOT NULL,\n  \"organization\" text,\n  \"submissionId\" text NOT NULL,\n  \"title\" text NOT NULL,\n  PRIMARY KEY (\"id\")\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"SuccessStoryAchievement\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" WHERE (\"c\".\"oid\" = to_regclass($1) AND (\"c\".\"relkind\" = $2 OR \"c\".\"relkind\" = $3))) AS \"result\"",
+        "params": [
+          "\"public\".\"SuccessStoryAchievement\"",
+          "r",
+          "p"
+        ],
+        "expectation": {
+          "expects": "present",
+          "object": "table \"SuccessStoryAchievement\""
+        }
+      }
+    ]
+  },
+  {
+    "id": "table.SuccessStoryEvidence",
+    "label": "Create table \"SuccessStoryEvidence\"",
+    "summary": "Creates table \"SuccessStoryEvidence\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "SuccessStoryEvidence"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"SuccessStoryEvidence\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"SuccessStoryEvidence\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "table \"SuccessStoryEvidence\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"SuccessStoryEvidence\"",
+        "sql": "CREATE TABLE \"public\".\"SuccessStoryEvidence\" (\n  \"achievementId\" text NOT NULL,\n  \"createdAt\" timestamptz(3) DEFAULT (now()) NOT NULL,\n  \"fileName\" text,\n  \"id\" text NOT NULL,\n  \"kind\" text NOT NULL,\n  \"label\" text,\n  \"mime\" text,\n  \"size\" int4,\n  \"url\" text NOT NULL,\n  PRIMARY KEY (\"id\")\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"SuccessStoryEvidence\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" WHERE (\"c\".\"oid\" = to_regclass($1) AND (\"c\".\"relkind\" = $2 OR \"c\".\"relkind\" = $3))) AS \"result\"",
+        "params": [
+          "\"public\".\"SuccessStoryEvidence\"",
+          "r",
+          "p"
+        ],
+        "expectation": {
+          "expects": "present",
+          "object": "table \"SuccessStoryEvidence\""
+        }
+      }
+    ]
+  },
+  {
+    "id": "table.SuccessStorySubmission",
+    "label": "Create table \"SuccessStorySubmission\"",
+    "summary": "Creates table \"SuccessStorySubmission\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "SuccessStorySubmission"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"SuccessStorySubmission\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"SuccessStorySubmission\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "table \"SuccessStorySubmission\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"SuccessStorySubmission\"",
+        "sql": "CREATE TABLE \"public\".\"SuccessStorySubmission\" (\n  \"achievementsAfter\" text,\n  \"adminNote\" text,\n  \"advice\" text,\n  \"batchId\" text,\n  \"batchNumber\" int4,\n  \"beforeJoining\" text,\n  \"biggestAchievement\" text,\n  \"challenges\" text,\n  \"city\" text,\n  \"consentAccuracy\" bool NOT NULL,\n  \"consentContact\" bool DEFAULT false NOT NULL,\n  \"consentMedia\" bool NOT NULL,\n  \"consentPublication\" bool NOT NULL,\n  \"country\" text NOT NULL,\n  \"courseId\" text,\n  \"courseTitle\" text NOT NULL,\n  \"designation\" text,\n  \"email\" text NOT NULL,\n  \"experience\" text NOT NULL,\n  \"featured\" bool DEFAULT false NOT NULL,\n  \"fullName\" text NOT NULL,\n  \"githubUrl\" text,\n  \"hackerrankUrl\" text,\n  \"howHelped\" text,\n  \"id\" text NOT NULL,\n  \"idempotencyKey\" text,\n  \"instagramUrl\" text,\n  \"instructorName\" text,\n  \"joinedAt\" timestamptz(3),\n  \"lablabUrl\" text,\n  \"leetcodeUrl\" text,\n  \"linkedinUrl\" text,\n  \"otherProfileUrl\" text,\n  \"portfolioUrl\" text,\n  \"profilePicturePath\" text,\n  \"reviewedAt\" timestamptz(3),\n  \"reviewedBy\" text,\n  \"skillsLearned\" text NOT NULL,\n  \"status\" text DEFAULT 'pending' NOT NULL,\n  \"story\" text NOT NULL,\n  \"submissionNumber\" text NOT NULL,\n  \"submittedAt\" timestamptz(3) DEFAULT (now()) NOT NULL,\n  \"submitterId\" text,\n  \"updatedAt\" timestamptz(3) NOT NULL,\n  \"videoDescription\" text,\n  \"videoPath\" text,\n  \"videoUrl\" text,\n  \"youtubeUrl\" text,\n  PRIMARY KEY (\"id\"),\n  CONSTRAINT \"SuccessStorySubmission_status_check_718289da\" CHECK (\"status\" IN ('pending', 'under_review', 'approved', 'rejected'))\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"SuccessStorySubmission\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" WHERE (\"c\".\"oid\" = to_regclass($1) AND (\"c\".\"relkind\" = $2 OR \"c\".\"relkind\" = $3))) AS \"result\"",
+        "params": [
+          "\"public\".\"SuccessStorySubmission\"",
+          "r",
+          "p"
+        ],
+        "expectation": {
+          "expects": "present",
+          "object": "table \"SuccessStorySubmission\""
+        }
+      }
+    ]
+  },
+  {
+    "id": "unique.SuccessStorySubmission.SuccessStorySubmission_submissionNumber_key",
+    "label": "Add unique constraint on \"SuccessStorySubmission\" (submissionNumber)",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "unique",
+        "name": "SuccessStorySubmission_submissionNumber_key",
+        "table": "SuccessStorySubmission"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"SuccessStorySubmission_submissionNumber_key\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "SuccessStorySubmission_submissionNumber_key",
+          "public",
+          "\"public\".\"SuccessStorySubmission\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "constraint \"SuccessStorySubmission_submissionNumber_key\" on \"SuccessStorySubmission\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "add unique constraint \"SuccessStorySubmission_submissionNumber_key\"",
+        "sql": "ALTER TABLE \"public\".\"SuccessStorySubmission\" ADD CONSTRAINT \"SuccessStorySubmission_submissionNumber_key\" UNIQUE (\"submissionNumber\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify unique constraint \"SuccessStorySubmission_submissionNumber_key\" exists on (submissionNumber)",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3) AND \"c\".\"contype\" = $4 AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"c\".\"conkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"c\".\"conrelid\" AND key_attribute.attnum = key_column.attnum) = ($5)::jsonb)) AS \"result\"",
+        "params": [
+          "SuccessStorySubmission_submissionNumber_key",
+          "public",
+          "\"public\".\"SuccessStorySubmission\"",
+          "u",
+          "[\"submissionNumber\"]"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "unique.SuccessStorySubmission.SuccessStorySubmission_idempotencyKey_key",
+    "label": "Add unique constraint on \"SuccessStorySubmission\" (idempotencyKey)",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "unique",
+        "name": "SuccessStorySubmission_idempotencyKey_key",
+        "table": "SuccessStorySubmission"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"SuccessStorySubmission_idempotencyKey_key\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "SuccessStorySubmission_idempotencyKey_key",
+          "public",
+          "\"public\".\"SuccessStorySubmission\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "constraint \"SuccessStorySubmission_idempotencyKey_key\" on \"SuccessStorySubmission\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "add unique constraint \"SuccessStorySubmission_idempotencyKey_key\"",
+        "sql": "ALTER TABLE \"public\".\"SuccessStorySubmission\" ADD CONSTRAINT \"SuccessStorySubmission_idempotencyKey_key\" UNIQUE (\"idempotencyKey\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify unique constraint \"SuccessStorySubmission_idempotencyKey_key\" exists on (idempotencyKey)",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3) AND \"c\".\"contype\" = $4 AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"c\".\"conkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"c\".\"conrelid\" AND key_attribute.attnum = key_column.attnum) = ($5)::jsonb)) AS \"result\"",
+        "params": [
+          "SuccessStorySubmission_idempotencyKey_key",
+          "public",
+          "\"public\".\"SuccessStorySubmission\"",
+          "u",
+          "[\"idempotencyKey\"]"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.SuccessStoryAchievement.SuccessStoryAchievement_submissionId_idx_89cd3f4e",
+    "label": "Create index \"SuccessStoryAchievement_submissionId_idx_89cd3f4e\" on \"SuccessStoryAchievement\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "SuccessStoryAchievement_submissionId_idx_89cd3f4e",
+        "table": "SuccessStoryAchievement"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"SuccessStoryAchievement_submissionId_idx_89cd3f4e\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"SuccessStoryAchievement_submissionId_idx_89cd3f4e\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "index \"SuccessStoryAchievement_submissionId_idx_89cd3f4e\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"SuccessStoryAchievement_submissionId_idx_89cd3f4e\"",
+        "sql": "CREATE INDEX \"SuccessStoryAchievement_submissionId_idx_89cd3f4e\" ON \"public\".\"SuccessStoryAchievement\" (\"submissionId\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"SuccessStoryAchievement_submissionId_idx_89cd3f4e\" exists on \"SuccessStoryAchievement\" with the planned definition",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" INNER JOIN \"pg_index\" AS \"i\" ON \"i\".\"indexrelid\" = \"c\".\"oid\" INNER JOIN \"pg_am\" AS \"m\" ON \"m\".\"oid\" = \"c\".\"relam\" WHERE (\"c\".\"oid\" = to_regclass($1) AND (\"c\".\"relkind\" = $2 OR \"c\".\"relkind\" = $3) AND \"i\".\"indrelid\" = to_regclass($4) AND NOT (\"i\".\"indisunique\") AND \"m\".\"amname\" = $5 AND (\"i\".\"indexprs\" IS NULL AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"i\".\"indkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"i\".\"indrelid\" AND key_attribute.attnum = key_column.attnum) = ($6)::jsonb) AND \"i\".\"indpred\" IS NULL)) AS \"result\"",
+        "params": [
+          "\"public\".\"SuccessStoryAchievement_submissionId_idx_89cd3f4e\"",
+          "i",
+          "I",
+          "\"public\".\"SuccessStoryAchievement\"",
+          "btree",
+          "[\"submissionId\"]"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.SuccessStoryEvidence.SuccessStoryEvidence_achievementId_idx_05a27a05",
+    "label": "Create index \"SuccessStoryEvidence_achievementId_idx_05a27a05\" on \"SuccessStoryEvidence\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "SuccessStoryEvidence_achievementId_idx_05a27a05",
+        "table": "SuccessStoryEvidence"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"SuccessStoryEvidence_achievementId_idx_05a27a05\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"SuccessStoryEvidence_achievementId_idx_05a27a05\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "index \"SuccessStoryEvidence_achievementId_idx_05a27a05\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"SuccessStoryEvidence_achievementId_idx_05a27a05\"",
+        "sql": "CREATE INDEX \"SuccessStoryEvidence_achievementId_idx_05a27a05\" ON \"public\".\"SuccessStoryEvidence\" (\"achievementId\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"SuccessStoryEvidence_achievementId_idx_05a27a05\" exists on \"SuccessStoryEvidence\" with the planned definition",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" INNER JOIN \"pg_index\" AS \"i\" ON \"i\".\"indexrelid\" = \"c\".\"oid\" INNER JOIN \"pg_am\" AS \"m\" ON \"m\".\"oid\" = \"c\".\"relam\" WHERE (\"c\".\"oid\" = to_regclass($1) AND (\"c\".\"relkind\" = $2 OR \"c\".\"relkind\" = $3) AND \"i\".\"indrelid\" = to_regclass($4) AND NOT (\"i\".\"indisunique\") AND \"m\".\"amname\" = $5 AND (\"i\".\"indexprs\" IS NULL AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"i\".\"indkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"i\".\"indrelid\" AND key_attribute.attnum = key_column.attnum) = ($6)::jsonb) AND \"i\".\"indpred\" IS NULL)) AS \"result\"",
+        "params": [
+          "\"public\".\"SuccessStoryEvidence_achievementId_idx_05a27a05\"",
+          "i",
+          "I",
+          "\"public\".\"SuccessStoryEvidence\"",
+          "btree",
+          "[\"achievementId\"]"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.SuccessStorySubmission.SuccessStorySubmission_batchId_idx_84d4b0b9",
+    "label": "Create index \"SuccessStorySubmission_batchId_idx_84d4b0b9\" on \"SuccessStorySubmission\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "SuccessStorySubmission_batchId_idx_84d4b0b9",
+        "table": "SuccessStorySubmission"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"SuccessStorySubmission_batchId_idx_84d4b0b9\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"SuccessStorySubmission_batchId_idx_84d4b0b9\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "index \"SuccessStorySubmission_batchId_idx_84d4b0b9\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"SuccessStorySubmission_batchId_idx_84d4b0b9\"",
+        "sql": "CREATE INDEX \"SuccessStorySubmission_batchId_idx_84d4b0b9\" ON \"public\".\"SuccessStorySubmission\" (\"batchId\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"SuccessStorySubmission_batchId_idx_84d4b0b9\" exists on \"SuccessStorySubmission\" with the planned definition",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" INNER JOIN \"pg_index\" AS \"i\" ON \"i\".\"indexrelid\" = \"c\".\"oid\" INNER JOIN \"pg_am\" AS \"m\" ON \"m\".\"oid\" = \"c\".\"relam\" WHERE (\"c\".\"oid\" = to_regclass($1) AND (\"c\".\"relkind\" = $2 OR \"c\".\"relkind\" = $3) AND \"i\".\"indrelid\" = to_regclass($4) AND NOT (\"i\".\"indisunique\") AND \"m\".\"amname\" = $5 AND (\"i\".\"indexprs\" IS NULL AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"i\".\"indkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"i\".\"indrelid\" AND key_attribute.attnum = key_column.attnum) = ($6)::jsonb) AND \"i\".\"indpred\" IS NULL)) AS \"result\"",
+        "params": [
+          "\"public\".\"SuccessStorySubmission_batchId_idx_84d4b0b9\"",
+          "i",
+          "I",
+          "\"public\".\"SuccessStorySubmission\"",
+          "btree",
+          "[\"batchId\"]"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.SuccessStorySubmission.SuccessStorySubmission_courseId_idx_12f72d2a",
+    "label": "Create index \"SuccessStorySubmission_courseId_idx_12f72d2a\" on \"SuccessStorySubmission\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "SuccessStorySubmission_courseId_idx_12f72d2a",
+        "table": "SuccessStorySubmission"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"SuccessStorySubmission_courseId_idx_12f72d2a\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"SuccessStorySubmission_courseId_idx_12f72d2a\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "index \"SuccessStorySubmission_courseId_idx_12f72d2a\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"SuccessStorySubmission_courseId_idx_12f72d2a\"",
+        "sql": "CREATE INDEX \"SuccessStorySubmission_courseId_idx_12f72d2a\" ON \"public\".\"SuccessStorySubmission\" (\"courseId\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"SuccessStorySubmission_courseId_idx_12f72d2a\" exists on \"SuccessStorySubmission\" with the planned definition",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" INNER JOIN \"pg_index\" AS \"i\" ON \"i\".\"indexrelid\" = \"c\".\"oid\" INNER JOIN \"pg_am\" AS \"m\" ON \"m\".\"oid\" = \"c\".\"relam\" WHERE (\"c\".\"oid\" = to_regclass($1) AND (\"c\".\"relkind\" = $2 OR \"c\".\"relkind\" = $3) AND \"i\".\"indrelid\" = to_regclass($4) AND NOT (\"i\".\"indisunique\") AND \"m\".\"amname\" = $5 AND (\"i\".\"indexprs\" IS NULL AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"i\".\"indkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"i\".\"indrelid\" AND key_attribute.attnum = key_column.attnum) = ($6)::jsonb) AND \"i\".\"indpred\" IS NULL)) AS \"result\"",
+        "params": [
+          "\"public\".\"SuccessStorySubmission_courseId_idx_12f72d2a\"",
+          "i",
+          "I",
+          "\"public\".\"SuccessStorySubmission\"",
+          "btree",
+          "[\"courseId\"]"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.SuccessStorySubmission.SuccessStorySubmission_email_submittedAt_idx_d0806a86",
+    "label": "Create index \"SuccessStorySubmission_email_submittedAt_idx_d0806a86\" on \"SuccessStorySubmission\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "SuccessStorySubmission_email_submittedAt_idx_d0806a86",
+        "table": "SuccessStorySubmission"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"SuccessStorySubmission_email_submittedAt_idx_d0806a86\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"SuccessStorySubmission_email_submittedAt_idx_d0806a86\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "index \"SuccessStorySubmission_email_submittedAt_idx_d0806a86\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"SuccessStorySubmission_email_submittedAt_idx_d0806a86\"",
+        "sql": "CREATE INDEX \"SuccessStorySubmission_email_submittedAt_idx_d0806a86\" ON \"public\".\"SuccessStorySubmission\" (\"email\", \"submittedAt\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"SuccessStorySubmission_email_submittedAt_idx_d0806a86\" exists on \"SuccessStorySubmission\" with the planned definition",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" INNER JOIN \"pg_index\" AS \"i\" ON \"i\".\"indexrelid\" = \"c\".\"oid\" INNER JOIN \"pg_am\" AS \"m\" ON \"m\".\"oid\" = \"c\".\"relam\" WHERE (\"c\".\"oid\" = to_regclass($1) AND (\"c\".\"relkind\" = $2 OR \"c\".\"relkind\" = $3) AND \"i\".\"indrelid\" = to_regclass($4) AND NOT (\"i\".\"indisunique\") AND \"m\".\"amname\" = $5 AND (\"i\".\"indexprs\" IS NULL AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"i\".\"indkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"i\".\"indrelid\" AND key_attribute.attnum = key_column.attnum) = ($6)::jsonb) AND \"i\".\"indpred\" IS NULL)) AS \"result\"",
+        "params": [
+          "\"public\".\"SuccessStorySubmission_email_submittedAt_idx_d0806a86\"",
+          "i",
+          "I",
+          "\"public\".\"SuccessStorySubmission\"",
+          "btree",
+          "[\"email\",\"submittedAt\"]"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.SuccessStorySubmission.SuccessStorySubmission_status_submittedAt_idx_0938dd64",
+    "label": "Create index \"SuccessStorySubmission_status_submittedAt_idx_0938dd64\" on \"SuccessStorySubmission\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "SuccessStorySubmission_status_submittedAt_idx_0938dd64",
+        "table": "SuccessStorySubmission"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"SuccessStorySubmission_status_submittedAt_idx_0938dd64\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"SuccessStorySubmission_status_submittedAt_idx_0938dd64\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "index \"SuccessStorySubmission_status_submittedAt_idx_0938dd64\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"SuccessStorySubmission_status_submittedAt_idx_0938dd64\"",
+        "sql": "CREATE INDEX \"SuccessStorySubmission_status_submittedAt_idx_0938dd64\" ON \"public\".\"SuccessStorySubmission\" (\"status\", \"submittedAt\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"SuccessStorySubmission_status_submittedAt_idx_0938dd64\" exists on \"SuccessStorySubmission\" with the planned definition",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" INNER JOIN \"pg_index\" AS \"i\" ON \"i\".\"indexrelid\" = \"c\".\"oid\" INNER JOIN \"pg_am\" AS \"m\" ON \"m\".\"oid\" = \"c\".\"relam\" WHERE (\"c\".\"oid\" = to_regclass($1) AND (\"c\".\"relkind\" = $2 OR \"c\".\"relkind\" = $3) AND \"i\".\"indrelid\" = to_regclass($4) AND NOT (\"i\".\"indisunique\") AND \"m\".\"amname\" = $5 AND (\"i\".\"indexprs\" IS NULL AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"i\".\"indkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"i\".\"indrelid\" AND key_attribute.attnum = key_column.attnum) = ($6)::jsonb) AND \"i\".\"indpred\" IS NULL)) AS \"result\"",
+        "params": [
+          "\"public\".\"SuccessStorySubmission_status_submittedAt_idx_0938dd64\"",
+          "i",
+          "I",
+          "\"public\".\"SuccessStorySubmission\"",
+          "btree",
+          "[\"status\",\"submittedAt\"]"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.SuccessStorySubmission.SuccessStorySubmission_submitterId_idx_15ca851b",
+    "label": "Create index \"SuccessStorySubmission_submitterId_idx_15ca851b\" on \"SuccessStorySubmission\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "SuccessStorySubmission_submitterId_idx_15ca851b",
+        "table": "SuccessStorySubmission"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"SuccessStorySubmission_submitterId_idx_15ca851b\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"SuccessStorySubmission_submitterId_idx_15ca851b\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "index \"SuccessStorySubmission_submitterId_idx_15ca851b\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"SuccessStorySubmission_submitterId_idx_15ca851b\"",
+        "sql": "CREATE INDEX \"SuccessStorySubmission_submitterId_idx_15ca851b\" ON \"public\".\"SuccessStorySubmission\" (\"submitterId\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"SuccessStorySubmission_submitterId_idx_15ca851b\" exists on \"SuccessStorySubmission\" with the planned definition",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" INNER JOIN \"pg_index\" AS \"i\" ON \"i\".\"indexrelid\" = \"c\".\"oid\" INNER JOIN \"pg_am\" AS \"m\" ON \"m\".\"oid\" = \"c\".\"relam\" WHERE (\"c\".\"oid\" = to_regclass($1) AND (\"c\".\"relkind\" = $2 OR \"c\".\"relkind\" = $3) AND \"i\".\"indrelid\" = to_regclass($4) AND NOT (\"i\".\"indisunique\") AND \"m\".\"amname\" = $5 AND (\"i\".\"indexprs\" IS NULL AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"i\".\"indkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"i\".\"indrelid\" AND key_attribute.attnum = key_column.attnum) = ($6)::jsonb) AND \"i\".\"indpred\" IS NULL)) AS \"result\"",
+        "params": [
+          "\"public\".\"SuccessStorySubmission_submitterId_idx_15ca851b\"",
+          "i",
+          "I",
+          "\"public\".\"SuccessStorySubmission\"",
+          "btree",
+          "[\"submitterId\"]"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.SuccessStoryAchievement.SuccessStoryAchievement_submissionId_fkey",
+    "label": "Add foreign key \"SuccessStoryAchievement_submissionId_fkey\" on \"SuccessStoryAchievement\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "SuccessStoryAchievement_submissionId_fkey",
+        "table": "SuccessStoryAchievement"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"SuccessStoryAchievement_submissionId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "SuccessStoryAchievement_submissionId_fkey",
+          "public",
+          "\"public\".\"SuccessStoryAchievement\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "FK \"SuccessStoryAchievement_submissionId_fkey\" on \"SuccessStoryAchievement\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"SuccessStoryAchievement_submissionId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"SuccessStoryAchievement\"\nADD CONSTRAINT \"SuccessStoryAchievement_submissionId_fkey\"\nFOREIGN KEY (\"submissionId\")\nREFERENCES \"public\".\"SuccessStorySubmission\" (\"id\")\nON DELETE CASCADE"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"SuccessStoryAchievement_submissionId_fkey\" exists with the planned columns, referenced table and actions",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3) AND \"c\".\"contype\" = $4 AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"c\".\"conkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"c\".\"conrelid\" AND key_attribute.attnum = key_column.attnum) = ($5)::jsonb AND \"c\".\"confrelid\" = to_regclass($6) AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"c\".\"confkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"c\".\"confrelid\" AND key_attribute.attnum = key_column.attnum) = ($7)::jsonb AND \"c\".\"confdeltype\" = $8 AND \"c\".\"confupdtype\" = $9)) AS \"result\"",
+        "params": [
+          "SuccessStoryAchievement_submissionId_fkey",
+          "public",
+          "\"public\".\"SuccessStoryAchievement\"",
+          "f",
+          "[\"submissionId\"]",
+          "\"public\".\"SuccessStorySubmission\"",
+          "[\"id\"]",
+          "c",
+          "a"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.SuccessStoryEvidence.SuccessStoryEvidence_achievementId_fkey",
+    "label": "Add foreign key \"SuccessStoryEvidence_achievementId_fkey\" on \"SuccessStoryEvidence\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "SuccessStoryEvidence_achievementId_fkey",
+        "table": "SuccessStoryEvidence"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"SuccessStoryEvidence_achievementId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "SuccessStoryEvidence_achievementId_fkey",
+          "public",
+          "\"public\".\"SuccessStoryEvidence\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "FK \"SuccessStoryEvidence_achievementId_fkey\" on \"SuccessStoryEvidence\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"SuccessStoryEvidence_achievementId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"SuccessStoryEvidence\"\nADD CONSTRAINT \"SuccessStoryEvidence_achievementId_fkey\"\nFOREIGN KEY (\"achievementId\")\nREFERENCES \"public\".\"SuccessStoryAchievement\" (\"id\")\nON DELETE CASCADE"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"SuccessStoryEvidence_achievementId_fkey\" exists with the planned columns, referenced table and actions",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3) AND \"c\".\"contype\" = $4 AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"c\".\"conkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"c\".\"conrelid\" AND key_attribute.attnum = key_column.attnum) = ($5)::jsonb AND \"c\".\"confrelid\" = to_regclass($6) AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"c\".\"confkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"c\".\"confrelid\" AND key_attribute.attnum = key_column.attnum) = ($7)::jsonb AND \"c\".\"confdeltype\" = $8 AND \"c\".\"confupdtype\" = $9)) AS \"result\"",
+        "params": [
+          "SuccessStoryEvidence_achievementId_fkey",
+          "public",
+          "\"public\".\"SuccessStoryEvidence\"",
+          "f",
+          "[\"achievementId\"]",
+          "\"public\".\"SuccessStoryAchievement\"",
+          "[\"id\"]",
+          "c",
+          "a"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.SuccessStorySubmission.SuccessStorySubmission_submitterId_fkey",
+    "label": "Add foreign key \"SuccessStorySubmission_submitterId_fkey\" on \"SuccessStorySubmission\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "SuccessStorySubmission_submitterId_fkey",
+        "table": "SuccessStorySubmission"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"SuccessStorySubmission_submitterId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "SuccessStorySubmission_submitterId_fkey",
+          "public",
+          "\"public\".\"SuccessStorySubmission\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "FK \"SuccessStorySubmission_submitterId_fkey\" on \"SuccessStorySubmission\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"SuccessStorySubmission_submitterId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"SuccessStorySubmission\"\nADD CONSTRAINT \"SuccessStorySubmission_submitterId_fkey\"\nFOREIGN KEY (\"submitterId\")\nREFERENCES \"public\".\"User\" (\"id\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"SuccessStorySubmission_submitterId_fkey\" exists with the planned columns, referenced table and actions",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3) AND \"c\".\"contype\" = $4 AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"c\".\"conkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"c\".\"conrelid\" AND key_attribute.attnum = key_column.attnum) = ($5)::jsonb AND \"c\".\"confrelid\" = to_regclass($6) AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"c\".\"confkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"c\".\"confrelid\" AND key_attribute.attnum = key_column.attnum) = ($7)::jsonb AND \"c\".\"confdeltype\" = $8 AND \"c\".\"confupdtype\" = $9)) AS \"result\"",
+        "params": [
+          "SuccessStorySubmission_submitterId_fkey",
+          "public",
+          "\"public\".\"SuccessStorySubmission\"",
+          "f",
+          "[\"submitterId\"]",
+          "\"public\".\"User\"",
+          "[\"id\"]",
+          "a",
+          "a"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.SuccessStorySubmission.SuccessStorySubmission_courseId_fkey",
+    "label": "Add foreign key \"SuccessStorySubmission_courseId_fkey\" on \"SuccessStorySubmission\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "SuccessStorySubmission_courseId_fkey",
+        "table": "SuccessStorySubmission"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"SuccessStorySubmission_courseId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "SuccessStorySubmission_courseId_fkey",
+          "public",
+          "\"public\".\"SuccessStorySubmission\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "FK \"SuccessStorySubmission_courseId_fkey\" on \"SuccessStorySubmission\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"SuccessStorySubmission_courseId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"SuccessStorySubmission\"\nADD CONSTRAINT \"SuccessStorySubmission_courseId_fkey\"\nFOREIGN KEY (\"courseId\")\nREFERENCES \"public\".\"Course\" (\"id\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"SuccessStorySubmission_courseId_fkey\" exists with the planned columns, referenced table and actions",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3) AND \"c\".\"contype\" = $4 AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"c\".\"conkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"c\".\"conrelid\" AND key_attribute.attnum = key_column.attnum) = ($5)::jsonb AND \"c\".\"confrelid\" = to_regclass($6) AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"c\".\"confkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"c\".\"confrelid\" AND key_attribute.attnum = key_column.attnum) = ($7)::jsonb AND \"c\".\"confdeltype\" = $8 AND \"c\".\"confupdtype\" = $9)) AS \"result\"",
+        "params": [
+          "SuccessStorySubmission_courseId_fkey",
+          "public",
+          "\"public\".\"SuccessStorySubmission\"",
+          "f",
+          "[\"courseId\"]",
+          "\"public\".\"Course\"",
+          "[\"id\"]",
+          "a",
+          "a"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.SuccessStorySubmission.SuccessStorySubmission_batchId_fkey",
+    "label": "Add foreign key \"SuccessStorySubmission_batchId_fkey\" on \"SuccessStorySubmission\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "SuccessStorySubmission_batchId_fkey",
+        "table": "SuccessStorySubmission"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"SuccessStorySubmission_batchId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "SuccessStorySubmission_batchId_fkey",
+          "public",
+          "\"public\".\"SuccessStorySubmission\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "FK \"SuccessStorySubmission_batchId_fkey\" on \"SuccessStorySubmission\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"SuccessStorySubmission_batchId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"SuccessStorySubmission\"\nADD CONSTRAINT \"SuccessStorySubmission_batchId_fkey\"\nFOREIGN KEY (\"batchId\")\nREFERENCES \"public\".\"Batch\" (\"id\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"SuccessStorySubmission_batchId_fkey\" exists with the planned columns, referenced table and actions",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3) AND \"c\".\"contype\" = $4 AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"c\".\"conkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"c\".\"conrelid\" AND key_attribute.attnum = key_column.attnum) = ($5)::jsonb AND \"c\".\"confrelid\" = to_regclass($6) AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"c\".\"confkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"c\".\"confrelid\" AND key_attribute.attnum = key_column.attnum) = ($7)::jsonb AND \"c\".\"confdeltype\" = $8 AND \"c\".\"confupdtype\" = $9)) AS \"result\"",
+        "params": [
+          "SuccessStorySubmission_batchId_fkey",
+          "public",
+          "\"public\".\"SuccessStorySubmission\"",
+          "f",
+          "[\"batchId\"]",
+          "\"public\".\"Batch\"",
+          "[\"id\"]",
+          "a",
+          "a"
+        ]
+      }
+    ]
+  }
+]

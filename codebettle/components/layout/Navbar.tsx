@@ -58,6 +58,7 @@ export default function Navbar({ session }: NavbarProps) {
             <Link href="/courses" className="text-sm text-muted hover:text-foreground transition-colors">Courses</Link>
             <Link href="/instructors" className="text-sm text-muted hover:text-foreground transition-colors">Instructors</Link>
             <Link href="/blog" className="text-sm text-muted hover:text-foreground transition-colors">Blog</Link>
+            <Link href="/success-stories" className="text-sm text-muted hover:text-foreground transition-colors">Success Stories</Link>
             <Link href="/about" className="text-sm text-muted hover:text-foreground transition-colors">About</Link>
             <Link href="/contact" className="text-sm text-muted hover:text-foreground transition-colors">Contact</Link>
           </div>
@@ -100,7 +101,7 @@ export default function Navbar({ session }: NavbarProps) {
             className="md:hidden bg-dark-card border-b border-dark-border"
           >
             <div className="px-4 py-4 flex flex-col gap-3">
-              {[['/', 'Home'], ['/courses', 'Courses'], ['/instructors', 'Instructors'], ['/blog', 'Blog'], ['/about', 'About'], ['/contact', 'Contact']].map(([href, label]) => (
+              {[['/', 'Home'], ['/courses', 'Courses'], ['/instructors', 'Instructors'], ['/blog', 'Blog'], ['/success-stories', 'Success Stories'], ['/about', 'About'], ['/contact', 'Contact']].map(([href, label]) => (
                 <Link key={href} href={href} className="text-muted hover:text-foreground py-1.5 text-sm" onClick={() => setMobileOpen(false)}>{label}</Link>
               ))}
               <div className="pt-2 border-t border-dark-border flex flex-col gap-2">

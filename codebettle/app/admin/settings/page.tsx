@@ -1,13 +1,14 @@
 'use client';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
 import Textarea from '@/components/ui/Textarea';
+import RichTextEditor from '@/components/ui/RichTextEditor';
 import Select from '@/components/ui/Select';
 import Card from '@/components/ui/Card';
 import Modal from '@/components/ui/Modal';
 import FadeIn from '@/components/ui/FadeIn';
-import { Save, Globe, Mail, Phone, AlertTriangle, CreditCard, Plus, Pencil, Trash2, ChevronUp, ChevronDown, Share2 } from 'lucide-react';
+import { Save, Globe, Mail, Phone, AlertTriangle, CreditCard, Plus, Pencil, Trash2, ChevronUp, ChevronDown, Share2, Trophy, Upload } from 'lucide-react';
 import toast from 'react-hot-toast';
 import type { PaymentAccount, PaymentMethod } from '@/lib/db/types';
 import type { SocialLink } from '@/lib/db/types';
@@ -65,8 +66,22 @@ export default function AdminSettingsPage() {
     phone: '+92 305 5261893',
     address: 'Lahore, Punjab, Pakistan',
     maintenanceMode: false,
+    // Success Stories page texts (RICH TEXT HTML from the RichTextEditor).
+    // Empty = the public page shows its placeholder text for that section.
+    ceoMessage: '',
+    visionText: '',
+    // CEO photo URL (public Storage URL). Default is Ahmad Hassan's
+    // uploaded photo; changed via the "Update Image" button below.
+    ceoPhotoUrl: '',
   });
   const [saving, setSaving] = useState(false);
+  const [photoUploading, setPhotoUploading] = useState(false);
+  const photoInputRef = useRef<HTMLInputElement>(null);
+  // True once the saved settings have loaded. The RichTextEditors below
+  // are uncontrolled (initialHtml is read once, like the email builder)
+  // so they only mount after the load — otherwise they would start
+  // with the pre-load empty values and never pick up the saved HTML.
+  const [settingsLoaded, setSettingsLoaded] = useState(false);
 
   // Load the persisted settings on mount. The useState defaults above
   // are only the pre-load placeholder — the saved values replace them
@@ -80,6 +95,8 @@ export default function AdminSettingsPage() {
       if (data.settings) setSettings(data.settings);
     } catch (e) {
       toast.error(e instanceof Error ? e.message : 'Could not load settings');
+    } finally {
+      setSettingsLoaded(true);
     }
   };
 
@@ -104,6 +121,52 @@ export default function AdminSettingsPage() {
       toast.error(e instanceof Error ? e.message : 'Could not save settings');
     } finally {
       setSaving(false);
+    }
+  };
+
+  // --- CEO photo (Success Stories) ---
+  // "Update Image" uploads the picked file first (POST
+  // /api/admin/settings/ceo-photo — server-side type/size validation),
+  // then saves the returned public URL as the ceoPhotoUrl setting, so
+  // the public page shows the new photo with no code deploy. The photo
+  // saves immediately on its own (like the payment accounts and social
+  // links below) — it does not wait for the page's Save button.
+  const handleCeoPhotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+    // Instant client-side feedback; the server re-validates (never trust
+    // the client alone) and rejects anything that is not JPG/PNG/WebP
+    // or is over 5 MB.
+    if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
+      toast.error('Please choose a JPG, PNG or WebP image.');
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('Image must be 5 MB or smaller.');
+      return;
+    }
+    setPhotoUploading(true);
+    try {
+      const form = new FormData();
+      form.append('photo', file);
+      const uploadRes = await fetch('/api/admin/settings/ceo-photo', { method: 'POST', body: form });
+      const uploadData = await uploadRes.json().catch(() => ({}));
+      if (!uploadRes.ok) throw new Error(uploadData.error ?? 'Could not upload the photo');
+      const saveRes = await fetch('/api/admin/settings', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ceoPhotoUrl: uploadData.url }),
+      });
+      const saveData = await saveRes.json().catch(() => ({}));
+      if (!saveRes.ok) throw new Error(saveData.error ?? 'Photo uploaded, but the setting could not be saved');
+      if (saveData.settings) setSettings(saveData.settings);
+      else setSettings((s) => ({ ...s, ceoPhotoUrl: uploadData.url }));
+      toast.success('CEO photo updated!');
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Could not update the CEO photo');
+    } finally {
+      setPhotoUploading(false);
     }
   };
 
@@ -463,6 +526,66 @@ export default function AdminSettingsPage() {
           <Input label="Phone" value={settings.phone} onChange={e => setSettings(s => ({ ...s, phone: e.target.value }))} />
           <Input label="Address" value={settings.address} onChange={e => setSettings(s => ({ ...s, address: e.target.value }))} />
         </div>
+      </Card>
+      </FadeIn>
+
+      <FadeIn delay={0.12}>
+      <Card>
+        <h2 className="text-foreground font-bold mb-1 flex items-center gap-2"><Trophy className="w-4 h-4 text-primary-text" />Success Stories</h2>
+        <p className="text-muted text-sm mb-4">Shown on the public Success Stories page. Rich text — bold, italic, headings, lists, links and images work the same as in the email builder. Leave a field empty to show the default placeholder text on the page.</p>
+        {!settingsLoaded ? (
+          <p className="text-muted text-sm">Loading Success Stories texts…</p>
+        ) : (
+          <div className="space-y-6">
+            <div>
+              <span className="text-sm font-medium text-foreground/80 block mb-1.5">CEO Photo</span>
+              <div className="flex items-start gap-4">
+                {settings.ceoPhotoUrl ? (
+                  <img
+                    src={settings.ceoPhotoUrl}
+                    alt="Current CEO photo"
+                    className="w-24 h-32 object-cover rounded-lg border border-dark-border shrink-0"
+                  />
+                ) : (
+                  <div className="w-24 h-32 rounded-lg border border-dashed border-dark-border bg-background shrink-0 flex items-center justify-center text-center px-2">
+                    <span className="text-xs text-muted">No photo set</span>
+                  </div>
+                )}
+                <div>
+                  <input
+                    ref={photoInputRef}
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp"
+                    className="hidden"
+                    aria-label="Upload a new CEO photo"
+                    onChange={handleCeoPhotoChange}
+                  />
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    disabled={photoUploading}
+                    onClick={() => photoInputRef.current?.click()}
+                  >
+                    <Upload className="w-4 h-4" />{photoUploading ? 'Uploading…' : 'Update Image'}
+                  </Button>
+                  <p className="text-xs text-muted mt-2">JPG, PNG or WebP, max 5 MB. Shown at the top of the public Success Stories page, next to the CEO message.</p>
+                </div>
+              </div>
+            </div>
+            <RichTextEditor
+              label="CEO Message"
+              initialHtml={settings.ceoMessage}
+              onChange={(html) => setSettings((s) => ({ ...s, ceoMessage: html }))}
+              footerNote="Formatting is saved as HTML and shown on the public Success Stories page under the CEO's photo. Images are embedded (max 200 KB each) — no external image links."
+            />
+            <RichTextEditor
+              label="CodeBettle Vision"
+              initialHtml={settings.visionText}
+              onChange={(html) => setSettings((s) => ({ ...s, visionText: html }))}
+              footerNote="Formatting is saved as HTML and shown on the public Success Stories page next to the portrait video. Images are embedded (max 200 KB each) — no external image links."
+            />
+          </div>
+        )}
       </Card>
       </FadeIn>
 

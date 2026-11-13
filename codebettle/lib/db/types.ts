@@ -372,6 +372,142 @@ export interface Testimonial {
   date: string;
 }
 
+/** Review workflow status for a success story submission. */
+export type SuccessStoryStatus = 'pending' | 'under_review' | 'approved' | 'rejected';
+
+export interface SuccessStoryEvidence {
+  id: string;
+  achievementId: string;
+  kind: 'file' | 'link';
+  label?: string;
+  /** Storage path (file, in the private application-files bucket) or URL (link). */
+  url: string;
+  fileName?: string;
+  mime?: string;
+  size?: number;
+  createdAt: string;
+}
+
+export interface SuccessStoryAchievement {
+  id: string;
+  submissionId: string;
+  category: string;
+  title: string;
+  organization?: string;
+  description?: string;
+  achievedAt?: string;
+  createdAt: string;
+  evidence: SuccessStoryEvidence[];
+}
+
+export interface SuccessStorySubmission {
+  id: string;
+  submissionNumber: string;
+  submitterId?: string;
+  fullName: string;
+  email: string;
+  profilePicturePath?: string;
+  /** Public URL for the profile picture (derived from the path at read time). */
+  profilePictureUrl?: string;
+  country: string;
+  city?: string;
+  designation?: string;
+  linkedinUrl?: string;
+  courseId?: string;
+  courseTitle: string;
+  batchId?: string;
+  batchNumber?: number;
+  joinedAt?: string;
+  instructorName?: string;
+  skillsLearned: string;
+  experience: string;
+  story: string;
+  beforeJoining?: string;
+  challenges?: string;
+  howHelped?: string;
+  achievementsAfter?: string;
+  biggestAchievement?: string;
+  advice?: string;
+  githubUrl?: string;
+  instagramUrl?: string;
+  youtubeUrl?: string;
+  portfolioUrl?: string;
+  lablabUrl?: string;
+  leetcodeUrl?: string;
+  hackerrankUrl?: string;
+  otherProfileUrl?: string;
+  videoPath?: string;
+  videoUrl?: string;
+  videoDescription?: string;
+  consentPublication: boolean;
+  consentMedia: boolean;
+  consentAccuracy: boolean;
+  consentContact: boolean;
+  status: SuccessStoryStatus;
+  featured: boolean;
+  adminNote?: string;
+  reviewedBy?: string;
+  reviewedAt?: string;
+  submittedAt: string;
+  updatedAt: string;
+  achievements: SuccessStoryAchievement[];
+}
+
+/**
+ * The public view of an approved story — the ONLY shape the public API
+ * returns. No email, no idempotency key, no admin note, no reviewer
+ * fields, no private evidence file paths. Evidence links (public URLs
+ * the student chose to share) are included; evidence files are not.
+ */
+export interface PublicSuccessStory {
+  id: string;
+  submissionNumber: string;
+  fullName: string;
+  profilePictureUrl?: string;
+  country: string;
+  city?: string;
+  designation?: string;
+  linkedinUrl?: string;
+  courseTitle: string;
+  batchNumber?: number;
+  joinedAt?: string;
+  instructorName?: string;
+  skillsLearned: string;
+  experience: string;
+  story: string;
+  beforeJoining?: string;
+  challenges?: string;
+  howHelped?: string;
+  achievementsAfter?: string;
+  biggestAchievement?: string;
+  advice?: string;
+  githubUrl?: string;
+  instagramUrl?: string;
+  youtubeUrl?: string;
+  portfolioUrl?: string;
+  lablabUrl?: string;
+  leetcodeUrl?: string;
+  hackerrankUrl?: string;
+  otherProfileUrl?: string;
+  videoUrl?: string;
+  /** Public playback URL for an uploaded video testimonial (public bucket). */
+  videoPlaybackUrl?: string;
+  videoDescription?: string;
+  featured: boolean;
+  submittedAt: string;
+  /** Distinct achievement categories, in the canonical category order. Derived from the achievements — there is no separate categories column. */
+  categories: string[];
+  achievements: {
+    id: string;
+    category: string;
+    title: string;
+    organization?: string;
+    description?: string;
+    achievedAt?: string;
+    links: { label?: string; url: string }[];
+  }[];
+}
+
 export interface BlogPost {
   id: string;
   slug: string;
@@ -624,6 +760,67 @@ export type ContactMessageRow = Pick<
 export type TestimonialRow = Pick<
   Models.public_Testimonial,
   'id' | 'studentName' | 'studentAvatar' | 'courseTitle' | 'rating' | 'comment' | 'date'
+>;
+
+export type SuccessStorySubmissionRow = Pick<
+  Models.public_SuccessStorySubmission,
+  | 'id'
+  | 'submissionNumber'
+  | 'submitterId'
+  | 'fullName'
+  | 'email'
+  | 'profilePicturePath'
+  | 'country'
+  | 'city'
+  | 'designation'
+  | 'linkedinUrl'
+  | 'courseId'
+  | 'courseTitle'
+  | 'batchId'
+  | 'batchNumber'
+  | 'joinedAt'
+  | 'instructorName'
+  | 'skillsLearned'
+  | 'experience'
+  | 'story'
+  | 'beforeJoining'
+  | 'challenges'
+  | 'howHelped'
+  | 'achievementsAfter'
+  | 'biggestAchievement'
+  | 'advice'
+  | 'githubUrl'
+  | 'instagramUrl'
+  | 'youtubeUrl'
+  | 'portfolioUrl'
+  | 'lablabUrl'
+  | 'leetcodeUrl'
+  | 'hackerrankUrl'
+  | 'otherProfileUrl'
+  | 'videoPath'
+  | 'videoUrl'
+  | 'videoDescription'
+  | 'consentPublication'
+  | 'consentMedia'
+  | 'consentAccuracy'
+  | 'consentContact'
+  | 'status'
+  | 'featured'
+  | 'adminNote'
+  | 'reviewedBy'
+  | 'reviewedAt'
+  | 'submittedAt'
+  | 'updatedAt'
+>;
+
+export type SuccessStoryAchievementRow = Pick<
+  Models.public_SuccessStoryAchievement,
+  'id' | 'submissionId' | 'category' | 'title' | 'organization' | 'description' | 'achievedAt' | 'createdAt'
+>;
+
+export type SuccessStoryEvidenceRow = Pick<
+  Models.public_SuccessStoryEvidence,
+  'id' | 'achievementId' | 'kind' | 'label' | 'url' | 'fileName' | 'mime' | 'size' | 'createdAt'
 >;
 
 export type BlogPostRow = Pick<

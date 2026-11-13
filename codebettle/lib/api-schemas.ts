@@ -495,4 +495,12 @@ export const settingsUpdateSchema = z.object({
   phone: z.string().min(1).optional(),
   address: z.string().min(1).optional(),
   maintenanceMode: z.boolean().optional(),
+  // Rich text (HTML from the RichTextEditor), empty allowed: empty means
+  // "no custom text stored" and the Success Stories page shows its
+  // placeholder. Sanitized + blank-normalized by the service on save.
+  ceoMessage: z.string().optional(),
+  visionText: z.string().optional(),
+  // Public image URL for the CEO photo; empty allowed (falls back to
+  // the default photo). Validated as an http(s) URL by the service.
+  ceoPhotoUrl: z.string().optional(),
 });

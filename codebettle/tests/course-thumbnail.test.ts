@@ -8,10 +8,14 @@ import { __resetTestSession, __setTestSession } from '../lib/api-helpers';
 import { createFakeDb, type FakeDb } from './fake-db';
 import type { SessionUser } from '../lib/services/auth-service';
 import {
+  CEO_PHOTO_TYPES,
   COURSE_IMAGE_BUCKET,
+  ceoPhotoImagePathFromUrl,
   courseImagePathFromUrl,
+  deleteCeoPhotoImage,
   deleteCourseImage,
   getCourseImageStorageClient,
+  uploadCeoPhotoImage,
   uploadCourseImage,
 } from '../lib/services/course-image-storage';
 import { COURSE_THUMBNAIL_FALLBACK, isValidThumbnailUrl } from '../lib/thumbnail';
@@ -372,4 +376,111 @@ test('render sites: every course thumbnail renders through CourseThumbnail (brok
   const card = read('components/ui/CourseCard.tsx');
   assert.doesNotMatch(card, /<img\s*\n?\s*src=\{course\.thumbnail\}/);
   assert.match(read('components/ui/CourseThumbnail.tsx'), /COURSE_THUMBNAIL_FALLBACK/);
+});
+
+// ---------------------------------------------------------------------------
+// CEO photo (Success Stories) — upload service + route
+// ---------------------------------------------------------------------------
+
+test('ceo photo upload: JPG/PNG/WebP only (no GIF, unlike thumbnails), 5 MB max, team/ceo/ prefix', async () => {
+  assert.deepEqual([...CEO_PHOTO_TYPES], ['image/jpeg', 'image/png', 'image/webp']);
+  const client = mockClient();
+  const result = await uploadCeoPhotoImage(
+    { name: 'ceo.jpg', type: 'image/jpeg', size: PNG_BYTES.byteLength, arrayBuffer: PNG_BYTES },
+    client,
+  );
+  assert.match(result.path, /^team\/ceo\/[0-9a-f-]+\.jpg$/);
+  assert.ok(result.url.includes(`/course-images/${result.path}`));
+  const calls = (client as unknown as { __calls: { bucket: string; path?: string }[] }).__calls;
+  assert.equal(calls[0].bucket, 'course-images');
+  assert.equal(calls[0].path, result.path);
+
+  // GIF is rejected here even though thumbnails allow it.
+  await assert.rejects(
+    uploadCeoPhotoImage({ name: 'ceo.gif', type: 'image/gif', size: 100, arrayBuffer: PNG_BYTES }, mockClient()),
+    /Only JPG, PNG or WebP/,
+  );
+  // Non-image rejected; oversize rejected — and neither reaches storage.
+  const noCall = mockClient();
+  await assert.rejects(
+    uploadCeoPhotoImage({ name: 'notes.pdf', type: 'application/pdf', size: 100, arrayBuffer: PNG_BYTES }, noCall),
+    /Only JPG, PNG or WebP/,
+  );
+  assert.equal((noCall as unknown as { __calls: unknown[] }).__calls.length, 0);
+  await assert.rejects(
+    uploadCeoPhotoImage({ name: 'big.png', type: 'image/png', size: 6 * 1024 * 1024, arrayBuffer: PNG_BYTES }, mockClient()),
+    /5 MB or smaller/,
+  );
+});
+
+test('ceo photo upload surfaces a storage failure; delete + path helper', async () => {
+  const failing = mockClient({ upload: async () => ({ data: null, error: { message: 'Bucket not found' } }) });
+  await assert.rejects(
+    uploadCeoPhotoImage({ name: 'ceo.png', type: 'image/png', size: PNG_BYTES.byteLength, arrayBuffer: PNG_BYTES }, failing),
+    /Bucket not found/,
+  );
+  const client = mockClient();
+  await deleteCeoPhotoImage('team/ceo/abc.png', client);
+  const calls = (client as unknown as { __calls: { bucket: string; path?: string }[] }).__calls;
+  assert.equal(calls[0].bucket, 'course-images');
+  assert.equal(calls[0].path, 'team/ceo/abc.png');
+
+  assert.equal(
+    ceoPhotoImagePathFromUrl('https://example.supabase.co/storage/v1/object/public/course-images/team/ceo/abc.jpg'),
+    'team/ceo/abc.jpg',
+  );
+  // Anything outside team/ceo/ is never a CEO photo.
+  assert.equal(ceoPhotoImagePathFromUrl('https://example.supabase.co/storage/v1/object/public/course-images/courses/c1/x.jpg'), null);
+  assert.equal(ceoPhotoImagePathFromUrl('https://example.supabase.co/storage/v1/object/public/course-images/team/ahmad-hassan-ceo.png'), null);
+  assert.equal(ceoPhotoImagePathFromUrl('https://example.com/ceo.jpg'), null);
+});
+
+function ceoPhotoForm(): FormData {
+  const form = new FormData();
+  form.append('photo', new File([PNG_BYTES], 'ceo.png', { type: 'image/png' }));
+  return form;
+}
+
+test('POST /api/admin/settings/ceo-photo: 401 signed out, 403 student, 400 no file / wrong type / GIF, 503 without a service-role key', async () => {
+  const route = await import('../app/api/admin/settings/ceo-photo/route');
+  const prevKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  const prevUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  try {
+    delete process.env.SUPABASE_SERVICE_ROLE_KEY;
+    process.env.NEXT_PUBLIC_SUPABASE_URL = 'https://example.supabase.co';
+
+    __setTestSession(null);
+    const anon = await route.POST(new NextRequest('http://localhost/api/admin/settings/ceo-photo', { method: 'POST', body: ceoPhotoForm() }));
+    assert.equal(anon.status, 401);
+
+    __setTestSession(STU1);
+    const student = await route.POST(new NextRequest('http://localhost/api/admin/settings/ceo-photo', { method: 'POST', body: ceoPhotoForm() }));
+    assert.equal(student.status, 403);
+
+    __setTestSession({ ...ADMIN, isAdmin: true } as SessionUser);
+    const noFile = await route.POST(new NextRequest('http://localhost/api/admin/settings/ceo-photo', { method: 'POST', body: new FormData() }));
+    assert.equal(noFile.status, 400);
+    assert.match((await noFile.json()).error, /image file is required/);
+
+    const txt = new FormData();
+    txt.append('photo', new File(['hello'], 'notes.txt', { type: 'text/plain' }));
+    const badType = await route.POST(new NextRequest('http://localhost/api/admin/settings/ceo-photo', { method: 'POST', body: txt }));
+    assert.equal(badType.status, 400);
+    assert.match((await badType.json()).error, /Only JPG, PNG or WebP/);
+
+    const gif = new FormData();
+    gif.append('photo', new File([PNG_BYTES], 'ceo.gif', { type: 'image/gif' }));
+    const gifRes = await route.POST(new NextRequest('http://localhost/api/admin/settings/ceo-photo', { method: 'POST', body: gif }));
+    assert.equal(gifRes.status, 400);
+    assert.match((await gifRes.json()).error, /Only JPG, PNG or WebP/);
+
+    const noKey = await route.POST(new NextRequest('http://localhost/api/admin/settings/ceo-photo', { method: 'POST', body: ceoPhotoForm() }));
+    assert.equal(noKey.status, 503);
+    assert.match((await noKey.json()).error, /not configured/);
+  } finally {
+    if (prevKey === undefined) delete process.env.SUPABASE_SERVICE_ROLE_KEY;
+    else process.env.SUPABASE_SERVICE_ROLE_KEY = prevKey;
+    if (prevUrl === undefined) delete process.env.NEXT_PUBLIC_SUPABASE_URL;
+    else process.env.NEXT_PUBLIC_SUPABASE_URL = prevUrl;
+  }
 });

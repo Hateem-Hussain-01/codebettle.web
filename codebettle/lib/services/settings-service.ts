@@ -2,8 +2,10 @@
  * Site settings service (Settings fix).
  *
  * The logic behind the Admin Settings page: General (site name +
- * description), Contact (email / phone / address) and Maintenance
- * Mode. Settings are stored as key/value rows (SiteSetting model,
+ * description), Contact (email / phone / address), Maintenance
+ * Mode, and the Success Stories texts (CEO message + vision, both
+ * plain text, empty = the page shows its placeholder). Settings are
+ * stored as key/value rows (SiteSetting model,
  * lib/db/settings.ts); NO seed rows exist — the defaults below are
  * the source of truth and the service falls back to them whenever a
  * row is missing.
@@ -30,6 +32,8 @@
  * performs no auth check of its own.
  */
 import { listSiteSettings, upsertSiteSetting } from '../db/settings';
+import { sanitizeEmailHtml } from '../sanitize';
+import { isValidThumbnailUrl } from '../thumbnail';
 
 export type SiteSettings = {
   siteName: string;
@@ -38,6 +42,25 @@ export type SiteSettings = {
   phone: string;
   address: string;
   maintenanceMode: boolean;
+  /**
+   * Success Stories page: CEO message, RICH TEXT (HTML from the admin
+   * RichTextEditor). Empty = show the page placeholder. Sanitized on
+   * save (below) and again on render.
+   */
+  ceoMessage: string;
+  /**
+   * Success Stories page: CodeBettle vision, RICH TEXT (HTML). Empty =
+   * show the page placeholder. Sanitized on save and again on render.
+   */
+  visionText: string;
+  /**
+   * Success Stories page: CEO photo URL (public Storage URL). Default
+   * is Ahmad Hassan's photo, uploaded 13 Nov 2026 to the public
+   * `course-images` bucket. Changed from Admin > Settings via the
+   * "Update Image" button (upload first, then the URL is saved here).
+   * Empty = fall back to the default photo below.
+   */
+  ceoPhotoUrl: string;
 };
 
 export const DEFAULT_SETTINGS: SiteSettings = {
@@ -48,6 +71,16 @@ export const DEFAULT_SETTINGS: SiteSettings = {
   phone: '+92 305 5261893',
   address: 'Lahore, Punjab, Pakistan',
   maintenanceMode: false,
+  // Empty on purpose: the Success Stories page falls back to its
+  // in-code placeholder text while no custom message is saved.
+  ceoMessage: '',
+  visionText: '',
+  // Ahmad Hassan's photo, uploaded as-is 13 Nov 2026 to the PUBLIC
+  // course-images bucket (verified live, byte-identical to the file
+  // Eman sent). The public page shows this until an admin uploads a
+  // new photo from Settings.
+  ceoPhotoUrl:
+    'https://phuzoxshzdfzjvephlhq.supabase.co/storage/v1/object/public/course-images/team/ahmad-hassan-ceo.png',
 };
 
 /** Storage key for each setting field. All values are strings. */
@@ -58,6 +91,9 @@ export const SETTING_KEYS: Record<keyof SiteSettings, string> = {
   phone: 'contact.phone',
   address: 'contact.address',
   maintenanceMode: 'maintenance.enabled',
+  ceoMessage: 'successStories.ceoMessage',
+  visionText: 'successStories.visionText',
+  ceoPhotoUrl: 'successStories.ceoPhotoUrl',
 };
 
 const STRING_FIELDS: Array<keyof SiteSettings> = [
@@ -66,6 +102,9 @@ const STRING_FIELDS: Array<keyof SiteSettings> = [
   'contactEmail',
   'phone',
   'address',
+  'ceoMessage',
+  'visionText',
+  'ceoPhotoUrl',
 ];
 
 /** Thrown by updateSiteSettings() for invalid input (HTTP 400). */
@@ -78,6 +117,28 @@ export class SettingsValidationError extends Error {
 
 function isEmailLike(value: string): boolean {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+}
+
+/**
+ * Fields that hold RICH TEXT (HTML from the RichTextEditor). Saved
+ * sanitized (same sanitizer the email builder uses) and rendered as
+ * sanitized HTML on the public Success Stories page — never raw.
+ */
+const RICH_TEXT_FIELDS: Array<keyof SiteSettings> = ['ceoMessage', 'visionText'];
+
+/** True when rich-text HTML carries no visible text (an editor left empty produces '<p><br></p>' etc.). */
+function isBlankRichText(value: string): boolean {
+  const text = value
+    .replace(/<[^>]*>/g, '')
+    .replace(/&nbsp;/gi, '')
+    .trim();
+  return text === '';
+}
+
+/** Clean a rich-text value for storage: blank editor HTML -> '', otherwise sanitized HTML. */
+function cleanRichText(value: string): string {
+  if (isBlankRichText(value)) return '';
+  return sanitizeEmailHtml(value);
 }
 
 /**
@@ -102,10 +163,36 @@ function validatePatch(patch: Partial<SiteSettings>): Array<{ field: keyof SiteS
     if (!STRING_FIELDS.includes(field)) {
       throw new SettingsValidationError(`Unknown setting: ${String(field)}`);
     }
-    if (typeof raw !== 'string' || !raw.trim()) {
-      throw new SettingsValidationError(`${field} must not be empty`);
+    if (typeof raw !== 'string') {
+      throw new SettingsValidationError(`${field} must be a string`);
     }
     const value = raw.trim();
+    // ceoPhotoUrl: a public image URL, or empty (falls back to the
+    // default photo on read). Anything else is rejected — no
+    // javascript:/data:/relative URLs, ever.
+    if (field === 'ceoPhotoUrl') {
+      if (!value) {
+        cleaned.push({ field, stored: '' });
+        continue;
+      }
+      if (!isValidThumbnailUrl(value)) {
+        throw new SettingsValidationError('CEO photo must be a valid http(s) image URL');
+      }
+      cleaned.push({ field, stored: value });
+      continue;
+    }
+    // ceoMessage / visionText are RICH TEXT: sanitize on save (same
+    // sanitizer the email builder uses) and normalize a blank editor
+    // ('<p><br></p>') to '' — empty means "no custom text stored" and
+    // the Success Stories page shows its placeholder. Every other
+    // string field must stay non-empty.
+    if (RICH_TEXT_FIELDS.includes(field)) {
+      cleaned.push({ field, stored: cleanRichText(value) });
+      continue;
+    }
+    if (!value) {
+      throw new SettingsValidationError(`${field} must not be empty`);
+    }
     if (field === 'contactEmail' && !isEmailLike(value)) {
       throw new SettingsValidationError('Contact email must be a valid email address');
     }
@@ -129,6 +216,12 @@ function rowsToSettings(rows: Array<{ key: string; value: string }>): SiteSettin
     phone: pickString('phone'),
     address: pickString('address'),
     maintenanceMode: byKey.get(SETTING_KEYS.maintenanceMode) === 'true',
+    // Default is '' for both text fields: the Success Stories page
+    // treats an empty value as "no custom text" and shows its
+    // placeholder. The photo default is the uploaded CEO photo URL.
+    ceoMessage: pickString('ceoMessage'),
+    visionText: pickString('visionText'),
+    ceoPhotoUrl: pickString('ceoPhotoUrl'),
   };
 }
 
