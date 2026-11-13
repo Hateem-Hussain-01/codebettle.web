@@ -1457,3 +1457,39 @@ export type FormSubmissionRow = Pick<
   | 'reviewed'
   | 'submittedAt'
 >;
+
+/**
+ * An admin email template (email builder, GHL-style).
+ * `type` is 'broadcast' (admin-composed, sent via the notifications
+ * broadcast) or 'system' (a code template mirrored here for editing —
+ * system emails still render from lib/email/templates.ts).
+ * `htmlBody` is the email body HTML; placeholders like {{STUDENT_NAME}}
+ * are resolved per recipient at send time (lib/email/placeholders.ts).
+ * `isActive` false = draft (listed, not offered in the broadcast picker).
+ */
+export type EmailTemplateType = 'broadcast' | 'system';
+
+export interface EmailTemplate {
+  id: string;
+  name: string;
+  subject: string;
+  htmlBody: string;
+  type: EmailTemplateType;
+  isActive: boolean;
+  createdById: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type EmailTemplateRow = Pick<
+  Models.public_EmailTemplate,
+  | 'id'
+  | 'name'
+  | 'subject'
+  | 'htmlBody'
+  | 'type'
+  | 'isActive'
+  | 'createdById'
+  | 'createdAt'
+  | 'updatedAt'
+>;

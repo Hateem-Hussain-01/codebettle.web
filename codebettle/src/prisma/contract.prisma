@@ -190,6 +190,7 @@ model User {
   supportRequests    SupportRequest[]   @relation("SupportRequestStudent")
   supportRequestsResolved SupportRequest[] @relation("SupportRequestResolver")
   createdForms       FormDefinition[] @relation("FormDefinitionCreator")
+  emailTemplates     EmailTemplate[]  @relation("EmailTemplateCreator")
   formSubmissions    FormSubmission[] @relation("FormSubmissionSubmitter")
   paymentSubmissionsReviewed PaymentSubmission[] @relation("PaymentSubmissionReviewer")
   invitationsSent    Invitation[]            @relation("InvitationInviter")
@@ -743,6 +744,28 @@ model FormSubmission {
   submittedAt DateTime       @default(now()) @onCreate(now())
 
   @@index([formId, submittedAt])
+}
+
+// Admin email template (email builder, GHL-style).
+// `type` is 'broadcast' (admin-composed, sent via the notifications
+// broadcast) or 'system' (a code template mirrored here for editing —
+// system emails themselves still render from lib/email/templates.ts).
+// `htmlBody` is the email body HTML; placeholders like {{STUDENT_NAME}}
+// are resolved per recipient at send time (see lib/email/placeholders.ts).
+// `isActive` false = draft (listed, not offered in the broadcast picker).
+model EmailTemplate {
+  id          String   @id @onCreate(cuid(2))
+  name        String
+  subject     String
+  htmlBody    String
+  type        String   @default("broadcast")
+  isActive    Boolean  @default(true)
+  createdById String
+  createdBy   User     @relation("EmailTemplateCreator", fields: [createdById], references: [id])
+  createdAt   DateTime @default(now()) @onCreate(now())
+  updatedAt   temporal.UpdatedAt
+
+  @@index([type, createdAt])
 }
 
 model InstructorApplication {

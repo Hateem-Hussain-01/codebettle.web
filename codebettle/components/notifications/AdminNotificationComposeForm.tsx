@@ -30,6 +30,32 @@ interface UserPick {
   role: string;
 }
 
+interface TemplatePick {
+  id: string;
+  name: string;
+  subject: string;
+  htmlBody: string;
+  isActive: boolean;
+}
+
+/** Plain-text preview of a template's HTML body (for the message field). */
+function stripTemplateHtml(html: string): string {
+  return html
+    .replace(/<(br|p|div|h[1-6]|li|tr)[^>]*>/gi, '\n')
+    .replace(/<\/[^>]+>/g, '')
+    .replace(/<[^>]+>/g, '')
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&nbsp;/g, ' ')
+    .split('\n')
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .join('\n');
+}
+
 /**
  * Admin notification compose form (Phase 3, Worker B).
  *
@@ -68,7 +94,10 @@ export default function AdminNotificationComposeForm({ courses }: ComposeFormPro
     courseId: courses[0]?.id ?? '',
     requiresAcknowledge: false,
     linkUrl: '',
+    templateId: '',
   });
+  const [templates, setTemplates] = useState<TemplatePick[]>([]);
+  const [templatesState, setTemplatesState] = useState<'loading' | 'ready' | 'unavailable'>('loading');
   const [pickedUser, setPickedUser] = useState<UserPick | null>(null);
   const [userQuery, setUserQuery] = useState('');
   const [userResults, setUserResults] = useState<UserPick[]>([]);
@@ -76,6 +105,55 @@ export default function AdminNotificationComposeForm({ courses }: ComposeFormPro
   const [sending, setSending] = useState(false);
   const [result, setResult] = useState<{ created: number; skipped: number } | null>(null);
   const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Email-builder templates for the picker. A 403 (admin lacks the
+  // email-templates area) or a missing table just hides the picker —
+  // the compose form still works with typed text.
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch('/api/admin/email-templates');
+        if (!res.ok) throw new Error('Templates unavailable');
+        const data = await res.json();
+        if (cancelled) return;
+        const list: TemplatePick[] = (Array.isArray(data.templates) ? data.templates : []).filter(
+          (t: TemplatePick) => t.isActive,
+        );
+        setTemplates(list);
+        setTemplatesState('ready');
+      } catch {
+        if (!cancelled) setTemplatesState('unavailable');
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const pickTemplate = (templateId: string) => {
+    if (!templateId) {
+      setForm((f) => ({ ...f, templateId: '' }));
+      return;
+    }
+    const template = templates.find((t) => t.id === templateId);
+    if (!template) return;
+    // Fill the fields as a preview of what the template sends;
+    // placeholders ({{STUDENT_NAME}} …) are resolved per recipient
+    // by the server at send time.
+    setForm((f) => ({
+      ...f,
+      templateId: template.id,
+      title: template.subject,
+      body: stripTemplateHtml(template.htmlBody),
+    }));
+  };
+
+  // Editing the title/body after picking a template clears the pick:
+  // the edited text is then sent as-is (no placeholder resolution).
+  const editField = (patch: Partial<ComposeFormState>) => {
+    setForm((f) => ({ ...f, ...patch, templateId: '' }));
+  };
 
   // Debounced user search against the existing admin users endpoint.
   useEffect(() => {
@@ -134,6 +212,7 @@ export default function AdminNotificationComposeForm({ courses }: ComposeFormPro
       courseId: courses[0]?.id ?? '',
       requiresAcknowledge: false,
       linkUrl: '',
+      templateId: '',
     });
     setPickedUser(null);
     setUserQuery('');
@@ -187,17 +266,37 @@ export default function AdminNotificationComposeForm({ courses }: ComposeFormPro
       )}
 
       <Card className="p-5 sm:p-6 space-y-4">
+        {templatesState === 'ready' && templates.length > 0 && (
+          <div>
+            <Select
+              label="Use email template (optional)"
+              value={form.templateId}
+              onChange={(e) => pickTemplate(e.target.value)}
+              options={[
+                { value: '', label: 'No template — write your own text' },
+                ...templates.map((t) => ({ value: t.id, label: t.name })),
+              ]}
+            />
+            {form.templateId && (
+              <p className="text-muted text-xs mt-1.5">
+                The template&apos;s subject and message are filled in below. Placeholders like
+                {' {{STUDENT_NAME}} '} are replaced with each recipient&apos;s own data when
+                sending. Editing the title or message clears the template.
+              </p>
+            )}
+          </div>
+        )}
         <Input
           label="Title"
           placeholder="Notification title"
           value={form.title}
-          onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
+          onChange={(e) => editField({ title: e.target.value })}
         />
         <Textarea
           label="Message"
           placeholder="Write the notification message…"
           value={form.body}
-          onChange={(e) => setForm((f) => ({ ...f, body: e.target.value }))}
+          onChange={(e) => editField({ body: e.target.value })}
           rows={5}
         />
         <Select

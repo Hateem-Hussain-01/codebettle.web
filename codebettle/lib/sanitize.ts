@@ -49,3 +49,67 @@ export function sanitizeBlogHtml(html: string): string {
     },
   });
 }
+
+// ---------------------------------------------------------------------------
+// Email HTML (admin email builder).
+//
+// Same idea as the blog sanitizer, but images ARE allowed — the builder's
+// image-insert embeds them as base64 data URIs (self-contained emails,
+// no external image loads). Only data:image/* sources survive; an
+// external (http/https) img src is removed entirely, so a template can
+// never phone home or break on a dead link. No style attributes, no
+// event handlers, links only to http/https/mailto. Sanitized on SAVE
+// (email-template service) and again on RENDER (renderEmailTemplate) —
+// the render pass covers templates stored before this fix.
+// ---------------------------------------------------------------------------
+
+const EMAIL_ALLOWED_TAGS = [
+  'p', 'h2', 'h3', 'h4',
+  'strong', 'b', 'em', 'i', 'u', 's',
+  'ul', 'ol', 'li',
+  'a', 'blockquote', 'code', 'pre', 'br', 'hr', 'span', 'div', 'img',
+];
+
+const EMAIL_ALLOWED_ATTRIBUTES: Record<string, string[]> = {
+  a: ['href', 'target', 'rel'],
+  // 'style' is listed only so the transform-added max-width style
+  // survives — the transform overwrites any input style with the safe
+  // value, so an admin-authored style can never pass through.
+  img: ['src', 'alt', 'width', 'height', 'style'],
+};
+
+/** Strip everything outside the email allowlist. Never throws. */
+export function sanitizeEmailHtml(html: string): string {
+  if (!html) return html;
+  return sanitizeHtml(html, {
+    allowedTags: EMAIL_ALLOWED_TAGS,
+    allowedAttributes: EMAIL_ALLOWED_ATTRIBUTES,
+    allowedSchemes: ['http', 'https', 'mailto'],
+    allowedSchemesByTag: {
+      img: ['data'],
+    },
+    // Drop any img whose src is not an embedded image (external URLs
+    // are never allowed in emails).
+    exclusiveFilter: (frame) =>
+      frame.tag === 'img' && !String(frame.attribs.src || '').startsWith('data:image/'),
+    transformTags: {
+      a: (tagName, attribs) => ({
+        tagName,
+        attribs: {
+          ...attribs,
+          ...(attribs.target === '_blank' ? { rel: 'noopener noreferrer' } : {}),
+        },
+      }),
+      // Constrain embedded images to the email width (no overflow on
+      // narrow screens). The style is added here, never accepted from
+      // input — style attributes are not in the allowlist.
+      img: (tagName, attribs) => ({
+        tagName,
+        attribs: {
+          ...attribs,
+          style: 'max-width: 100%; height: auto; display: block;',
+        },
+      }),
+    },
+  });
+}

@@ -6,7 +6,7 @@ import { hasAdminCapability } from '@/lib/rbac';
 import { isSuperAdmin } from '@/lib/super-admin';
 import { canSeeAuditLog } from '@/components/audit/audit-helpers';
 import PortalLayout from '@/components/layout/PortalLayout';
-import { LayoutDashboard, BookOpen, Users, GraduationCap, ClipboardList, Tag, Bell, FileText, Newspaper, BarChart2, Award, Settings, UserCheck, Mail, Megaphone, MessageSquare, ShieldCheck, ScrollText, ListChecks, User } from 'lucide-react';
+import { LayoutDashboard, BookOpen, Users, GraduationCap, ClipboardList, Tag, Bell, FileText, Newspaper, BarChart2, Award, Settings, UserCheck, Mail, Megaphone, MessageSquare, ShieldCheck, ScrollText, ListChecks, Mails, User } from 'lucide-react';
 
 const NAV_ICONS = {
   dashboard: <LayoutDashboard className="w-5 h-5" />,
@@ -27,6 +27,8 @@ const NAV_ICONS = {
   applications: <UserCheck className="w-5 h-5" />,
   // Phase 6 — Forms Builder sidebar icon.
   forms: <ListChecks className="w-5 h-5" />,
+  // Email builder sidebar icon.
+  'email-templates': <Mails className="w-5 h-5" />,
   settings: <Settings className="w-5 h-5" />,
 } as const;
 

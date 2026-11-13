@@ -12,7 +12,7 @@ import { getCourseById } from '../db/courses';
 import { validateCoupon } from '../db/coupons';
 import { getUserById } from '../db/users';
 import { logAudit } from '../db/audit';
-import { onCertificateIssued, onCourseCompleted, onEnrollmentCreated } from './notification-service';
+import { onCertificateIssued, onCourseCompleted, onEnrollmentCreated, onEnrollmentCreatedForInstructor } from './notification-service';
 import type { Certificate, Enrollment, EnrollmentPaymentStatus } from '../db/types';
 import { badRequest, conflict, forbidden, notFound, type Actor, type ServiceError } from './errors';
 import { issueCertificateWithRetry } from './certificate-service';
@@ -77,6 +77,8 @@ export async function createEnrollmentService(
   });
   // Notify the student (Phase 4 hook — best-effort, never throws).
   await onEnrollmentCreated(created.enrollment);
+  // Notify the instructor (name only — never the fee).
+  await onEnrollmentCreatedForInstructor(created.enrollment);
   return { enrollment: created.enrollment };
 }
 
@@ -155,6 +157,8 @@ export async function enrollSelfService(
   });
   // Notify the student (Phase 4 hook — best-effort, never throws).
   await onEnrollmentCreated(created.enrollment);
+  // Notify the instructor (name only — never the fee).
+  await onEnrollmentCreatedForInstructor(created.enrollment);
   return { enrollment: created.enrollment };
 }
 

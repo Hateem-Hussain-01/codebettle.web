@@ -128,6 +128,13 @@ export interface ComposeFormState {
   courseId: string;
   requiresAcknowledge: boolean;
   linkUrl: string;
+  /**
+   * Email-builder template picked for this broadcast ('' = none).
+   * When set, the server sends the template's subject/body with
+   * placeholders resolved per recipient; the title/body fields above
+   * are only the on-screen preview of the template.
+   */
+  templateId?: string;
 }
 
 export const COMPOSE_CATEGORIES: { value: NotificationCategory; label: string }[] = [
@@ -148,8 +155,12 @@ export function buildComposePayload(
 ): { ok: true; body: Record<string, unknown> } | { ok: false; error: string } {
   const title = form.title.trim();
   const body = form.body.trim();
-  if (!title) return { ok: false, error: 'Title is required' };
-  if (!body) return { ok: false, error: 'Message is required' };
+  // With a template picked, title/body are only the preview — the
+  // server sends the stored template instead.
+  if (!form.templateId) {
+    if (!title) return { ok: false, error: 'Title is required' };
+    if (!body) return { ok: false, error: 'Message is required' };
+  }
 
   const target: Record<string, unknown> = {};
   if (form.targetType === 'all') {
@@ -178,5 +189,6 @@ export function buildComposePayload(
   };
   const linkUrl = form.linkUrl.trim();
   if (linkUrl) payload.linkUrl = linkUrl;
+  if (form.templateId) payload.templateId = form.templateId;
   return { ok: true, body: payload };
 }

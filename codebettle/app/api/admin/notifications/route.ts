@@ -4,6 +4,7 @@ import { z } from 'zod';
 import { sendAdminNotification } from '@/lib/services/notification-service';
 import { getCourseById } from '@/lib/db/courses';
 import { getUserById } from '@/lib/db/users';
+import { getEmailTemplateById, isEmailTemplateTableMissing } from '@/lib/db/email-templates';
 import { logAudit } from '@/lib/db/audit';
 
 /**
@@ -22,8 +23,12 @@ import { logAudit } from '@/lib/db/audit';
  *         | { type: 'role', role: 'student' | 'instructor' | 'admin' }
  *         | { type: 'user', userId: string }
  *         | { type: 'course', courseId: string },
- *   requiresAcknowledge?: boolean, linkUrl?: string
+ *   requiresAcknowledge?: boolean, linkUrl?: string,
+ *   templateId?: string
  * }
+ * When templateId is given, the saved email template's subject/body
+ * are used instead of the raw title/body (which become optional) and
+ * placeholders are resolved per recipient. See sendAdminNotification.
  * Creates one Notification row per recipient. important /
  * special_notice categories bypass the per-event prefs toggle (see
  * notification-service.ts) — they must reach everyone, otherwise the
@@ -41,13 +46,17 @@ const targetSchema = z.discriminatedUnion('type', [
 ]);
 
 const adminSendSchema = z.object({
-  title: z.string().trim().min(1).max(200),
-  body: z.string().trim().min(1).max(5000),
+  title: z.string().trim().min(1).max(200).optional(),
+  body: z.string().trim().min(1).max(5000).optional(),
   category: z.enum(['general', 'important', 'warning', 'special_notice']),
   target: targetSchema,
   requiresAcknowledge: z.boolean().optional(),
   linkUrl: z.string().trim().max(2000).optional(),
-});
+  templateId: z.string().trim().min(1).optional(),
+}).refine(
+  (v) => (v.templateId ? true : Boolean(v.title && v.body)),
+  { message: 'Title and message are required (or pick an email template)' },
+);
 
 export async function POST(request: NextRequest) {
   const auth = await requireAdminArea('notifications');
@@ -61,7 +70,7 @@ export async function POST(request: NextRequest) {
       { status: 400 },
     );
   }
-  const { title, body: text, category, target, requiresAcknowledge, linkUrl } = parsed.data;
+  const { title, body: text, category, target, requiresAcknowledge, linkUrl, templateId } = parsed.data;
   if (target.type === 'user') {
     const user = await getUserById(target.userId);
     if (!user) return NextResponse.json({ error: 'User not found' }, { status: 404 });
@@ -69,6 +78,20 @@ export async function POST(request: NextRequest) {
   if (target.type === 'course') {
     const course = await getCourseById(target.courseId);
     if (!course) return NextResponse.json({ error: 'Course not found' }, { status: 404 });
+  }
+  if (templateId) {
+    try {
+      const template = await getEmailTemplateById(templateId);
+      if (!template) return NextResponse.json({ error: 'Email template not found' }, { status: 404 });
+    } catch (error) {
+      if (isEmailTemplateTableMissing(error)) {
+        return NextResponse.json(
+          { error: 'Email templates are not set up yet — run the email-template SQL migration first' },
+          { status: 400 },
+        );
+      }
+      throw error;
+    }
   }
   if (linkUrl !== undefined && linkUrl !== '') {
     try {
@@ -81,18 +104,19 @@ export async function POST(request: NextRequest) {
     }
   }
   const summary = await sendAdminNotification({
-    title,
-    body: text,
+    title: title ?? '',
+    body: text ?? '',
     category,
     target,
     requiresAcknowledge: requiresAcknowledge ?? false,
     linkUrl: linkUrl || undefined,
+    templateId: templateId || undefined,
   });
   await logAudit({
     actorId: auth.session.id,
     action: 'admin.notification.send',
     entity: 'Notification',
-    detail: `${category} -> ${target.type}${target.type === 'role' ? `:${target.role}` : ''}: ${title} (created ${summary.sent}, skipped ${summary.skipped})`,
+    detail: `${category} -> ${target.type}${target.type === 'role' ? `:${target.role}` : ''}${templateId ? ` (template ${templateId})` : `: ${title}`} (created ${summary.sent}, skipped ${summary.skipped})`,
   });
   return NextResponse.json({ created: summary.sent, skipped: summary.skipped });
 }
