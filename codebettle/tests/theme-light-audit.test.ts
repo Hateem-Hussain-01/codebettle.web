@@ -77,6 +77,21 @@ const ALLOWLIST: AllowEntry[] = [
     match: 'text-white',
     reason: 'Wishlist heart: white icon on the dark photo scrim in both themes.',
   },
+  {
+    file: 'app/success-stories/[id]/page.tsx',
+    match: 'bg-black',
+    reason: 'Video testimonial player: black letterbox in both themes (media surface, not a theme surface).',
+  },
+  {
+    file: 'app/success-stories/page.tsx',
+    match: 'bg-black',
+    reason: 'Portrait video player: black letterbox in both themes (media surface, not a theme surface).',
+  },
+  {
+    file: 'app/admin/success-stories/[id]/success-story-detail-client.tsx',
+    match: 'bg-black',
+    reason: 'Video testimonial player: black letterbox in both themes (media surface, not a theme surface).',
+  },
   // Rule 3 — hex colour literal inside a className value.
   {
     file: 'components/auth/AuthShell.tsx',

@@ -77,6 +77,9 @@ const NULLABLE_FIELDS: Record<string, string[]> = {
   Note: ['courseId'],
   PaymentAccount: ['bankName', 'accountNumber', 'iban', 'walletNumber', 'instructions'],
   PaymentSubmission: ['paymentAccountId', 'proofUrl', 'reviewedBy', 'reviewedAt', 'reviewNote'],
+  SuccessStorySubmission: ['submitterId', 'profilePicturePath', 'city', 'designation', 'linkedinUrl', 'courseId', 'batchId', 'batchNumber', 'joinedAt', 'instructorName', 'beforeJoining', 'challenges', 'howHelped', 'achievementsAfter', 'biggestAchievement', 'advice', 'githubUrl', 'instagramUrl', 'youtubeUrl', 'portfolioUrl', 'lablabUrl', 'leetcodeUrl', 'hackerrankUrl', 'otherProfileUrl', 'videoPath', 'videoUrl', 'videoDescription', 'adminNote', 'reviewedBy', 'reviewedAt'],
+  SuccessStoryAchievement: ['organization', 'description', 'achievedAt'],
+  SuccessStoryEvidence: ['label', 'fileName', 'mime', 'size'],
 };
 
 let idCounter = 0;

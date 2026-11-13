@@ -67,6 +67,12 @@ import type {
   SocialLinks,
   SupportRequest,
   SupportRequestRow,
+  SuccessStoryAchievement,
+  SuccessStoryAchievementRow,
+  SuccessStoryEvidence,
+  SuccessStoryEvidenceRow,
+  SuccessStorySubmission,
+  SuccessStorySubmissionRow,
   Testimonial,
   TestimonialRow,
   User,
@@ -627,6 +633,93 @@ export function mapTestimonialRow(row: TestimonialRow): Testimonial {
     rating: row.rating,
     comment: row.comment,
     date: dateToString(row.date),
+  };
+}
+
+export function mapSuccessStoryEvidenceRow(row: SuccessStoryEvidenceRow): SuccessStoryEvidence {
+  return {
+    id: row.id,
+    achievementId: row.achievementId,
+    kind: row.kind === 'link' ? 'link' : 'file',
+    label: row.label ?? undefined,
+    url: row.url,
+    fileName: row.fileName ?? undefined,
+    mime: row.mime ?? undefined,
+    size: row.size ?? undefined,
+    createdAt: dateToString(row.createdAt),
+  };
+}
+
+export function mapSuccessStoryAchievementRow(
+  row: SuccessStoryAchievementRow,
+  evidence: SuccessStoryEvidenceRow[] = [],
+): SuccessStoryAchievement {
+  return {
+    id: row.id,
+    submissionId: row.submissionId,
+    category: row.category,
+    title: row.title,
+    organization: row.organization ?? undefined,
+    description: row.description ?? undefined,
+    achievedAt: row.achievedAt ? dateToString(row.achievedAt) : undefined,
+    createdAt: dateToString(row.createdAt),
+    evidence: evidence.map(mapSuccessStoryEvidenceRow),
+  };
+}
+
+export function mapSuccessStorySubmissionRow(
+  row: SuccessStorySubmissionRow,
+  achievements: { achievement: SuccessStoryAchievementRow; evidence: SuccessStoryEvidenceRow[] }[] = [],
+): SuccessStorySubmission {
+  return {
+    id: row.id,
+    submissionNumber: row.submissionNumber,
+    submitterId: row.submitterId ?? undefined,
+    fullName: row.fullName,
+    email: row.email,
+    profilePicturePath: row.profilePicturePath ?? undefined,
+    country: row.country,
+    city: row.city ?? undefined,
+    designation: row.designation ?? undefined,
+    linkedinUrl: row.linkedinUrl ?? undefined,
+    courseId: row.courseId ?? undefined,
+    courseTitle: row.courseTitle,
+    batchId: row.batchId ?? undefined,
+    batchNumber: row.batchNumber ?? undefined,
+    joinedAt: row.joinedAt ? dateToString(row.joinedAt) : undefined,
+    instructorName: row.instructorName ?? undefined,
+    skillsLearned: row.skillsLearned,
+    experience: row.experience,
+    story: row.story,
+    beforeJoining: row.beforeJoining ?? undefined,
+    challenges: row.challenges ?? undefined,
+    howHelped: row.howHelped ?? undefined,
+    achievementsAfter: row.achievementsAfter ?? undefined,
+    biggestAchievement: row.biggestAchievement ?? undefined,
+    advice: row.advice ?? undefined,
+    githubUrl: row.githubUrl ?? undefined,
+    instagramUrl: row.instagramUrl ?? undefined,
+    youtubeUrl: row.youtubeUrl ?? undefined,
+    portfolioUrl: row.portfolioUrl ?? undefined,
+    lablabUrl: row.lablabUrl ?? undefined,
+    leetcodeUrl: row.leetcodeUrl ?? undefined,
+    hackerrankUrl: row.hackerrankUrl ?? undefined,
+    otherProfileUrl: row.otherProfileUrl ?? undefined,
+    videoPath: row.videoPath ?? undefined,
+    videoUrl: row.videoUrl ?? undefined,
+    videoDescription: row.videoDescription ?? undefined,
+    consentPublication: row.consentPublication,
+    consentMedia: row.consentMedia,
+    consentAccuracy: row.consentAccuracy,
+    consentContact: row.consentContact,
+    status: row.status,
+    featured: row.featured,
+    adminNote: row.adminNote ?? undefined,
+    reviewedBy: row.reviewedBy ?? undefined,
+    reviewedAt: row.reviewedAt ? dateToString(row.reviewedAt) : undefined,
+    submittedAt: dateToString(row.submittedAt),
+    updatedAt: dateToString(row.updatedAt),
+    achievements: achievements.map((a) => mapSuccessStoryAchievementRow(a.achievement, a.evidence)),
   };
 }
 

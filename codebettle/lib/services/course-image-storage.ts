@@ -196,3 +196,86 @@ export function formCoverImagePathFromUrl(url: string): string | null {
   if (!path.startsWith('forms/') || path === 'forms/') return null;
   return path;
 }
+
+// ---------------------------------------------------------------------------
+// CEO photo (Success Stories page, admin Settings > Success Stories).
+// ---------------------------------------------------------------------------
+//
+// Same bucket, same rules as course thumbnails and form covers — NO new
+// bucket: the CEO photo is public by nature (it renders in an <img> on
+// the public Success Stories page), the `course-images` bucket already
+// exists and is public, and the 5 MB limit is identical. Two deliberate
+// differences from thumbnails: GIF is NOT allowed here (JPG/PNG/WebP
+// only, per the brief), and photos live under a separate `team/ceo/`
+// prefix so they can never be mistaken for a course thumbnail or a form
+// cover, and vice versa.
+//
+// The photo is uploaded first (POST /api/admin/settings/ceo-photo)
+// and the returned public URL is then saved as the `ceoPhotoUrl`
+// setting — the public page reads it from settings, so changing the
+// photo needs no code deploy. An upload that is never saved leaves an
+// orphaned file, which is harmless (unreferenced, publicly unreachable
+// without its UUID URL).
+
+export const CEO_PHOTO_TYPES = ['image/jpeg', 'image/png', 'image/webp'] as const;
+
+export type CeoPhotoFile = CourseImageFile;
+
+/**
+ * Upload a CEO photo to `course-images/team/ceo/<uuid>.<ext>`.
+ * Returns the public URL and the storage path. The URL is what gets
+ * saved to the `ceoPhotoUrl` setting; the path is what
+ * deleteCeoPhotoImage needs. Validation (JPG/PNG/WebP only, 5 MB max)
+ * runs before the client is built, so a bad file is a 400 even when
+ * the service-role key is missing. No database write happens here.
+ */
+export async function uploadCeoPhotoImage(
+  file: CeoPhotoFile,
+  client?: SupabaseClient,
+): Promise<{ url: string; path: string }> {
+  if (!(CEO_PHOTO_TYPES as readonly string[]).includes(file.type)) {
+    throw new Error('Only JPG, PNG or WebP images are allowed');
+  }
+  if (file.size > MAX_COURSE_IMAGE_BYTES) {
+    throw new Error('Image must be 5 MB or smaller');
+  }
+  const bytes = typeof file.arrayBuffer === 'function' ? await file.arrayBuffer() : file.arrayBuffer;
+  const body = Buffer.isBuffer(bytes) ? bytes : Buffer.from(bytes);
+  if (body.byteLength > MAX_COURSE_IMAGE_BYTES) {
+    throw new Error('Image must be 5 MB or smaller');
+  }
+  const storage = client ?? getCourseImageStorageClient();
+  const path = `team/ceo/${randomUUID()}.${EXTENSIONS[file.type]}`;
+  const { data, error } = await storage.storage
+    .from(COURSE_IMAGE_BUCKET)
+    .upload(path, body, { contentType: file.type, upsert: false });
+  if (error || !data) {
+    throw new Error(`CEO photo upload failed: ${error?.message ?? 'unknown error'}`);
+  }
+  const { data: publicUrl } = storage.storage.from(COURSE_IMAGE_BUCKET).getPublicUrl(data.path);
+  return { url: publicUrl.publicUrl, path: data.path };
+}
+
+/** Delete a previously uploaded CEO photo by its storage path (e.g. `team/ceo/<uuid>.jpg`). */
+export async function deleteCeoPhotoImage(path: string, client?: SupabaseClient): Promise<void> {
+  const storage = client ?? getCourseImageStorageClient();
+  const { error } = await storage.storage.from(COURSE_IMAGE_BUCKET).remove([path]);
+  if (error) {
+    throw new Error(`CEO photo delete failed: ${error.message}`);
+  }
+}
+
+/**
+ * Storage path for a CEO photo URL that lives in the `course-images`
+ * bucket (e.g. `team/ceo/<uuid>.jpg`), or null for anything else.
+ * The path must live under `team/ceo/` — a course thumbnail, a form
+ * cover, or an external URL is never a CEO photo.
+ */
+export function ceoPhotoImagePathFromUrl(url: string): string | null {
+  const marker = `/${COURSE_IMAGE_BUCKET}/`;
+  const idx = url.indexOf(marker);
+  if (idx === -1) return null;
+  const path = decodeURIComponent(url.slice(idx + marker.length).split(/[?#]/)[0]);
+  if (!path.startsWith('team/ceo/') || path === 'team/ceo/') return null;
+  return path;
+}

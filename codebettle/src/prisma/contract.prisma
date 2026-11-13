@@ -200,6 +200,7 @@ model User {
   createdForms       FormDefinition[] @relation("FormDefinitionCreator")
   emailTemplates     EmailTemplate[]  @relation("EmailTemplateCreator")
   formSubmissions    FormSubmission[] @relation("FormSubmissionSubmitter")
+  successStorySubmissions SuccessStorySubmission[] @relation("SuccessStorySubmitter")
   paymentSubmissionsReviewed PaymentSubmission[] @relation("PaymentSubmissionReviewer")
   invitationsSent    Invitation[]            @relation("InvitationInviter")
   stageHistory       ApplicationStageHistory[] @relation("StageHistoryActor")
@@ -256,6 +257,7 @@ model Course {
   reviews         Review[]
   certificates    Certificate[]
   announcements   Announcement[]
+  successStories  SuccessStorySubmission[]
   quizzes         Quiz[]
   notes           Note[]
   wishlistEntries Wishlist[]
@@ -312,6 +314,7 @@ model Batch {
   updatedAt    temporal.UpdatedAt
 
   enrollments  Enrollment[]
+  successStories SuccessStorySubmission[]
 
   @@unique([courseId, batchNumber])
   @@index([courseId])
@@ -962,6 +965,119 @@ model Testimonial {
   rating        Int
   comment       String
   date          DateTime @default(now())
+}
+
+// Success story submissions (Submit Your Success Story).
+// A guest or a logged-in student submits a multi-step story; an admin
+// reviews it (pending -> under_review -> approved / rejected) and only
+// approved stories are published on /success-stories. `featured` gives
+// special placement on the public page. Files are NOT stored here —
+// only storage paths (profile picture + video in the public
+// `success-stories` bucket; evidence documents in the private
+// `application-files` bucket, opened via signed URL). The public API
+// never returns email, idempotencyKey, adminNote or reviewer fields.
+enum SuccessStoryStatus {
+  pending
+  under_review
+  approved
+  rejected
+}
+
+model SuccessStorySubmission {
+  id                 String             @id @onCreate(cuid(2))
+  submissionNumber   String             @unique
+  submitterId        String?
+  submitter          User?              @relation("SuccessStorySubmitter", fields: [submitterId], references: [id])
+  // Step 1 — personal information
+  fullName           String
+  email              String
+  profilePicturePath String?
+  country            String
+  city               String?
+  designation        String?
+  linkedinUrl        String?
+  // Step 2 — learning experience
+  courseId           String?
+  course             Course?            @relation(fields: [courseId], references: [id])
+  courseTitle        String
+  batchId            String?
+  batch              Batch?             @relation(fields: [batchId], references: [id])
+  batchNumber        Int?
+  joinedAt           DateTime?
+  instructorName     String?
+  skillsLearned      String
+  experience         String
+  // Step 3 — the journey
+  story              String
+  beforeJoining      String?
+  challenges         String?
+  howHelped          String?
+  achievementsAfter  String?
+  biggestAchievement String?
+  advice             String?
+  // Step 5 — professional & social profiles (all optional)
+  githubUrl          String?
+  instagramUrl       String?
+  youtubeUrl         String?
+  portfolioUrl       String?
+  lablabUrl          String?
+  leetcodeUrl        String?
+  hackerrankUrl      String?
+  otherProfileUrl    String?
+  // Step 6 — video testimonial (optional)
+  videoPath          String?
+  videoUrl           String?
+  videoDescription   String?
+  // Step 7 — consent (publication / media / accuracy are required)
+  consentPublication Boolean
+  consentMedia       Boolean
+  consentAccuracy    Boolean
+  consentContact     Boolean            @default(false)
+  // Review workflow
+  status             SuccessStoryStatus @default(pending)
+  featured           Boolean            @default(false)
+  adminNote          String?
+  reviewedBy         String?
+  reviewedAt         DateTime?
+  idempotencyKey     String?            @unique
+  submittedAt        DateTime           @default(now()) @onCreate(now())
+  updatedAt          temporal.UpdatedAt
+
+  achievements       SuccessStoryAchievement[]
+
+  @@index([status, submittedAt])
+  @@index([email, submittedAt])
+}
+
+model SuccessStoryAchievement {
+  id           String                    @id @onCreate(cuid(2))
+  submissionId String
+  submission   SuccessStorySubmission    @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+  category     String
+  title        String
+  organization String?
+  description  String?
+  achievedAt   DateTime?
+  createdAt    DateTime                  @default(now()) @onCreate(now())
+
+  evidence     SuccessStoryEvidence[]
+
+  @@index([submissionId])
+}
+
+model SuccessStoryEvidence {
+  id            String                  @id @onCreate(cuid(2))
+  achievementId String
+  achievement   SuccessStoryAchievement @relation(fields: [achievementId], references: [id], onDelete: Cascade)
+  kind          String
+  label         String?
+  url           String
+  fileName      String?
+  mime          String?
+  size          Int?
+  createdAt     DateTime                @default(now()) @onCreate(now())
+
+  @@index([achievementId])
 }
 
 model AuditLog {

@@ -42,6 +42,13 @@ interface RichTextEditorProps {
   onChange: (html: string) => void;
   placeholders?: readonly RichTextEditorPlaceholder[];
   disabled?: boolean;
+  /**
+   * Footer note under the editor. Undefined keeps the default email
+   * note; pass a string to show different text (e.g. the Settings
+   * page, where the HTML is shown on the public site, not emailed);
+   * pass null to hide the note entirely.
+   */
+  footerNote?: string | null;
 }
 
 export default function RichTextEditor({
@@ -50,6 +57,7 @@ export default function RichTextEditor({
   onChange,
   placeholders,
   disabled,
+  footerNote,
 }: RichTextEditorProps) {
   const ref = useRef<HTMLDivElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -195,9 +203,8 @@ export default function RichTextEditor({
         className="min-h-[220px] w-full bg-dark-card border border-dark-border rounded-lg px-4 py-2.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary [&_h2]:text-lg [&_h2]:font-bold [&_h2]:text-foreground [&_h3]:text-base [&_h3]:font-bold [&_h3]:text-foreground [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_a]:text-primary-text [&_a]:underline [&_img]:max-w-full [&_img]:h-auto"
       />
       <p className="text-xs text-muted mt-1.5">
-        Formatting is saved as HTML. Images are embedded in the email itself (max 200 KB each) —
-        no external image links. Placeholders are replaced with each recipient&apos;s own data
-        when sending; unknown placeholders are left as-is.
+        {footerNote ??
+          'Formatting is saved as HTML. Images are embedded in the email itself (max 200 KB each) — no external image links. Placeholders are replaced with each recipient’s own data when sending; unknown placeholders are left as-is.'}
       </p>
     </div>
   );

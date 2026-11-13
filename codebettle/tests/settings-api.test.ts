@@ -177,6 +177,58 @@ test('settings API: PATCH with an invalid body is 400', async () => {
   assert.equal(res.status, 400);
 });
 
+test('settings API: PATCH accepts a CEO photo URL, and a bad URL returns 400', async () => {
+  __setTestSession(ADMIN);
+  const url = 'https://phuzoxshzdfzjvephlhq.supabase.co/storage/v1/object/public/course-images/team/ceo/new.jpg';
+  const res = await settingsPatch(
+    jsonReq('http://localhost/api/admin/settings', 'PATCH', { ceoPhotoUrl: url }),
+  );
+  assert.equal(res.status, 200);
+  const body = (await res.json()) as { settings: typeof DEFAULT_SETTINGS };
+  assert.equal(body.settings.ceoPhotoUrl, url);
+  // Bad URL: 400, nothing written.
+  const bad = await settingsPatch(
+    jsonReq('http://localhost/api/admin/settings', 'PATCH', { ceoPhotoUrl: 'javascript:alert(1)' }),
+  );
+  assert.equal(bad.status, 400);
+  const reread = (await (
+    await settingsGet()
+  ).json()) as { settings: typeof DEFAULT_SETTINGS };
+  assert.equal(reread.settings.ceoPhotoUrl, url);
+});
+
+test('settings API: PATCH accepts Success Stories rich text, and clearing them back to empty is allowed', async () => {
+  __setTestSession(ADMIN);
+  const res = await settingsPatch(
+    jsonReq('http://localhost/api/admin/settings', 'PATCH', {
+      ceoMessage: '<p>Welcome to CodeBettle.</p><p>Keep <strong>building</strong>.</p>',
+      visionText: '<p>Our vision is simple.</p>',
+    }),
+  );
+  assert.equal(res.status, 200);
+  const body = (await res.json()) as { settings: typeof DEFAULT_SETTINGS };
+  assert.equal(body.settings.ceoMessage, '<p>Welcome to CodeBettle.</p><p>Keep <strong>building</strong>.</p>');
+  assert.equal(body.settings.visionText, '<p>Our vision is simple.</p>');
+  // Dangerous HTML is stripped on save, never stored raw.
+  const dirty = await settingsPatch(
+    jsonReq('http://localhost/api/admin/settings', 'PATCH', {
+      ceoMessage: '<script>alert(1)</script><p>Safe</p>',
+    }),
+  );
+  assert.equal(dirty.status, 200);
+  const dirtyBody = (await dirty.json()) as { settings: typeof DEFAULT_SETTINGS };
+  assert.equal(dirtyBody.settings.ceoMessage.includes('<script'), false);
+  assert.equal(dirtyBody.settings.ceoMessage.includes('<p>Safe</p>'), true);
+  // Clearing restores the empty state (public page shows its placeholder).
+  const cleared = await settingsPatch(
+    jsonReq('http://localhost/api/admin/settings', 'PATCH', { ceoMessage: '', visionText: '<p><br></p>' }),
+  );
+  assert.equal(cleared.status, 200);
+  const clearedBody = (await cleared.json()) as { settings: typeof DEFAULT_SETTINGS };
+  assert.equal(clearedBody.settings.ceoMessage, '');
+  assert.equal(clearedBody.settings.visionText, '');
+});
+
 // ---------------------------------------------------------------------------
 // GET /api/settings/public — no auth, fail-open
 // ---------------------------------------------------------------------------

@@ -171,3 +171,110 @@ test('save failure: DB throws -> updateSiteSettings rejects, no fake success', a
   __setDbClient(throwingClient());
   await assert.rejects(updateSiteSettings({ siteName: 'X' }), /database unavailable/);
 });
+
+// ---------------------------------------------------------------------------
+// Success Stories texts (CEO message + vision): plain text, empty allowed
+// ---------------------------------------------------------------------------
+
+test('success stories texts: defaults are empty (page shows its placeholder)', async () => {
+  const settings = await getSiteSettings();
+  assert.equal(settings.ceoMessage, '');
+  assert.equal(settings.visionText, '');
+  assert.equal(DEFAULT_SETTINGS.ceoMessage, '');
+  assert.equal(DEFAULT_SETTINGS.visionText, '');
+});
+
+test('success stories texts: save + read back as HTML, formatting kept', async () => {
+  const saved = await updateSiteSettings({
+    ceoMessage: '<p>First paragraph with <strong>bold</strong>.</p><p>Second paragraph.</p>',
+    visionText: '<p>Line one.</p><ul><li>Point one</li></ul>',
+  });
+  assert.equal(saved.ceoMessage, '<p>First paragraph with <strong>bold</strong>.</p><p>Second paragraph.</p>');
+  assert.equal(saved.visionText, '<p>Line one.</p><ul><li>Point one</li></ul>');
+  // Stored under their own keys, not colliding with other settings.
+  const rows = await listSiteSettings();
+  assert.equal(rows.find((r) => r.key === 'successStories.ceoMessage')?.value, '<p>First paragraph with <strong>bold</strong>.</p><p>Second paragraph.</p>');
+  assert.equal(rows.find((r) => r.key === 'successStories.visionText')?.value, '<p>Line one.</p><ul><li>Point one</li></ul>');
+  assert.deepEqual(await getSiteSettings(), saved);
+});
+
+test('success stories texts: dangerous HTML is stripped on save, never stored raw', async () => {
+  const saved = await updateSiteSettings({
+    ceoMessage: '<script>alert(1)</script><p onclick="evil()">Safe</p><img src="https://evil.example/x.png">',
+    visionText: '<p>Keep <a href="javascript:alert(1)">this text</a>, drop the scheme.</p>',
+  });
+  assert.equal(saved.ceoMessage.includes('<script'), false);
+  assert.equal(saved.ceoMessage.includes('onclick'), false);
+  assert.equal(saved.ceoMessage.includes('evil.example'), false);
+  assert.equal(saved.ceoMessage.includes('<p>Safe</p>'), true);
+  assert.equal(saved.visionText.includes('javascript:'), false);
+  assert.equal(saved.visionText.includes('Keep'), true);
+});
+
+test('success stories texts: blank editor HTML normalizes to empty (placeholder fallback)', async () => {
+  await updateSiteSettings({ ceoMessage: '<p>Custom message</p>', visionText: '<p>Custom vision</p>' });
+  const cleared = await updateSiteSettings({ ceoMessage: '<p><br></p>', visionText: '<p>&nbsp;</p>' });
+  assert.equal(cleared.ceoMessage, '');
+  assert.equal(cleared.visionText, '');
+  // Other fields are untouched by the clear.
+  assert.equal(cleared.siteName, DEFAULT_SETTINGS.siteName);
+});
+
+test('success stories texts: empty is allowed ONLY for these two fields', async () => {
+  for (const bad of [{ siteName: '' }, { siteDescription: '   ' }, { phone: '' }]) {
+    await assert.rejects(
+      updateSiteSettings(bad as never),
+      (err: unknown) => err instanceof SettingsValidationError,
+    );
+  }
+  // …while an empty ceoMessage/visionText passes validation.
+  const saved = await updateSiteSettings({ ceoMessage: '', visionText: '' });
+  assert.equal(saved.ceoMessage, '');
+  assert.equal(saved.visionText, '');
+});
+
+// ---------------------------------------------------------------------------
+// CEO photo URL setting
+// ---------------------------------------------------------------------------
+
+test('ceo photo: default is Ahmad Hassan\'s uploaded photo', async () => {
+  const settings = await getSiteSettings();
+  assert.equal(
+    settings.ceoPhotoUrl,
+    'https://phuzoxshzdfzjvephlhq.supabase.co/storage/v1/object/public/course-images/team/ahmad-hassan-ceo.png',
+  );
+  assert.equal(DEFAULT_SETTINGS.ceoPhotoUrl, settings.ceoPhotoUrl);
+});
+
+test('ceo photo: save a new URL and read it back', async () => {
+  const url = 'https://phuzoxshzdfzjvephlhq.supabase.co/storage/v1/object/public/course-images/team/ceo/abc-123.jpg';
+  const saved = await updateSiteSettings({ ceoPhotoUrl: url });
+  assert.equal(saved.ceoPhotoUrl, url);
+  const rows = await listSiteSettings();
+  assert.equal(rows.find((r) => r.key === 'successStories.ceoPhotoUrl')?.value, url);
+  assert.deepEqual(await getSiteSettings(), saved);
+});
+
+test('ceo photo: non-URL values are rejected, nothing written', async () => {
+  for (const bad of [
+    'not-a-url',
+    'ftp://example.com/photo.png',
+    'javascript:alert(1)',
+    'data:image/png;base64,abc',
+    '/team/ceo/photo.png',
+  ]) {
+    await assert.rejects(
+      updateSiteSettings({ ceoPhotoUrl: bad }),
+      (err: unknown) => err instanceof SettingsValidationError && /valid http\(s\) image URL/.test(err.message),
+    );
+  }
+  assert.deepEqual(await getSiteSettings(), DEFAULT_SETTINGS);
+  assert.deepEqual(await listSiteSettings(), []);
+});
+
+test('ceo photo: clearing it falls back to the default photo on read', async () => {
+  const url = 'https://example.com/new-ceo.jpg';
+  await updateSiteSettings({ ceoPhotoUrl: url });
+  const cleared = await updateSiteSettings({ ceoPhotoUrl: '' });
+  assert.equal(cleared.ceoPhotoUrl, DEFAULT_SETTINGS.ceoPhotoUrl);
+});

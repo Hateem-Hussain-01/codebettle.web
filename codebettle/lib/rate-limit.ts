@@ -73,6 +73,16 @@ export function applicationUploadRateLimitKey(ip: string): string {
   return `application-upload:${ip}`;
 }
 
+/** Success story submissions (public): 5 per 15 minutes, keyed by IP (spam guard). */
+export function successStorySubmitRateLimitKey(ip: string): string {
+  return `success-story-submit:${ip}`;
+}
+
+/** Success story signed-upload requests: 20 per 15 minutes, keyed by IP (spam guard — files cost storage). */
+export function successStoryUploadRateLimitKey(ip: string): string {
+  return `success-story-upload:${ip}`;
+}
+
 /** Test helper: clear all windows. Never call in production code. */
 export function __clearRateLimits(): void {
   windows.clear();

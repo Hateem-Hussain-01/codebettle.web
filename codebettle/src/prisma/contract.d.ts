@@ -23,9 +23,9 @@ import type {
 } from '@prisma/orm-postgres/contract/types';
 
 export type StorageHash =
-  StorageHashBase<'b3738a68e6895c897d9ef37f79cf2fbdcf4788bc5ea29c2bfb20057e4fe2de83'>;
+  StorageHashBase<'38f659b319365d7a10277692d1649b37cb751f36ee701aa4ac9dd95bb701ded1'>;
 export type ExecutionHash =
-  ExecutionHashBase<'9f26db1f17a796e77f027d8ecdec15bfdc221051d2f511007950e89c26c2a210'>;
+  ExecutionHashBase<'c9cd4416423f87e1ce6ddae195ce7aff3122cd68bbcfec68a5a731e4153394b7'>;
 export type ProfileHash =
   ProfileHashBase<'3916f444a8a17ad749191acf9e08dad97d1a327b88c2f1d45d12f240296aa8b2'>;
 
@@ -386,6 +386,12 @@ type FieldTypeOverrides = {
           readonly input: 'mcq' | 'fill_blank' | 'checkbox' | 'choose_two' | 'choose_three';
         };
       };
+      readonly SuccessStorySubmission: {
+        readonly status: {
+          readonly output: 'pending' | 'under_review' | 'approved' | 'rejected';
+          readonly input: 'pending' | 'under_review' | 'approved' | 'rejected';
+        };
+      };
       readonly User: {
         readonly role: {
           readonly output: 'student' | 'instructor' | 'admin';
@@ -525,6 +531,12 @@ type ColumnTypeOverrides = {
         readonly input: 'mcq' | 'fill_blank' | 'checkbox' | 'choose_two' | 'choose_three';
       };
     };
+    readonly SuccessStorySubmission: {
+      readonly status: {
+        readonly output: 'pending' | 'under_review' | 'approved' | 'rejected';
+        readonly input: 'pending' | 'under_review' | 'approved' | 'rejected';
+      };
+    };
     readonly User: {
       readonly role: {
         readonly output: 'student' | 'instructor' | 'admin';
@@ -628,7 +640,8 @@ export namespace Models {
     course: public_Course;
     enrollments: public_Enrollment[];
     instructor: public_User | null;
-    readonly [RelationKeys]?: 'course' | 'enrollments' | 'instructor';
+    successStories: public_SuccessStorySubmission[];
+    readonly [RelationKeys]?: 'course' | 'enrollments' | 'instructor' | 'successStories';
   };
   export type public_BlogPost = {
     authorId: FieldOutputTypes['public']['BlogPost']['authorId'];
@@ -737,6 +750,7 @@ export namespace Models {
     notes: public_Note[];
     quizzes: public_Quiz[];
     reviews: public_Review[];
+    successStories: public_SuccessStorySubmission[];
     supportRequests: public_SupportRequest[];
     wishlistEntries: public_Wishlist[];
     readonly [RelationKeys]?:
@@ -749,6 +763,7 @@ export namespace Models {
       | 'notes'
       | 'quizzes'
       | 'reviews'
+      | 'successStories'
       | 'supportRequests'
       | 'wishlistEntries';
   };
@@ -1130,6 +1145,87 @@ export namespace Models {
     url: FieldOutputTypes['public']['SocialLink']['url'];
     readonly [RelationKeys]?: never;
   };
+  export type public_SuccessStoryAchievement = {
+    achievedAt: FieldOutputTypes['public']['SuccessStoryAchievement']['achievedAt'];
+    category: FieldOutputTypes['public']['SuccessStoryAchievement']['category'];
+    createdAt: FieldOutputTypes['public']['SuccessStoryAchievement']['createdAt'];
+    description: FieldOutputTypes['public']['SuccessStoryAchievement']['description'];
+    id: FieldOutputTypes['public']['SuccessStoryAchievement']['id'];
+    organization: FieldOutputTypes['public']['SuccessStoryAchievement']['organization'];
+    submissionId: FieldOutputTypes['public']['SuccessStoryAchievement']['submissionId'];
+    title: FieldOutputTypes['public']['SuccessStoryAchievement']['title'];
+    evidence: public_SuccessStoryEvidence[];
+    submission: public_SuccessStorySubmission;
+    readonly [RelationKeys]?: 'evidence' | 'submission';
+  };
+  export type public_SuccessStoryEvidence = {
+    achievementId: FieldOutputTypes['public']['SuccessStoryEvidence']['achievementId'];
+    createdAt: FieldOutputTypes['public']['SuccessStoryEvidence']['createdAt'];
+    fileName: FieldOutputTypes['public']['SuccessStoryEvidence']['fileName'];
+    id: FieldOutputTypes['public']['SuccessStoryEvidence']['id'];
+    kind: FieldOutputTypes['public']['SuccessStoryEvidence']['kind'];
+    label: FieldOutputTypes['public']['SuccessStoryEvidence']['label'];
+    mime: FieldOutputTypes['public']['SuccessStoryEvidence']['mime'];
+    size: FieldOutputTypes['public']['SuccessStoryEvidence']['size'];
+    url: FieldOutputTypes['public']['SuccessStoryEvidence']['url'];
+    achievement: public_SuccessStoryAchievement;
+    readonly [RelationKeys]?: 'achievement';
+  };
+  export type public_SuccessStorySubmission = {
+    achievementsAfter: FieldOutputTypes['public']['SuccessStorySubmission']['achievementsAfter'];
+    adminNote: FieldOutputTypes['public']['SuccessStorySubmission']['adminNote'];
+    advice: FieldOutputTypes['public']['SuccessStorySubmission']['advice'];
+    batchId: FieldOutputTypes['public']['SuccessStorySubmission']['batchId'];
+    batchNumber: FieldOutputTypes['public']['SuccessStorySubmission']['batchNumber'];
+    beforeJoining: FieldOutputTypes['public']['SuccessStorySubmission']['beforeJoining'];
+    biggestAchievement: FieldOutputTypes['public']['SuccessStorySubmission']['biggestAchievement'];
+    challenges: FieldOutputTypes['public']['SuccessStorySubmission']['challenges'];
+    city: FieldOutputTypes['public']['SuccessStorySubmission']['city'];
+    consentAccuracy: FieldOutputTypes['public']['SuccessStorySubmission']['consentAccuracy'];
+    consentContact: FieldOutputTypes['public']['SuccessStorySubmission']['consentContact'];
+    consentMedia: FieldOutputTypes['public']['SuccessStorySubmission']['consentMedia'];
+    consentPublication: FieldOutputTypes['public']['SuccessStorySubmission']['consentPublication'];
+    country: FieldOutputTypes['public']['SuccessStorySubmission']['country'];
+    courseId: FieldOutputTypes['public']['SuccessStorySubmission']['courseId'];
+    courseTitle: FieldOutputTypes['public']['SuccessStorySubmission']['courseTitle'];
+    designation: FieldOutputTypes['public']['SuccessStorySubmission']['designation'];
+    email: FieldOutputTypes['public']['SuccessStorySubmission']['email'];
+    experience: FieldOutputTypes['public']['SuccessStorySubmission']['experience'];
+    featured: FieldOutputTypes['public']['SuccessStorySubmission']['featured'];
+    fullName: FieldOutputTypes['public']['SuccessStorySubmission']['fullName'];
+    githubUrl: FieldOutputTypes['public']['SuccessStorySubmission']['githubUrl'];
+    hackerrankUrl: FieldOutputTypes['public']['SuccessStorySubmission']['hackerrankUrl'];
+    howHelped: FieldOutputTypes['public']['SuccessStorySubmission']['howHelped'];
+    id: FieldOutputTypes['public']['SuccessStorySubmission']['id'];
+    idempotencyKey: FieldOutputTypes['public']['SuccessStorySubmission']['idempotencyKey'];
+    instagramUrl: FieldOutputTypes['public']['SuccessStorySubmission']['instagramUrl'];
+    instructorName: FieldOutputTypes['public']['SuccessStorySubmission']['instructorName'];
+    joinedAt: FieldOutputTypes['public']['SuccessStorySubmission']['joinedAt'];
+    lablabUrl: FieldOutputTypes['public']['SuccessStorySubmission']['lablabUrl'];
+    leetcodeUrl: FieldOutputTypes['public']['SuccessStorySubmission']['leetcodeUrl'];
+    linkedinUrl: FieldOutputTypes['public']['SuccessStorySubmission']['linkedinUrl'];
+    otherProfileUrl: FieldOutputTypes['public']['SuccessStorySubmission']['otherProfileUrl'];
+    portfolioUrl: FieldOutputTypes['public']['SuccessStorySubmission']['portfolioUrl'];
+    profilePicturePath: FieldOutputTypes['public']['SuccessStorySubmission']['profilePicturePath'];
+    reviewedAt: FieldOutputTypes['public']['SuccessStorySubmission']['reviewedAt'];
+    reviewedBy: FieldOutputTypes['public']['SuccessStorySubmission']['reviewedBy'];
+    skillsLearned: FieldOutputTypes['public']['SuccessStorySubmission']['skillsLearned'];
+    status: FieldOutputTypes['public']['SuccessStorySubmission']['status'];
+    story: FieldOutputTypes['public']['SuccessStorySubmission']['story'];
+    submissionNumber: FieldOutputTypes['public']['SuccessStorySubmission']['submissionNumber'];
+    submittedAt: FieldOutputTypes['public']['SuccessStorySubmission']['submittedAt'];
+    submitterId: FieldOutputTypes['public']['SuccessStorySubmission']['submitterId'];
+    updatedAt: FieldOutputTypes['public']['SuccessStorySubmission']['updatedAt'];
+    videoDescription: FieldOutputTypes['public']['SuccessStorySubmission']['videoDescription'];
+    videoPath: FieldOutputTypes['public']['SuccessStorySubmission']['videoPath'];
+    videoUrl: FieldOutputTypes['public']['SuccessStorySubmission']['videoUrl'];
+    youtubeUrl: FieldOutputTypes['public']['SuccessStorySubmission']['youtubeUrl'];
+    achievements: public_SuccessStoryAchievement[];
+    batch: public_Batch | null;
+    course: public_Course | null;
+    submitter: public_User | null;
+    readonly [RelationKeys]?: 'achievements' | 'batch' | 'course' | 'submitter';
+  };
   export type public_SupportRequest = {
     adminReply: FieldOutputTypes['public']['SupportRequest']['adminReply'];
     attachmentUrl: FieldOutputTypes['public']['SupportRequest']['attachmentUrl'];
@@ -1206,6 +1302,7 @@ export namespace Models {
     reviews: public_Review[];
     sessions: public_Session[];
     stageHistory: public_ApplicationStageHistory[];
+    successStorySubmissions: public_SuccessStorySubmission[];
     supportRequests: public_SupportRequest[];
     supportRequestsResolved: public_SupportRequest[];
     wishlist: public_Wishlist[];
@@ -1235,6 +1332,7 @@ export namespace Models {
       | 'reviews'
       | 'sessions'
       | 'stageHistory'
+      | 'successStorySubmissions'
       | 'supportRequests'
       | 'supportRequestsResolved'
       | 'wishlist';
@@ -1290,6 +1388,9 @@ export declare const models: {
     Session: Models.public_Session;
     SiteSetting: Models.public_SiteSetting;
     SocialLink: Models.public_SocialLink;
+    SuccessStoryAchievement: Models.public_SuccessStoryAchievement;
+    SuccessStoryEvidence: Models.public_SuccessStoryEvidence;
+    SuccessStorySubmission: Models.public_SuccessStorySubmission;
     SupportRequest: Models.public_SupportRequest;
     Testimonial: Models.public_Testimonial;
     User: Models.public_User;
@@ -5207,6 +5308,553 @@ type ContractBase = Omit<
               ];
               foreignKeys: readonly [];
             };
+            readonly SuccessStoryAchievement: {
+              columns: {
+                readonly achievedAt: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly nullable: true;
+                  readonly typeParams: { readonly precision: 3 };
+                  readonly many: false;
+                };
+                readonly category: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly createdAt: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly nullable: false;
+                  readonly default: { readonly kind: 'function'; readonly expression: 'now()' };
+                  readonly typeParams: { readonly precision: 3 };
+                  readonly many: false;
+                };
+                readonly description: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly id: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly organization: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly submissionId: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly title: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+              };
+              primaryKey: { readonly columns: readonly ['id'] };
+              uniques: readonly [];
+              indexes: readonly [
+                {
+                  readonly name: 'SuccessStoryAchievement_submissionId_idx_89cd3f4e';
+                  readonly prefix: 'SuccessStoryAchievement_submissionId_idx';
+                  readonly columns: readonly ['submissionId'];
+                  readonly unique: false;
+                },
+              ];
+              foreignKeys: readonly [
+                {
+                  readonly source: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'SuccessStoryAchievement';
+                    readonly columns: readonly ['submissionId'];
+                  };
+                  readonly target: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'SuccessStorySubmission';
+                    readonly columns: readonly ['id'];
+                  };
+                },
+              ];
+            };
+            readonly SuccessStoryEvidence: {
+              columns: {
+                readonly achievementId: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly createdAt: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly nullable: false;
+                  readonly default: { readonly kind: 'function'; readonly expression: 'now()' };
+                  readonly typeParams: { readonly precision: 3 };
+                  readonly many: false;
+                };
+                readonly fileName: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly id: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly kind: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly label: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly mime: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly size: {
+                  readonly dataType: 'pg/int4';
+                  readonly codecId: 'pg/int4@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly url: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+              };
+              primaryKey: { readonly columns: readonly ['id'] };
+              uniques: readonly [];
+              indexes: readonly [
+                {
+                  readonly name: 'SuccessStoryEvidence_achievementId_idx_05a27a05';
+                  readonly prefix: 'SuccessStoryEvidence_achievementId_idx';
+                  readonly columns: readonly ['achievementId'];
+                  readonly unique: false;
+                },
+              ];
+              foreignKeys: readonly [
+                {
+                  readonly source: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'SuccessStoryEvidence';
+                    readonly columns: readonly ['achievementId'];
+                  };
+                  readonly target: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'SuccessStoryAchievement';
+                    readonly columns: readonly ['id'];
+                  };
+                },
+              ];
+            };
+            readonly SuccessStorySubmission: {
+              columns: {
+                readonly achievementsAfter: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly adminNote: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly advice: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly batchId: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly batchNumber: {
+                  readonly dataType: 'pg/int4';
+                  readonly codecId: 'pg/int4@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly beforeJoining: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly biggestAchievement: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly challenges: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly city: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly consentAccuracy: {
+                  readonly dataType: 'pg/bool';
+                  readonly codecId: 'pg/bool@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly consentContact: {
+                  readonly dataType: 'pg/bool';
+                  readonly codecId: 'pg/bool@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'literal';
+                    readonly value: DefaultLiteralValue<'pg/bool@1', false>;
+                  };
+                  readonly many: false;
+                };
+                readonly consentMedia: {
+                  readonly dataType: 'pg/bool';
+                  readonly codecId: 'pg/bool@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly consentPublication: {
+                  readonly dataType: 'pg/bool';
+                  readonly codecId: 'pg/bool@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly country: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly courseId: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly courseTitle: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly designation: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly email: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly experience: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly featured: {
+                  readonly dataType: 'pg/bool';
+                  readonly codecId: 'pg/bool@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'literal';
+                    readonly value: DefaultLiteralValue<'pg/bool@1', false>;
+                  };
+                  readonly many: false;
+                };
+                readonly fullName: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly githubUrl: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly hackerrankUrl: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly howHelped: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly id: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly idempotencyKey: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly instagramUrl: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly instructorName: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly joinedAt: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly nullable: true;
+                  readonly typeParams: { readonly precision: 3 };
+                  readonly many: false;
+                };
+                readonly lablabUrl: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly leetcodeUrl: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly linkedinUrl: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly otherProfileUrl: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly portfolioUrl: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly profilePicturePath: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly reviewedAt: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly nullable: true;
+                  readonly typeParams: { readonly precision: 3 };
+                  readonly many: false;
+                };
+                readonly reviewedBy: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly skillsLearned: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly status: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'literal';
+                    readonly value: DefaultLiteralValue<'pg/text@1', 'pending'>;
+                  };
+                  readonly many: false;
+                };
+                readonly story: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly submissionNumber: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly submittedAt: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly nullable: false;
+                  readonly default: { readonly kind: 'function'; readonly expression: 'now()' };
+                  readonly typeParams: { readonly precision: 3 };
+                  readonly many: false;
+                };
+                readonly submitterId: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly updatedAt: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly nullable: false;
+                  readonly typeParams: { readonly precision: 3 };
+                  readonly many: false;
+                };
+                readonly videoDescription: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly videoPath: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly videoUrl: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly youtubeUrl: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+              };
+              primaryKey: { readonly columns: readonly ['id'] };
+              uniques: readonly [
+                { readonly columns: readonly ['submissionNumber'] },
+                { readonly columns: readonly ['idempotencyKey'] },
+              ];
+              indexes: readonly [
+                {
+                  readonly name: 'SuccessStorySubmission_batchId_idx_84d4b0b9';
+                  readonly prefix: 'SuccessStorySubmission_batchId_idx';
+                  readonly columns: readonly ['batchId'];
+                  readonly unique: false;
+                },
+                {
+                  readonly name: 'SuccessStorySubmission_courseId_idx_12f72d2a';
+                  readonly prefix: 'SuccessStorySubmission_courseId_idx';
+                  readonly columns: readonly ['courseId'];
+                  readonly unique: false;
+                },
+                {
+                  readonly name: 'SuccessStorySubmission_email_submittedAt_idx_d0806a86';
+                  readonly prefix: 'SuccessStorySubmission_email_submittedAt_idx';
+                  readonly columns: readonly ['email', 'submittedAt'];
+                  readonly unique: false;
+                },
+                {
+                  readonly name: 'SuccessStorySubmission_status_submittedAt_idx_0938dd64';
+                  readonly prefix: 'SuccessStorySubmission_status_submittedAt_idx';
+                  readonly columns: readonly ['status', 'submittedAt'];
+                  readonly unique: false;
+                },
+                {
+                  readonly name: 'SuccessStorySubmission_submitterId_idx_15ca851b';
+                  readonly prefix: 'SuccessStorySubmission_submitterId_idx';
+                  readonly columns: readonly ['submitterId'];
+                  readonly unique: false;
+                },
+              ];
+              foreignKeys: readonly [
+                {
+                  readonly source: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'SuccessStorySubmission';
+                    readonly columns: readonly ['submitterId'];
+                  };
+                  readonly target: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'User';
+                    readonly columns: readonly ['id'];
+                  };
+                },
+                {
+                  readonly source: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'SuccessStorySubmission';
+                    readonly columns: readonly ['courseId'];
+                  };
+                  readonly target: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'Course';
+                    readonly columns: readonly ['id'];
+                  };
+                },
+                {
+                  readonly source: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'SuccessStorySubmission';
+                    readonly columns: readonly ['batchId'];
+                  };
+                  readonly target: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'Batch';
+                    readonly columns: readonly ['id'];
+                  };
+                },
+              ];
+            };
             readonly SupportRequest: {
               columns: {
                 readonly adminReply: {
@@ -5729,6 +6377,10 @@ type ContractBase = Omit<
               readonly kind: 'valueSet';
               readonly values: readonly ['student', 'instructor', 'admin'];
             };
+            readonly SuccessStoryStatus: {
+              readonly kind: 'valueSet';
+              readonly values: readonly ['pending', 'under_review', 'approved', 'rejected'];
+            };
             readonly UserStatus: {
               readonly kind: 'valueSet';
               readonly values: readonly ['active', 'suspended'];
@@ -5859,6 +6511,18 @@ type ContractBase = Omit<
     readonly SocialLink: {
       readonly namespace: 'public' & NamespaceId;
       readonly model: 'SocialLink';
+    };
+    readonly SuccessStoryAchievement: {
+      readonly namespace: 'public' & NamespaceId;
+      readonly model: 'SuccessStoryAchievement';
+    };
+    readonly SuccessStoryEvidence: {
+      readonly namespace: 'public' & NamespaceId;
+      readonly model: 'SuccessStoryEvidence';
+    };
+    readonly SuccessStorySubmission: {
+      readonly namespace: 'public' & NamespaceId;
+      readonly model: 'SuccessStorySubmission';
     };
     readonly SupportRequest: {
       readonly namespace: 'public' & NamespaceId;
@@ -6335,6 +6999,17 @@ type ContractBase = Omit<
                 readonly on: {
                   readonly localFields: readonly ['instructorId'];
                   readonly targetFields: readonly ['id'];
+                };
+              };
+              readonly successStories: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'SuccessStorySubmission';
+                };
+                readonly cardinality: '1:N';
+                readonly on: {
+                  readonly localFields: readonly ['id'];
+                  readonly targetFields: readonly ['batchId'];
                 };
               };
             };
@@ -6989,6 +7664,17 @@ type ContractBase = Omit<
                 readonly to: {
                   readonly namespace: 'public' & NamespaceId;
                   readonly model: 'Review';
+                };
+                readonly cardinality: '1:N';
+                readonly on: {
+                  readonly localFields: readonly ['id'];
+                  readonly targetFields: readonly ['courseId'];
+                };
+              };
+              readonly successStories: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'SuccessStorySubmission';
                 };
                 readonly cardinality: '1:N';
                 readonly on: {
@@ -9329,6 +10015,474 @@ type ContractBase = Omit<
               };
             };
           };
+          readonly SuccessStoryAchievement: {
+            readonly fields: {
+              readonly achievedAt: {
+                readonly nullable: true;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly typeParams: { readonly precision: 3 };
+                };
+              };
+              readonly category: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly createdAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly typeParams: { readonly precision: 3 };
+                };
+              };
+              readonly description: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly id: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly organization: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly submissionId: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly title: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+            };
+            readonly relations: {
+              readonly evidence: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'SuccessStoryEvidence';
+                };
+                readonly cardinality: '1:N';
+                readonly on: {
+                  readonly localFields: readonly ['id'];
+                  readonly targetFields: readonly ['achievementId'];
+                };
+              };
+              readonly submission: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'SuccessStorySubmission';
+                };
+                readonly cardinality: 'N:1';
+                readonly nullable: false;
+                readonly on: {
+                  readonly localFields: readonly ['submissionId'];
+                  readonly targetFields: readonly ['id'];
+                };
+              };
+            };
+            readonly storage: {
+              readonly table: 'SuccessStoryAchievement';
+              readonly namespaceId: 'public';
+              readonly fields: {
+                readonly achievedAt: { readonly column: 'achievedAt' };
+                readonly category: { readonly column: 'category' };
+                readonly createdAt: { readonly column: 'createdAt' };
+                readonly description: { readonly column: 'description' };
+                readonly id: { readonly column: 'id' };
+                readonly organization: { readonly column: 'organization' };
+                readonly submissionId: { readonly column: 'submissionId' };
+                readonly title: { readonly column: 'title' };
+              };
+            };
+          };
+          readonly SuccessStoryEvidence: {
+            readonly fields: {
+              readonly achievementId: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly createdAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly typeParams: { readonly precision: 3 };
+                };
+              };
+              readonly fileName: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly id: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly kind: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly label: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly mime: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly size: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/int4@1' };
+              };
+              readonly url: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+            };
+            readonly relations: {
+              readonly achievement: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'SuccessStoryAchievement';
+                };
+                readonly cardinality: 'N:1';
+                readonly nullable: false;
+                readonly on: {
+                  readonly localFields: readonly ['achievementId'];
+                  readonly targetFields: readonly ['id'];
+                };
+              };
+            };
+            readonly storage: {
+              readonly table: 'SuccessStoryEvidence';
+              readonly namespaceId: 'public';
+              readonly fields: {
+                readonly achievementId: { readonly column: 'achievementId' };
+                readonly createdAt: { readonly column: 'createdAt' };
+                readonly fileName: { readonly column: 'fileName' };
+                readonly id: { readonly column: 'id' };
+                readonly kind: { readonly column: 'kind' };
+                readonly label: { readonly column: 'label' };
+                readonly mime: { readonly column: 'mime' };
+                readonly size: { readonly column: 'size' };
+                readonly url: { readonly column: 'url' };
+              };
+            };
+          };
+          readonly SuccessStorySubmission: {
+            readonly fields: {
+              readonly achievementsAfter: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly adminNote: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly advice: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly batchId: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly batchNumber: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/int4@1' };
+              };
+              readonly beforeJoining: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly biggestAchievement: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly challenges: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly city: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly consentAccuracy: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/bool@1' };
+              };
+              readonly consentContact: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/bool@1' };
+              };
+              readonly consentMedia: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/bool@1' };
+              };
+              readonly consentPublication: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/bool@1' };
+              };
+              readonly country: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly courseId: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly courseTitle: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly designation: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly email: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly experience: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly featured: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/bool@1' };
+              };
+              readonly fullName: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly githubUrl: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly hackerrankUrl: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly howHelped: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly id: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly idempotencyKey: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly instagramUrl: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly instructorName: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly joinedAt: {
+                readonly nullable: true;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly typeParams: { readonly precision: 3 };
+                };
+              };
+              readonly lablabUrl: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly leetcodeUrl: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly linkedinUrl: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly otherProfileUrl: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly portfolioUrl: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly profilePicturePath: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly reviewedAt: {
+                readonly nullable: true;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly typeParams: { readonly precision: 3 };
+                };
+              };
+              readonly reviewedBy: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly skillsLearned: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly status: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly story: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly submissionNumber: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly submittedAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly typeParams: { readonly precision: 3 };
+                };
+              };
+              readonly submitterId: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly updatedAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly typeParams: { readonly precision: 3 };
+                };
+              };
+              readonly videoDescription: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly videoPath: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly videoUrl: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly youtubeUrl: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+            };
+            readonly relations: {
+              readonly achievements: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'SuccessStoryAchievement';
+                };
+                readonly cardinality: '1:N';
+                readonly on: {
+                  readonly localFields: readonly ['id'];
+                  readonly targetFields: readonly ['submissionId'];
+                };
+              };
+              readonly batch: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'Batch';
+                };
+                readonly cardinality: 'N:1';
+                readonly nullable: true;
+                readonly on: {
+                  readonly localFields: readonly ['batchId'];
+                  readonly targetFields: readonly ['id'];
+                };
+              };
+              readonly course: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'Course';
+                };
+                readonly cardinality: 'N:1';
+                readonly nullable: true;
+                readonly on: {
+                  readonly localFields: readonly ['courseId'];
+                  readonly targetFields: readonly ['id'];
+                };
+              };
+              readonly submitter: {
+                readonly to: { readonly namespace: 'public' & NamespaceId; readonly model: 'User' };
+                readonly cardinality: 'N:1';
+                readonly nullable: true;
+                readonly on: {
+                  readonly localFields: readonly ['submitterId'];
+                  readonly targetFields: readonly ['id'];
+                };
+              };
+            };
+            readonly storage: {
+              readonly table: 'SuccessStorySubmission';
+              readonly namespaceId: 'public';
+              readonly fields: {
+                readonly achievementsAfter: { readonly column: 'achievementsAfter' };
+                readonly adminNote: { readonly column: 'adminNote' };
+                readonly advice: { readonly column: 'advice' };
+                readonly batchId: { readonly column: 'batchId' };
+                readonly batchNumber: { readonly column: 'batchNumber' };
+                readonly beforeJoining: { readonly column: 'beforeJoining' };
+                readonly biggestAchievement: { readonly column: 'biggestAchievement' };
+                readonly challenges: { readonly column: 'challenges' };
+                readonly city: { readonly column: 'city' };
+                readonly consentAccuracy: { readonly column: 'consentAccuracy' };
+                readonly consentContact: { readonly column: 'consentContact' };
+                readonly consentMedia: { readonly column: 'consentMedia' };
+                readonly consentPublication: { readonly column: 'consentPublication' };
+                readonly country: { readonly column: 'country' };
+                readonly courseId: { readonly column: 'courseId' };
+                readonly courseTitle: { readonly column: 'courseTitle' };
+                readonly designation: { readonly column: 'designation' };
+                readonly email: { readonly column: 'email' };
+                readonly experience: { readonly column: 'experience' };
+                readonly featured: { readonly column: 'featured' };
+                readonly fullName: { readonly column: 'fullName' };
+                readonly githubUrl: { readonly column: 'githubUrl' };
+                readonly hackerrankUrl: { readonly column: 'hackerrankUrl' };
+                readonly howHelped: { readonly column: 'howHelped' };
+                readonly id: { readonly column: 'id' };
+                readonly idempotencyKey: { readonly column: 'idempotencyKey' };
+                readonly instagramUrl: { readonly column: 'instagramUrl' };
+                readonly instructorName: { readonly column: 'instructorName' };
+                readonly joinedAt: { readonly column: 'joinedAt' };
+                readonly lablabUrl: { readonly column: 'lablabUrl' };
+                readonly leetcodeUrl: { readonly column: 'leetcodeUrl' };
+                readonly linkedinUrl: { readonly column: 'linkedinUrl' };
+                readonly otherProfileUrl: { readonly column: 'otherProfileUrl' };
+                readonly portfolioUrl: { readonly column: 'portfolioUrl' };
+                readonly profilePicturePath: { readonly column: 'profilePicturePath' };
+                readonly reviewedAt: { readonly column: 'reviewedAt' };
+                readonly reviewedBy: { readonly column: 'reviewedBy' };
+                readonly skillsLearned: { readonly column: 'skillsLearned' };
+                readonly status: { readonly column: 'status' };
+                readonly story: { readonly column: 'story' };
+                readonly submissionNumber: { readonly column: 'submissionNumber' };
+                readonly submittedAt: { readonly column: 'submittedAt' };
+                readonly submitterId: { readonly column: 'submitterId' };
+                readonly updatedAt: { readonly column: 'updatedAt' };
+                readonly videoDescription: { readonly column: 'videoDescription' };
+                readonly videoPath: { readonly column: 'videoPath' };
+                readonly videoUrl: { readonly column: 'videoUrl' };
+                readonly youtubeUrl: { readonly column: 'youtubeUrl' };
+              };
+            };
+          };
           readonly SupportRequest: {
             readonly fields: {
               readonly adminReply: {
@@ -9876,6 +11030,17 @@ type ContractBase = Omit<
                   readonly targetFields: readonly ['actorId'];
                 };
               };
+              readonly successStorySubmissions: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'SuccessStorySubmission';
+                };
+                readonly cardinality: '1:N';
+                readonly on: {
+                  readonly localFields: readonly ['id'];
+                  readonly targetFields: readonly ['submitterId'];
+                };
+              };
               readonly supportRequests: {
                 readonly to: {
                   readonly namespace: 'public' & NamespaceId;
@@ -10129,6 +11294,15 @@ type ContractBase = Omit<
               { readonly name: 'admin'; readonly value: 'admin' },
             ];
           };
+          readonly SuccessStoryStatus: {
+            readonly codecId: 'pg/text@1';
+            readonly members: readonly [
+              { readonly name: 'pending'; readonly value: 'pending' },
+              { readonly name: 'under_review'; readonly value: 'under_review' },
+              { readonly name: 'approved'; readonly value: 'approved' },
+              { readonly name: 'rejected'; readonly value: 'rejected' },
+            ];
+          };
           readonly UserStatus: {
             readonly codecId: 'pg/text@1';
             readonly members: readonly [
@@ -10221,6 +11395,12 @@ type ContractBase = Omit<
             { readonly name: 'student'; readonly value: 'student' },
             { readonly name: 'instructor'; readonly value: 'instructor' },
             { readonly name: 'admin'; readonly value: 'admin' },
+          ];
+          readonly SuccessStoryStatus: readonly [
+            { readonly name: 'pending'; readonly value: 'pending' },
+            { readonly name: 'under_review'; readonly value: 'under_review' },
+            { readonly name: 'approved'; readonly value: 'approved' },
+            { readonly name: 'rejected'; readonly value: 'rejected' },
           ];
           readonly UserStatus: readonly [
             { readonly name: 'active'; readonly value: 'active' },
@@ -11096,6 +12276,83 @@ type ContractBase = Omit<
           };
           readonly ref: {
             readonly entry: 'SocialLink';
+            readonly field: 'updatedAt';
+            readonly namespace: 'public';
+          };
+        },
+        {
+          readonly onCreate: {
+            readonly id: 'timestampNow';
+            readonly kind: 'generator';
+            readonly params: { readonly precision: 3 };
+          };
+          readonly ref: {
+            readonly entry: 'SuccessStoryAchievement';
+            readonly field: 'createdAt';
+            readonly namespace: 'public';
+          };
+        },
+        {
+          readonly onCreate: { readonly id: 'cuid2'; readonly kind: 'generator' };
+          readonly ref: {
+            readonly entry: 'SuccessStoryAchievement';
+            readonly field: 'id';
+            readonly namespace: 'public';
+          };
+        },
+        {
+          readonly onCreate: {
+            readonly id: 'timestampNow';
+            readonly kind: 'generator';
+            readonly params: { readonly precision: 3 };
+          };
+          readonly ref: {
+            readonly entry: 'SuccessStoryEvidence';
+            readonly field: 'createdAt';
+            readonly namespace: 'public';
+          };
+        },
+        {
+          readonly onCreate: { readonly id: 'cuid2'; readonly kind: 'generator' };
+          readonly ref: {
+            readonly entry: 'SuccessStoryEvidence';
+            readonly field: 'id';
+            readonly namespace: 'public';
+          };
+        },
+        {
+          readonly onCreate: { readonly id: 'cuid2'; readonly kind: 'generator' };
+          readonly ref: {
+            readonly entry: 'SuccessStorySubmission';
+            readonly field: 'id';
+            readonly namespace: 'public';
+          };
+        },
+        {
+          readonly onCreate: {
+            readonly id: 'timestampNow';
+            readonly kind: 'generator';
+            readonly params: { readonly precision: 3 };
+          };
+          readonly ref: {
+            readonly entry: 'SuccessStorySubmission';
+            readonly field: 'submittedAt';
+            readonly namespace: 'public';
+          };
+        },
+        {
+          readonly onCreate: {
+            readonly id: 'timestampNow';
+            readonly kind: 'generator';
+            readonly params: { readonly precision: 3 };
+          };
+          readonly onUpdate: {
+            readonly id: 'timestampNow';
+            readonly kind: 'generator';
+            readonly params: { readonly precision: 3 };
+          };
+          readonly ref: {
+            readonly entry: 'SuccessStorySubmission';
             readonly field: 'updatedAt';
             readonly namespace: 'public';
           };
