@@ -12,6 +12,7 @@ import {
 } from '@/lib/auth';
 import { checkRateLimit, loginRateLimitKey } from '@/lib/rate-limit';
 import { matchesLoginPortal, type LoginPortal } from '@/lib/rbac';
+import { dashboardUrlForRole } from '@/lib/admin-url';
 import { recordLoginEvent } from '@/lib/db/login-events';
 import { requestEmailVerification } from '@/lib/services/email-verification-service';
 import { VIEW_AS_COOKIE } from '@/lib/view-as';
@@ -154,7 +155,10 @@ export async function POST(request: NextRequest) {
       ip,
       userAgent: request.headers.get('user-agent') ?? undefined,
     });
-    const response = NextResponse.json({ user, success: true });
+    // dashboardUrl is computed server-side so the client never has to
+    // build an admin URL: for admins it is the secret admin dashboard
+    // (PR #33), which the browser cannot derive from the env var.
+    const response = NextResponse.json({ user, success: true, dashboardUrl: dashboardUrlForRole(user.role) });
     response.cookies.set(SESSION_COOKIE, token, sessionCookieOptions());
     // A fresh sign-in ends any stale view-as state (Phase 2, Module 21.4).
     response.cookies.delete(VIEW_AS_COOKIE);

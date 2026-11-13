@@ -165,4 +165,13 @@ export const SYSTEM_EMAILS: readonly SystemEmailEntry[] = [
     active: true,
     source: 'notifyApplicant* (notification-service)',
   },
+  {
+    key: 'book-a-call',
+    name: 'Book-a-call request',
+    purpose: 'Sent to Ahmad Hassan, Zohad Ijaz and Eman when someone books a free career-guidance call from /book-a-call — student questions only, never a fee.',
+    trigger: 'Book-a-call request submitted',
+    recipient: 'Admin',
+    active: true,
+    source: 'sendBookACallEmail (lib/email/resend.ts)',
+  },
 ];

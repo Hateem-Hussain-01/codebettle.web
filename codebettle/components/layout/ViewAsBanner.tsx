@@ -10,8 +10,11 @@ import { Eye, LogOut } from 'lucide-react';
  * refuse mutations while the banner is up (see assertNotViewAs).
  * "Return to Admin Panel" ends the viewing session (clears the
  * view-as cookie server-side, audit-logged) and navigates back.
+ * The return URL is the admin Instructors page — its base path is
+ * the secret admin URL (PR #33), passed in by the instructor layout
+ * (a server component reads it from the env var); dev default 'admin'.
  */
-export default function ViewAsBanner({ adminName }: { adminName: string }) {
+export default function ViewAsBanner({ adminName, adminBasePath = 'admin' }: { adminName: string; adminBasePath?: string }) {
   const [leaving, setLeaving] = useState(false);
 
   const handleReturn = async () => {
@@ -23,7 +26,7 @@ export default function ViewAsBanner({ adminName }: { adminName: string }) {
       // the admin layout redirects back if the cookie is still set.
     } finally {
       // View-as starts from the Instructors page — return there.
-      window.location.href = '/admin/instructors';
+      window.location.href = `/${adminBasePath}/instructors`;
     }
   };
 

@@ -8,9 +8,11 @@ import { cn } from '@/lib/utils';
 import { getPortalSwitch, portalFromPathname } from '@/lib/portal-switch';
 import { portalMenuLinks } from '@/lib/user-menu';
 import UserMenu from '@/components/layout/UserMenu';
+import BackButton from '@/components/layout/BackButton';
 import LoginNotificationPopup from '@/components/notifications/LoginNotificationPopup';
 import NotificationBadge from '@/components/notifications/NotificationBadge';
 import ThemeToggle from '@/components/theme/ThemeToggle';
+import { AdminBasePathProvider } from '@/components/admin/AdminBasePathContext';
 import type { SessionUser } from '@/lib/auth';
 
 interface NavItem {
@@ -24,6 +26,16 @@ interface PortalLayoutProps {
   navItems: NavItem[];
   children: React.ReactNode;
   portalName: string;
+  /**
+   * Admin base path (PR #33) — the secret admin URL's first segment,
+   * read from ADMIN_BASE_PATH by the server layout and passed down.
+   * The portal layout hands it to the portal-switch / menu helpers
+   * (which build admin links) and to the AdminBasePathProvider, so
+   * admin client components can build links without ever touching
+   * process.env. Dev default 'admin'. Only the admin portal's links
+   * use it; the other portals just pass it through.
+   */
+  adminBasePath?: string;
 }
 
 /**
@@ -117,7 +129,7 @@ function Sidebar({
   );
 }
 
-export default function PortalLayout({ user, navItems, children, portalName }: PortalLayoutProps) {
+export default function PortalLayout({ user, navItems, children, portalName, adminBasePath = 'admin' }: PortalLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const pathname = usePathname();
 
@@ -128,20 +140,23 @@ export default function PortalLayout({ user, navItems, children, portalName }: P
   // user out. getPortalSwitch returns null unless the user holds the
   // OTHER portal's capability — a normal teacher/admin/student sees
   // no switch option at all.
-  const switchTarget = getPortalSwitch(user, pathname);
+  const switchTarget = getPortalSwitch(user, pathname, adminBasePath);
   // Bell/avatar stay in the CURRENT portal, not the user's primary
   // role: a teacher+admin whose primary role is 'instructor' but who
   // switched into the admin panel must get /admin/notifications, not
   // /instructor/notifications. Falls back to the primary role outside
   // any portal (should not happen — this layout only renders inside
   // a portal — but keeps the old behaviour rather than a broken link).
-  const portalSlug = portalFromPathname(pathname) ?? user.role;
+  const portalSlug = portalFromPathname(pathname, adminBasePath) ?? user.role;
+  // The bell's URL prefix for the current portal. The admin portal's
+  // prefix is the secret base path (PR #33), not '/admin'.
+  const portalBase = portalSlug === 'admin' ? `/${adminBasePath}` : `/${portalSlug}`;
   // Avatar menu destinations come from the CURRENT portal prefix in
   // the pathname (see lib/user-menu.ts) — portalFromPathname does not
   // know /applicant, so the menu must not reuse portalSlug here. The
   // bell above keeps using portalSlug on purpose (no
   // /applicant/notifications page exists).
-  const links = portalMenuLinks(pathname, user.role);
+  const links = portalMenuLinks(pathname, user.role, adminBasePath);
 
   return (
     <div className="flex h-screen bg-background overflow-hidden">
@@ -170,6 +185,11 @@ export default function PortalLayout({ user, navItems, children, portalName }: P
 
       {/* Main content */}
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+        {/* Back button (PR #33): fixed chip below the portal header and,
+            on desktop, beside the 16rem sidebar. On a portal dashboard
+            it goes back to the previous page (or home when there is no
+            history). */}
+        <BackButton className="top-[4.5rem] left-4 lg:left-[17rem]" />
         {/* Top bar — relative z-20 so the ThemeToggle / UserMenu dropdowns
             (absolute, z-50 inside this header's stacking context) paint
             ABOVE the <main> content below. Without it the header's
@@ -206,7 +226,7 @@ export default function PortalLayout({ user, navItems, children, portalName }: P
                 logout fetch). The badge is display-only: nothing here
                 enforces access — the notifications page and its API
                 enforce ownership server-side. */}
-            <Link href={`/${portalSlug}/notifications`} aria-label="Notifications" className="relative text-muted hover:text-foreground transition-colors p-2 rounded-lg hover:bg-dark-border cursor-pointer">
+            <Link href={`${portalBase}/notifications`} aria-label="Notifications" className="relative text-muted hover:text-foreground transition-colors p-2 rounded-lg hover:bg-dark-border cursor-pointer">
               <Bell className="w-5 h-5" />
               <NotificationBadge />
             </Link>
@@ -217,7 +237,9 @@ export default function PortalLayout({ user, navItems, children, portalName }: P
         {/* Page content */}
         <main className="flex-1 overflow-y-auto">
           <div className="p-4 sm:p-6">
-            {children}
+            {/* Admin base path (PR #33): admin client components build
+                their links from this context, never from process.env. */}
+            <AdminBasePathProvider value={adminBasePath}>{children}</AdminBasePathProvider>
           </div>
         </main>
       </div>

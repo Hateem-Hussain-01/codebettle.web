@@ -82,6 +82,9 @@ const NULLABLE_FIELDS: Record<string, string[]> = {
   SuccessStoryEvidence: ['label', 'fileName', 'mime', 'size'],
   TeamMember: ['photoUrl', 'bio', 'xUrl', 'linkedinUrl', 'githubUrl', 'websiteUrl', 'department'],
   StudentReview: ['photoUrl', 'linkedinUrl', 'githubUrl', 'websiteUrl'],
+  Subscriber: [],
+  BookACall: ['phone', 'courseInterest', 'preferredContact'],
+  AmbassadorApplication: [],
 };
 
 let idCounter = 0;

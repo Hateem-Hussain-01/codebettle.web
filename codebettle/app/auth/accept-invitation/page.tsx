@@ -3,7 +3,7 @@ import { useEffect, useState, Suspense } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { motion } from 'framer-motion';
-import { CheckCircle2, Lock, Eye, EyeOff, Mail, ShieldAlert } from 'lucide-react';
+import { CheckCircle2, Lock, Eye, EyeOff, Mail, ShieldAlert, Download } from 'lucide-react';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
 import toast from 'react-hot-toast';
@@ -34,6 +34,9 @@ function AcceptInvitationForm() {
   const [showPassword, setShowPassword] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [accepted, setAccepted] = useState(false);
+  // Secret admin sign-in URL (PR #33), returned by the accept API —
+  // the invitee signs in there, not at the public /auth/login.
+  const [portalUrl, setPortalUrl] = useState('');
 
   useEffect(() => {
     if (!token) {
@@ -62,10 +65,10 @@ function AcceptInvitationForm() {
   }, [token]);
 
   useEffect(() => {
-    if (!accepted) return;
-    const timer = setTimeout(() => router.push('/auth/login'), 3000);
+    if (!accepted || !portalUrl) return;
+    const timer = setTimeout(() => router.push(portalUrl), 3000);
     return () => clearTimeout(timer);
-  }, [accepted, router]);
+  }, [accepted, portalUrl, router]);
 
   const handleAccept = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -80,6 +83,7 @@ function AcceptInvitationForm() {
       });
       const data = await res.json();
       if (!res.ok) { toast.error(data.error ?? 'This invitation link is invalid or has expired'); return; }
+      if (typeof data.portalUrl === 'string') setPortalUrl(data.portalUrl);
       setAccepted(true);
       toast.success('Your account is ready!');
     } finally {
@@ -168,7 +172,36 @@ function AcceptInvitationForm() {
             Your password is set and your admin access is active.
             Taking you to sign in…
           </p>
-          <Link href="/auth/login">
+          {portalUrl && (
+            <div className="mt-4 rounded-lg border border-primary/40 bg-primary/10 px-4 py-3 text-left">
+              <p className="text-sm font-semibold text-foreground">Your admin sign-in link</p>
+              <p className="text-xs text-muted mt-1">
+                This is a private link — it is not on the public website and cannot be found by searching. Save it now.
+              </p>
+              <p className="text-xs text-primary-text mt-2 break-all">{portalUrl}</p>
+              <Button
+                variant="outline"
+                size="sm"
+                className="mt-3"
+                onClick={() => {
+                  const text = `CodeBettle admin sign-in link\n${portalUrl}\n\nSave this link — you cannot find it by searching.\n`;
+                  const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
+                  const url = URL.createObjectURL(blob);
+                  const a = document.createElement('a');
+                  a.href = url;
+                  a.download = 'codebettle-admin-link.txt';
+                  document.body.appendChild(a);
+                  a.click();
+                  a.remove();
+                  URL.revokeObjectURL(url);
+                  toast.success('Admin link downloaded');
+                }}
+              >
+                <Download className="w-4 h-4" /> Download the link (.txt)
+              </Button>
+            </div>
+          )}
+          <Link href={portalUrl || '/auth/login'}>
             <Button fullWidth size="lg" className="mt-6">Sign In Now</Button>
           </Link>
         </div>

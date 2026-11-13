@@ -190,8 +190,10 @@ test('admin layout: Audit Log nav after Reports, gated on authorized admin or ca
   assert.match(layout, /ScrollText/);
   assert.match(layout, /canSeeAuditLog/);
   assert.match(layout, /isSuperAdmin\(session\)/);
-  // The audit guard sits beside the access guard.
-  assert.match(layout, /pathname === '\/admin\/audit'/);
+  // The audit guard sits beside the access guard. PR #33: the layout
+  // converts the secret path to its internal /admin form first, so the
+  // guard compares internalPath, not the raw pathname.
+  assert.match(layout, /internalPath === '\/admin\/audit'/);
   // /admin/access is no longer merely full-admin.
   assert.doesNotMatch(layout, /isFullAdmin/);
 });

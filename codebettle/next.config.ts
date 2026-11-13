@@ -66,6 +66,23 @@ const nextConfig: NextConfig = {
   outputFileTracingIncludes: {
     '/api/certificates/\\[id\\]/download': ['./node_modules/@sparticuz/chromium/bin/**/*'],
   },
+  async rewrites() {
+    const base = (process.env.ADMIN_BASE_PATH ?? '').trim().replace(/^\/+|\/+$/g, '');
+    const valid = /^[A-Za-z0-9][A-Za-z0-9-]*$/.test(base);
+    // Secret admin URL (PR #33): the admin area lives at
+    // /<ADMIN_BASE_PATH>/... instead of /admin/... (an extra layer of
+    // obscurity, NOT a replacement for auth). The admin pages stay at
+    // app/admin/... in the repo; this rewrite maps the secret path
+    // onto them. Skipped in local dev (no env var, or the dev default
+    // 'admin'), where /admin/... is the real path. The old /admin/*
+    // URLs are blocked by the proxy when a secret base is set, so they
+    // never reach these routes in production.
+    if (!valid || base === 'admin') return [];
+    return [
+      { source: `/${base}`, destination: '/admin' },
+      { source: `/${base}/:path*`, destination: '/admin/:path*' },
+    ];
+  },
   async headers() {
     return [
       {

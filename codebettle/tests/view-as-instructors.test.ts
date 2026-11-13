@@ -101,6 +101,9 @@ test('view-as has no time limit: no TTL constant, session cookie (no maxAge)', (
 
 test('view-as banner returns to the Instructors page (the new entry point)', () => {
   const src = read('components/layout/ViewAsBanner.tsx');
-  assert.ok(src.includes("window.location.href = '/admin/instructors'"));
+  // PR #33: the return URL uses the secret admin base path (default
+  // 'admin', so the live URL is still /admin/instructors in dev).
+  assert.ok(src.includes('window.location.href = `/${adminBasePath}/instructors`'));
+  assert.ok(src.includes("adminBasePath = 'admin'"));
   assert.ok(!src.includes("window.location.href = '/admin/applications'"));
 });

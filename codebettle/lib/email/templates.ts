@@ -239,6 +239,14 @@ export interface AdminInvitationEmailInput {
   inviteUrl: string;
   /** Whole days the link stays valid (see INVITATION_TTL_DAYS in lib/services/invitation-service.ts). */
   expiresInDays: number;
+  /**
+   * The secret admin sign-in page URL (PR #33). When present, the
+   * email also carries the portal link + a "save this link" note +
+   * a download link, because the admin area is not linked anywhere
+   * on the public site and cannot be found by searching. Only ever
+   * sent to the invited admin, never to a public recipient.
+   */
+  portalUrl?: string;
 }
 
 /**
@@ -249,6 +257,18 @@ export interface AdminInvitationEmailInput {
 export function adminInvitationEmail(input: AdminInvitationEmailInput): EmailTemplate {
   const name = escapeHtml(input.name || 'there');
   const days = input.expiresInDays;
+  // Secret admin portal link (PR #33): the admin area lives at a
+  // private URL that is not linked anywhere public, so the invitee
+  // must save it now. The download link is best-effort in email
+  // (some clients strip data: links); the accept-invitation page
+  // also shows the link with a working download button.
+  const portalSection = input.portalUrl
+    ? bodyParagraph(
+        'Your admin sign-in page is a private link — it is not on the public website and cannot be found by searching. Save this link now; it is the only way to reach the admin sign-in page.',
+      ) +
+      `<p style="margin: 0 0 8px 0; font-size: 14px; line-height: 1.6; color: #E5E7EB; word-break: break-all;"><a href="${input.portalUrl}" style="color: #F5C518; text-decoration: underline;">${input.portalUrl}</a></p>` +
+      `<p style="margin: 0 0 16px 0; font-size: 14px; line-height: 1.6;"><a href="data:text/plain;charset=utf-8,${encodeURIComponent(`CodeBettle admin sign-in link\n${input.portalUrl}\n\nSave this link — you cannot find it by searching.\n`)}" download="codebettle-admin-link.txt" style="color: #F5C518;">Download the link (.txt)</a></p>`
+    : '';
   const html = emailLayout({
     preheader: 'You have been invited to join CodeBettle as an administrator.',
     heading: 'You are invited to join CodeBettle',
@@ -262,6 +282,7 @@ export function adminInvitationEmail(input: AdminInvitationEmailInput): EmailTem
         `This link expires in ${days} day${days === 1 ? '' : 's'} and can only be used once. ` +
           'Your password is yours alone — nobody at CodeBettle sets it for you.',
       ) +
+      portalSection +
       bodyParagraph('If you were not expecting this invitation, you can safely ignore this email.'),
     cta: { label: 'Set your password and join', url: input.inviteUrl },
     fallbackUrl: input.inviteUrl,
@@ -276,9 +297,85 @@ export function adminInvitationEmail(input: AdminInvitationEmailInput): EmailTem
     '',
     `This link expires in ${days} day${days === 1 ? '' : 's'} and can only be used once. Your password is yours alone — nobody at CodeBettle sets it for you.`,
     '',
+    ...(input.portalUrl
+      ? [
+          'Your admin sign-in page is a private link — it is not on the public website and cannot be found by searching. Save this link now; it is the only way to reach the admin sign-in page.',
+          '',
+          `Admin sign-in: ${input.portalUrl}`,
+          '',
+        ]
+      : []),
     'If you were not expecting this invitation, you can safely ignore this email.',
   ].join('\n');
   return { subject: 'You are invited to join CodeBettle as an admin', html, text };
+}
+
+// ---------------------------------------------------------------------------
+// Book-a-call email (PR #33)
+// ---------------------------------------------------------------------------
+
+export interface BookACallEmailInput {
+  fullName: string;
+  email: string;
+  phone?: string;
+  currentStatus: string;
+  courseInterest?: string;
+  guidanceNeeded: string;
+  preferredContact?: string;
+  /** URL of the admin Book a Call section (the secret admin base path), for the CTA. */
+  adminUrl?: string;
+  siteUrl: string;
+}
+
+/**
+ * Book-a-call notification (PR #33). Sent to the 3 recipients Eman
+ * confirmed (Ahmad Hassan, Zohad Ijaz, Eman) when someone books a
+ * free career-guidance call from /book-a-call. Student questions
+ * only — no budget/fee is ever mentioned (the call is free). Best
+ * effort like the other senders: when Resend is not configured the
+ * booking is still saved and listed in admin; the email is skipped.
+ */
+export function bookACallEmail(input: BookACallEmailInput): EmailTemplate {
+  const rows: Array<[string, string | undefined]> = [
+    ['Name', input.fullName],
+    ['Email', input.email],
+    ['Phone', input.phone],
+    ['Current status', input.currentStatus],
+    ['Course / topic of interest', input.courseInterest],
+    ['What guidance they need', input.guidanceNeeded],
+    ['Preferred contact time / mode', input.preferredContact],
+  ];
+  const detailRows = rows
+    .filter(([, value]) => value && value.trim().length > 0)
+    .map(
+      ([label, value]) =>
+        `<tr><td style="padding: 6px 12px 6px 0; font-size: 14px; color: #9CA3AF; vertical-align: top; white-space: nowrap;">${escapeHtml(label)}</td><td style="padding: 6px 0; font-size: 14px; color: #E5E7EB; vertical-align: top;">${escapeHtml(value ?? '')}</td></tr>`,
+    )
+    .join('');
+  const html = emailLayout({
+    preheader: `New book-a-call request from ${input.fullName}.`,
+    heading: 'New book-a-call request',
+    bodyHtml:
+      bodyParagraph(
+        `${escapeHtml(input.fullName)} asked to book a free career-guidance call. The request is saved in the admin panel.`,
+      ) +
+      `<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin: 8px 0 16px 0;">${detailRows}</table>` +
+      bodyParagraph('Reply to them directly, or mark the request as contacted in the admin panel once you have reached out.'),
+    cta: input.adminUrl ? { label: 'Open the request in admin', url: input.adminUrl } : undefined,
+    fallbackUrl: input.adminUrl,
+    siteUrl: input.siteUrl,
+  });
+  const text = [
+    `${input.fullName} asked to book a free career-guidance call. The request is saved in the admin panel.`,
+    '',
+    ...rows
+      .filter(([, value]) => value && value.trim().length > 0)
+      .map(([label, value]) => `${label}: ${value}`),
+    '',
+    'Reply to them directly, or mark the request as contacted in the admin panel once you have reached out.',
+    ...(input.adminUrl ? ['', `Open the request: ${input.adminUrl}`] : []),
+  ].join('\n');
+  return { subject: `New book-a-call request from ${input.fullName}`, html, text };
 }
 
 // ---------------------------------------------------------------------------

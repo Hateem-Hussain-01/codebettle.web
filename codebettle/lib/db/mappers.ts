@@ -14,10 +14,16 @@ import type {
   Announcement,
   AnnouncementRow,
   AnnouncementType,
+  AmbassadorApplication,
+  AmbassadorApplicationRow,
+  AmbassadorApplicationStatus,
   Batch,
   BatchRow,
   BlogPost,
   BlogPostRow,
+  BookACall,
+  BookACallRow,
+  BookACallStatus,
   Certificate,
   CertificateRow,
   CertificateRowLike,
@@ -67,6 +73,8 @@ import type {
   Review,
   ReviewRow,
   SocialLinks,
+  Subscriber,
+  SubscriberRow,
   SupportRequest,
   SupportRequestRow,
   SuccessStoryAchievement,
@@ -450,6 +458,57 @@ export function mapContactMessageRow(row: ContactMessageRow): ContactMessage {
     message: row.message,
     isRead: row.isRead,
     createdAt: dateToString(row.createdAt),
+  };
+}
+
+export function mapSubscriberRow(row: SubscriberRow): Subscriber {
+  return {
+    id: row.id,
+    email: row.email,
+    createdAt: dateToString(row.createdAt),
+  };
+}
+
+export function bookACallStatusFromStorage(stored: string): BookACallStatus {
+  if (stored === 'new' || stored === 'contacted' || stored === 'done') return stored;
+  throw new Error(`Unknown book-a-call status in database: ${stored}`);
+}
+
+export function mapBookACallRow(row: BookACallRow): BookACall {
+  return {
+    id: row.id,
+    fullName: row.fullName,
+    email: row.email,
+    phone: row.phone ?? undefined,
+    currentStatus: row.currentStatus,
+    courseInterest: row.courseInterest ?? undefined,
+    guidanceNeeded: row.guidanceNeeded,
+    preferredContact: row.preferredContact ?? undefined,
+    status: bookACallStatusFromStorage(row.status),
+    createdAt: dateToString(row.createdAt),
+    updatedAt: dateToString(row.updatedAt),
+  };
+}
+
+export function ambassadorApplicationStatusFromStorage(stored: string): AmbassadorApplicationStatus {
+  if (stored === 'pending' || stored === 'approved' || stored === 'rejected') return stored;
+  throw new Error(`Unknown ambassador application status in database: ${stored}`);
+}
+
+export function mapAmbassadorApplicationRow(row: AmbassadorApplicationRow): AmbassadorApplication {
+  return {
+    id: row.id,
+    fullName: row.fullName,
+    whatsapp: row.whatsapp,
+    email: row.email,
+    university: row.university,
+    departmentSemester: row.departmentSemester,
+    leadershipPosition: row.leadershipPosition,
+    promotionPlan: row.promotionPlan,
+    priorAmbassadorExperience: row.priorAmbassadorExperience,
+    status: ambassadorApplicationStatusFromStorage(row.status),
+    createdAt: dateToString(row.createdAt),
+    updatedAt: dateToString(row.updatedAt),
   };
 }
 

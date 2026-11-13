@@ -169,10 +169,11 @@ test('PortalLayout mounts the login popup and renders the bell badge component',
   assert.match(layout, /import NotificationBadge from '@\/components\/notifications\/NotificationBadge'/);
   assert.match(layout, /<NotificationBadge\s*\/>/);
   // The bell link itself stays in the layout (portal-switch tests
-  // assert the /${portalSlug}/notifications link lives there); only
-  // the badge's fetch lives in NotificationBadge, so the layout keeps
-  // just its pre-existing logout fetch.
-  assert.match(layout, /\/\$\{portalSlug\}\/notifications/);
+  // assert the ${portalBase}/notifications link lives there — PR #33:
+  // the admin portal's prefix is the secret base path, not /admin);
+  // only the badge's fetch lives in NotificationBadge, so the layout
+  // keeps just its pre-existing logout fetch.
+  assert.match(layout, /\$\{portalBase\}\/notifications/);
   assert.doesNotMatch(layout, /\/api\/notifications/);
   assert.doesNotMatch(layout, /w-2 h-2 bg-primary rounded-full/);
   const badge = read('components/notifications/NotificationBadge.tsx');

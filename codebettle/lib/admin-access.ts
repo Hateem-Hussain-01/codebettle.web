@@ -56,6 +56,9 @@ export type AdminAreaKey =
   | 'reviews'
   | 'email-templates'
   | 'navbar-editor'
+  | 'book-a-call'
+  | 'ambassadors'
+  | 'subscribers'
   | 'settings';
 
 /**
@@ -119,6 +122,15 @@ export const ADMIN_AREAS: readonly AdminArea[] = [
   // Navbar Editor (PR #32): nav items (label, destination, order,
   // enable/disable) and the navbar logo.
   { key: 'navbar-editor', label: 'Navbar Editor', href: '/admin/navbar-editor', description: 'Navbar items and logo (label, destination, order, enable/disable)' },
+  // Footer forms (PR #33): the three footer additions each get their
+  // own review section. A NEW area each (not folded into 'messages')
+  // because they are separate public forms with their own workflow
+  // (book-a-call status, ambassador approve/reject, subscriber list).
+  // Restricted admins do NOT get them by default (secure default:
+  // missing keys are denied).
+  { key: 'book-a-call', label: 'Book a Call', href: '/admin/book-a-call', description: 'Free career-guidance call requests (review, mark contacted/done)' },
+  { key: 'ambassadors', label: 'Ambassadors', href: '/admin/ambassadors', description: 'Campus ambassador applications (review, approve/reject)' },
+  { key: 'subscribers', label: 'Subscribers', href: '/admin/subscribers', description: 'Newsletter subscribers from the footer' },
   { key: 'settings', label: 'Settings', href: '/admin/settings', description: 'Site settings' },
 ] as const;
 

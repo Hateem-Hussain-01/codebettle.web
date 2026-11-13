@@ -31,7 +31,7 @@ import { randomBytes } from 'node:crypto';
 import { hashPassword, hashToken, normalizeEmail, validatePassword } from '../security';
 import { isFullAdmin, normaliseAdminPermissions, type AdminPermissions } from '../admin-access';
 import { hasAdminCapability } from '../rbac';
-import { buildInvitationUrl, getAppBaseUrl, sendInvitationEmail, type EmailTransport } from '../email/resend';
+import { buildAdminPortalUrl, buildInvitationUrl, getAppBaseUrl, sendInvitationEmail, type EmailTransport } from '../email/resend';
 import {
   createInvitation,
   deleteInvitation,
@@ -117,6 +117,12 @@ export interface CreatedInvitation {
   invitation: PublicInvitation;
   /** Copyable accept link (contains the raw token — only available at creation/resend time). */
   inviteUrl: string;
+  /**
+   * Secret admin sign-in page URL (PR #33). The admin area is not
+   * linked anywhere public, so the inviting admin copies this to the
+   * invitee along with the accept link, and the invitee saves it.
+   */
+  portalUrl: string;
   /** True only when the activation email was actually sent. False = Resend not configured or send failed; share inviteUrl by hand. */
   emailSent: boolean;
 }
@@ -212,6 +218,7 @@ export async function createInvitationForAdmin(
   return {
     invitation: toPublicInvitation(invitation, now),
     inviteUrl: buildInvitationUrl(baseUrl, token),
+    portalUrl: buildAdminPortalUrl(baseUrl),
     emailSent,
   };
 }

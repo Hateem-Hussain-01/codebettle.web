@@ -5,7 +5,7 @@ import Input from '@/components/ui/Input';
 import Card from '@/components/ui/Card';
 import Badge from '@/components/ui/Badge';
 import FadeIn from '@/components/ui/FadeIn';
-import { Search, ShieldCheck, ShieldAlert, Save, Ban, UserPlus, Mail, Copy, RefreshCw } from 'lucide-react';
+import { Search, ShieldCheck, ShieldAlert, Save, Ban, UserPlus, Mail, Copy, RefreshCw, Download } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { ADMIN_AREAS, type AdminAreaKey, type AdminPermissions } from '@/lib/admin-access';
 import { hasAdminCapability } from '@/lib/rbac';
@@ -78,7 +78,7 @@ export default function AdminAccessClient() {
     () => Object.fromEntries(ADMIN_AREAS.map((a) => [a.key, true])) as Record<AdminAreaKey, boolean>,
   );
   const [inviting, setInviting] = useState(false);
-  const [inviteResult, setInviteResult] = useState<{ email: string; inviteUrl: string; emailSent: boolean } | null>(null);
+  const [inviteResult, setInviteResult] = useState<{ email: string; inviteUrl: string; portalUrl?: string; emailSent: boolean } | null>(null);
   const [inviteSearch, setInviteSearch] = useState('');
   const [editName, setEditName] = useState('');
   const [editPhone, setEditPhone] = useState('');
@@ -248,7 +248,7 @@ export default function AdminAccessClient() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? 'Could not send the invitation');
-      setInviteResult({ email: data.invitation.email, inviteUrl: data.inviteUrl, emailSent: data.emailSent });
+      setInviteResult({ email: data.invitation.email, inviteUrl: data.inviteUrl, portalUrl: data.portalUrl, emailSent: data.emailSent });
       toast.success(data.emailSent ? `Invitation sent to ${email}` : 'Invitation created — email is not configured, copy the link below');
       setInviteFirstName('');
       setInviteLastName('');
@@ -269,7 +269,7 @@ export default function AdminAccessClient() {
       const res = await fetch(`/api/admin/access/invitations/${inv.id}/resend`, { method: 'POST' });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? 'Could not resend the invitation');
-      setInviteResult({ email: data.invitation.email, inviteUrl: data.inviteUrl, emailSent: data.emailSent });
+      setInviteResult({ email: data.invitation.email, inviteUrl: data.inviteUrl, portalUrl: data.portalUrl, emailSent: data.emailSent });
       toast.success(data.emailSent ? `Invitation resent to ${inv.email}` : 'New invitation created — email is not configured, copy the link below');
       await loadInvitations();
     } catch (err) {
@@ -452,6 +452,51 @@ export default function AdminAccessClient() {
                   <Copy className="w-4 h-4" /> Copy link
                 </Button>
               </div>
+              {inviteResult.portalUrl && (
+                <div className="mt-4 pt-3 border-t border-dark-border">
+                  <p className="text-sm font-semibold text-foreground">Admin sign-in link</p>
+                  <p className="text-xs text-muted mt-1">
+                    Share this with the new admin too — it is the only way to reach the admin sign-in page. Save this
+                    link — you cannot find it by searching.
+                  </p>
+                  <div className="mt-2 flex gap-2">
+                    <input
+                      readOnly
+                      value={inviteResult.portalUrl}
+                      onClick={(e) => e.currentTarget.select()}
+                      className="flex-1 min-w-0 rounded-lg border border-dark-border bg-background px-3 py-2 text-xs text-foreground"
+                    />
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      type="button"
+                      onClick={async () => { await navigator.clipboard.writeText(inviteResult.portalUrl!); toast.success('Admin link copied'); }}
+                    >
+                      <Copy className="w-4 h-4" /> Copy link
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      type="button"
+                      onClick={() => {
+                        const text = `CodeBettle admin sign-in link\n${inviteResult.portalUrl}\n\nSave this link — you cannot find it by searching.\n`;
+                        const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
+                        const url = URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.href = url;
+                        a.download = 'codebettle-admin-link.txt';
+                        document.body.appendChild(a);
+                        a.click();
+                        a.remove();
+                        URL.revokeObjectURL(url);
+                        toast.success('Admin link downloaded');
+                      }}
+                    >
+                      <Download className="w-4 h-4" /> Download (.txt)
+                    </Button>
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </Card>

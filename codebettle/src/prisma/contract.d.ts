@@ -23,9 +23,9 @@ import type {
 } from '@prisma/orm-postgres/contract/types';
 
 export type StorageHash =
-  StorageHashBase<'d34358cf5bd579183fc13b0a5b0f47beacaf9f97a39905517fcabf05db278e56'>;
+  StorageHashBase<'172aee3b721fa8825ccc2045ca647f1302ab5c3a5a485091a80c6cb53c65756e'>;
 export type ExecutionHash =
-  ExecutionHashBase<'c03532fd4320ed019690564f3dce857d65213fe23762255c9be9388dac920442'>;
+  ExecutionHashBase<'47e7f6988d21496e8ae4b972d535da5efd54274029868521f772003d8a7679a4'>;
 export type ProfileHash =
   ProfileHashBase<'3916f444a8a17ad749191acf9e08dad97d1a327b88c2f1d45d12f240296aa8b2'>;
 
@@ -278,6 +278,12 @@ type ParameterizedOutputTypeFunctions = PgParameterizedOutputTypes;
 type FieldTypeOverrides = {
   readonly public: {
     readonly models: {
+      readonly AmbassadorApplication: {
+        readonly status: {
+          readonly output: 'pending' | 'approved' | 'rejected';
+          readonly input: 'pending' | 'approved' | 'rejected';
+        };
+      };
       readonly Announcement: {
         readonly type: {
           readonly output: 'site_wide' | 'course';
@@ -288,6 +294,12 @@ type FieldTypeOverrides = {
         readonly status: {
           readonly output: 'upcoming' | 'ongoing' | 'completed';
           readonly input: 'upcoming' | 'ongoing' | 'completed';
+        };
+      };
+      readonly BookACall: {
+        readonly status: {
+          readonly output: 'new' | 'contacted' | 'done';
+          readonly input: 'new' | 'contacted' | 'done';
         };
       };
       readonly Coupon: {
@@ -423,6 +435,12 @@ export type FieldInputTypes = FieldTypesFromDomain<
 >;
 type ColumnTypeOverrides = {
   readonly public: {
+    readonly AmbassadorApplication: {
+      readonly status: {
+        readonly output: 'pending' | 'approved' | 'rejected';
+        readonly input: 'pending' | 'approved' | 'rejected';
+      };
+    };
     readonly Announcement: {
       readonly type: {
         readonly output: 'site_wide' | 'course';
@@ -433,6 +451,12 @@ type ColumnTypeOverrides = {
       readonly status: {
         readonly output: 'upcoming' | 'ongoing' | 'completed';
         readonly input: 'upcoming' | 'ongoing' | 'completed';
+      };
+    };
+    readonly BookACall: {
+      readonly status: {
+        readonly output: 'new' | 'contacted' | 'done';
+        readonly input: 'new' | 'contacted' | 'done';
       };
     };
     readonly Coupon: {
@@ -565,6 +589,21 @@ export type StorageColumnInputTypes = ColumnTypesFromStorage<
 >;
 
 export namespace Models {
+  export type public_AmbassadorApplication = {
+    createdAt: FieldOutputTypes['public']['AmbassadorApplication']['createdAt'];
+    departmentSemester: FieldOutputTypes['public']['AmbassadorApplication']['departmentSemester'];
+    email: FieldOutputTypes['public']['AmbassadorApplication']['email'];
+    fullName: FieldOutputTypes['public']['AmbassadorApplication']['fullName'];
+    id: FieldOutputTypes['public']['AmbassadorApplication']['id'];
+    leadershipPosition: FieldOutputTypes['public']['AmbassadorApplication']['leadershipPosition'];
+    priorAmbassadorExperience: FieldOutputTypes['public']['AmbassadorApplication']['priorAmbassadorExperience'];
+    promotionPlan: FieldOutputTypes['public']['AmbassadorApplication']['promotionPlan'];
+    status: FieldOutputTypes['public']['AmbassadorApplication']['status'];
+    university: FieldOutputTypes['public']['AmbassadorApplication']['university'];
+    updatedAt: FieldOutputTypes['public']['AmbassadorApplication']['updatedAt'];
+    whatsapp: FieldOutputTypes['public']['AmbassadorApplication']['whatsapp'];
+    readonly [RelationKeys]?: never;
+  };
   export type public_Announcement = {
     authorId: FieldOutputTypes['public']['Announcement']['authorId'];
     content: FieldOutputTypes['public']['Announcement']['content'];
@@ -662,6 +701,20 @@ export namespace Models {
     updatedAt: FieldOutputTypes['public']['BlogPost']['updatedAt'];
     author: public_User;
     readonly [RelationKeys]?: 'author';
+  };
+  export type public_BookACall = {
+    courseInterest: FieldOutputTypes['public']['BookACall']['courseInterest'];
+    createdAt: FieldOutputTypes['public']['BookACall']['createdAt'];
+    currentStatus: FieldOutputTypes['public']['BookACall']['currentStatus'];
+    email: FieldOutputTypes['public']['BookACall']['email'];
+    fullName: FieldOutputTypes['public']['BookACall']['fullName'];
+    guidanceNeeded: FieldOutputTypes['public']['BookACall']['guidanceNeeded'];
+    id: FieldOutputTypes['public']['BookACall']['id'];
+    phone: FieldOutputTypes['public']['BookACall']['phone'];
+    preferredContact: FieldOutputTypes['public']['BookACall']['preferredContact'];
+    status: FieldOutputTypes['public']['BookACall']['status'];
+    updatedAt: FieldOutputTypes['public']['BookACall']['updatedAt'];
+    readonly [RelationKeys]?: never;
   };
   export type public_Certificate = {
     batch: FieldOutputTypes['public']['Certificate']['batch'];
@@ -1171,6 +1224,12 @@ export namespace Models {
     websiteUrl: FieldOutputTypes['public']['StudentReview']['websiteUrl'];
     readonly [RelationKeys]?: never;
   };
+  export type public_Subscriber = {
+    createdAt: FieldOutputTypes['public']['Subscriber']['createdAt'];
+    email: FieldOutputTypes['public']['Subscriber']['email'];
+    id: FieldOutputTypes['public']['Subscriber']['id'];
+    readonly [RelationKeys]?: never;
+  };
   export type public_SuccessStoryAchievement = {
     achievedAt: FieldOutputTypes['public']['SuccessStoryAchievement']['achievedAt'];
     category: FieldOutputTypes['public']['SuccessStoryAchievement']['category'];
@@ -1397,6 +1456,7 @@ export namespace Models {
 
 export declare const models: {
   public: {
+    AmbassadorApplication: Models.public_AmbassadorApplication;
     Announcement: Models.public_Announcement;
     ApplicationNote: Models.public_ApplicationNote;
     ApplicationStage: Models.public_ApplicationStage;
@@ -1404,6 +1464,7 @@ export declare const models: {
     AuditLog: Models.public_AuditLog;
     Batch: Models.public_Batch;
     BlogPost: Models.public_BlogPost;
+    BookACall: Models.public_BookACall;
     Certificate: Models.public_Certificate;
     ContactMessage: Models.public_ContactMessage;
     Coupon: Models.public_Coupon;
@@ -1437,6 +1498,7 @@ export declare const models: {
     SiteSetting: Models.public_SiteSetting;
     SocialLink: Models.public_SocialLink;
     StudentReview: Models.public_StudentReview;
+    Subscriber: Models.public_Subscriber;
     SuccessStoryAchievement: Models.public_SuccessStoryAchievement;
     SuccessStoryEvidence: Models.public_SuccessStoryEvidence;
     SuccessStorySubmission: Models.public_SuccessStorySubmission;
@@ -1466,6 +1528,106 @@ type ContractBase = Omit<
         readonly kind: 'postgres-schema';
         readonly entries: {
           readonly table: {
+            readonly AmbassadorApplication: {
+              columns: {
+                readonly createdAt: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly nullable: false;
+                  readonly default: { readonly kind: 'function'; readonly expression: 'now()' };
+                  readonly typeParams: { readonly precision: 3 };
+                  readonly many: false;
+                };
+                readonly departmentSemester: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly email: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly fullName: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly id: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly leadershipPosition: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly priorAmbassadorExperience: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly promotionPlan: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly status: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'literal';
+                    readonly value: DefaultLiteralValue<'pg/text@1', 'pending'>;
+                  };
+                  readonly many: false;
+                };
+                readonly university: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly updatedAt: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly nullable: false;
+                  readonly typeParams: { readonly precision: 3 };
+                  readonly many: false;
+                };
+                readonly whatsapp: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+              };
+              primaryKey: { readonly columns: readonly ['id'] };
+              uniques: readonly [];
+              indexes: readonly [
+                {
+                  readonly name: 'AmbassadorApplication_email_createdAt_idx_6e3c0d8a';
+                  readonly prefix: 'AmbassadorApplication_email_createdAt_idx';
+                  readonly columns: readonly ['email', 'createdAt'];
+                  readonly unique: false;
+                },
+                {
+                  readonly name: 'AmbassadorApplication_status_createdAt_idx_58610442';
+                  readonly prefix: 'AmbassadorApplication_status_createdAt_idx';
+                  readonly columns: readonly ['status', 'createdAt'];
+                  readonly unique: false;
+                },
+              ];
+              foreignKeys: readonly [];
+            };
             readonly Announcement: {
               columns: {
                 readonly authorId: {
@@ -2164,6 +2326,100 @@ type ContractBase = Omit<
                   };
                 },
               ];
+            };
+            readonly BookACall: {
+              columns: {
+                readonly courseInterest: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly createdAt: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly nullable: false;
+                  readonly default: { readonly kind: 'function'; readonly expression: 'now()' };
+                  readonly typeParams: { readonly precision: 3 };
+                  readonly many: false;
+                };
+                readonly currentStatus: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly email: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly fullName: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly guidanceNeeded: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly id: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly phone: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly preferredContact: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly status: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'literal';
+                    readonly value: DefaultLiteralValue<'pg/text@1', 'new'>;
+                  };
+                  readonly many: false;
+                };
+                readonly updatedAt: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly nullable: false;
+                  readonly typeParams: { readonly precision: 3 };
+                  readonly many: false;
+                };
+              };
+              primaryKey: { readonly columns: readonly ['id'] };
+              uniques: readonly [];
+              indexes: readonly [
+                {
+                  readonly name: 'BookACall_email_createdAt_idx_6e3c0d8a';
+                  readonly prefix: 'BookACall_email_createdAt_idx';
+                  readonly columns: readonly ['email', 'createdAt'];
+                  readonly unique: false;
+                },
+                {
+                  readonly name: 'BookACall_status_createdAt_idx_58610442';
+                  readonly prefix: 'BookACall_status_createdAt_idx';
+                  readonly columns: readonly ['status', 'createdAt'];
+                  readonly unique: false;
+                },
+              ];
+              foreignKeys: readonly [];
             };
             readonly Certificate: {
               columns: {
@@ -5530,6 +5786,34 @@ type ContractBase = Omit<
               ];
               foreignKeys: readonly [];
             };
+            readonly Subscriber: {
+              columns: {
+                readonly createdAt: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly nullable: false;
+                  readonly default: { readonly kind: 'function'; readonly expression: 'now()' };
+                  readonly typeParams: { readonly precision: 3 };
+                  readonly many: false;
+                };
+                readonly email: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly id: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+              };
+              primaryKey: { readonly columns: readonly ['id'] };
+              uniques: readonly [{ readonly columns: readonly ['email'] }];
+              indexes: readonly [];
+              foreignKeys: readonly [];
+            };
             readonly SuccessStoryAchievement: {
               columns: {
                 readonly achievedAt: {
@@ -6672,6 +6956,10 @@ type ContractBase = Omit<
             };
           };
           readonly valueSet: {
+            readonly AmbassadorApplicationStatus: {
+              readonly kind: 'valueSet';
+              readonly values: readonly ['pending', 'approved', 'rejected'];
+            };
             readonly AnnouncementType: {
               readonly kind: 'valueSet';
               readonly values: readonly ['site_wide', 'course'];
@@ -6683,6 +6971,10 @@ type ContractBase = Omit<
             readonly BatchStatus: {
               readonly kind: 'valueSet';
               readonly values: readonly ['upcoming', 'ongoing', 'completed'];
+            };
+            readonly BookACallStatus: {
+              readonly kind: 'valueSet';
+              readonly values: readonly ['new', 'contacted', 'done'];
             };
             readonly CouponType: {
               readonly kind: 'valueSet';
@@ -6768,6 +7060,10 @@ type ContractBase = Omit<
   readonly target: 'postgres';
   readonly targetFamily: 'sql';
   readonly roots: {
+    readonly AmbassadorApplication: {
+      readonly namespace: 'public' & NamespaceId;
+      readonly model: 'AmbassadorApplication';
+    };
     readonly Announcement: {
       readonly namespace: 'public' & NamespaceId;
       readonly model: 'Announcement';
@@ -6787,6 +7083,7 @@ type ContractBase = Omit<
     readonly AuditLog: { readonly namespace: 'public' & NamespaceId; readonly model: 'AuditLog' };
     readonly Batch: { readonly namespace: 'public' & NamespaceId; readonly model: 'Batch' };
     readonly BlogPost: { readonly namespace: 'public' & NamespaceId; readonly model: 'BlogPost' };
+    readonly BookACall: { readonly namespace: 'public' & NamespaceId; readonly model: 'BookACall' };
     readonly Certificate: {
       readonly namespace: 'public' & NamespaceId;
       readonly model: 'Certificate';
@@ -6889,6 +7186,10 @@ type ContractBase = Omit<
       readonly namespace: 'public' & NamespaceId;
       readonly model: 'StudentReview';
     };
+    readonly Subscriber: {
+      readonly namespace: 'public' & NamespaceId;
+      readonly model: 'Subscriber';
+    };
     readonly SuccessStoryAchievement: {
       readonly namespace: 'public' & NamespaceId;
       readonly model: 'SuccessStoryAchievement';
@@ -6920,6 +7221,87 @@ type ContractBase = Omit<
     readonly namespaces: {
       readonly public: {
         readonly models: {
+          readonly AmbassadorApplication: {
+            readonly fields: {
+              readonly createdAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly typeParams: { readonly precision: 3 };
+                };
+              };
+              readonly departmentSemester: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly email: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly fullName: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly id: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly leadershipPosition: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly priorAmbassadorExperience: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly promotionPlan: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly status: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly university: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly updatedAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly typeParams: { readonly precision: 3 };
+                };
+              };
+              readonly whatsapp: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+            };
+            readonly relations: Record<string, never>;
+            readonly storage: {
+              readonly table: 'AmbassadorApplication';
+              readonly namespaceId: 'public';
+              readonly fields: {
+                readonly createdAt: { readonly column: 'createdAt' };
+                readonly departmentSemester: { readonly column: 'departmentSemester' };
+                readonly email: { readonly column: 'email' };
+                readonly fullName: { readonly column: 'fullName' };
+                readonly id: { readonly column: 'id' };
+                readonly leadershipPosition: { readonly column: 'leadershipPosition' };
+                readonly priorAmbassadorExperience: {
+                  readonly column: 'priorAmbassadorExperience';
+                };
+                readonly promotionPlan: { readonly column: 'promotionPlan' };
+                readonly status: { readonly column: 'status' };
+                readonly university: { readonly column: 'university' };
+                readonly updatedAt: { readonly column: 'updatedAt' };
+                readonly whatsapp: { readonly column: 'whatsapp' };
+              };
+            };
+          };
           readonly Announcement: {
             readonly fields: {
               readonly authorId: {
@@ -7521,6 +7903,80 @@ type ContractBase = Omit<
                 readonly tags: { readonly column: 'tags' };
                 readonly thumbnail: { readonly column: 'thumbnail' };
                 readonly title: { readonly column: 'title' };
+                readonly updatedAt: { readonly column: 'updatedAt' };
+              };
+            };
+          };
+          readonly BookACall: {
+            readonly fields: {
+              readonly courseInterest: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly createdAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly typeParams: { readonly precision: 3 };
+                };
+              };
+              readonly currentStatus: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly email: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly fullName: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly guidanceNeeded: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly id: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly phone: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly preferredContact: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly status: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly updatedAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly typeParams: { readonly precision: 3 };
+                };
+              };
+            };
+            readonly relations: Record<string, never>;
+            readonly storage: {
+              readonly table: 'BookACall';
+              readonly namespaceId: 'public';
+              readonly fields: {
+                readonly courseInterest: { readonly column: 'courseInterest' };
+                readonly createdAt: { readonly column: 'createdAt' };
+                readonly currentStatus: { readonly column: 'currentStatus' };
+                readonly email: { readonly column: 'email' };
+                readonly fullName: { readonly column: 'fullName' };
+                readonly guidanceNeeded: { readonly column: 'guidanceNeeded' };
+                readonly id: { readonly column: 'id' };
+                readonly phone: { readonly column: 'phone' };
+                readonly preferredContact: { readonly column: 'preferredContact' };
+                readonly status: { readonly column: 'status' };
                 readonly updatedAt: { readonly column: 'updatedAt' };
               };
             };
@@ -10534,6 +10990,36 @@ type ContractBase = Omit<
               };
             };
           };
+          readonly Subscriber: {
+            readonly fields: {
+              readonly createdAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly typeParams: { readonly precision: 3 };
+                };
+              };
+              readonly email: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly id: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+            };
+            readonly relations: Record<string, never>;
+            readonly storage: {
+              readonly table: 'Subscriber';
+              readonly namespaceId: 'public';
+              readonly fields: {
+                readonly createdAt: { readonly column: 'createdAt' };
+                readonly email: { readonly column: 'email' };
+                readonly id: { readonly column: 'id' };
+              };
+            };
+          };
           readonly SuccessStoryAchievement: {
             readonly fields: {
               readonly achievedAt: {
@@ -11790,6 +12276,14 @@ type ContractBase = Omit<
           };
         };
         readonly enum: {
+          readonly AmbassadorApplicationStatus: {
+            readonly codecId: 'pg/text@1';
+            readonly members: readonly [
+              { readonly name: 'pending'; readonly value: 'pending' },
+              { readonly name: 'approved'; readonly value: 'approved' },
+              { readonly name: 'rejected'; readonly value: 'rejected' },
+            ];
+          };
           readonly AnnouncementType: {
             readonly codecId: 'pg/text@1';
             readonly members: readonly [
@@ -11811,6 +12305,14 @@ type ContractBase = Omit<
               { readonly name: 'upcoming'; readonly value: 'upcoming' },
               { readonly name: 'ongoing'; readonly value: 'ongoing' },
               { readonly name: 'completed'; readonly value: 'completed' },
+            ];
+          };
+          readonly BookACallStatus: {
+            readonly codecId: 'pg/text@1';
+            readonly members: readonly [
+              { readonly name: 'new'; readonly value: 'new' },
+              { readonly name: 'contacted'; readonly value: 'contacted' },
+              { readonly name: 'done'; readonly value: 'done' },
             ];
           };
           readonly CouponType: {
@@ -11940,6 +12442,11 @@ type ContractBase = Omit<
           };
         };
         readonly enumMemberTypes?: {
+          readonly AmbassadorApplicationStatus: readonly [
+            { readonly name: 'pending'; readonly value: 'pending' },
+            { readonly name: 'approved'; readonly value: 'approved' },
+            { readonly name: 'rejected'; readonly value: 'rejected' },
+          ];
           readonly AnnouncementType: readonly [
             { readonly name: 'site_wide'; readonly value: 'site_wide' },
             { readonly name: 'course'; readonly value: 'course' },
@@ -11953,6 +12460,11 @@ type ContractBase = Omit<
             { readonly name: 'upcoming'; readonly value: 'upcoming' },
             { readonly name: 'ongoing'; readonly value: 'ongoing' },
             { readonly name: 'completed'; readonly value: 'completed' },
+          ];
+          readonly BookACallStatus: readonly [
+            { readonly name: 'new'; readonly value: 'new' },
+            { readonly name: 'contacted'; readonly value: 'contacted' },
+            { readonly name: 'done'; readonly value: 'done' },
           ];
           readonly CouponType: readonly [
             { readonly name: 'percentage'; readonly value: 'percentage' },
@@ -12078,6 +12590,43 @@ type ContractBase = Omit<
             readonly params: { readonly precision: 3 };
           };
           readonly ref: {
+            readonly entry: 'AmbassadorApplication';
+            readonly field: 'createdAt';
+            readonly namespace: 'public';
+          };
+        },
+        {
+          readonly onCreate: { readonly id: 'cuid2'; readonly kind: 'generator' };
+          readonly ref: {
+            readonly entry: 'AmbassadorApplication';
+            readonly field: 'id';
+            readonly namespace: 'public';
+          };
+        },
+        {
+          readonly onCreate: {
+            readonly id: 'timestampNow';
+            readonly kind: 'generator';
+            readonly params: { readonly precision: 3 };
+          };
+          readonly onUpdate: {
+            readonly id: 'timestampNow';
+            readonly kind: 'generator';
+            readonly params: { readonly precision: 3 };
+          };
+          readonly ref: {
+            readonly entry: 'AmbassadorApplication';
+            readonly field: 'updatedAt';
+            readonly namespace: 'public';
+          };
+        },
+        {
+          readonly onCreate: {
+            readonly id: 'timestampNow';
+            readonly kind: 'generator';
+            readonly params: { readonly precision: 3 };
+          };
+          readonly ref: {
             readonly entry: 'Announcement';
             readonly field: 'createdAt';
             readonly namespace: 'public';
@@ -12258,6 +12807,43 @@ type ContractBase = Omit<
           };
           readonly ref: {
             readonly entry: 'BlogPost';
+            readonly field: 'updatedAt';
+            readonly namespace: 'public';
+          };
+        },
+        {
+          readonly onCreate: {
+            readonly id: 'timestampNow';
+            readonly kind: 'generator';
+            readonly params: { readonly precision: 3 };
+          };
+          readonly ref: {
+            readonly entry: 'BookACall';
+            readonly field: 'createdAt';
+            readonly namespace: 'public';
+          };
+        },
+        {
+          readonly onCreate: { readonly id: 'cuid2'; readonly kind: 'generator' };
+          readonly ref: {
+            readonly entry: 'BookACall';
+            readonly field: 'id';
+            readonly namespace: 'public';
+          };
+        },
+        {
+          readonly onCreate: {
+            readonly id: 'timestampNow';
+            readonly kind: 'generator';
+            readonly params: { readonly precision: 3 };
+          };
+          readonly onUpdate: {
+            readonly id: 'timestampNow';
+            readonly kind: 'generator';
+            readonly params: { readonly precision: 3 };
+          };
+          readonly ref: {
+            readonly entry: 'BookACall';
             readonly field: 'updatedAt';
             readonly namespace: 'public';
           };
@@ -12979,6 +13565,26 @@ type ContractBase = Omit<
           readonly ref: {
             readonly entry: 'StudentReview';
             readonly field: 'updatedAt';
+            readonly namespace: 'public';
+          };
+        },
+        {
+          readonly onCreate: {
+            readonly id: 'timestampNow';
+            readonly kind: 'generator';
+            readonly params: { readonly precision: 3 };
+          };
+          readonly ref: {
+            readonly entry: 'Subscriber';
+            readonly field: 'createdAt';
+            readonly namespace: 'public';
+          };
+        },
+        {
+          readonly onCreate: { readonly id: 'cuid2'; readonly kind: 'generator' };
+          readonly ref: {
+            readonly entry: 'Subscriber';
+            readonly field: 'id';
             readonly namespace: 'public';
           };
         },

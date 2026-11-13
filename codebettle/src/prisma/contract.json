@@ -4,6 +4,10 @@
   "target": "postgres",
   "profileHash": "3916f444a8a17ad749191acf9e08dad97d1a327b88c2f1d45d12f240296aa8b2",
   "roots": {
+    "AmbassadorApplication": {
+      "model": "AmbassadorApplication",
+      "namespace": "public"
+    },
     "Announcement": {
       "model": "Announcement",
       "namespace": "public"
@@ -30,6 +34,10 @@
     },
     "BlogPost": {
       "model": "BlogPost",
+      "namespace": "public"
+    },
+    "BookACall": {
+      "model": "BookACall",
       "namespace": "public"
     },
     "Certificate": {
@@ -164,6 +172,10 @@
       "model": "StudentReview",
       "namespace": "public"
     },
+    "Subscriber": {
+      "model": "Subscriber",
+      "namespace": "public"
+    },
     "SuccessStoryAchievement": {
       "model": "SuccessStoryAchievement",
       "namespace": "public"
@@ -201,6 +213,23 @@
     "namespaces": {
       "public": {
         "enum": {
+          "AmbassadorApplicationStatus": {
+            "codecId": "pg/text@1",
+            "members": [
+              {
+                "name": "pending",
+                "value": "pending"
+              },
+              {
+                "name": "approved",
+                "value": "approved"
+              },
+              {
+                "name": "rejected",
+                "value": "rejected"
+              }
+            ]
+          },
           "AnnouncementType": {
             "codecId": "pg/text@1",
             "members": [
@@ -245,6 +274,23 @@
               {
                 "name": "completed",
                 "value": "completed"
+              }
+            ]
+          },
+          "BookACallStatus": {
+            "codecId": "pg/text@1",
+            "members": [
+              {
+                "name": "new",
+                "value": "new"
+              },
+              {
+                "name": "contacted",
+                "value": "contacted"
+              },
+              {
+                "name": "done",
+                "value": "done"
               }
             ]
           },
@@ -525,6 +571,149 @@
           }
         },
         "models": {
+          "AmbassadorApplication": {
+            "fields": {
+              "createdAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "precision": 3
+                  }
+                }
+              },
+              "departmentSemester": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "email": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "fullName": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "id": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "leadershipPosition": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "priorAmbassadorExperience": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "promotionPlan": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "status": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                },
+                "valueSet": {
+                  "entityKind": "enum",
+                  "entityName": "AmbassadorApplicationStatus",
+                  "namespaceId": "public",
+                  "plane": "domain"
+                }
+              },
+              "university": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "updatedAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "precision": 3
+                  }
+                }
+              },
+              "whatsapp": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              }
+            },
+            "relations": {},
+            "storage": {
+              "fields": {
+                "createdAt": {
+                  "column": "createdAt"
+                },
+                "departmentSemester": {
+                  "column": "departmentSemester"
+                },
+                "email": {
+                  "column": "email"
+                },
+                "fullName": {
+                  "column": "fullName"
+                },
+                "id": {
+                  "column": "id"
+                },
+                "leadershipPosition": {
+                  "column": "leadershipPosition"
+                },
+                "priorAmbassadorExperience": {
+                  "column": "priorAmbassadorExperience"
+                },
+                "promotionPlan": {
+                  "column": "promotionPlan"
+                },
+                "status": {
+                  "column": "status"
+                },
+                "university": {
+                  "column": "university"
+                },
+                "updatedAt": {
+                  "column": "updatedAt"
+                },
+                "whatsapp": {
+                  "column": "whatsapp"
+                }
+              },
+              "namespaceId": "public",
+              "table": "AmbassadorApplication"
+            }
+          },
           "Announcement": {
             "fields": {
               "authorId": {
@@ -1517,6 +1706,139 @@
               },
               "namespaceId": "public",
               "table": "BlogPost"
+            }
+          },
+          "BookACall": {
+            "fields": {
+              "courseInterest": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "createdAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "precision": 3
+                  }
+                }
+              },
+              "currentStatus": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "email": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "fullName": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "guidanceNeeded": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "id": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "phone": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "preferredContact": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "status": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                },
+                "valueSet": {
+                  "entityKind": "enum",
+                  "entityName": "BookACallStatus",
+                  "namespaceId": "public",
+                  "plane": "domain"
+                }
+              },
+              "updatedAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "precision": 3
+                  }
+                }
+              }
+            },
+            "relations": {},
+            "storage": {
+              "fields": {
+                "courseInterest": {
+                  "column": "courseInterest"
+                },
+                "createdAt": {
+                  "column": "createdAt"
+                },
+                "currentStatus": {
+                  "column": "currentStatus"
+                },
+                "email": {
+                  "column": "email"
+                },
+                "fullName": {
+                  "column": "fullName"
+                },
+                "guidanceNeeded": {
+                  "column": "guidanceNeeded"
+                },
+                "id": {
+                  "column": "id"
+                },
+                "phone": {
+                  "column": "phone"
+                },
+                "preferredContact": {
+                  "column": "preferredContact"
+                },
+                "status": {
+                  "column": "status"
+                },
+                "updatedAt": {
+                  "column": "updatedAt"
+                }
+              },
+              "namespaceId": "public",
+              "table": "BookACall"
             }
           },
           "Certificate": {
@@ -6521,6 +6843,50 @@
               "table": "StudentReview"
             }
           },
+          "Subscriber": {
+            "fields": {
+              "createdAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "precision": 3
+                  }
+                }
+              },
+              "email": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "id": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              }
+            },
+            "relations": {},
+            "storage": {
+              "fields": {
+                "createdAt": {
+                  "column": "createdAt"
+                },
+                "email": {
+                  "column": "email"
+                },
+                "id": {
+                  "column": "id"
+                }
+              },
+              "namespaceId": "public",
+              "table": "Subscriber"
+            }
+          },
           "SuccessStoryAchievement": {
             "fields": {
               "achievedAt": {
@@ -8607,6 +8973,124 @@
       "public": {
         "entries": {
           "table": {
+            "AmbassadorApplication": {
+              "checks": [
+                {
+                  "expression": "\"status\" IN ('pending', 'approved', 'rejected')",
+                  "name": "AmbassadorApplication_status_check_19a2b525",
+                  "prefix": "AmbassadorApplication_status_check"
+                }
+              ],
+              "columns": {
+                "createdAt": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "dataType": "pg/timestamptz",
+                  "default": {
+                    "expression": "now()",
+                    "kind": "function"
+                  },
+                  "nullable": false,
+                  "typeParams": {
+                    "precision": 3
+                  }
+                },
+                "departmentSemester": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                },
+                "email": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                },
+                "fullName": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                },
+                "id": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                },
+                "leadershipPosition": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                },
+                "priorAmbassadorExperience": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                },
+                "promotionPlan": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                },
+                "status": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "default": {
+                    "kind": "literal",
+                    "value": "pending"
+                  },
+                  "nullable": false,
+                  "valueSet": {
+                    "entityKind": "valueSet",
+                    "entityName": "AmbassadorApplicationStatus",
+                    "namespaceId": "public",
+                    "plane": "storage"
+                  }
+                },
+                "university": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                },
+                "updatedAt": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "dataType": "pg/timestamptz",
+                  "nullable": false,
+                  "typeParams": {
+                    "precision": 3
+                  }
+                },
+                "whatsapp": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                }
+              },
+              "foreignKeys": [],
+              "indexes": [
+                {
+                  "columns": [
+                    "email",
+                    "createdAt"
+                  ],
+                  "name": "AmbassadorApplication_email_createdAt_idx_6e3c0d8a",
+                  "prefix": "AmbassadorApplication_email_createdAt_idx",
+                  "unique": false
+                },
+                {
+                  "columns": [
+                    "status",
+                    "createdAt"
+                  ],
+                  "name": "AmbassadorApplication_status_createdAt_idx_58610442",
+                  "prefix": "AmbassadorApplication_status_createdAt_idx",
+                  "unique": false
+                }
+              ],
+              "primaryKey": {
+                "columns": [
+                  "id"
+                ]
+              },
+              "uniques": []
+            },
             "Announcement": {
               "checks": [
                 {
@@ -9479,6 +9963,119 @@
                   ]
                 }
               ]
+            },
+            "BookACall": {
+              "checks": [
+                {
+                  "expression": "\"status\" IN ('new', 'contacted', 'done')",
+                  "name": "BookACall_status_check_1221e9dd",
+                  "prefix": "BookACall_status_check"
+                }
+              ],
+              "columns": {
+                "courseInterest": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": true
+                },
+                "createdAt": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "dataType": "pg/timestamptz",
+                  "default": {
+                    "expression": "now()",
+                    "kind": "function"
+                  },
+                  "nullable": false,
+                  "typeParams": {
+                    "precision": 3
+                  }
+                },
+                "currentStatus": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                },
+                "email": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                },
+                "fullName": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                },
+                "guidanceNeeded": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                },
+                "id": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                },
+                "phone": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": true
+                },
+                "preferredContact": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": true
+                },
+                "status": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "default": {
+                    "kind": "literal",
+                    "value": "new"
+                  },
+                  "nullable": false,
+                  "valueSet": {
+                    "entityKind": "valueSet",
+                    "entityName": "BookACallStatus",
+                    "namespaceId": "public",
+                    "plane": "storage"
+                  }
+                },
+                "updatedAt": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "dataType": "pg/timestamptz",
+                  "nullable": false,
+                  "typeParams": {
+                    "precision": 3
+                  }
+                }
+              },
+              "foreignKeys": [],
+              "indexes": [
+                {
+                  "columns": [
+                    "email",
+                    "createdAt"
+                  ],
+                  "name": "BookACall_email_createdAt_idx_6e3c0d8a",
+                  "prefix": "BookACall_email_createdAt_idx",
+                  "unique": false
+                },
+                {
+                  "columns": [
+                    "status",
+                    "createdAt"
+                  ],
+                  "name": "BookACall_status_createdAt_idx_58610442",
+                  "prefix": "BookACall_status_createdAt_idx",
+                  "unique": false
+                }
+              ],
+              "primaryKey": {
+                "columns": [
+                  "id"
+                ]
+              },
+              "uniques": []
             },
             "Certificate": {
               "columns": {
@@ -13692,6 +14289,46 @@
               },
               "uniques": []
             },
+            "Subscriber": {
+              "columns": {
+                "createdAt": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "dataType": "pg/timestamptz",
+                  "default": {
+                    "expression": "now()",
+                    "kind": "function"
+                  },
+                  "nullable": false,
+                  "typeParams": {
+                    "precision": 3
+                  }
+                },
+                "email": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                },
+                "id": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                }
+              },
+              "foreignKeys": [],
+              "indexes": [],
+              "primaryKey": {
+                "columns": [
+                  "id"
+                ]
+              },
+              "uniques": [
+                {
+                  "columns": [
+                    "email"
+                  ]
+                }
+              ]
+            },
             "SuccessStoryAchievement": {
               "columns": {
                 "achievedAt": {
@@ -14980,6 +15617,14 @@
             }
           },
           "valueSet": {
+            "AmbassadorApplicationStatus": {
+              "kind": "valueSet",
+              "values": [
+                "pending",
+                "approved",
+                "rejected"
+              ]
+            },
             "AnnouncementType": {
               "kind": "valueSet",
               "values": [
@@ -15001,6 +15646,14 @@
                 "upcoming",
                 "ongoing",
                 "completed"
+              ]
+            },
+            "BookACallStatus": {
+              "kind": "valueSet",
+              "values": [
+                "new",
+                "contacted",
+                "done"
               ]
             },
             "CouponType": {
@@ -15134,10 +15787,10 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "d34358cf5bd579183fc13b0a5b0f47beacaf9f97a39905517fcabf05db278e56"
+    "storageHash": "172aee3b721fa8825ccc2045ca647f1302ab5c3a5a485091a80c6cb53c65756e"
   },
   "execution": {
-    "executionHash": "c03532fd4320ed019690564f3dce857d65213fe23762255c9be9388dac920442",
+    "executionHash": "47e7f6988d21496e8ae4b972d535da5efd54274029868521f772003d8a7679a4",
     "mutations": {
       "defaults": [
         {
@@ -15149,6 +15802,52 @@
             }
           },
           "ref": {
+            "entry": "AmbassadorApplication",
+            "field": "createdAt",
+            "namespace": "public"
+          }
+        },
+        {
+          "onCreate": {
+            "id": "cuid2",
+            "kind": "generator"
+          },
+          "ref": {
+            "entry": "AmbassadorApplication",
+            "field": "id",
+            "namespace": "public"
+          }
+        },
+        {
+          "onCreate": {
+            "id": "timestampNow",
+            "kind": "generator",
+            "params": {
+              "precision": 3
+            }
+          },
+          "onUpdate": {
+            "id": "timestampNow",
+            "kind": "generator",
+            "params": {
+              "precision": 3
+            }
+          },
+          "ref": {
+            "entry": "AmbassadorApplication",
+            "field": "updatedAt",
+            "namespace": "public"
+          }
+        },
+        {
+          "onCreate": {
+            "id": "timestampNow",
+            "kind": "generator",
+            "params": {
+              "precision": 3
+            }
+          },
+          "ref": {
             "entry": "Announcement",
             "field": "createdAt",
             "namespace": "public"
@@ -15374,6 +16073,52 @@
           },
           "ref": {
             "entry": "BlogPost",
+            "field": "updatedAt",
+            "namespace": "public"
+          }
+        },
+        {
+          "onCreate": {
+            "id": "timestampNow",
+            "kind": "generator",
+            "params": {
+              "precision": 3
+            }
+          },
+          "ref": {
+            "entry": "BookACall",
+            "field": "createdAt",
+            "namespace": "public"
+          }
+        },
+        {
+          "onCreate": {
+            "id": "cuid2",
+            "kind": "generator"
+          },
+          "ref": {
+            "entry": "BookACall",
+            "field": "id",
+            "namespace": "public"
+          }
+        },
+        {
+          "onCreate": {
+            "id": "timestampNow",
+            "kind": "generator",
+            "params": {
+              "precision": 3
+            }
+          },
+          "onUpdate": {
+            "id": "timestampNow",
+            "kind": "generator",
+            "params": {
+              "precision": 3
+            }
+          },
+          "ref": {
+            "entry": "BookACall",
             "field": "updatedAt",
             "namespace": "public"
           }
@@ -16279,6 +17024,31 @@
           "ref": {
             "entry": "StudentReview",
             "field": "updatedAt",
+            "namespace": "public"
+          }
+        },
+        {
+          "onCreate": {
+            "id": "timestampNow",
+            "kind": "generator",
+            "params": {
+              "precision": 3
+            }
+          },
+          "ref": {
+            "entry": "Subscriber",
+            "field": "createdAt",
+            "namespace": "public"
+          }
+        },
+        {
+          "onCreate": {
+            "id": "cuid2",
+            "kind": "generator"
+          },
+          "ref": {
+            "entry": "Subscriber",
+            "field": "id",
             "namespace": "public"
           }
         },
