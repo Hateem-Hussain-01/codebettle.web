@@ -4,7 +4,16 @@ import { getCertificateById } from '@/lib/db/certificates';
 import { getCourseCertificateInfo, getCourseCertificateTemplate } from '@/lib/db/courses';
 import { getUserById } from '@/lib/db/users';
 import { buildCertificateHtml } from '@/lib/certificates/template';
-import { renderCertificatePdf } from '@/lib/certificates/render-pdf';
+import { classifyRenderError, renderCertificatePdf } from '@/lib/certificates/render-pdf';
+
+/**
+ * Vercel Hobby gives serverless functions 10s by default; a cold
+ * start extracts the ~70 MB Chromium archive to /tmp, launches the
+ * browser and renders the PDF, which easily exceeds that. 60s is the
+ * Hobby maximum — the render is a single on-demand download, so the
+ * extra headroom only ever buys the cold start, never a slow page.
+ */
+export const maxDuration = 60;
 
 /**
  * GET /api/certificates/[id]/download — on-demand certificate PDF (Phase 2).
@@ -61,8 +70,22 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
   try {
     pdf = await renderCertificatePdf(built.html);
   } catch (error) {
-    console.error(`Certificate PDF render failed for ${certificate.id}:`, error);
-    return NextResponse.json({ error: 'Could not generate the certificate PDF. Please try again.' }, { status: 500 });
+    // Structured log (server-side only): which render step failed and
+    // why, so the cause can be read from the Vercel dashboard. The
+    // student only ever sees the generic message (or the distinct
+    // "service unavailable" hint when the Chromium binary itself is
+    // missing) — no stage, token, id or internal path leaks out.
+    const { stage, userMessage } = classifyRenderError(error);
+    console.error(
+      JSON.stringify({
+        event: 'certificate-pdf-render-failed',
+        certificateId: certificate.id,
+        stage,
+        errorName: error instanceof Error ? error.name : 'unknown',
+        errorMessage: error instanceof Error ? error.message : String(error),
+      }),
+    );
+    return NextResponse.json({ error: userMessage }, { status: 500 });
   }
 
   return new NextResponse(new Uint8Array(pdf), {
