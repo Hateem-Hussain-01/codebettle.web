@@ -57,6 +57,8 @@ import type {
   NotificationRow,
   NavItem,
   NavItemRow,
+  Page,
+  PageRow,
   ParseWarning,
   PublicCourse,
   PublicQuiz,
@@ -95,6 +97,7 @@ import type {
 import { DEFAULT_NOTIFICATION_PREFS, FORM_FIELD_TYPES, FORM_STATUSES, NOTIFICATION_EVENT_KEYS } from './types';
 import { isTeamMemberLevel } from '../management';
 import { isUploadVariant } from '../form-uploads';
+import { parsePageBlocks } from '../page-builder';
 import { toAdminPermissions } from '../admin-access';
 
 export const CATEGORY_TO_STORAGE: Record<CourseCategory, CourseRow['category']> = {
@@ -1022,6 +1025,24 @@ export function mapEmailTemplateRow(row: EmailTemplateRow): EmailTemplate {
     type: row.type === 'system' ? 'system' : 'broadcast',
     isActive: row.isActive ?? true,
     createdById: row.createdById,
+    createdAt: row.createdAt.toISOString(),
+    updatedAt: row.updatedAt.toISOString(),
+  };
+}
+
+/**
+ * Page row -> domain Page. The stored `blocks` Json is parsed and
+ * sanitised (unknown block types dropped, layouts clamped, text HTML
+ * sanitised) — never trusted as-is. A legacy/unknown status falls back
+ * to 'draft' (never accidentally published).
+ */
+export function mapPageRow(row: PageRow): Page {
+  return {
+    id: row.id,
+    title: row.title,
+    slug: row.slug,
+    status: row.status === 'published' ? 'published' : 'draft',
+    blocks: parsePageBlocks(row.blocks),
     createdAt: row.createdAt.toISOString(),
     updatedAt: row.updatedAt.toISOString(),
   };

@@ -23,9 +23,9 @@ import type {
 } from '@prisma/orm-postgres/contract/types';
 
 export type StorageHash =
-  StorageHashBase<'172aee3b721fa8825ccc2045ca647f1302ab5c3a5a485091a80c6cb53c65756e'>;
+  StorageHashBase<'1755dd25ae5e44399cec215c469899aba1f22557dd6847129ca08f980461d7c5'>;
 export type ExecutionHash =
-  ExecutionHashBase<'47e7f6988d21496e8ae4b972d535da5efd54274029868521f772003d8a7679a4'>;
+  ExecutionHashBase<'50d6b78e5589590708424555c51169b80ce39643b4d4c3236c595275b7d0ddbd'>;
 export type ProfileHash =
   ProfileHashBase<'3916f444a8a17ad749191acf9e08dad97d1a327b88c2f1d45d12f240296aa8b2'>;
 
@@ -1020,6 +1020,16 @@ export namespace Models {
     user: public_User;
     readonly [RelationKeys]?: 'announcement' | 'user';
   };
+  export type public_Page = {
+    blocks: FieldOutputTypes['public']['Page']['blocks'];
+    createdAt: FieldOutputTypes['public']['Page']['createdAt'];
+    id: FieldOutputTypes['public']['Page']['id'];
+    slug: FieldOutputTypes['public']['Page']['slug'];
+    status: FieldOutputTypes['public']['Page']['status'];
+    title: FieldOutputTypes['public']['Page']['title'];
+    updatedAt: FieldOutputTypes['public']['Page']['updatedAt'];
+    readonly [RelationKeys]?: never;
+  };
   export type public_PasswordReset = {
     createdAt: FieldOutputTypes['public']['PasswordReset']['createdAt'];
     expiresAt: FieldOutputTypes['public']['PasswordReset']['expiresAt'];
@@ -1484,6 +1494,7 @@ export declare const models: {
     NavItem: Models.public_NavItem;
     Note: Models.public_Note;
     Notification: Models.public_Notification;
+    Page: Models.public_Page;
     PasswordReset: Models.public_PasswordReset;
     Payment: Models.public_Payment;
     PaymentAccount: Models.public_PaymentAccount;
@@ -4337,6 +4348,70 @@ type ContractBase = Omit<
                 },
               ];
             };
+            readonly Page: {
+              columns: {
+                readonly blocks: {
+                  readonly dataType: 'pg/json';
+                  readonly codecId: 'pg/json@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly createdAt: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly nullable: false;
+                  readonly default: { readonly kind: 'function'; readonly expression: 'now()' };
+                  readonly typeParams: { readonly precision: 3 };
+                  readonly many: false;
+                };
+                readonly id: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly slug: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly status: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'literal';
+                    readonly value: DefaultLiteralValue<'pg/text@1', 'draft'>;
+                  };
+                  readonly many: false;
+                };
+                readonly title: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly updatedAt: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly nullable: false;
+                  readonly typeParams: { readonly precision: 3 };
+                  readonly many: false;
+                };
+              };
+              primaryKey: { readonly columns: readonly ['id'] };
+              uniques: readonly [{ readonly columns: readonly ['slug'] }];
+              indexes: readonly [
+                {
+                  readonly name: 'Page_status_createdAt_idx_58610442';
+                  readonly prefix: 'Page_status_createdAt_idx';
+                  readonly columns: readonly ['status', 'createdAt'];
+                  readonly unique: false;
+                },
+              ];
+              foreignKeys: readonly [];
+            };
             readonly PasswordReset: {
               columns: {
                 readonly createdAt: {
@@ -7142,6 +7217,7 @@ type ContractBase = Omit<
       readonly namespace: 'public' & NamespaceId;
       readonly model: 'Notification';
     };
+    readonly Page: { readonly namespace: 'public' & NamespaceId; readonly model: 'Page' };
     readonly PasswordReset: {
       readonly namespace: 'public' & NamespaceId;
       readonly model: 'PasswordReset';
@@ -9766,6 +9842,60 @@ type ContractBase = Omit<
                 readonly title: { readonly column: 'title' };
                 readonly type: { readonly column: 'type' };
                 readonly userId: { readonly column: 'userId' };
+              };
+            };
+          };
+          readonly Page: {
+            readonly fields: {
+              readonly blocks: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/json@1' };
+              };
+              readonly createdAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly typeParams: { readonly precision: 3 };
+                };
+              };
+              readonly id: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly slug: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly status: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly title: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly updatedAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly typeParams: { readonly precision: 3 };
+                };
+              };
+            };
+            readonly relations: Record<string, never>;
+            readonly storage: {
+              readonly table: 'Page';
+              readonly namespaceId: 'public';
+              readonly fields: {
+                readonly blocks: { readonly column: 'blocks' };
+                readonly createdAt: { readonly column: 'createdAt' };
+                readonly id: { readonly column: 'id' };
+                readonly slug: { readonly column: 'slug' };
+                readonly status: { readonly column: 'status' };
+                readonly title: { readonly column: 'title' };
+                readonly updatedAt: { readonly column: 'updatedAt' };
               };
             };
           };
@@ -13259,6 +13389,43 @@ type ContractBase = Omit<
           readonly ref: {
             readonly entry: 'Notification';
             readonly field: 'id';
+            readonly namespace: 'public';
+          };
+        },
+        {
+          readonly onCreate: {
+            readonly id: 'timestampNow';
+            readonly kind: 'generator';
+            readonly params: { readonly precision: 3 };
+          };
+          readonly ref: {
+            readonly entry: 'Page';
+            readonly field: 'createdAt';
+            readonly namespace: 'public';
+          };
+        },
+        {
+          readonly onCreate: { readonly id: 'cuid2'; readonly kind: 'generator' };
+          readonly ref: {
+            readonly entry: 'Page';
+            readonly field: 'id';
+            readonly namespace: 'public';
+          };
+        },
+        {
+          readonly onCreate: {
+            readonly id: 'timestampNow';
+            readonly kind: 'generator';
+            readonly params: { readonly precision: 3 };
+          };
+          readonly onUpdate: {
+            readonly id: 'timestampNow';
+            readonly kind: 'generator';
+            readonly params: { readonly precision: 3 };
+          };
+          readonly ref: {
+            readonly entry: 'Page';
+            readonly field: 'updatedAt';
             readonly namespace: 'public';
           };
         },
