@@ -14,17 +14,60 @@ interface NavbarProps {
   // email is optional so existing callers keep compiling; when present
   // the avatar menu header shows it under the user's name.
   session?: { name: string; role: string; avatar?: string; email?: string } | null;
+  /**
+   * Navbar config from the Navbar Editor (PR #32). When a server
+   * component passes these, the navbar renders them immediately (no
+   * fetch flash). When omitted, the navbar fetches GET /api/nav on
+   * mount and falls back to DEFAULT_NAV_ITEMS until it answers — the
+   * nav never breaks when the DB has no config yet.
+   */
+  navItems?: { label: string; href: string }[];
+  logoUrl?: string;
 }
 
-export default function Navbar({ session }: NavbarProps) {
+const FALLBACK_NAV_ITEMS = [
+  { label: 'Courses', href: '/courses' },
+  { label: 'Instructors', href: '/instructors' },
+  { label: 'Blog', href: '/blog' },
+  { label: 'Spotlight', href: '/success-stories' },
+  { label: 'About', href: '/about' },
+  { label: 'Contact', href: '/contact' },
+];
+
+const DEFAULT_LOGO_URL =
+  'https://phuzoxshzdfzjvephlhq.supabase.co/storage/v1/object/public/course-images/brand/navbar-logo.png';
+
+export default function Navbar({ session, navItems: navItemsProp, logoUrl: logoUrlProp }: NavbarProps) {
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [navItems, setNavItems] = useState(navItemsProp ?? FALLBACK_NAV_ITEMS);
+  const [logoUrl, setLogoUrl] = useState(logoUrlProp ?? DEFAULT_LOGO_URL);
+  const [logoFailed, setLogoFailed] = useState(false);
 
   useEffect(() => {
     const handler = () => setScrolled(window.scrollY > 20);
     window.addEventListener('scroll', handler);
     return () => window.removeEventListener('scroll', handler);
   }, []);
+
+  // Navbar Editor config (PR #32): when the caller did not pass items,
+  // fetch the stored config. The fallback above is already showing, so
+  // a failed fetch changes nothing — the nav never breaks.
+  useEffect(() => {
+    if (navItemsProp || logoUrlProp) return;
+    let cancelled = false;
+    fetch('/api/nav')
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        if (cancelled || !data) return;
+        if (Array.isArray(data.items) && data.items.length > 0) setNavItems(data.items);
+        if (typeof data.logoUrl === 'string' && data.logoUrl) setLogoUrl(data.logoUrl);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [navItemsProp, logoUrlProp]);
 
   // Module 17: the public navbar points at the user's PRIMARY portal
   // (role is the primary role). A dual-role user lands on their home
@@ -47,20 +90,33 @@ export default function Navbar({ session }: NavbarProps) {
     <nav className={`fixed top-0 left-0 right-0 z-40 transition-all duration-300 ${scrolled ? 'bg-dark/95 backdrop-blur-md border-b border-dark-border shadow-lg' : 'bg-transparent'}`}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
-          {/* Logo */}
+          {/* Logo — the horizontal CodeBettle logo (PR #32, Navbar
+              Editor: the URL comes from the navbarLogoUrl setting).
+              Display height ~36px; the file itself is 260x80 (@2x).
+              If the image fails to load, the text wordmark shows. */}
           <Link href="/" className="flex items-center gap-2">
-            <Image src="/logo.png" alt="CodeBettle" width={36} height={36} className="rounded-lg" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
-            <span className="text-xl font-bold gradient-text">CodeBettle</span>
+            {!logoFailed ? (
+              <Image
+                src={logoUrl}
+                alt="CodeBettle"
+                width={130}
+                height={40}
+                className="h-9 w-auto"
+                onError={() => setLogoFailed(true)}
+                priority
+              />
+            ) : (
+              <span className="text-xl font-bold gradient-text">CodeBettle</span>
+            )}
           </Link>
 
           {/* Desktop Nav */}
           <div className="hidden md:flex items-center gap-6">
-            <Link href="/courses" className="text-sm text-muted hover:text-foreground transition-colors">Courses</Link>
-            <Link href="/instructors" className="text-sm text-muted hover:text-foreground transition-colors">Instructors</Link>
-            <Link href="/blog" className="text-sm text-muted hover:text-foreground transition-colors">Blog</Link>
-            <Link href="/success-stories" className="text-sm text-muted hover:text-foreground transition-colors">Success Stories</Link>
-            <Link href="/about" className="text-sm text-muted hover:text-foreground transition-colors">About</Link>
-            <Link href="/contact" className="text-sm text-muted hover:text-foreground transition-colors">Contact</Link>
+            {navItems.map((item) => (
+              <Link key={item.href} href={item.href} className="text-sm text-muted hover:text-foreground transition-colors">
+                {item.label}
+              </Link>
+            ))}
           </div>
 
           {/* Auth */}
@@ -101,8 +157,8 @@ export default function Navbar({ session }: NavbarProps) {
             className="md:hidden bg-dark-card border-b border-dark-border"
           >
             <div className="px-4 py-4 flex flex-col gap-3">
-              {[['/', 'Home'], ['/courses', 'Courses'], ['/instructors', 'Instructors'], ['/blog', 'Blog'], ['/success-stories', 'Success Stories'], ['/about', 'About'], ['/contact', 'Contact']].map(([href, label]) => (
-                <Link key={href} href={href} className="text-muted hover:text-foreground py-1.5 text-sm" onClick={() => setMobileOpen(false)}>{label}</Link>
+              {[{ label: 'Home', href: '/' }, ...navItems.filter((item) => item.href !== '/')].map((item) => (
+                <Link key={item.href} href={item.href} className="text-muted hover:text-foreground py-1.5 text-sm" onClick={() => setMobileOpen(false)}>{item.label}</Link>
               ))}
               <div className="pt-2 border-t border-dark-border flex flex-col gap-2">
                 {session ? (

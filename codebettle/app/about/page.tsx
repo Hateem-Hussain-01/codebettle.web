@@ -1,13 +1,20 @@
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
 import FadeIn from '@/components/ui/FadeIn';
+import TeamSection from '@/components/sections/TeamSection';
 import { getSession } from '@/lib/auth';
-import { getInstructors } from '@/lib/db/users';
-import { Target, Eye, Heart, Share2, Globe } from 'lucide-react';
+import { listEnabledTeamMembers } from '@/lib/db/team-members';
+import { groupTeamByLevel } from '@/lib/management';
+import { Target, Eye, Heart } from 'lucide-react';
 
 export default async function AboutPage() {
   const session = await getSession();
-  const instructors = await getInstructors();
+  // Admin-managed team (PR #32, moved here from /success-stories by
+  // Eman's 13 Nov 2026 change): enabled members only, grouped
+  // Management → Departments → Trainers. Empty until the migration
+  // has run / an admin adds members — the section shows its honest
+  // empty state instead of breaking.
+  const teamGroups = groupTeamByLevel(await listEnabledTeamMembers());
 
   return (
     <>
@@ -42,25 +49,12 @@ export default async function AboutPage() {
             ))}
           </div>
 
-          {/* Instructors */}
+          {/* Team — admin-managed (Admin > Success Stories Management) */}
           <FadeIn className="text-center mb-12">
             <span className="text-primary-text text-sm font-semibold uppercase tracking-wider">Meet Our Team</span>
-            <h2 className="text-3xl font-black text-foreground mt-2">Expert <span className="gradient-text">Instructors</span></h2>
+            <h2 className="text-3xl font-black text-foreground mt-2">Meet the Team Behind <span className="gradient-text">CodeBettle</span></h2>
           </FadeIn>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
-            {instructors.map((inst, i) => (
-              <FadeIn key={inst.id} delay={Math.min(i, 4) * 0.06} className="bg-dark-card border border-dark-border rounded-xl p-5 text-center hover:border-primary/30 transition-all group">
-                <img src={inst.avatar} alt={inst.name} className="w-16 h-16 rounded-full border-2 border-primary/30 mx-auto mb-3 group-hover:border-primary transition-colors" />
-                <p className="font-semibold text-foreground text-sm mb-1">{inst.name}</p>
-                <p className="text-muted text-xs mb-3">{inst.expertise?.slice(0, 2).join(' · ')}</p>
-                {inst.bio && <p className="text-muted text-xs leading-relaxed line-clamp-3">{inst.bio}</p>}
-                <div className="flex justify-center gap-2 mt-3">
-                  {inst.socialLinks?.linkedin && <a href={inst.socialLinks.linkedin} className="text-muted hover:text-primary-text transition-colors"><Share2 className="w-4 h-4" /></a>}
-                  {inst.socialLinks?.github && <a href={inst.socialLinks.github} className="text-muted hover:text-primary-text transition-colors"><Globe className="w-4 h-4" /></a>}
-                </div>
-              </FadeIn>
-            ))}
-          </div>
+          <TeamSection groups={teamGroups} />
         </div>
       </main>
       <Footer />

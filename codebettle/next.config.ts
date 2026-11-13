@@ -29,6 +29,21 @@ const securityHeaders = [
 
 const nextConfig: NextConfig = {
   /**
+   * Remote images: the navbar logo (PR #32) and other Supabase Storage
+   * images are served from the project's public buckets. Only this one
+   * host + the public object path are allowed; everything else still
+   * uses plain <img> tags (course thumbnails, CEO photo, story photos).
+   */
+  images: {
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'phuzoxshzdfzjvephlhq.supabase.co',
+        pathname: '/storage/v1/object/public/**',
+      },
+    ],
+  },
+  /**
    * @sparticuz/chromium must stay external: it locates its binary
    * archives relative to its own package files (import.meta.url ->
    * ../bin). If the bundler relocated it into the server bundle,

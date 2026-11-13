@@ -445,6 +445,12 @@ export interface SuccessStorySubmission {
   consentContact: boolean;
   status: SuccessStoryStatus;
   featured: boolean;
+  /** PR #32: false hides an approved story from the public page. */
+  enabled: boolean;
+  /** PR #32: admin ordering within the featured / non-featured group. */
+  displayOrder: number;
+  /** PR #32: true when an admin added the story directly (no student submission). */
+  adminCreated: boolean;
   adminNote?: string;
   reviewedBy?: string;
   reviewedAt?: string;
@@ -523,6 +529,73 @@ export interface BlogPost {
   isPublished: boolean;
   readTime: string;
   tags: string[];
+}
+
+// ---------------------------------------------------------------------------
+// Success Stories Management (PR #32): TeamMember, StudentReview, NavItem.
+// ---------------------------------------------------------------------------
+
+/** One person on the About page Team section. */
+export interface TeamMember {
+  id: string;
+  photoUrl?: string;
+  fullName: string;
+  designation: string;
+  bio?: string;
+  xUrl?: string;
+  linkedinUrl?: string;
+  githubUrl?: string;
+  websiteUrl?: string;
+  /**
+   * Hierarchy level, top first: 'management' → 'department' →
+   * 'trainer'. The public About page groups in exactly this order.
+   */
+  level: TeamMemberLevel;
+  /** Department name for department-level members (e.g. 'Design'); null otherwise. */
+  department?: string;
+  /** Order within the level (lower first). */
+  orderInLevel: number;
+  /** False hides the card from the public page while keeping it in admin. */
+  enabled: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/** Team hierarchy level (see lib/management.ts TEAM_LEVEL_ORDER). */
+export type TeamMemberLevel = 'management' | 'department' | 'trainer';
+
+/** One review in the home page "What Our Students Say" carousel. */
+export interface StudentReview {
+  id: string;
+  fullName: string;
+  role: string;
+  photoUrl?: string;
+  /** 1-5 stars. */
+  rating: number;
+  reviewText: string;
+  linkedinUrl?: string;
+  githubUrl?: string;
+  websiteUrl?: string;
+  /** Order in the carousel (lower first). */
+  order: number;
+  /** False hides the card from the carousel while keeping it in admin. */
+  enabled: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/** One navbar item, managed from Admin > Navbar Editor. */
+export interface NavItem {
+  id: string;
+  label: string;
+  /** Site path (e.g. /courses) or a full URL. */
+  href: string;
+  /** Order left to right (lower first). */
+  order: number;
+  /** False hides the item from the navbar while keeping it in admin. */
+  enabled: boolean;
+  createdAt: string;
+  updatedAt: string;
 }
 
 /** An instructor application from the become-instructor form. */
@@ -806,6 +879,9 @@ export type SuccessStorySubmissionRow = Pick<
   | 'consentContact'
   | 'status'
   | 'featured'
+  | 'enabled'
+  | 'displayOrder'
+  | 'adminCreated'
   | 'adminNote'
   | 'reviewedBy'
   | 'reviewedAt'
@@ -821,6 +897,48 @@ export type SuccessStoryAchievementRow = Pick<
 export type SuccessStoryEvidenceRow = Pick<
   Models.public_SuccessStoryEvidence,
   'id' | 'achievementId' | 'kind' | 'label' | 'url' | 'fileName' | 'mime' | 'size' | 'createdAt'
+>;
+
+/** PR #32 rows. */
+export type TeamMemberRow = Pick<
+  Models.public_TeamMember,
+  | 'id'
+  | 'photoUrl'
+  | 'fullName'
+  | 'designation'
+  | 'bio'
+  | 'xUrl'
+  | 'linkedinUrl'
+  | 'githubUrl'
+  | 'websiteUrl'
+  | 'level'
+  | 'department'
+  | 'orderInLevel'
+  | 'enabled'
+  | 'createdAt'
+  | 'updatedAt'
+>;
+
+export type StudentReviewRow = Pick<
+  Models.public_StudentReview,
+  | 'id'
+  | 'fullName'
+  | 'role'
+  | 'photoUrl'
+  | 'rating'
+  | 'reviewText'
+  | 'linkedinUrl'
+  | 'githubUrl'
+  | 'websiteUrl'
+  | 'order'
+  | 'enabled'
+  | 'createdAt'
+  | 'updatedAt'
+>;
+
+export type NavItemRow = Pick<
+  Models.public_NavItem,
+  'id' | 'label' | 'href' | 'order' | 'enabled' | 'createdAt' | 'updatedAt'
 >;
 
 export type BlogPostRow = Pick<

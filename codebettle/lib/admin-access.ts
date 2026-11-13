@@ -52,7 +52,10 @@ export type AdminAreaKey =
   | 'applications'
   | 'forms'
   | 'success-stories'
+  | 'success-stories-management'
+  | 'reviews'
   | 'email-templates'
+  | 'navbar-editor'
   | 'settings';
 
 /**
@@ -98,12 +101,24 @@ export const ADMIN_AREAS: readonly AdminArea[] = [
   // content with photos, videos and evidence. Restricted admins do NOT
   // get it by default (secure default: missing keys are denied).
   { key: 'success-stories', label: 'Success Stories', href: '/admin/success-stories', description: 'Student success story submissions (review, approve, feature)' },
+  // Success Stories Management (PR #32): the single management surface
+  // for the whole /success-stories page — video & vision layout, team,
+  // stats, and story visibility/ordering. Separate from
+  // 'success-stories' (the submission review queue) because it manages
+  // the published page, not individual submissions.
+  { key: 'success-stories-management', label: 'Success Stories Management', href: '/admin/success-stories-management', description: 'Manage the Success Stories page: video & vision, team, stats, story visibility' },
+  // Home reviews carousel (PR #32): admin-managed student reviews
+  // shown on the home landing page. Below Success Stories in the nav.
+  { key: 'reviews', label: 'Reviews', href: '/admin/reviews', description: 'Home page student reviews (carousel, enable/disable, add, edit)' },
   // Email builder: admin email templates (GHL-style) with subject
   // editing and placeholders. A NEW area (not folded into
   // 'notifications') because templates are their own workflow.
   // Restricted admins do NOT get it by default (secure default:
   // missing keys are denied).
   { key: 'email-templates', label: 'Email Templates', href: '/admin/email-templates', description: 'Email templates (GHL-style builder with placeholders)' },
+  // Navbar Editor (PR #32): nav items (label, destination, order,
+  // enable/disable) and the navbar logo.
+  { key: 'navbar-editor', label: 'Navbar Editor', href: '/admin/navbar-editor', description: 'Navbar items and logo (label, destination, order, enable/disable)' },
   { key: 'settings', label: 'Settings', href: '/admin/settings', description: 'Site settings' },
 ] as const;
 
@@ -196,7 +211,7 @@ export function areaForAdminPath(pathname: string): AdminAreaKey | 'access' | nu
 /**
  * Normalise a permissions map received from the access UI before saving.
  * - Unknown keys are dropped; non-boolean values are dropped.
- * - All 20 areas true collapses to undefined (full admin), so "grant
+ * - All 23 areas true collapses to undefined (full admin), so "grant
  *   everything" stays a real full admin.
  * - No areas true stays `{}` (restricted admin with nothing granted).
  * Returns undefined for full admin, otherwise the restricted map.

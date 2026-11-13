@@ -153,6 +153,14 @@ export interface CreateSuccessStorySubmissionInput {
   consentContact: boolean;
   idempotencyKey: string;
   achievements: (SuccessStoryAchievementInput & { evidence: SuccessStoryEvidenceInput[] })[];
+  // PR #32 — admin-created stories: created already approved, marked
+  // adminCreated, with an explicit display order. Student submissions
+  // omit these (pending, not admin-created, order 0).
+  status?: SuccessStoryStatus;
+  adminCreated?: boolean;
+  enabled?: boolean;
+  displayOrder?: number;
+  featured?: boolean;
 }
 
 /** Create a submission + its achievements + evidence (validated before this call). */
@@ -206,8 +214,11 @@ export async function createSuccessStorySubmission(
       // Explicit (not DB defaults): the in-memory test fake does not
       // apply Prisma column defaults, and explicit values keep the
       // created row identical everywhere.
-      status: 'pending',
-      featured: false,
+      status: input.status ?? 'pending',
+      featured: input.featured ?? false,
+      enabled: input.enabled ?? true,
+      displayOrder: input.displayOrder ?? 0,
+      adminCreated: input.adminCreated ?? false,
       idempotencyKey: input.idempotencyKey,
     });
     for (const ach of input.achievements) {
@@ -305,16 +316,27 @@ export async function listSuccessStorySubmissions(
   }, { items: [], total: 0 });
 }
 
-/** Public list: approved stories only, featured first, then newest. */
+/** Public list: approved AND enabled stories only, featured first, then display order, then newest. */
 export async function listApprovedSuccessStories(): Promise<SuccessStorySubmission[]> {
   return withSuccessStoryTableFallback(async () => {
     const rows = await getDb()
       .orm.public.SuccessStorySubmission.where((s) => s.status.eq('approved'))
       .orderBy((s) => s.submittedAt.desc())
       .all();
-    rows.sort((a, b) => Number(b.featured) - Number(a.featured));
     const achievements = await loadAchievements(rows.map((r) => r.id));
-    return rows.map((r) => toSubmission(r, achievements));
+    const mapped = rows.map((r) => toSubmission(r, achievements));
+    // `enabled` is filtered here (not in the query): rows written
+    // before the PR #32 migration have no enabled value yet, and the
+    // mapper defaults those to true — a query-level `enabled = true`
+    // would hide them.
+    return mapped
+      .filter((s) => s.enabled)
+      .sort(
+        (a, b) =>
+          Number(b.featured) - Number(a.featured) ||
+          a.displayOrder - b.displayOrder ||
+          b.submittedAt.localeCompare(a.submittedAt),
+      );
   }, []);
 }
 
@@ -358,6 +380,8 @@ export async function findRecentDuplicateSubmission(
 export interface UpdateSuccessStorySubmissionInput {
   status?: SuccessStoryStatus;
   featured?: boolean;
+  enabled?: boolean;
+  displayOrder?: number;
   adminNote?: string | null;
   reviewedBy?: string | null;
   // Admin edit before publication (story fields only — never the
@@ -388,6 +412,8 @@ export async function updateSuccessStorySubmission(
     const data: Record<string, unknown> = stripUndefined({
       status: input.status,
       featured: input.featured,
+      enabled: input.enabled,
+      displayOrder: input.displayOrder,
       adminNote: input.adminNote,
       reviewedBy: input.reviewedBy,
       fullName: input.fullName,

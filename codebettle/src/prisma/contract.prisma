@@ -1036,6 +1036,14 @@ model SuccessStorySubmission {
   // Review workflow
   status             SuccessStoryStatus @default(pending)
   featured           Boolean            @default(false)
+  // Success Stories Management (PR #32): admin visibility + ordering.
+  // `enabled` false hides an approved story from the public page while
+  // keeping it in admin; `displayOrder` orders stories within their
+  // featured/non-featured group (lower first); `adminCreated` marks
+  // stories an admin added directly (no student submission behind them).
+  enabled            Boolean            @default(true)
+  displayOrder       Int                @default(0)
+  adminCreated       Boolean            @default(false)
   adminNote          String?
   reviewedBy         String?
   reviewedAt         DateTime?
@@ -1078,6 +1086,82 @@ model SuccessStoryEvidence {
   createdAt     DateTime                @default(now()) @onCreate(now())
 
   @@index([achievementId])
+}
+
+// ---------------------------------------------------------------------------
+// Success Stories Management + home reviews carousel + Navbar Editor
+// (PR #32). No seed rows: team members, reviews and nav items are all
+// created by an admin; the public pages show honest empty states until
+// then. Nav items fall back to the hardcoded navbar when the table is
+// empty (or the migration has not run yet).
+// ---------------------------------------------------------------------------
+
+// One person on the About page Team section (moved from
+// /success-stories by Eman's 13 Nov 2026 change). `level` is the
+// hierarchy level — 'management' (top) | 'department' | 'trainer'
+// (bottom); `department` names the department for department-level
+// members (e.g. 'Design'); `orderInLevel` orders cards within a
+// level. `enabled` false hides the card from the public page while
+// keeping it in admin. Photos live in the public `course-images`
+// bucket under `team/`; only the public URL is stored here.
+model TeamMember {
+  id           String   @id @onCreate(cuid(2))
+  photoUrl     String?
+  fullName     String
+  designation  String
+  bio          String?
+  xUrl         String?
+  linkedinUrl  String?
+  githubUrl    String?
+  websiteUrl   String?
+  level        String   @default("management")
+  department   String?
+  orderInLevel Int      @default(0)
+  enabled      Boolean  @default(true)
+  createdAt    DateTime @default(now()) @onCreate(now())
+  updatedAt    temporal.UpdatedAt
+
+  @@index([enabled, level, orderInLevel])
+}
+
+// One review in the home page "What Our Students Say" carousel.
+// `order` orders cards (lower first); `enabled` false hides the card
+// from the carousel while keeping it in admin. Photos live in the
+// public `course-images` bucket under `reviews/`; only the public URL
+// is stored here. (This is NOT the course `Review` model above —
+// that one is a per-course student rating tied to a User + Course.)
+model StudentReview {
+  id          String   @id @onCreate(cuid(2))
+  fullName    String
+  role        String
+  photoUrl    String?
+  rating      Int
+  reviewText  String
+  linkedinUrl String?
+  githubUrl   String?
+  websiteUrl  String?
+  order       Int      @default(0)
+  enabled     Boolean  @default(true)
+  createdAt   DateTime @default(now()) @onCreate(now())
+  updatedAt   temporal.UpdatedAt
+
+  @@index([enabled, order])
+}
+
+// One navbar item, managed from Admin > Navbar Editor. `href` is a
+// site path (e.g. /courses) or a full URL; `order` orders items left
+// to right (lower first); `enabled` false hides the item from the
+// navbar while keeping it in admin.
+model NavItem {
+  id        String   @id @onCreate(cuid(2))
+  label     String
+  href      String
+  order     Int      @default(0)
+  enabled   Boolean  @default(true)
+  createdAt DateTime @default(now()) @onCreate(now())
+  updatedAt temporal.UpdatedAt
+
+  @@index([enabled, order])
 }
 
 model AuditLog {

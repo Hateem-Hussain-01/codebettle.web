@@ -315,8 +315,90 @@ export async function listPublicSuccessStories(): Promise<PublicSuccessStory[]> 
 
 export async function getPublicSuccessStory(id: string): Promise<PublicSuccessStory | null> {
   const s = await getSuccessStorySubmissionById(id);
-  if (!s || s.status !== 'approved') return null;
+  if (!s || s.status !== 'approved' || !s.enabled) return null;
   return toPublicSuccessStory(s);
+}
+
+/**
+ * Admin-created story (PR #32, Success Stories Management): an admin
+ * adds a story directly — same publication fields as a submission,
+ * marked adminCreated and created already approved. No submitter
+ * consent is involved (the admin is publishing on the student's
+ * behalf with their permission); the admin's email is recorded as
+ * the contact email. Minimal required fields only — the rest default
+ * to empty, like a submission with only the required steps filled.
+ */
+export interface AdminCreateStoryInput {
+  fullName: string;
+  email: string;
+  country: string;
+  city?: string | null;
+  designation?: string | null;
+  courseTitle: string;
+  batchNumber?: number | null;
+  skillsLearned: string;
+  experience: string;
+  story: string;
+  profilePicturePath?: string | null;
+  linkedinUrl?: string | null;
+  videoPath?: string | null;
+  videoUrl?: string | null;
+  featured?: boolean;
+}
+
+export async function createAdminSuccessStory(
+  input: AdminCreateStoryInput,
+): Promise<SuccessStorySubmission> {
+  const submissionNumber = await allocateSubmissionNumber();
+  const created = await createSuccessStorySubmission({
+    submissionNumber,
+    submitterId: null,
+    fullName: input.fullName.trim(),
+    email: input.email.trim().toLowerCase(),
+    profilePicturePath: input.profilePicturePath ?? null,
+    country: input.country.trim(),
+    city: input.city?.trim() || null,
+    designation: input.designation?.trim() || null,
+    linkedinUrl: input.linkedinUrl?.trim() || null,
+    courseId: null,
+    courseTitle: input.courseTitle.trim(),
+    batchId: null,
+    batchNumber: input.batchNumber ?? null,
+    joinedAt: null,
+    instructorName: null,
+    skillsLearned: input.skillsLearned.trim(),
+    experience: input.experience.trim(),
+    story: input.story.trim(),
+    beforeJoining: null,
+    challenges: null,
+    howHelped: null,
+    achievementsAfter: null,
+    biggestAchievement: null,
+    advice: null,
+    githubUrl: null,
+    instagramUrl: null,
+    youtubeUrl: null,
+    portfolioUrl: null,
+    lablabUrl: null,
+    leetcodeUrl: null,
+    hackerrankUrl: null,
+    otherProfileUrl: null,
+    videoPath: input.videoPath || null,
+    videoUrl: input.videoUrl?.trim() || null,
+    videoDescription: null,
+    consentPublication: true,
+    consentMedia: true,
+    consentAccuracy: true,
+    consentContact: false,
+    idempotencyKey: `admin-${submissionNumber}`,
+    achievements: [],
+    status: 'approved',
+    adminCreated: true,
+    enabled: true,
+    displayOrder: 0,
+    featured: input.featured ?? false,
+  });
+  return created;
 }
 
 export async function listAdminSuccessStories(

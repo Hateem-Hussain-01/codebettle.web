@@ -2,13 +2,18 @@ import Link from 'next/link';
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
 import FadeIn from '@/components/ui/FadeIn';
+import StoriesWithLoadMore from './stories-client';
 import { getSession } from '@/lib/auth';
 import { listPublicSuccessStories } from '@/lib/services/success-story-service';
-import type { PublicSuccessStory } from '@/lib/db/types';
-import { SUCCESS_STORY_CATEGORIES } from '@/lib/success-story-categories';
-import { Trophy, Sparkles, ArrowRight, GraduationCap, MapPin, Quote, User, Video, Eye } from 'lucide-react';
 import { getSiteSettings } from '@/lib/services/settings-service';
 import { sanitizeEmailHtml } from '@/lib/sanitize';
+import {
+  PAGE_STAT_LABELS,
+  parsePageStats,
+  parseVideoConfig,
+  videoAspectClass,
+} from '@/lib/management';
+import { Trophy, Sparkles, Video, Eye, User, Users, Star, Award } from 'lucide-react';
 
 export const metadata = {
   title: 'Success Stories | CodeBettle',
@@ -43,94 +48,8 @@ const RICH_TEXT_CLASS =
   '[&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 ' +
   '[&_a]:text-primary-text [&_a]:underline [&_img]:max-w-full [&_img]:h-auto';
 
-// Portrait video — NOT sent yet. Set to the video file URL when Eman
-// sends it; until then the section shows a clearly-marked placeholder.
-const PORTRAIT_VIDEO_URL: string | null = null;
-
-function categoryLabel(value: string): string {
-  return SUCCESS_STORY_CATEGORIES.find((c) => c.value === value)?.label ?? value;
-}
-
-function StoryCard({ story, featured }: { story: PublicSuccessStory; featured?: boolean }) {
-  return (
-    <Link href={`/success-stories/${story.id}`}>
-      <FadeIn className="h-full">
-        <article
-          className={`group bg-dark-card border rounded-2xl overflow-hidden hover:border-primary/40 transition-all duration-300 h-full flex flex-col ${
-            featured ? 'border-primary/50 shadow-[0_0_40px_-12px_rgba(250,204,21,0.35)]' : 'border-dark-border'
-          }`}
-        >
-          <div className="p-6 flex flex-col flex-1">
-            <div className="flex items-start gap-4 mb-4">
-              {story.profilePictureUrl ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={story.profilePictureUrl}
-                  alt={story.fullName}
-                  className="w-16 h-16 rounded-full object-cover border-2 border-primary/40 shrink-0"
-                />
-              ) : (
-                <div className="w-16 h-16 rounded-full bg-primary/10 border-2 border-primary/40 flex items-center justify-center shrink-0">
-                  <span className="text-2xl font-black text-primary-text">
-                    {story.fullName.charAt(0).toUpperCase()}
-                  </span>
-                </div>
-              )}
-              <div className="min-w-0">
-                <h3 className="text-lg font-bold text-foreground leading-tight">{story.fullName}</h3>
-                {story.designation && <p className="text-sm text-primary-text font-medium truncate">{story.designation}</p>}
-                <p className="text-xs text-muted mt-1 flex items-center gap-1">
-                  <GraduationCap className="w-3.5 h-3.5 shrink-0" />
-                  <span className="truncate">
-                    {story.courseTitle}
-                    {story.batchNumber ? ` · Batch ${story.batchNumber}` : ''}
-                  </span>
-                </p>
-                {story.country && (
-                  <p className="text-xs text-muted mt-0.5 flex items-center gap-1">
-                    <MapPin className="w-3.5 h-3.5 shrink-0" />
-                    {story.city ? `${story.city}, ${story.country}` : story.country}
-                  </p>
-                )}
-              </div>
-            </div>
-
-            {featured && (
-              <span className="inline-flex items-center gap-1 self-start text-[11px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full bg-primary/15 text-primary-text border border-primary/30 mb-3">
-                <Trophy className="w-3 h-3" /> Featured Story
-              </span>
-            )}
-
-            <Quote className="w-5 h-5 text-primary-text/50 mb-2" />
-            <p className="text-sm text-muted leading-relaxed line-clamp-4 flex-1">{story.story}</p>
-
-            {story.categories.length > 0 && (
-              <div className="flex flex-wrap gap-1.5 mt-4">
-                {story.categories.slice(0, 3).map((c) => (
-                  <span
-                    key={c}
-                    className="text-[11px] font-medium px-2 py-0.5 rounded-full bg-primary/10 text-primary-text border border-primary/20"
-                  >
-                    {categoryLabel(c)}
-                  </span>
-                ))}
-                {story.categories.length > 3 && (
-                  <span className="text-[11px] font-medium px-2 py-0.5 rounded-full bg-dark-border text-muted">
-                    +{story.categories.length - 3} more
-                  </span>
-                )}
-              </div>
-            )}
-
-            <div className="flex items-center gap-1 text-sm font-semibold text-primary-text mt-5 group-hover:gap-2 transition-all">
-              Read the full story <ArrowRight className="w-4 h-4" />
-            </div>
-          </div>
-        </article>
-      </FadeIn>
-    </Link>
-  );
-}
+// Portrait video — managed from Admin > Success Stories Management
+// (videoUrl setting). No video uploaded yet = placeholder shown.
 
 export default async function SuccessStoriesPage() {
   const session = await getSession();
@@ -153,6 +72,18 @@ export default async function SuccessStoriesPage() {
   // CEO photo from settings (default = Ahmad Hassan's uploaded photo;
   // the settings read already falls back to it when nothing is stored).
   const ceoPhotoUrl = settings.ceoPhotoUrl;
+  // Video + vision layout from Admin > Success Stories Management
+  // (invalid stored values fall back to the current side-by-side
+  // portrait behaviour — the public page never breaks on bad config).
+  const videoConfig = parseVideoConfig(settings);
+  // The three wide stat cards above the stories grid (Eman's 13 Nov
+  // 2026 change): the home page numbers, admin-editable from the
+  // management tab. The team section moved to the About page.
+  const stats = parsePageStats({
+    activeStudents: settings.statsActiveStudents,
+    certificatesIssued: settings.statsCertificatesIssued,
+    averageRating: settings.statsAverageRating,
+  });
   const featured = stories.filter((s) => s.featured);
   const rest = stories.filter((s) => !s.featured);
 
@@ -209,31 +140,85 @@ export default async function SuccessStoriesPage() {
           </div>
         </section>
 
-        {/* 2. Portrait video + Vision, side by side (video placeholder until Eman sends the file) */}
-        <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-10 grid md:grid-cols-2 gap-8 items-start">
-          <div>
+        {/* 2. Video + Vision — layout from Admin > Success Stories
+            Management (side-by-side vs vertical, position swap,
+            portrait 9:16 vs landscape 16:9). Video placeholder until
+            the admin uploads a video. */}
+        <section
+          className={`max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-10 gap-8 items-start ${
+            videoConfig.layout === 'vertical' ? 'flex flex-col' : 'grid md:grid-cols-2'
+          }`}
+        >
+          <div
+            className={
+              videoConfig.layout === 'vertical'
+                ? videoConfig.position === 'video-below'
+                  ? 'order-2'
+                  : 'order-1'
+                : videoConfig.position === 'video-right'
+                  ? 'md:order-2'
+                  : ''
+            }
+          >
             <h2 className="text-xl sm:text-2xl font-bold text-foreground flex items-center gap-2 mb-4">
               <Video className="w-5 h-5 text-primary-text" /> Watch
             </h2>
-            <div className="rounded-2xl overflow-hidden border border-dark-border bg-black aspect-[9/16] max-w-[360px] mx-auto md:mx-0 w-full">
-              {PORTRAIT_VIDEO_URL ? (
-                <video src={PORTRAIT_VIDEO_URL} controls preload="metadata" className="w-full h-full object-cover" />
+            <div
+              className={`rounded-2xl overflow-hidden border border-dark-border bg-black ${videoAspectClass(videoConfig.orientation)} ${
+                videoConfig.orientation === 'portrait' ? 'max-w-[360px] mx-auto md:mx-0 w-full' : 'w-full'
+              }`}
+            >
+              {videoConfig.videoUrl ? (
+                <video src={videoConfig.videoUrl} controls preload="metadata" className="w-full h-full object-cover" />
               ) : (
                 <div className="w-full h-full flex flex-col items-center justify-center gap-3 text-center px-6">
                   <Video className="w-12 h-12 text-muted" />
-                  <p className="text-sm text-muted font-medium">Portrait video — coming soon</p>
-                  <p className="text-xs text-muted/70">(Placeholder: the vertical video will play here once shared.)</p>
+                  <p className="text-sm text-muted font-medium">Video — coming soon</p>
+                  <p className="text-xs text-muted/70">(Placeholder: the video will play here once shared.)</p>
                 </div>
               )}
             </div>
           </div>
-          <div>
+          <div
+            className={
+              videoConfig.layout === 'vertical'
+                ? videoConfig.position === 'video-below'
+                  ? 'order-1'
+                  : 'order-2'
+                : videoConfig.position === 'video-right'
+                  ? 'md:order-1'
+                  : ''
+            }
+          >
             <h2 className="text-xl sm:text-2xl font-bold text-foreground flex items-center gap-2 mb-4">
               <Eye className="w-5 h-5 text-primary-text" /> Our Vision
             </h2>
             <div className={RICH_TEXT_CLASS} dangerouslySetInnerHTML={{ __html: visionTextHtml }} />
           </div>
         </section>
+
+        {/* 3. Stats — three wide cards where the stories start
+            (Eman's 13 Nov 2026 change): the home page numbers
+            (1500+ Active Students, 300+ Certificates Issued, 4.8
+            Average Rating), admin-editable from the management tab.
+            Full-width row, 3 columns on desktop, stacked on mobile.
+            The team section moved to the About page. */}
+        <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-12">
+          <div className="rounded-2xl border border-dark-border bg-dark-card overflow-hidden grid grid-cols-1 sm:grid-cols-3 sm:divide-x sm:divide-dark-border">
+            {([
+              { icon: <Users className="w-7 h-7 text-primary-text" />, value: stats.activeStudents, label: PAGE_STAT_LABELS.activeStudents },
+              { icon: <Award className="w-7 h-7 text-primary-text" />, value: stats.certificatesIssued, label: PAGE_STAT_LABELS.certificatesIssued },
+              { icon: <Star className="w-7 h-7 text-primary-text" />, value: stats.averageRating, label: PAGE_STAT_LABELS.averageRating },
+            ] as const).map((stat) => (
+              <div key={stat.label} className="flex flex-col items-center gap-2 px-6 py-8 text-center">
+                <span className="shrink-0">{stat.icon}</span>
+                <span className="block text-4xl sm:text-5xl font-black text-primary-text leading-none">{stat.value}</span>
+                <span className="block text-sm text-muted">{stat.label}</span>
+              </div>
+            ))}
+          </div>
+        </section>
+
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
           {stories.length === 0 ? (
@@ -256,33 +241,7 @@ export default async function SuccessStoriesPage() {
               </Link>
             </FadeIn>
           ) : (
-            <>
-              {featured.length > 0 && (
-                <section className="mb-12">
-                  <h2 className="text-xl font-bold text-foreground mb-5 flex items-center gap-2">
-                    <Trophy className="w-5 h-5 text-primary-text" /> Featured Stories
-                  </h2>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {featured.map((story) => (
-                      <StoryCard key={story.id} story={story} featured />
-                    ))}
-                  </div>
-                </section>
-              )}
-
-              {rest.length > 0 && (
-                <section>
-                  {featured.length > 0 && (
-                    <h2 className="text-xl font-bold text-foreground mb-5">All Stories</h2>
-                  )}
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {rest.map((story, i) => (
-                      <StoryCard key={story.id} story={story} />
-                    ))}
-                  </div>
-                </section>
-              )}
-            </>
+            <StoriesWithLoadMore featured={featured} rest={rest} />
           )}
         </div>
       </main>
