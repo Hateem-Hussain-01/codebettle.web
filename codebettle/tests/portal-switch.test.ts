@@ -212,7 +212,9 @@ test('enforcement: no session at all is denied everywhere (401)', async () => {
 test('enforcement: both portal layouts still contain their server-side capability guard + redirect', () => {
   const adminLayout = read('app/admin/layout.tsx');
   assert.match(adminLayout, /hasAdminCapability\(session\)/);
-  assert.match(adminLayout, /redirect\('\/auth\/login'\)/);
+  // PR #33: a denied admin visitor goes to the SECRET sign-in page,
+  // not the public login page.
+  assert.match(adminLayout, /redirect\(adminUrl\('\/signin'\)\)/);
   // The guard runs before PortalLayout renders — a denied user never
   // reaches the switcher UI.
   assert.ok(adminLayout.indexOf('hasAdminCapability(session)') < adminLayout.indexOf('<PortalLayout'));
@@ -252,7 +254,7 @@ test('session survives switching: the switch is plain navigation, session untouc
 
 test('wiring: PortalLayout renders the switch as a <Link> from getPortalSwitch, in the topbar', () => {
   const src = read('components/layout/PortalLayout.tsx');
-  assert.match(src, /getPortalSwitch\(user, pathname\)/);
+  assert.match(src, /getPortalSwitch\(user, pathname, adminBasePath\)/);
   assert.match(src, /href=\{switchTarget\.href\}/);
   assert.match(src, /aria-label=\{switchTarget\.label\}/);
   // The switch link sits in the topbar <header>, next to the bell —
@@ -269,14 +271,16 @@ test('wiring: PortalLayout renders the switch as a <Link> from getPortalSwitch, 
 
 test('wiring: bell and avatar follow the CURRENT portal, not the primary role', () => {
   const src = read('components/layout/PortalLayout.tsx');
-  assert.match(src, /portalFromPathname\(pathname\)/);
-  assert.match(src, /\/\$\{portalSlug\}\/notifications/);
+  assert.match(src, /portalFromPathname\(pathname, adminBasePath\)/);
+  // PR #33: the bell uses portalBase — the secret base path for the
+  // admin portal, the portal slug otherwise.
+  assert.match(src, /\$\{portalBase\}\/notifications/);
   // The avatar is now a UserMenu dropdown (not a plain link): its
-  // destinations come from portalMenuLinks(pathname, user.role),
+  // destinations come from portalMenuLinks(pathname, user.role, adminBasePath),
   // which derives from the CURRENT portal prefix in the pathname —
   // including /applicant, which portalFromPathname does not know.
   // The plain /${portalSlug}/profile link is gone by design.
-  assert.match(src, /portalMenuLinks\(pathname, user\.role\)/);
+  assert.match(src, /portalMenuLinks\(pathname, user\.role, adminBasePath\)/);
   assert.match(src, /<UserMenu /);
   assert.match(src, /profileHref=\{links\.profileHref\}/);
   assert.match(src, /settingsHref=\{links\.settingsHref\}/);

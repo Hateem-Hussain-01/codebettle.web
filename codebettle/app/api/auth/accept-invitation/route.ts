@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { acceptInvitation, getInvitationPreview } from '@/lib/services/invitation-service';
+import { buildAdminPortalUrl } from '@/lib/email/resend';
 
 /**
  * GET /api/auth/accept-invitation?token=… — preview an invitation for
@@ -13,7 +14,9 @@ import { acceptInvitation, getInvitationPreview } from '@/lib/services/invitatio
  * Body: { token, password, confirmPassword? }. The invitee sets their
  * OWN password (min 8); the stored grants are applied and the token is
  * consumed (single-use). No session is created — the invitee signs in
- * at /auth/login afterwards. The token is never returned in a response.
+ * at the secret admin sign-in page afterwards (PR #33), whose URL is
+ * returned as portalUrl so the accept page can show it with a save /
+ * download option. The token is never returned in a response.
  */
 export async function GET(request: NextRequest) {
   const token = request.nextUrl.searchParams.get('token') ?? '';
@@ -52,5 +55,5 @@ export async function POST(request: NextRequest) {
   if ('error' in result) {
     return NextResponse.json({ error: result.error }, { status: 400 });
   }
-  return NextResponse.json({ success: true });
+  return NextResponse.json({ success: true, portalUrl: buildAdminPortalUrl(request.nextUrl.origin) });
 }

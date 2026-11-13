@@ -43,13 +43,12 @@ export interface PortalSwitchTarget {
   /** Portal the link leads to. */
   target: Exclude<PortalId, 'student'>;
   /** Dashboard of the target portal — the landing page after switching. */
-  href: '/admin/dashboard' | '/instructor/dashboard';
+  href: string;
   /** Exact button label shown in the topbar. */
   label: 'Switch to Teacher Portal' | 'Switch to Admin Panel';
 }
 
 const PORTAL_PREFIXES: Array<[string, PortalId]> = [
-  ['/admin', 'admin'],
   ['/instructor', 'instructor'],
   ['/student', 'student'],
 ];
@@ -57,10 +56,17 @@ const PORTAL_PREFIXES: Array<[string, PortalId]> = [
 /**
  * Which portal a pathname belongs to, from its prefix.
  * Returns null for public pages (/, /courses, …) — no portal, no switch.
+ * The admin prefix is the secret base path (PR #33) — passed in by the
+ * portal layout (a server component reads it from the env var); the
+ * dev default is 'admin', so existing callers keep working.
  */
-export function portalFromPathname(pathname: string | null | undefined): PortalId | null {
+export function portalFromPathname(
+  pathname: string | null | undefined,
+  adminBasePath = 'admin',
+): PortalId | null {
   if (!pathname) return null;
   const path = pathname.split('?')[0].split('#')[0];
+  if (path === `/${adminBasePath}` || path.startsWith(`/${adminBasePath}/`)) return 'admin';
   for (const [prefix, portal] of PORTAL_PREFIXES) {
     if (path === prefix || path.startsWith(`${prefix}/`)) return portal;
   }
@@ -76,14 +82,15 @@ export function portalFromPathname(pathname: string | null | undefined): PortalI
 export function getPortalSwitch(
   user: Pick<SessionUser, 'role' | 'isAdmin' | 'isTeacher'> | null | undefined,
   pathname: string | null | undefined,
+  adminBasePath = 'admin',
 ): PortalSwitchTarget | null {
   if (!user) return null;
-  const current = portalFromPathname(pathname);
+  const current = portalFromPathname(pathname, adminBasePath);
   if (current === 'admin' && hasTeacherCapability(user)) {
     return { target: 'instructor', href: '/instructor/dashboard', label: 'Switch to Teacher Portal' };
   }
   if (current === 'instructor' && hasAdminCapability(user)) {
-    return { target: 'admin', href: '/admin/dashboard', label: 'Switch to Admin Panel' };
+    return { target: 'admin', href: `/${adminBasePath}/dashboard`, label: 'Switch to Admin Panel' };
   }
   return null;
 }
@@ -95,13 +102,17 @@ export function getPortalSwitch(
  * dashboard from the navbar and uses the in-portal switcher to
  * reach the admin panel, and vice versa. Accepts a plain string
  * role (Navbar's session prop types it as string); an unknown role
- * yields no link rather than a broken href.
+ * yields no link rather than a broken href. The admin dashboard is
+ * the secret base path (PR #33) — the Navbar receives it from its
+ * server-rendered parent; the dev default is 'admin'.
  */
 export function primaryPortalDashboard(
   user: { role: string } | null | undefined,
-): `/${PortalId}/dashboard` | null {
+  adminBasePath = 'admin',
+): string | null {
   if (!user) return null;
-  if (user.role === 'admin' || user.role === 'instructor' || user.role === 'student') {
+  if (user.role === 'admin') return `/${adminBasePath}/dashboard`;
+  if (user.role === 'instructor' || user.role === 'student') {
     return `/${user.role}/dashboard`;
   }
   return null;

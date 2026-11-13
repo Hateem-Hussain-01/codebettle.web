@@ -2,8 +2,10 @@
 
 import { createContext, useContext, useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Mail, Phone, MapPin } from 'lucide-react';
+import { CalendarCheck, Mail, MapPin, Phone, Send, Users } from 'lucide-react';
 import { SocialPlatformIcon } from '@/components/auth/BrandIcons';
+import Button from '@/components/ui/Button';
+import Input from '@/components/ui/Input';
 import type { SiteSettings } from '@/lib/services/settings-service';
 import {
   CONTACT_ADDRESS,
@@ -83,6 +85,39 @@ export default function Footer() {
 
   const [links, setLinks] = useState<ResolvedSocialLink[]>(() => defaultSocialLinks());
 
+  // Footer Subscribe (PR #33): newsletter email input + button, saved
+  // to the Subscriber table via POST /api/subscribe. Idempotent — an
+  // already-subscribed email is a success, never an error.
+  const [subscribeEmail, setSubscribeEmail] = useState('');
+  const [subscribeState, setSubscribeState] = useState<'idle' | 'submitting' | 'done' | 'error'>('idle');
+  const [subscribeMessage, setSubscribeMessage] = useState('');
+
+  async function handleSubscribe(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (subscribeState === 'submitting') return;
+    setSubscribeState('submitting');
+    setSubscribeMessage('');
+    try {
+      const res = await fetch('/api/subscribe', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: subscribeEmail }),
+      });
+      const data: { error?: string } = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setSubscribeState('error');
+        setSubscribeMessage(data.error ?? 'Could not subscribe. Please try again later.');
+        return;
+      }
+      setSubscribeState('done');
+      setSubscribeMessage('Subscribed — welcome to CodeBettle.');
+      setSubscribeEmail('');
+    } catch {
+      setSubscribeState('error');
+      setSubscribeMessage('Could not subscribe. Please try again later.');
+    }
+  }
+
   useEffect(() => {
     let cancelled = false;
     void fetch('/api/social-links')
@@ -158,6 +193,70 @@ export default function Footer() {
               <li className="flex items-center gap-3 text-muted text-sm"><Phone className="w-4 h-4 text-primary-text flex-shrink-0" /><a href={contactPhoneLink} className="hover:text-primary-text transition-colors">{contactPhone}</a></li>
               <li className="flex items-start gap-3 text-muted text-sm"><MapPin className="w-4 h-4 text-primary-text flex-shrink-0 mt-0.5" />{contactAddress}</li>
             </ul>
+          </div>
+        </div>
+
+        {/* Connect band (PR #33) — Subscribe + Book a Call + Become our
+            Ambassador, added at the BOTTOM of the existing footer. Not a
+            redesign: same dark + gold footer, same spacing, three clean
+            columns. No admin link lives here (the admin URL is secret). */}
+        <div className="mt-12 pt-10 border-t border-dark-border grid grid-cols-1 md:grid-cols-3 gap-8">
+          {/* Subscribe */}
+          <div>
+            <h4 className="text-foreground font-semibold mb-2 flex items-center gap-2">
+              <Mail className="w-4 h-4 text-primary-text" /> Subscribe to our newsletter
+            </h4>
+            <p className="text-muted text-sm leading-relaxed mb-4">
+              Course updates, new batches and learning tips — straight to your inbox.
+            </p>
+            {subscribeState === 'done' ? (
+              <p className="text-sm text-primary-text" role="status">{subscribeMessage}</p>
+            ) : (
+              <form onSubmit={handleSubscribe} className="flex gap-2">
+                <Input
+                  type="email"
+                  required
+                  value={subscribeEmail}
+                  onChange={(e) => setSubscribeEmail(e.target.value)}
+                  placeholder="Your email address"
+                  aria-label="Email address"
+                  disabled={subscribeState === 'submitting'}
+                  className="flex-1"
+                />
+                <Button type="submit" size="md" loading={subscribeState === 'submitting'}>
+                  <Send className="w-4 h-4" /> Subscribe
+                </Button>
+              </form>
+            )}
+            {subscribeState === 'error' && (
+              <p className="text-xs text-red-400 mt-2" role="alert">{subscribeMessage}</p>
+            )}
+          </div>
+
+          {/* Book a Call */}
+          <div>
+            <h4 className="text-foreground font-semibold mb-2 flex items-center gap-2">
+              <CalendarCheck className="w-4 h-4 text-primary-text" /> Book a Call
+            </h4>
+            <p className="text-muted text-sm leading-relaxed mb-4">
+              Not sure where to start? Book a free career-guidance call with our team.
+            </p>
+            <Link href="/book-a-call">
+              <Button variant="outline" size="md">Book a free call</Button>
+            </Link>
+          </div>
+
+          {/* Become our Ambassador */}
+          <div>
+            <h4 className="text-foreground font-semibold mb-2 flex items-center gap-2">
+              <Users className="w-4 h-4 text-primary-text" /> Become our Ambassador
+            </h4>
+            <p className="text-muted text-sm leading-relaxed mb-4">
+              Love CodeBettle? Represent us at your campus and help more students start learning.
+            </p>
+            <Link href="/become-ambassador">
+              <Button variant="outline" size="md">Apply now</Button>
+            </Link>
           </div>
         </div>
 

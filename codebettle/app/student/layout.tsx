@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation';
 import { getSession } from '@/lib/auth';
+import { getAdminBasePath } from '@/lib/admin-url';
 import PortalLayout from '@/components/layout/PortalLayout';
 import TeacherMessagePopup from '@/components/notifications/TeacherMessagePopup';
 import { LayoutDashboard, BookOpen, Award, StickyNote, Heart, Star, Bell, User, FileQuestion, LifeBuoy } from 'lucide-react';
@@ -32,7 +33,7 @@ export default async function StudentLayout({ children }: { children: React.Reac
 
   return (
     <>
-      <PortalLayout user={session} navItems={NAV_ITEMS} portalName="Student Portal">
+      <PortalLayout user={session} navItems={NAV_ITEMS} portalName="Student Portal" adminBasePath={getAdminBasePath()}>
         {children}
       </PortalLayout>
       {/* Phase 3, Worker C: "Message from Your Teacher" popup. It shows

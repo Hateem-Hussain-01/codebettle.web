@@ -6,6 +6,7 @@ import { Menu, X, ChevronDown } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Button from '@/components/ui/Button';
 import ThemeToggle from '@/components/theme/ThemeToggle';
+import BackButton from '@/components/layout/BackButton';
 import { primaryPortalDashboard } from '@/lib/portal-switch';
 import { portalMenuLinks } from '@/lib/user-menu';
 import UserMenu from '@/components/layout/UserMenu';
@@ -72,12 +73,22 @@ export default function Navbar({ session, navItems: navItemsProp, logoUrl: logoU
   // Module 17: the public navbar points at the user's PRIMARY portal
   // (role is the primary role). A dual-role user lands on their home
   // portal here and uses the in-portal switcher to reach the other one.
-  const portalLink = primaryPortalDashboard(session);
+  // Admins go through /api/portal (a server-side redirect, PR #33):
+  // the admin dashboard lives at the SECRET base path, which the
+  // browser must never know — the endpoint redirects server-side, so
+  // no secret appears in the page or the JS bundle.
+  const portalLink =
+    session?.role === 'admin' ? '/api/portal?to=dashboard' : primaryPortalDashboard(session);
 
   // Avatar menu destinations, role-based: the navbar sits on public
   // pages, so there is no portal prefix in the pathname to derive
   // from (portalMenuLinks(null, ...) falls back to the primary role).
-  const menuLinks = session ? portalMenuLinks(null, session.role) : null;
+  // Admins go through /api/portal for the same reason as above.
+  const menuLinks = session
+    ? session.role === 'admin'
+      ? { profileHref: '/api/portal?to=profile', settingsHref: '/api/portal?to=settings' }
+      : portalMenuLinks(null, session.role)
+    : null;
 
   // Same logout as the portal topbar (POST /api/auth logout, then
   // home). No new API — the endpoint already handles the action.
@@ -87,6 +98,7 @@ export default function Navbar({ session, navItems: navItemsProp, logoUrl: logoU
   };
 
   return (
+    <>
     <nav className={`fixed top-0 left-0 right-0 z-40 transition-all duration-300 ${scrolled ? 'bg-dark/95 backdrop-blur-md border-b border-dark-border shadow-lg' : 'bg-transparent'}`}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
@@ -177,5 +189,8 @@ export default function Navbar({ session, navItems: navItemsProp, logoUrl: logoU
         )}
       </AnimatePresence>
     </nav>
+    {/* Back button (PR #33): fixed chip below the navbar, on every public page. Hidden on the home page itself. */}
+    <BackButton />
+    </>
   );
 }

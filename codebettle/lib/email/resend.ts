@@ -24,11 +24,13 @@
 import { Resend } from 'resend';
 import {
   adminInvitationEmail,
+  bookACallEmail,
   notificationEmail,
   passwordResetEmail,
   verificationEmail,
   type EmailTemplate,
 } from './templates';
+import { adminUrl } from '../admin-url';
 
 export interface SendEmailInput {
   to: string;
@@ -190,6 +192,62 @@ export function buildInvitationUrl(baseUrl: string, token: string): string {
 }
 
 /**
+ * Secret admin sign-in page URL (PR #33). Built from the
+ * ADMIN_BASE_PATH env var (via adminUrl) — the admin area is not
+ * linked anywhere public, so this is the link a new admin must save.
+ * Sent only to invited admins (in the invitation email) and shown
+ * only inside the admin area; never in a public page or email.
+ */
+export function buildAdminPortalUrl(baseUrl: string): string {
+  return `${getAppBaseUrl(baseUrl)}${adminUrl('/signin')}`;
+}
+
+/**
+ * Book-a-call recipients (PR #33), confirmed by Eman 13 Nov 2026
+ * ~22:01 PKT. Ahmad Hassan's address came from memory
+ * (ahmad.hassan.hnd@gmail.com) — flag for confirmation before relying
+ * on it. The booking is saved first and the email is best-effort
+ * (Resend may not be configured); a failed send never blocks the save.
+ */
+export const BOOK_A_CALL_RECIPIENTS: readonly string[] = [
+  'ahmad.hassan.hnd@gmail.com',
+  'zohadijaz786@gmail.com',
+  'mhateemjutt1412@gmail.com',
+];
+
+/**
+ * Book-a-call notification (PR #33). Sends the booking to the 3
+ * confirmed recipients, one email each, and returns per-recipient
+ * results. Best-effort: when Resend is not configured every send is
+ * skipped ({ sent: false, reason: 'email-not-configured' }) and the
+ * caller still keeps the saved booking. Never throws.
+ */
+export async function sendBookACallEmail(
+  booking: {
+    fullName: string;
+    email: string;
+    phone?: string;
+    currentStatus: string;
+    courseInterest?: string;
+    guidanceNeeded: string;
+    preferredContact?: string;
+  },
+  opts: { transport?: EmailTransport; baseUrl?: string } = {},
+): Promise<SendEmailResult[]> {
+  const baseUrl = getAppBaseUrl(opts.baseUrl);
+  const template = bookACallEmail({
+    ...booking,
+    adminUrl: `${baseUrl}${adminUrl('/book-a-call')}`,
+    siteUrl: baseUrl,
+  });
+  const results: SendEmailResult[] = [];
+  for (const to of BOOK_A_CALL_RECIPIENTS) {
+    results.push(await sendTemplatedEmail(to, template, opts));
+  }
+  return results;
+}
+
+/**
  * Admin invitation email (Phase 2, Module 18). Best-effort like the
  * other senders: when Resend is not configured the send is skipped and
  * the caller gets { sent: false, reason: 'email-not-configured' } — the
@@ -207,7 +265,7 @@ export async function sendInvitationEmail(
   const inviteUrl = buildInvitationUrl(baseUrl, token);
   return sendTemplatedEmail(
     to,
-    adminInvitationEmail({ name, inviteUrl, expiresInDays }),
+    adminInvitationEmail({ name, inviteUrl, expiresInDays, portalUrl: buildAdminPortalUrl(baseUrl) }),
     opts,
   );
 }

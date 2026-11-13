@@ -34,6 +34,10 @@ export type EnrollmentPaymentStatus = 'paid' | 'free' | 'pending';
 export type CouponType = 'percentage' | 'fixed';
 export type AnnouncementType = 'site-wide' | 'course';
 export type ApplicationStatus = 'pending' | 'approved' | 'rejected';
+/** Book-a-call request lifecycle (footer → /book-a-call, PR #33). */
+export type BookACallStatus = 'new' | 'contacted' | 'done';
+/** Ambassador application lifecycle (footer → /become-ambassador, PR #33). */
+export type AmbassadorApplicationStatus = 'pending' | 'approved' | 'rejected';
 
 export interface SocialLinks {
   github?: string;
@@ -360,6 +364,63 @@ export interface ContactMessage {
   message: string;
   isRead: boolean;
   createdAt: string;
+}
+
+/**
+ * A footer newsletter subscription (PR #33). One row per email; the
+ * footer Subscribe form posts to /api/subscribe. Admins list them in
+ * the Subscribers section; unsubscribe is a delete. No public listing.
+ */
+export interface Subscriber {
+  id: string;
+  email: string;
+  createdAt: string;
+}
+
+/**
+ * A free career-guidance call request (PR #33). Form on /book-a-call
+ * asks student questions only — no budget question, the call is free.
+ * The booking is saved first; the email to the 3 recipients is
+ * best-effort (Resend may not be configured) and never blocks the save.
+ */
+export interface BookACall {
+  id: string;
+  fullName: string;
+  email: string;
+  phone?: string;
+  /** Student or professional (stored free text, from the form select). */
+  currentStatus: string;
+  courseInterest?: string;
+  guidanceNeeded: string;
+  preferredContact?: string;
+  status: BookACallStatus;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/**
+ * A campus ambassador application (PR #33). EXACT fields from Eman's
+ * Google Form 'CodeBettle Ambassador' (13 Nov 2026 ~22:19 PKT) — all 8
+ * required: Name, WhatsApp, Email, University / Institute Name,
+ * Department & Semester (ONE field), leadership position (radio),
+ * promotion plan (long text), prior ambassador experience (Yes/No).
+ * Leadership position is one of: 'Class Representative (CR)',
+ * 'Girls Representative (GR)', 'Society Executive',
+ * 'None / General Student'. Prior experience is 'Yes' or 'No'.
+ */
+export interface AmbassadorApplication {
+  id: string;
+  fullName: string;
+  whatsapp: string;
+  email: string;
+  university: string;
+  departmentSemester: string;
+  leadershipPosition: string;
+  promotionPlan: string;
+  priorAmbassadorExperience: string;
+  status: AmbassadorApplicationStatus;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface Testimonial {
@@ -828,6 +889,39 @@ export type ReviewRow = Pick<
 export type ContactMessageRow = Pick<
   Models.public_ContactMessage,
   'id' | 'name' | 'email' | 'subject' | 'message' | 'isRead' | 'createdAt'
+>;
+
+export type SubscriberRow = Pick<Models.public_Subscriber, 'id' | 'email' | 'createdAt'>;
+
+export type BookACallRow = Pick<
+  Models.public_BookACall,
+  | 'id'
+  | 'fullName'
+  | 'email'
+  | 'phone'
+  | 'currentStatus'
+  | 'courseInterest'
+  | 'guidanceNeeded'
+  | 'preferredContact'
+  | 'status'
+  | 'createdAt'
+  | 'updatedAt'
+>;
+
+export type AmbassadorApplicationRow = Pick<
+  Models.public_AmbassadorApplication,
+  | 'id'
+  | 'fullName'
+  | 'whatsapp'
+  | 'email'
+  | 'university'
+  | 'departmentSemester'
+  | 'leadershipPosition'
+  | 'promotionPlan'
+  | 'priorAmbassadorExperience'
+  | 'status'
+  | 'createdAt'
+  | 'updatedAt'
 >;
 
 export type TestimonialRow = Pick<

@@ -27,15 +27,14 @@ export interface UserMenuLinks {
 }
 
 const PORTAL_PREFIXES: Array<[string, string]> = [
-  ['/admin', 'admin'],
   ['/instructor', 'instructor'],
   ['/student', 'student'],
   ['/applicant', 'applicant'],
 ];
 
-function linksForPortal(portal: string): UserMenuLinks {
+function linksForPortal(portal: string, adminBasePath = 'admin'): UserMenuLinks {
   if (portal === 'admin') {
-    return { profileHref: '/admin/profile', settingsHref: '/admin/settings' };
+    return { profileHref: `/${adminBasePath}/profile`, settingsHref: `/${adminBasePath}/settings` };
   }
   return { profileHref: `/${portal}/profile`, settingsHref: `/${portal}/profile` };
 }
@@ -45,17 +44,23 @@ function linksForPortal(portal: string): UserMenuLinks {
  * `pathname` is the current route (null/undefined on public pages);
  * `fallbackRole` is the user's primary role, used when the pathname
  * is outside any portal. An unknown role lands on the student
- * profile — the safest portal that always exists.
+ * profile — the safest portal that always exists. The admin prefix is
+ * the secret base path (PR #33) — passed in by the portal layout; the
+ * dev default is 'admin'.
  */
 export function portalMenuLinks(
   pathname: string | null | undefined,
   fallbackRole: string,
+  adminBasePath = 'admin',
 ): UserMenuLinks {
   if (pathname) {
     const path = pathname.split('?')[0].split('#')[0];
+    if (path === `/${adminBasePath}` || path.startsWith(`/${adminBasePath}/`)) {
+      return linksForPortal('admin', adminBasePath);
+    }
     for (const [prefix, portal] of PORTAL_PREFIXES) {
       if (path === prefix || path.startsWith(`${prefix}/`)) {
-        return linksForPortal(portal);
+        return linksForPortal(portal, adminBasePath);
       }
     }
   }
@@ -64,7 +69,7 @@ export function portalMenuLinks(
     case 'instructor':
     case 'student':
     case 'applicant':
-      return linksForPortal(fallbackRole);
+      return linksForPortal(fallbackRole, adminBasePath);
     default:
       return { profileHref: '/student/profile', settingsHref: '/student/profile' };
   }

@@ -171,11 +171,13 @@ test('PortalLayout: avatar is a UserMenu, not the plain profile Link; bell + sid
   assert.match(layout, /import UserMenu from '@\/components\/layout\/UserMenu'/);
   assert.match(layout, /import \{ portalMenuLinks \} from '@\/lib\/user-menu'/);
   assert.match(layout, /<UserMenu user=\{user\} profileHref=\{links\.profileHref\} settingsHref=\{links\.settingsHref\} onLogout=\{handleLogout\} \/>/);
-  assert.match(layout, /portalMenuLinks\(pathname, user\.role\)/);
+  assert.match(layout, /portalMenuLinks\(pathname, user\.role, adminBasePath\)/);
   assert.doesNotMatch(layout, /<Link href=\{`\/\$\{portalSlug\}\/profile`\}>/);
-  // Bell still uses portalSlug (its fallback is load-bearing in the
-  // applicant portal — see lib/user-menu.ts).
-  assert.match(layout, /href=\{`\/\$\{portalSlug\}\/notifications`\}/);
+  // Bell still uses the current portal's base (PR #33: portalBase —
+  // the secret base path for admin, the portal slug otherwise). Its
+  // fallback is load-bearing in the applicant portal — see
+  // lib/user-menu.ts.
+  assert.match(layout, /href=\{`\$\{portalBase\}\/notifications`\}/);
   // Sidebar Sign Out still uses the same (now hoisted) logout.
   assert.match(layout, /Sign Out/);
   assert.match(layout, /async function handleLogout\(\)/);

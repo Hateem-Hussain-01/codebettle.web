@@ -542,7 +542,12 @@ test('accept route: preview prefills email; mismatched/short passwords rejected;
     }),
   );
   assert.equal(ok.status, 200);
-  assert.deepEqual(await ok.json(), { success: true });
+  // PR #33: accept also returns the secret admin sign-in URL, so the
+  // accept page can show it with a save/download option.
+  const okBody = await ok.json();
+  assert.equal(okBody.success, true);
+  assert.equal(typeof okBody.portalUrl, 'string');
+  assert.match(okBody.portalUrl, /\/signin$/);
 
   const again = await POST(
     jsonReq('http://localhost/api/auth/accept-invitation', 'POST', {

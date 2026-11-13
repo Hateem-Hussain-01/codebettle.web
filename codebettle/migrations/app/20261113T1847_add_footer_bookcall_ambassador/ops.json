@@ -1,0 +1,389 @@
+[
+  {
+    "id": "table.AmbassadorApplication",
+    "label": "Create table \"AmbassadorApplication\"",
+    "summary": "Creates table \"AmbassadorApplication\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "AmbassadorApplication"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"AmbassadorApplication\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"AmbassadorApplication\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "table \"AmbassadorApplication\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"AmbassadorApplication\"",
+        "sql": "CREATE TABLE \"public\".\"AmbassadorApplication\" (\n  \"createdAt\" timestamptz(3) DEFAULT (now()) NOT NULL,\n  \"departmentSemester\" text NOT NULL,\n  \"email\" text NOT NULL,\n  \"fullName\" text NOT NULL,\n  \"id\" text NOT NULL,\n  \"leadershipPosition\" text NOT NULL,\n  \"priorAmbassadorExperience\" text NOT NULL,\n  \"promotionPlan\" text NOT NULL,\n  \"status\" text DEFAULT 'pending' NOT NULL,\n  \"university\" text NOT NULL,\n  \"updatedAt\" timestamptz(3) NOT NULL,\n  \"whatsapp\" text NOT NULL,\n  PRIMARY KEY (\"id\"),\n  CONSTRAINT \"AmbassadorApplication_status_check_19a2b525\" CHECK (\"status\" IN ('pending', 'approved', 'rejected'))\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"AmbassadorApplication\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" WHERE (\"c\".\"oid\" = to_regclass($1) AND (\"c\".\"relkind\" = $2 OR \"c\".\"relkind\" = $3))) AS \"result\"",
+        "params": [
+          "\"public\".\"AmbassadorApplication\"",
+          "r",
+          "p"
+        ],
+        "expectation": {
+          "expects": "present",
+          "object": "table \"AmbassadorApplication\""
+        }
+      }
+    ]
+  },
+  {
+    "id": "table.BookACall",
+    "label": "Create table \"BookACall\"",
+    "summary": "Creates table \"BookACall\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "BookACall"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"BookACall\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"BookACall\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "table \"BookACall\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"BookACall\"",
+        "sql": "CREATE TABLE \"public\".\"BookACall\" (\n  \"courseInterest\" text,\n  \"createdAt\" timestamptz(3) DEFAULT (now()) NOT NULL,\n  \"currentStatus\" text NOT NULL,\n  \"email\" text NOT NULL,\n  \"fullName\" text NOT NULL,\n  \"guidanceNeeded\" text NOT NULL,\n  \"id\" text NOT NULL,\n  \"phone\" text,\n  \"preferredContact\" text,\n  \"status\" text DEFAULT 'new' NOT NULL,\n  \"updatedAt\" timestamptz(3) NOT NULL,\n  PRIMARY KEY (\"id\"),\n  CONSTRAINT \"BookACall_status_check_1221e9dd\" CHECK (\"status\" IN ('new', 'contacted', 'done'))\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"BookACall\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" WHERE (\"c\".\"oid\" = to_regclass($1) AND (\"c\".\"relkind\" = $2 OR \"c\".\"relkind\" = $3))) AS \"result\"",
+        "params": [
+          "\"public\".\"BookACall\"",
+          "r",
+          "p"
+        ],
+        "expectation": {
+          "expects": "present",
+          "object": "table \"BookACall\""
+        }
+      }
+    ]
+  },
+  {
+    "id": "table.Subscriber",
+    "label": "Create table \"Subscriber\"",
+    "summary": "Creates table \"Subscriber\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "Subscriber"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"Subscriber\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"Subscriber\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "table \"Subscriber\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"Subscriber\"",
+        "sql": "CREATE TABLE \"public\".\"Subscriber\" (\n  \"createdAt\" timestamptz(3) DEFAULT (now()) NOT NULL,\n  \"email\" text NOT NULL,\n  \"id\" text NOT NULL,\n  PRIMARY KEY (\"id\")\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"Subscriber\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" WHERE (\"c\".\"oid\" = to_regclass($1) AND (\"c\".\"relkind\" = $2 OR \"c\".\"relkind\" = $3))) AS \"result\"",
+        "params": [
+          "\"public\".\"Subscriber\"",
+          "r",
+          "p"
+        ],
+        "expectation": {
+          "expects": "present",
+          "object": "table \"Subscriber\""
+        }
+      }
+    ]
+  },
+  {
+    "id": "unique.Subscriber.Subscriber_email_key",
+    "label": "Add unique constraint on \"Subscriber\" (email)",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "unique",
+        "name": "Subscriber_email_key",
+        "table": "Subscriber"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"Subscriber_email_key\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "Subscriber_email_key",
+          "public",
+          "\"public\".\"Subscriber\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "constraint \"Subscriber_email_key\" on \"Subscriber\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "add unique constraint \"Subscriber_email_key\"",
+        "sql": "ALTER TABLE \"public\".\"Subscriber\" ADD CONSTRAINT \"Subscriber_email_key\" UNIQUE (\"email\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify unique constraint \"Subscriber_email_key\" exists on (email)",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3) AND \"c\".\"contype\" = $4 AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"c\".\"conkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"c\".\"conrelid\" AND key_attribute.attnum = key_column.attnum) = ($5)::jsonb)) AS \"result\"",
+        "params": [
+          "Subscriber_email_key",
+          "public",
+          "\"public\".\"Subscriber\"",
+          "u",
+          "[\"email\"]"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.AmbassadorApplication.AmbassadorApplication_email_createdAt_idx_6e3c0d8a",
+    "label": "Create index \"AmbassadorApplication_email_createdAt_idx_6e3c0d8a\" on \"AmbassadorApplication\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "AmbassadorApplication_email_createdAt_idx_6e3c0d8a",
+        "table": "AmbassadorApplication"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"AmbassadorApplication_email_createdAt_idx_6e3c0d8a\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"AmbassadorApplication_email_createdAt_idx_6e3c0d8a\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "index \"AmbassadorApplication_email_createdAt_idx_6e3c0d8a\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"AmbassadorApplication_email_createdAt_idx_6e3c0d8a\"",
+        "sql": "CREATE INDEX \"AmbassadorApplication_email_createdAt_idx_6e3c0d8a\" ON \"public\".\"AmbassadorApplication\" (\"email\", \"createdAt\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"AmbassadorApplication_email_createdAt_idx_6e3c0d8a\" exists on \"AmbassadorApplication\" with the planned definition",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" INNER JOIN \"pg_index\" AS \"i\" ON \"i\".\"indexrelid\" = \"c\".\"oid\" INNER JOIN \"pg_am\" AS \"m\" ON \"m\".\"oid\" = \"c\".\"relam\" WHERE (\"c\".\"oid\" = to_regclass($1) AND (\"c\".\"relkind\" = $2 OR \"c\".\"relkind\" = $3) AND \"i\".\"indrelid\" = to_regclass($4) AND NOT (\"i\".\"indisunique\") AND \"m\".\"amname\" = $5 AND (\"i\".\"indexprs\" IS NULL AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"i\".\"indkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"i\".\"indrelid\" AND key_attribute.attnum = key_column.attnum) = ($6)::jsonb) AND \"i\".\"indpred\" IS NULL)) AS \"result\"",
+        "params": [
+          "\"public\".\"AmbassadorApplication_email_createdAt_idx_6e3c0d8a\"",
+          "i",
+          "I",
+          "\"public\".\"AmbassadorApplication\"",
+          "btree",
+          "[\"email\",\"createdAt\"]"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.AmbassadorApplication.AmbassadorApplication_status_createdAt_idx_58610442",
+    "label": "Create index \"AmbassadorApplication_status_createdAt_idx_58610442\" on \"AmbassadorApplication\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "AmbassadorApplication_status_createdAt_idx_58610442",
+        "table": "AmbassadorApplication"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"AmbassadorApplication_status_createdAt_idx_58610442\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"AmbassadorApplication_status_createdAt_idx_58610442\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "index \"AmbassadorApplication_status_createdAt_idx_58610442\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"AmbassadorApplication_status_createdAt_idx_58610442\"",
+        "sql": "CREATE INDEX \"AmbassadorApplication_status_createdAt_idx_58610442\" ON \"public\".\"AmbassadorApplication\" (\"status\", \"createdAt\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"AmbassadorApplication_status_createdAt_idx_58610442\" exists on \"AmbassadorApplication\" with the planned definition",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" INNER JOIN \"pg_index\" AS \"i\" ON \"i\".\"indexrelid\" = \"c\".\"oid\" INNER JOIN \"pg_am\" AS \"m\" ON \"m\".\"oid\" = \"c\".\"relam\" WHERE (\"c\".\"oid\" = to_regclass($1) AND (\"c\".\"relkind\" = $2 OR \"c\".\"relkind\" = $3) AND \"i\".\"indrelid\" = to_regclass($4) AND NOT (\"i\".\"indisunique\") AND \"m\".\"amname\" = $5 AND (\"i\".\"indexprs\" IS NULL AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"i\".\"indkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"i\".\"indrelid\" AND key_attribute.attnum = key_column.attnum) = ($6)::jsonb) AND \"i\".\"indpred\" IS NULL)) AS \"result\"",
+        "params": [
+          "\"public\".\"AmbassadorApplication_status_createdAt_idx_58610442\"",
+          "i",
+          "I",
+          "\"public\".\"AmbassadorApplication\"",
+          "btree",
+          "[\"status\",\"createdAt\"]"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.BookACall.BookACall_email_createdAt_idx_6e3c0d8a",
+    "label": "Create index \"BookACall_email_createdAt_idx_6e3c0d8a\" on \"BookACall\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "BookACall_email_createdAt_idx_6e3c0d8a",
+        "table": "BookACall"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"BookACall_email_createdAt_idx_6e3c0d8a\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"BookACall_email_createdAt_idx_6e3c0d8a\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "index \"BookACall_email_createdAt_idx_6e3c0d8a\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"BookACall_email_createdAt_idx_6e3c0d8a\"",
+        "sql": "CREATE INDEX \"BookACall_email_createdAt_idx_6e3c0d8a\" ON \"public\".\"BookACall\" (\"email\", \"createdAt\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"BookACall_email_createdAt_idx_6e3c0d8a\" exists on \"BookACall\" with the planned definition",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" INNER JOIN \"pg_index\" AS \"i\" ON \"i\".\"indexrelid\" = \"c\".\"oid\" INNER JOIN \"pg_am\" AS \"m\" ON \"m\".\"oid\" = \"c\".\"relam\" WHERE (\"c\".\"oid\" = to_regclass($1) AND (\"c\".\"relkind\" = $2 OR \"c\".\"relkind\" = $3) AND \"i\".\"indrelid\" = to_regclass($4) AND NOT (\"i\".\"indisunique\") AND \"m\".\"amname\" = $5 AND (\"i\".\"indexprs\" IS NULL AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"i\".\"indkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"i\".\"indrelid\" AND key_attribute.attnum = key_column.attnum) = ($6)::jsonb) AND \"i\".\"indpred\" IS NULL)) AS \"result\"",
+        "params": [
+          "\"public\".\"BookACall_email_createdAt_idx_6e3c0d8a\"",
+          "i",
+          "I",
+          "\"public\".\"BookACall\"",
+          "btree",
+          "[\"email\",\"createdAt\"]"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.BookACall.BookACall_status_createdAt_idx_58610442",
+    "label": "Create index \"BookACall_status_createdAt_idx_58610442\" on \"BookACall\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "BookACall_status_createdAt_idx_58610442",
+        "table": "BookACall"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"BookACall_status_createdAt_idx_58610442\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"BookACall_status_createdAt_idx_58610442\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "index \"BookACall_status_createdAt_idx_58610442\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"BookACall_status_createdAt_idx_58610442\"",
+        "sql": "CREATE INDEX \"BookACall_status_createdAt_idx_58610442\" ON \"public\".\"BookACall\" (\"status\", \"createdAt\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"BookACall_status_createdAt_idx_58610442\" exists on \"BookACall\" with the planned definition",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" INNER JOIN \"pg_index\" AS \"i\" ON \"i\".\"indexrelid\" = \"c\".\"oid\" INNER JOIN \"pg_am\" AS \"m\" ON \"m\".\"oid\" = \"c\".\"relam\" WHERE (\"c\".\"oid\" = to_regclass($1) AND (\"c\".\"relkind\" = $2 OR \"c\".\"relkind\" = $3) AND \"i\".\"indrelid\" = to_regclass($4) AND NOT (\"i\".\"indisunique\") AND \"m\".\"amname\" = $5 AND (\"i\".\"indexprs\" IS NULL AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"i\".\"indkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"i\".\"indrelid\" AND key_attribute.attnum = key_column.attnum) = ($6)::jsonb) AND \"i\".\"indpred\" IS NULL)) AS \"result\"",
+        "params": [
+          "\"public\".\"BookACall_status_createdAt_idx_58610442\"",
+          "i",
+          "I",
+          "\"public\".\"BookACall\"",
+          "btree",
+          "[\"status\",\"createdAt\"]"
+        ]
+      }
+    ]
+  }
+]

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { buildCspHeader, generateNonce, shouldAllowFraming } from '@/lib/security';
+import { adminUrl, getAdminBasePath, isAdminPath, isAdminSigninPath, isLegacyAdminPath } from '@/lib/admin-url';
 
 /**
  * Route guard + security headers (Next.js 16 `proxy`, formerly middleware).
@@ -42,7 +43,7 @@ import { buildCspHeader, generateNonce, shouldAllowFraming } from '@/lib/securit
  */
 
 /** Paths the maintenance gate never rewrites. */
-const MAINTENANCE_EXEMPT = ['/admin', '/auth'];
+const MAINTENANCE_EXEMPT = ['/auth'];
 
 /**
  * Fail-open maintenance check: true only when the public settings
@@ -109,13 +110,25 @@ export async function proxy(request: NextRequest) {
   const csp = buildCspHeader(nonce, process.env.NODE_ENV === 'development', { allowFraming });
 
   const session = request.cookies.get('cb_session');
+  const adminBase = getAdminBasePath();
+
+  // 0. Legacy /admin block (PR #33): the admin area lives at a SECRET
+  // base path (ADMIN_BASE_PATH). The old /admin/* URLs must not work
+  // — anyone probing them is sent home. Skipped in local dev, where
+  // the base path IS 'admin' and the old URLs are the real ones.
+  if (adminBase !== 'admin' && isLegacyAdminPath(pathname)) {
+    const redirect = NextResponse.redirect(new URL('/', request.url));
+    return setPageSecurityHeaders(redirect, csp, false);
+  }
 
   // 1. Maintenance gate — before the portal gate. /maintenance itself
-  // must be exempt or the rewrite would loop; /admin and /auth stay
-  // open so an admin can sign in and turn maintenance off. /api and
-  // static assets never reach this proxy (see matcher).
+  // must be exempt or the rewrite would loop; the admin area (secret
+  // base path) and /auth stay open so admins can still sign in and
+  // turn maintenance off. /api and static assets never reach this
+  // proxy (see matcher).
   const isMaintenanceExempt =
     pathname === '/maintenance' ||
+    isAdminPath(pathname) ||
     MAINTENANCE_EXEMPT.some((r) => pathname.startsWith(r));
   if (!isMaintenanceExempt && (await isMaintenanceMode(request))) {
     const requestHeaders = new Headers(request.headers);
@@ -131,11 +144,17 @@ export async function proxy(request: NextRequest) {
     return setPageSecurityHeaders(response, csp, false);
   }
 
-  const protectedRoutes = ['/student', '/instructor', '/admin'];
-  const isProtected = protectedRoutes.some((r) => pathname.startsWith(r));
+  const protectedRoutes = ['/student', '/instructor'];
+  const isProtected =
+    protectedRoutes.some((r) => pathname.startsWith(r)) || isAdminPath(pathname);
 
-  if (isProtected && !session) {
-    const redirect = NextResponse.redirect(new URL('/auth/login', request.url));
+  // The admin sign-in page is public (no session needed) — exempt it
+  // from the portal gate or the redirect below would loop.
+  if (isProtected && !session && !isAdminSigninPath(pathname)) {
+    // Admin-area visitors go to the secret sign-in page; everyone
+    // else to the public login page.
+    const loginUrl = isAdminPath(pathname) ? adminUrl('/signin') : '/auth/login';
+    const redirect = NextResponse.redirect(new URL(loginUrl, request.url));
     return setPageSecurityHeaders(redirect, csp, false);
   }
 

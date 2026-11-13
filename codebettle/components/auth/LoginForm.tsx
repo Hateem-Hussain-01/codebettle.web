@@ -57,7 +57,11 @@ export default function LoginForm() {
         return;
       }
       toast.success(`Welcome back, ${data.user.name}!`);
-      const redirect = getSafeRedirect(searchParams.get('redirect'), `/${data.user.role}/dashboard`);
+      // dashboardUrl comes from the login API: for admins it is the
+      // secret admin dashboard (PR #33). Fall back to the role path
+      // for older responses that do not carry it.
+      const fallback = typeof data.dashboardUrl === 'string' ? data.dashboardUrl : `/${data.user.role}/dashboard`;
+      const redirect = getSafeRedirect(searchParams.get('redirect'), fallback);
       router.push(redirect);
       router.refresh();
     } finally {

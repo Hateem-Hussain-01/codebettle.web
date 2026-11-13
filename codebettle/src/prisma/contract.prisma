@@ -1164,6 +1164,71 @@ model NavItem {
   @@index([enabled, order])
 }
 
+// Newsletter subscribers (footer Subscribe). One row per email; the
+// footer posts to /api/subscribe and the admin Subscribers section
+// lists them. Unsubscribe is a delete.
+model Subscriber {
+  id        String   @id @onCreate(cuid(2))
+  email     String   @unique
+  createdAt DateTime @default(now()) @onCreate(now())
+}
+
+enum BookACallStatus {
+  new
+  contacted
+  done
+}
+
+// Book-a-call requests (footer Book a Call → /book-a-call). Free
+// career-guidance calls: student questions only, no budget question.
+// The booking is saved first; the email to the 3 recipients is
+// best-effort (Resend may not be configured) and never blocks the save.
+model BookACall {
+  id               String         @id @onCreate(cuid(2))
+  fullName         String
+  email            String
+  phone            String?
+  currentStatus    String
+  courseInterest   String?
+  guidanceNeeded   String
+  preferredContact String?
+  status           BookACallStatus @default(new)
+  createdAt        DateTime       @default(now()) @onCreate(now())
+  updatedAt        temporal.UpdatedAt
+
+  @@index([status, createdAt])
+  @@index([email, createdAt])
+}
+
+enum AmbassadorApplicationStatus {
+  pending
+  approved
+  rejected
+}
+
+// Campus Ambassador applications (/become-ambassador). Fields are the
+// PROPOSED set — Eman will confirm the exact fields later; the model
+// is built to be adjustable (fields are nullable where a future
+// change could drop them). socialLinks is free text (one URL per line)
+// until the exact fields are known.
+model AmbassadorApplication {
+  id                        String                    @id @onCreate(cuid(2))
+  fullName                  String
+  whatsapp                  String
+  email                     String
+  university                String
+  departmentSemester        String
+  leadershipPosition        String
+  promotionPlan             String
+  priorAmbassadorExperience String
+  status                    AmbassadorApplicationStatus @default(pending)
+  createdAt                 DateTime                  @default(now()) @onCreate(now())
+  updatedAt                 temporal.UpdatedAt
+
+  @@index([status, createdAt])
+  @@index([email, createdAt])
+}
+
 model AuditLog {
   id        String   @id @onCreate(cuid(2))
   actorId   String?

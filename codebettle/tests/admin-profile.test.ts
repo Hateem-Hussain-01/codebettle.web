@@ -112,13 +112,15 @@ test('page: no invented fields, no hardcoded user data', () => {
 // ---------------------------------------------------------------------------
 
 test('layout: sidebar navItems include a Profile item pointing at /admin/profile', () => {
-  assert.match(layoutSrc, /href: '\/admin\/profile',\s*label: 'Profile',/);
+  // PR #33: nav hrefs are built with adminUrl(), which resolves to the
+  // secret base path in production and to /admin in dev.
+  assert.match(layoutSrc, /href: adminUrl\('\/profile'\),\s*label: 'Profile',/);
   assert.match(layoutSrc, /import \{[^}]*\bUser\b[^}]*\} from 'lucide-react'/);
   assert.match(layoutSrc, /icon: <User className="w-5 h-5" \/>/);
   // The item is pushed after the ADMIN_AREAS-built list (next to
   // Settings, the last area) — it is NOT a grantable area.
   const builtAt = layoutSrc.indexOf('ADMIN_AREAS.filter');
-  const profileAt = layoutSrc.indexOf("href: '/admin/profile'");
+  const profileAt = layoutSrc.indexOf("href: adminUrl('/profile')");
   const auditAt = layoutSrc.indexOf('if (showAuditNav)');
   assert.ok(builtAt >= 0 && profileAt > builtAt, 'Profile item must come after the ADMIN_AREAS list');
   assert.ok(profileAt < auditAt, 'Profile item must sit before the Audit Log insert');
@@ -126,14 +128,17 @@ test('layout: sidebar navItems include a Profile item pointing at /admin/profile
 });
 
 test('layout: hasAdminCapability gate unchanged, unknown /admin/* paths still left alone', () => {
-  assert.match(layoutSrc, /if \(!session \|\| !hasAdminCapability\(session\)\) redirect\('\/auth\/login'\)/);
+  // PR #33: a denied/unauthenticated admin visitor goes to the SECRET
+  // sign-in page (adminUrl('/signin')), not the public login page.
+  assert.match(layoutSrc, /if \(!session \|\| !hasAdminCapability\(session\)\) redirect\(adminUrl\('\/signin'\)\)/);
   assert.ok(
     layoutSrc.indexOf('hasAdminCapability(session)') < layoutSrc.indexOf('<PortalLayout'),
     'gate must run before PortalLayout renders',
   );
   assert.match(layoutSrc, /Unknown \/admin\/\* paths are left alone to 404/);
-  // No gating change for the new page: areaForAdminPath is untouched.
-  assert.match(layoutSrc, /const area = areaForAdminPath\(pathname\)/);
+  // No gating change for the new page: areaForAdminPath is untouched
+  // (it now receives the internal path, converted from the secret URL).
+  assert.match(layoutSrc, /const area = areaForAdminPath\(internalPath\)/);
 });
 
 test('layout: certificate system untouched (pre-existing certificates nav entry unchanged)', () => {

@@ -78,6 +78,21 @@ export function successStorySubmitRateLimitKey(ip: string): string {
   return `success-story-submit:${ip}`;
 }
 
+/** Newsletter subscriptions (public, footer): 5 per 15 minutes, keyed by IP (spam guard). */
+export function subscribeRateLimitKey(ip: string): string {
+  return `subscribe:${ip}`;
+}
+
+/** Book-a-call requests (public): 5 per 15 minutes, keyed by IP (spam guard). */
+export function bookACallRateLimitKey(ip: string): string {
+  return `book-a-call:${ip}`;
+}
+
+/** Ambassador applications (public): 5 per 15 minutes, keyed by IP (spam guard). */
+export function becomeAmbassadorRateLimitKey(ip: string): string {
+  return `become-ambassador:${ip}`;
+}
+
 /** Success story signed-upload requests: 20 per 15 minutes, keyed by IP (spam guard — files cost storage). */
 export function successStoryUploadRateLimitKey(ip: string): string {
   return `success-story-upload:${ip}`;

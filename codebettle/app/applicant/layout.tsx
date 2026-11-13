@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation';
 import { getSession } from '@/lib/auth';
 import { hasTeacherCapability } from '@/lib/rbac';
+import { getAdminBasePath } from '@/lib/admin-url';
 import PortalLayout from '@/components/layout/PortalLayout';
 import { LayoutDashboard, FileText, PlusCircle, User } from 'lucide-react';
 
@@ -32,7 +33,7 @@ export default async function ApplicantLayout({ children }: { children: React.Re
   if (hasTeacherCapability(session)) redirect('/instructor/dashboard');
 
   return (
-    <PortalLayout user={session} navItems={NAV_ITEMS} portalName="Applicant Portal">
+    <PortalLayout user={session} navItems={NAV_ITEMS} portalName="Applicant Portal" adminBasePath={getAdminBasePath()}>
       {children}
     </PortalLayout>
   );

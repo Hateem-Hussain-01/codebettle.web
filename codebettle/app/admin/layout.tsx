@@ -2,11 +2,12 @@ import { redirect } from 'next/navigation';
 import { headers } from 'next/headers';
 import { getSession } from '@/lib/auth';
 import { ADMIN_AREAS, areaForAdminPath, firstGrantedArea, hasAdminArea } from '@/lib/admin-access';
+import { adminUrl, getAdminBasePath, toExternalAdminPath, toInternalAdminPath } from '@/lib/admin-url';
 import { hasAdminCapability } from '@/lib/rbac';
 import { isSuperAdmin } from '@/lib/super-admin';
 import { canSeeAuditLog } from '@/components/audit/audit-helpers';
 import PortalLayout from '@/components/layout/PortalLayout';
-import { LayoutDashboard, BookOpen, Users, GraduationCap, ClipboardList, Tag, Bell, FileText, Newspaper, BarChart2, Award, Settings, UserCheck, Mail, Megaphone, MessageSquare, ShieldCheck, ScrollText, ListChecks, Mails, User, Trophy, SlidersHorizontal, Star, PanelTop } from 'lucide-react';
+import { LayoutDashboard, BookOpen, Users, GraduationCap, ClipboardList, Tag, Bell, FileText, Newspaper, BarChart2, Award, Settings, UserCheck, Mail, Megaphone, MessageSquare, ShieldCheck, ScrollText, ListChecks, Mails, User, Trophy, SlidersHorizontal, Star, PanelTop, CalendarCheck, UserPlus, MailPlus } from 'lucide-react';
 
 const NAV_ICONS = {
   dashboard: <LayoutDashboard className="w-5 h-5" />,
@@ -37,6 +38,10 @@ const NAV_ICONS = {
   'email-templates': <Mails className="w-5 h-5" />,
   // Navbar Editor sidebar icon (PR #32).
   'navbar-editor': <PanelTop className="w-5 h-5" />,
+  // Footer forms sidebar icons (PR #33).
+  'book-a-call': <CalendarCheck className="w-5 h-5" />,
+  ambassadors: <UserPlus className="w-5 h-5" />,
+  subscribers: <MailPlus className="w-5 h-5" />,
   settings: <Settings className="w-5 h-5" />,
 } as const;
 
@@ -46,6 +51,24 @@ const NAV_ICONS = {
  * The session carries the user's adminPermissions, read fresh from the
  * user record on every request (lib/auth.ts), so a change in
  * /admin/access applies on the target's very next request.
+ *
+ * SECRET ADMIN URL (PR #33): the admin area lives at a secret base
+ * path (ADMIN_BASE_PATH, e.g. /portal-<random>/...) instead of
+ * /admin. The pages still live at app/admin/... in the repo; a
+ * rewrite in next.config.ts maps the secret path onto them, and the
+ * proxy blocks the old /admin/* URLs. Inside this layout:
+ * - The requested path arrives via the `x-pathname` header (the
+ *   ORIGINAL, external pathname) and is converted to its internal
+ *   /admin/... form with toInternalAdminPath before the area guard
+ *   runs, so areaForAdminPath keeps working unchanged.
+ * - Nav hrefs and redirects are converted the other way with
+ *   toExternalAdminPath, so the sidebar and every redirect point at
+ *   the secret path. The internal /admin/... hrefs in ADMIN_AREAS
+ *   are never rendered.
+ * - Unauthenticated visitors go to the secret sign-in page
+ *   (adminUrl('/signin')), not the public /auth/login.
+ * - The sign-in page itself is exempt from this layout's guard (it
+ *   renders the login form with no portal chrome) — see below.
  *
  * - Sidebar: only the areas the admin was granted are shown. Full admins
  *   (no restriction) see everything, plus "Admin Access" when they are
@@ -66,6 +89,18 @@ const NAV_ICONS = {
  *   their own per-area guards (lib/api-helpers requireAdminArea).
  */
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
+  const pathname = (await headers()).get('x-pathname') ?? '';
+  const internalPath = toInternalAdminPath(pathname);
+  // The secret sign-in page is PUBLIC: it renders the login form with
+  // no portal chrome and no admin guard. Without this exemption the
+  // guard below would redirect an unauthenticated visitor to the very
+  // sign-in page they are already on (a loop). The page itself lives
+  // at app/admin/signin/ and is only reachable via the secret path
+  // (the proxy blocks /admin/* in production).
+  if (internalPath === '/admin/signin') {
+    return <>{children}</>;
+  }
+
   const session = await getSession();
   // Phase 2, Module 21.4: while an admin is viewing a teacher's
   // portal (view-as), the admin panel is unreachable — the session
@@ -73,7 +108,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   // back to the portal they are viewing instead of the login page.
   if (session?.viewAs) redirect('/instructor/dashboard');
   // Phase 2: admin capability is the isAdmin flag (legacy primary role 'admin' still counts).
-  if (!session || !hasAdminCapability(session)) redirect('/auth/login');
+  if (!session || !hasAdminCapability(session)) redirect(adminUrl('/signin'));
 
   const permissions = session.adminPermissions;
   // Phase 5, Module 23: audit access — authorized administrators, plus
@@ -84,57 +119,60 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   const canViewAuditLog = session.canViewAuditLog === true;
   const showAuditNav = canSeeAuditLog({ isAuthorizedAdmin: authorizedAdmin, canViewAuditLog });
 
+  // Redirect target for a denied area: the admin's first granted area
+  // (external/secret form), or home when they have none.
+  const deniedRedirect = toExternalAdminPath(firstGrantedArea(permissions)?.href ?? '/');
+
   const navItems = ADMIN_AREAS.filter((area) => hasAdminArea(permissions, area.key)).map(
-    (area) => ({ href: area.href, label: area.label, icon: NAV_ICONS[area.key] }),
+    (area) => ({ href: toExternalAdminPath(area.href), label: area.label, icon: NAV_ICONS[area.key] }),
   );
   // Profile is not a grantable ADMIN_AREAS entry (every admin-capability
   // user has a profile) — it sits at the end of the built list, next to
   // Settings, like the Profile item in the other portals' sidebars.
   navItems.push({
-    href: '/admin/profile',
+    href: adminUrl('/profile'),
     label: 'Profile',
     icon: <User className="w-5 h-5" />,
   });
   if (showAuditNav) {
     const auditItem = {
-      href: '/admin/audit',
+      href: adminUrl('/audit'),
       label: 'Audit Log',
       icon: <ScrollText className="w-5 h-5" />,
     };
-    const reportsIdx = navItems.findIndex((item) => item.href === '/admin/reports');
+    const reportsIdx = navItems.findIndex((item) => item.href === adminUrl('/reports'));
     if (reportsIdx >= 0) navItems.splice(reportsIdx + 1, 0, auditItem);
     else navItems.push(auditItem);
   }
   if (authorizedAdmin) {
     navItems.push({
-      href: '/admin/access',
+      href: adminUrl('/access'),
       label: 'Admin Access',
       icon: <ShieldCheck className="w-5 h-5" />,
     });
   }
 
-  const pathname = (await headers()).get('x-pathname') ?? '';
   if (pathname) {
-    const area = areaForAdminPath(pathname);
+    const area = areaForAdminPath(internalPath);
     if (area === 'access') {
       // /admin/access is authorized-administrator only — a full admin
       // who is not one of them is redirected, same as any denied area.
-      if (!authorizedAdmin) redirect(firstGrantedArea(permissions)?.href ?? '/');
-    } else if (pathname === '/admin/audit' || pathname.startsWith('/admin/audit/')) {
-      if (!showAuditNav) redirect(firstGrantedArea(permissions)?.href ?? '/');
+      if (!authorizedAdmin) redirect(deniedRedirect);
+    } else if (internalPath === '/admin/audit' || internalPath.startsWith('/admin/audit/')) {
+      if (!showAuditNav) redirect(deniedRedirect);
     } else if (area !== null) {
       if (!hasAdminArea(permissions, area)) {
-        redirect(firstGrantedArea(permissions)?.href ?? '/');
+        redirect(deniedRedirect);
       }
-    } else if (pathname === '/admin' || pathname === '/admin/') {
+    } else if (internalPath === '/admin' || internalPath === '/admin/') {
       // /admin has no page of its own — send them to their first area.
-      redirect(firstGrantedArea(permissions)?.href ?? '/');
+      redirect(deniedRedirect);
     }
     // Unknown /admin/* paths are left alone to 404.
   }
 
   return (
-    <PortalLayout user={session} navItems={navItems} portalName="Admin Panel">
+    <PortalLayout user={session} navItems={navItems} portalName="Admin Panel" adminBasePath={getAdminBasePath()}>
       {children}
     </PortalLayout>
   );
