@@ -9,6 +9,7 @@ import {
   isPythonCourse,
   resolveBatch,
   resolveCourseIcon,
+  stripBatchSuffixFromCourseName,
   substituteCertificatePlaceholders,
   toTitleCaseName,
 } from '../lib/certificates/template';
@@ -179,6 +180,60 @@ test('buildCertificateHtml: sample Python certificate uses the default design', 
   assert.ok(bodyHtml.includes('CB-2026-042'));
   assert.ok(!bodyHtml.includes('Zohaib Hassan'), 'sample name must not leak into another student’s certificate');
   assert.ok(!bodyHtml.includes('CBB8CNo801'), 'sample certificate number must not leak');
+});
+
+test('stripBatchSuffixFromCourseName removes a trailing " Batch <number>" only', () => {
+  assert.equal(stripBatchSuffixFromCourseName('Python Crash Course Batch 09'), 'Python Crash Course');
+  assert.equal(stripBatchSuffixFromCourseName('Python Crash Course Batch 9'), 'Python Crash Course');
+  assert.equal(stripBatchSuffixFromCourseName('Python Crash Course BATCH 08'), 'Python Crash Course');
+  assert.equal(stripBatchSuffixFromCourseName('Python Crash Course Batch 10'), 'Python Crash Course');
+  // Trailing whitespace tolerated.
+  assert.equal(stripBatchSuffixFromCourseName('Python Crash Course Batch 09   '), 'Python Crash Course');
+  // No suffix -> unchanged.
+  assert.equal(stripBatchSuffixFromCourseName('Python Crash Course'), 'Python Crash Course');
+  assert.equal(stripBatchSuffixFromCourseName('Web Development'), 'Web Development');
+  // "Batch" anywhere but the end is left alone.
+  assert.equal(stripBatchSuffixFromCourseName('Python Batch 09 Course'), 'Python Batch 09 Course');
+  assert.equal(stripBatchSuffixFromCourseName('Batch Processing 101'), 'Batch Processing 101');
+  // Stripping must never leave an empty title.
+  assert.equal(stripBatchSuffixFromCourseName('Batch 09'), 'Batch 09');
+  assert.equal(stripBatchSuffixFromCourseName('Batch 09 '), 'Batch 09 ');
+});
+
+test('buildCertificateHtml strips the batch suffix from the course name, batch stays BATCH-8', async () => {
+  const built = await buildCertificateHtml({
+    studentName: 'huffy',
+    courseSlug: 'python-machine-learning',
+    courseTitle: 'Python Crash Course Batch 09',
+    courseThumbnail: '',
+    courseTemplateHtml: null,
+    batch: null,
+    certificateNumber: 'CB-2026-008',
+    verificationToken: TOKEN,
+  });
+  const bodyHtml = built.html.split('<body>')[1];
+  assert.equal(built.batch, 'BATCH-8', 'batch must still be the Python default');
+  assert.ok(bodyHtml.includes('PYTHON CRASH COURSE'), 'course name must render without the batch suffix');
+  assert.ok(!bodyHtml.includes('BATCH 09'), 'no "BATCH 09" may leak into the certificate');
+  assert.ok(bodyHtml.includes('BATCH-8'), 'the batch row must still show BATCH-8');
+  assert.ok(bodyHtml.includes('Huffy'), 'name stays title-cased');
+});
+
+test('buildCertificateHtml strips the batch suffix in a custom template too (as-is casing)', async () => {
+  const built = await buildCertificateHtml({
+    studentName: 'Zainab Nadeem',
+    courseSlug: 'ghl-automation',
+    courseTitle: 'GHL Automation Batch 02',
+    courseThumbnail: '',
+    courseTemplateHtml: '<html><body>{{STUDENT_NAME}} — {{COURSE_NAME}} — {{BATCH}} — {{QR_CODE}}</body></html>',
+    batch: 'BATCH 2',
+    certificateNumber: 'CBAIB1002',
+    verificationToken: TOKEN,
+  });
+  assert.equal(built.isDefaultTemplate, false);
+  assert.equal(built.batch, 'BATCH 2');
+  assert.ok(built.html.includes('GHL Automation'), 'custom template keeps the stripped title as-is');
+  assert.ok(!built.html.includes('Batch 02'), 'no batch suffix may leak into a custom template either');
 });
 
 test('buildCertificateHtml: a custom template is used as-is (title casing kept)', async () => {

@@ -33,10 +33,12 @@
   the placeholders above): student "Huffy", course "PYTHON CRASH COURSE",
   batch "BATCH-8", certificate number "CB-2026-008", signature "Ahmad" / "CEO",
   QR = the real QR for verify token 6006cac7b8547d94150a5ea2daceda97.
-  NOTE: for a LIVE certificate to show "Python Crash Course", either rename the
-  course to "Python Crash Course" or attach this file as the course's custom
-  template (its {{COURSE_NAME}} then still follows the course title — the
-  course title itself must read "Python Crash Course").
+  NOTE: the certificate shows the course title with any trailing batch
+  suffix stripped ("Python Crash Course Batch 09" -> "PYTHON CRASH
+  COURSE" — see stripBatchSuffixFromCourseName in template.ts), so a
+  live certificate reads "PYTHON CRASH COURSE" while the website keeps
+  the full "Python Crash Course Batch 09" title. The batch ("BATCH-8")
+  is a separate field and is unaffected.
 -->
 
 
