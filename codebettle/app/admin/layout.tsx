@@ -6,7 +6,7 @@ import { hasAdminCapability } from '@/lib/rbac';
 import { isSuperAdmin } from '@/lib/super-admin';
 import { canSeeAuditLog } from '@/components/audit/audit-helpers';
 import PortalLayout from '@/components/layout/PortalLayout';
-import { LayoutDashboard, BookOpen, Users, GraduationCap, ClipboardList, Tag, Bell, FileText, Newspaper, BarChart2, Award, Settings, UserCheck, Mail, Megaphone, MessageSquare, ShieldCheck, ScrollText, ListChecks, Mails, User, Trophy } from 'lucide-react';
+import { LayoutDashboard, BookOpen, Users, GraduationCap, ClipboardList, Tag, Bell, FileText, Newspaper, BarChart2, Award, Settings, UserCheck, Mail, Megaphone, MessageSquare, ShieldCheck, ScrollText, ListChecks, Mails, User, Trophy, SlidersHorizontal, Star, PanelTop } from 'lucide-react';
 
 const NAV_ICONS = {
   dashboard: <LayoutDashboard className="w-5 h-5" />,
@@ -29,8 +29,14 @@ const NAV_ICONS = {
   forms: <ListChecks className="w-5 h-5" />,
   // Success story submissions sidebar icon.
   'success-stories': <Trophy className="w-5 h-5" />,
+  // Success Stories Management sidebar icon (PR #32).
+  'success-stories-management': <SlidersHorizontal className="w-5 h-5" />,
+  // Home reviews carousel sidebar icon (PR #32).
+  reviews: <Star className="w-5 h-5" />,
   // Email builder sidebar icon.
   'email-templates': <Mails className="w-5 h-5" />,
+  // Navbar Editor sidebar icon (PR #32).
+  'navbar-editor': <PanelTop className="w-5 h-5" />,
   settings: <Settings className="w-5 h-5" />,
 } as const;
 

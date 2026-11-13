@@ -49,6 +49,8 @@ import type {
   NotificationEventKey,
   NotificationPrefs,
   NotificationRow,
+  NavItem,
+  NavItemRow,
   ParseWarning,
   PublicCourse,
   PublicQuiz,
@@ -73,6 +75,10 @@ import type {
   SuccessStoryEvidenceRow,
   SuccessStorySubmission,
   SuccessStorySubmissionRow,
+  StudentReview,
+  StudentReviewRow,
+  TeamMember,
+  TeamMemberRow,
   Testimonial,
   TestimonialRow,
   User,
@@ -714,12 +720,68 @@ export function mapSuccessStorySubmissionRow(
     consentContact: row.consentContact,
     status: row.status,
     featured: row.featured,
+    enabled: row.enabled ?? true,
+    displayOrder: row.displayOrder ?? 0,
+    adminCreated: row.adminCreated ?? false,
     adminNote: row.adminNote ?? undefined,
     reviewedBy: row.reviewedBy ?? undefined,
     reviewedAt: row.reviewedAt ? dateToString(row.reviewedAt) : undefined,
     submittedAt: dateToString(row.submittedAt),
     updatedAt: dateToString(row.updatedAt),
     achievements: achievements.map((a) => mapSuccessStoryAchievementRow(a.achievement, a.evidence)),
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Success Stories Management (PR #32).
+// ---------------------------------------------------------------------------
+
+export function mapTeamMemberRow(row: TeamMemberRow): TeamMember {
+  return {
+    id: row.id,
+    photoUrl: row.photoUrl ?? undefined,
+    fullName: row.fullName,
+    designation: row.designation,
+    bio: row.bio ?? undefined,
+    xUrl: row.xUrl ?? undefined,
+    linkedinUrl: row.linkedinUrl ?? undefined,
+    githubUrl: row.githubUrl ?? undefined,
+    websiteUrl: row.websiteUrl ?? undefined,
+    level: row.level,
+    orderInLevel: row.orderInLevel,
+    enabled: row.enabled,
+    createdAt: dateToString(row.createdAt),
+    updatedAt: dateToString(row.updatedAt),
+  };
+}
+
+export function mapStudentReviewRow(row: StudentReviewRow): StudentReview {
+  return {
+    id: row.id,
+    fullName: row.fullName,
+    role: row.role,
+    photoUrl: row.photoUrl ?? undefined,
+    rating: row.rating,
+    reviewText: row.reviewText,
+    linkedinUrl: row.linkedinUrl ?? undefined,
+    githubUrl: row.githubUrl ?? undefined,
+    websiteUrl: row.websiteUrl ?? undefined,
+    order: row.order,
+    enabled: row.enabled,
+    createdAt: dateToString(row.createdAt),
+    updatedAt: dateToString(row.updatedAt),
+  };
+}
+
+export function mapNavItemRow(row: NavItemRow): NavItem {
+  return {
+    id: row.id,
+    label: row.label,
+    href: row.href,
+    order: row.order,
+    enabled: row.enabled,
+    createdAt: dateToString(row.createdAt),
+    updatedAt: dateToString(row.updatedAt),
   };
 }
 

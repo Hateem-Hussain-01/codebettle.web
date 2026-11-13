@@ -279,3 +279,127 @@ export function ceoPhotoImagePathFromUrl(url: string): string | null {
   if (!path.startsWith('team/ceo/') || path === 'team/ceo/') return null;
   return path;
 }
+
+// ---------------------------------------------------------------------------
+// Team member photos + student review photos + navbar logo (PR #32).
+// ---------------------------------------------------------------------------
+//
+// Same bucket, same rules as the CEO photo — NO new bucket: all three
+// are public by nature (they render in plain <img> tags on public
+// pages), the `course-images` bucket already exists and is public, and
+// the 5 MB limit is identical (the navbar logo is 2 MB — a logo is
+// small by nature). Each lives under its own prefix so a photo can
+// never be mistaken for another kind, and vice versa:
+// - team member photos: `team/members/<uuid>.<ext>`
+// - review photos: `reviews/<uuid>.<ext>`
+// - navbar logos: `brand/<uuid>.<ext>`
+
+export const TEAM_MEMBER_PHOTO_TYPES = ['image/jpeg', 'image/png', 'image/webp'] as const;
+export type TeamMemberPhotoFile = CourseImageFile;
+
+export async function uploadTeamMemberPhotoImage(
+  file: TeamMemberPhotoFile,
+  client?: SupabaseClient,
+): Promise<{ url: string; path: string }> {
+  if (!(TEAM_MEMBER_PHOTO_TYPES as readonly string[]).includes(file.type)) {
+    throw new Error('Only JPG, PNG or WebP images are allowed');
+  }
+  if (file.size > MAX_COURSE_IMAGE_BYTES) {
+    throw new Error('Image must be 5 MB or smaller');
+  }
+  const bytes = typeof file.arrayBuffer === 'function' ? await file.arrayBuffer() : file.arrayBuffer;
+  const body = Buffer.isBuffer(bytes) ? bytes : Buffer.from(bytes);
+  if (body.byteLength > MAX_COURSE_IMAGE_BYTES) {
+    throw new Error('Image must be 5 MB or smaller');
+  }
+  const storage = client ?? getCourseImageStorageClient();
+  const path = `team/members/${randomUUID()}.${EXTENSIONS[file.type]}`;
+  const { data, error } = await storage.storage
+    .from(COURSE_IMAGE_BUCKET)
+    .upload(path, body, { contentType: file.type, upsert: false });
+  if (error || !data) {
+    throw new Error(`Team member photo upload failed: ${error?.message ?? 'unknown error'}`);
+  }
+  const { data: publicUrl } = storage.storage.from(COURSE_IMAGE_BUCKET).getPublicUrl(data.path);
+  return { url: publicUrl.publicUrl, path: data.path };
+}
+
+export function teamMemberPhotoPathFromUrl(url: string): string | null {
+  const marker = `/${COURSE_IMAGE_BUCKET}/`;
+  const idx = url.indexOf(marker);
+  if (idx === -1) return null;
+  const path = decodeURIComponent(url.slice(idx + marker.length).split(/[?#]/)[0]);
+  if (!path.startsWith('team/members/') || path === 'team/members/') return null;
+  return path;
+}
+
+export const STUDENT_REVIEW_PHOTO_TYPES = ['image/jpeg', 'image/png', 'image/webp'] as const;
+export type StudentReviewPhotoFile = CourseImageFile;
+
+export async function uploadStudentReviewPhotoImage(
+  file: StudentReviewPhotoFile,
+  client?: SupabaseClient,
+): Promise<{ url: string; path: string }> {
+  if (!(STUDENT_REVIEW_PHOTO_TYPES as readonly string[]).includes(file.type)) {
+    throw new Error('Only JPG, PNG or WebP images are allowed');
+  }
+  if (file.size > MAX_COURSE_IMAGE_BYTES) {
+    throw new Error('Image must be 5 MB or smaller');
+  }
+  const bytes = typeof file.arrayBuffer === 'function' ? await file.arrayBuffer() : file.arrayBuffer;
+  const body = Buffer.isBuffer(bytes) ? bytes : Buffer.from(bytes);
+  if (body.byteLength > MAX_COURSE_IMAGE_BYTES) {
+    throw new Error('Image must be 5 MB or smaller');
+  }
+  const storage = client ?? getCourseImageStorageClient();
+  const path = `reviews/${randomUUID()}.${EXTENSIONS[file.type]}`;
+  const { data, error } = await storage.storage
+    .from(COURSE_IMAGE_BUCKET)
+    .upload(path, body, { contentType: file.type, upsert: false });
+  if (error || !data) {
+    throw new Error(`Student review photo upload failed: ${error?.message ?? 'unknown error'}`);
+  }
+  const { data: publicUrl } = storage.storage.from(COURSE_IMAGE_BUCKET).getPublicUrl(data.path);
+  return { url: publicUrl.publicUrl, path: data.path };
+}
+
+export function studentReviewPhotoPathFromUrl(url: string): string | null {
+  const marker = `/${COURSE_IMAGE_BUCKET}/`;
+  const idx = url.indexOf(marker);
+  if (idx === -1) return null;
+  const path = decodeURIComponent(url.slice(idx + marker.length).split(/[?#]/)[0]);
+  if (!path.startsWith('reviews/') || path === 'reviews/') return null;
+  return path;
+}
+
+/** Navbar logo: JPG/PNG/WebP only, 2 MB max (a logo is small by nature). */
+export const MAX_NAVBAR_LOGO_BYTES = 2 * 1024 * 1024;
+export const NAVBAR_LOGO_TYPES = ['image/jpeg', 'image/png', 'image/webp'] as const;
+export type NavbarLogoFile = CourseImageFile;
+
+export async function uploadNavbarLogoImage(
+  file: NavbarLogoFile,
+  client?: SupabaseClient,
+): Promise<{ url: string; path: string }> {
+  if (!(NAVBAR_LOGO_TYPES as readonly string[]).includes(file.type)) {
+    throw new Error('Only JPG, PNG or WebP images are allowed');
+  }
+  if (file.size > MAX_NAVBAR_LOGO_BYTES) {
+    throw new Error('Logo must be 2 MB or smaller');
+  }
+  const bytes = typeof file.arrayBuffer === 'function' ? await file.arrayBuffer() : file.arrayBuffer;
+  const body = Buffer.isBuffer(bytes) ? bytes : Buffer.from(bytes);
+  if (body.byteLength > MAX_NAVBAR_LOGO_BYTES) {
+    throw new Error('Logo must be 2 MB or smaller');
+  }
+  const storage = client ?? getCourseImageStorageClient();
+  const path = `brand/${randomUUID()}.${EXTENSIONS[file.type]}`;
+  const { data, error } = await storage.storage
+    .from(COURSE_IMAGE_BUCKET)
+    .upload(path, body, { contentType: file.type, upsert: false });
+  if (error || !data) {
+    throw new Error(`Navbar logo upload failed: ${error?.message ?? 'unknown error'}`);
+  }
+  const { data: publicUrl } = storage.storage.from(COURSE_IMAGE_BUCKET).getPublicUrl(data.path);
+  return { url: publicUrl.publicUrl, path: data.path };
+}

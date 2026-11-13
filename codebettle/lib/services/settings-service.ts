@@ -61,6 +61,36 @@ export type SiteSettings = {
    * Empty = fall back to the default photo below.
    */
   ceoPhotoUrl: string;
+  /**
+   * Success Stories page: video + vision layout (PR #32, managed from
+   * Admin > Success Stories Management). videoUrl is the public video
+   * URL ('' = no video yet, placeholder shown). videoLayout is
+   * 'side-by-side' | 'vertical'; videoPosition is 'video-left' |
+   * 'video-right' (side-by-side) or 'video-above' | 'video-below'
+   * (vertical); videoOrientation is 'portrait' (9:16) | 'landscape'
+   * (16:9). Invalid stored values fall back to the defaults (see
+   * lib/management.ts parseVideoConfig).
+   */
+  videoUrl: string;
+  videoLayout: string;
+  videoPosition: string;
+  videoOrientation: string;
+  /**
+   * Success Stories page: the four small stat cards after the Team
+   * section (PR #32). Defaults are Eman's stated numbers from his
+   * reference image; an admin can edit them from the management tab.
+   */
+  statsHappyStudents: string;
+  statsAverageRating: string;
+  statsRecommendRate: string;
+  statsHoursOfLearning: string;
+  /**
+   * Navbar logo URL (PR #32, managed from Admin > Navbar Editor).
+   * Default is the horizontal CodeBettle logo, resized for navbar use
+   * and uploaded 13 Nov 2026 to the public `course-images` bucket
+   * (brand/navbar-logo.png). Empty = fall back to the default below.
+   */
+  navbarLogoUrl: string;
 };
 
 export const DEFAULT_SETTINGS: SiteSettings = {
@@ -81,6 +111,21 @@ export const DEFAULT_SETTINGS: SiteSettings = {
   // new photo from Settings.
   ceoPhotoUrl:
     'https://phuzoxshzdfzjvephlhq.supabase.co/storage/v1/object/public/course-images/team/ahmad-hassan-ceo.png',
+  // Video + vision: no video yet (placeholder until the admin uploads
+  // one), current side-by-side portrait layout.
+  videoUrl: '',
+  videoLayout: 'side-by-side',
+  videoPosition: 'video-left',
+  videoOrientation: 'portrait',
+  // Stat cards: Eman's stated numbers from his reference image.
+  statsHappyStudents: '1500+',
+  statsAverageRating: '4.9/5',
+  statsRecommendRate: '98%',
+  statsHoursOfLearning: '5000+',
+  // Navbar logo: horizontal logo resized to 260x80 and uploaded
+  // 13 Nov 2026 to the PUBLIC course-images bucket (verified live).
+  navbarLogoUrl:
+    'https://phuzoxshzdfzjvephlhq.supabase.co/storage/v1/object/public/course-images/brand/navbar-logo.png',
 };
 
 /** Storage key for each setting field. All values are strings. */
@@ -94,6 +139,15 @@ export const SETTING_KEYS: Record<keyof SiteSettings, string> = {
   ceoMessage: 'successStories.ceoMessage',
   visionText: 'successStories.visionText',
   ceoPhotoUrl: 'successStories.ceoPhotoUrl',
+  videoUrl: 'successStories.videoUrl',
+  videoLayout: 'successStories.videoLayout',
+  videoPosition: 'successStories.videoPosition',
+  videoOrientation: 'successStories.videoOrientation',
+  statsHappyStudents: 'successStories.stats.happyStudents',
+  statsAverageRating: 'successStories.stats.averageRating',
+  statsRecommendRate: 'successStories.stats.recommendRate',
+  statsHoursOfLearning: 'successStories.stats.hoursOfLearning',
+  navbarLogoUrl: 'navbar.logoUrl',
 };
 
 const STRING_FIELDS: Array<keyof SiteSettings> = [
@@ -105,6 +159,15 @@ const STRING_FIELDS: Array<keyof SiteSettings> = [
   'ceoMessage',
   'visionText',
   'ceoPhotoUrl',
+  'videoUrl',
+  'videoLayout',
+  'videoPosition',
+  'videoOrientation',
+  'statsHappyStudents',
+  'statsAverageRating',
+  'statsRecommendRate',
+  'statsHoursOfLearning',
+  'navbarLogoUrl',
 ];
 
 /** Thrown by updateSiteSettings() for invalid input (HTTP 400). */
@@ -181,6 +244,56 @@ function validatePatch(patch: Partial<SiteSettings>): Array<{ field: keyof SiteS
       cleaned.push({ field, stored: value });
       continue;
     }
+    // navbarLogoUrl: same rule as the CEO photo (public image URL, or
+    // empty = fall back to the default logo).
+    if (field === 'navbarLogoUrl') {
+      if (!value) {
+        cleaned.push({ field, stored: '' });
+        continue;
+      }
+      if (!isValidThumbnailUrl(value)) {
+        throw new SettingsValidationError('Navbar logo must be a valid http(s) image URL');
+      }
+      cleaned.push({ field, stored: value });
+      continue;
+    }
+    // videoUrl: a public video URL, or empty (no video yet — the page
+    // shows its placeholder). Any http(s) URL is accepted (a video
+    // is not an image, so the thumbnail check does not apply).
+    if (field === 'videoUrl') {
+      if (!value) {
+        cleaned.push({ field, stored: '' });
+        continue;
+      }
+      if (!/^https?:\/\/\S+$/.test(value)) {
+        throw new SettingsValidationError('Video URL must be a valid http(s) URL');
+      }
+      cleaned.push({ field, stored: value });
+      continue;
+    }
+    // Video layout enums: an invalid value is rejected here; a bad
+    // stored value is still normalised on read (parseVideoConfig).
+    if (field === 'videoLayout') {
+      if (value !== 'side-by-side' && value !== 'vertical') {
+        throw new SettingsValidationError('Video layout must be side-by-side or vertical');
+      }
+      cleaned.push({ field, stored: value });
+      continue;
+    }
+    if (field === 'videoPosition') {
+      if (!['video-left', 'video-right', 'video-above', 'video-below'].includes(value)) {
+        throw new SettingsValidationError('Video position must be video-left, video-right, video-above or video-below');
+      }
+      cleaned.push({ field, stored: value });
+      continue;
+    }
+    if (field === 'videoOrientation') {
+      if (value !== 'portrait' && value !== 'landscape') {
+        throw new SettingsValidationError('Video orientation must be portrait or landscape');
+      }
+      cleaned.push({ field, stored: value });
+      continue;
+    }
     // ceoMessage / visionText are RICH TEXT: sanitize on save (same
     // sanitizer the email builder uses) and normalize a blank editor
     // ('<p><br></p>') to '' — empty means "no custom text stored" and
@@ -222,6 +335,18 @@ function rowsToSettings(rows: Array<{ key: string; value: string }>): SiteSettin
     ceoMessage: pickString('ceoMessage'),
     visionText: pickString('visionText'),
     ceoPhotoUrl: pickString('ceoPhotoUrl'),
+    // Video URL default is '' (no video yet — the page shows its
+    // placeholder); the other video fields and the stats fall back to
+    // their defaults when a row is missing or blank.
+    videoUrl: byKey.get(SETTING_KEYS.videoUrl) ?? '',
+    videoLayout: pickString('videoLayout'),
+    videoPosition: pickString('videoPosition'),
+    videoOrientation: pickString('videoOrientation'),
+    statsHappyStudents: pickString('statsHappyStudents'),
+    statsAverageRating: pickString('statsAverageRating'),
+    statsRecommendRate: pickString('statsRecommendRate'),
+    statsHoursOfLearning: pickString('statsHoursOfLearning'),
+    navbarLogoUrl: pickString('navbarLogoUrl'),
   };
 }
 

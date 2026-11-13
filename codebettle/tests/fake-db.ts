@@ -80,6 +80,8 @@ const NULLABLE_FIELDS: Record<string, string[]> = {
   SuccessStorySubmission: ['submitterId', 'profilePicturePath', 'city', 'designation', 'linkedinUrl', 'courseId', 'batchId', 'batchNumber', 'joinedAt', 'instructorName', 'beforeJoining', 'challenges', 'howHelped', 'achievementsAfter', 'biggestAchievement', 'advice', 'githubUrl', 'instagramUrl', 'youtubeUrl', 'portfolioUrl', 'lablabUrl', 'leetcodeUrl', 'hackerrankUrl', 'otherProfileUrl', 'videoPath', 'videoUrl', 'videoDescription', 'adminNote', 'reviewedBy', 'reviewedAt'],
   SuccessStoryAchievement: ['organization', 'description', 'achievedAt'],
   SuccessStoryEvidence: ['label', 'fileName', 'mime', 'size'],
+  TeamMember: ['photoUrl', 'bio', 'xUrl', 'linkedinUrl', 'githubUrl', 'websiteUrl'],
+  StudentReview: ['photoUrl', 'linkedinUrl', 'githubUrl', 'websiteUrl'],
 };
 
 let idCounter = 0;

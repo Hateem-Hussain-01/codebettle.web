@@ -360,6 +360,9 @@ test('service: toPublicSuccessStory derives categories from achievements in cano
     consentContact: false,
     status: 'approved',
     featured: false,
+    enabled: true,
+    displayOrder: 0,
+    adminCreated: false,
     submittedAt: '2026-11-13T00:00:00.000Z',
     updatedAt: '2026-11-13T00:00:00.000Z',
     achievements: [
