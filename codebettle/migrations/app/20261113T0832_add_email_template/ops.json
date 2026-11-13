@@ -1,0 +1,199 @@
+[
+  {
+    "id": "table.EmailTemplate",
+    "label": "Create table \"EmailTemplate\"",
+    "summary": "Creates table \"EmailTemplate\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "EmailTemplate"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"EmailTemplate\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"EmailTemplate\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "table \"EmailTemplate\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"EmailTemplate\"",
+        "sql": "CREATE TABLE \"public\".\"EmailTemplate\" (\n  \"createdAt\" timestamptz(3) DEFAULT (now()) NOT NULL,\n  \"createdById\" text NOT NULL,\n  \"htmlBody\" text NOT NULL,\n  \"id\" text NOT NULL,\n  \"isActive\" bool DEFAULT true NOT NULL,\n  \"name\" text NOT NULL,\n  \"subject\" text NOT NULL,\n  \"type\" text DEFAULT 'broadcast' NOT NULL,\n  \"updatedAt\" timestamptz(3) NOT NULL,\n  PRIMARY KEY (\"id\")\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"EmailTemplate\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" WHERE (\"c\".\"oid\" = to_regclass($1) AND (\"c\".\"relkind\" = $2 OR \"c\".\"relkind\" = $3))) AS \"result\"",
+        "params": [
+          "\"public\".\"EmailTemplate\"",
+          "r",
+          "p"
+        ],
+        "expectation": {
+          "expects": "present",
+          "object": "table \"EmailTemplate\""
+        }
+      }
+    ]
+  },
+  {
+    "id": "index.EmailTemplate.EmailTemplate_createdById_idx_8bf640ed",
+    "label": "Create index \"EmailTemplate_createdById_idx_8bf640ed\" on \"EmailTemplate\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "EmailTemplate_createdById_idx_8bf640ed",
+        "table": "EmailTemplate"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"EmailTemplate_createdById_idx_8bf640ed\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"EmailTemplate_createdById_idx_8bf640ed\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "index \"EmailTemplate_createdById_idx_8bf640ed\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"EmailTemplate_createdById_idx_8bf640ed\"",
+        "sql": "CREATE INDEX \"EmailTemplate_createdById_idx_8bf640ed\" ON \"public\".\"EmailTemplate\" (\"createdById\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"EmailTemplate_createdById_idx_8bf640ed\" exists on \"EmailTemplate\" with the planned definition",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" INNER JOIN \"pg_index\" AS \"i\" ON \"i\".\"indexrelid\" = \"c\".\"oid\" INNER JOIN \"pg_am\" AS \"m\" ON \"m\".\"oid\" = \"c\".\"relam\" WHERE (\"c\".\"oid\" = to_regclass($1) AND (\"c\".\"relkind\" = $2 OR \"c\".\"relkind\" = $3) AND \"i\".\"indrelid\" = to_regclass($4) AND NOT (\"i\".\"indisunique\") AND \"m\".\"amname\" = $5 AND (\"i\".\"indexprs\" IS NULL AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"i\".\"indkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"i\".\"indrelid\" AND key_attribute.attnum = key_column.attnum) = ($6)::jsonb) AND \"i\".\"indpred\" IS NULL)) AS \"result\"",
+        "params": [
+          "\"public\".\"EmailTemplate_createdById_idx_8bf640ed\"",
+          "i",
+          "I",
+          "\"public\".\"EmailTemplate\"",
+          "btree",
+          "[\"createdById\"]"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.EmailTemplate.EmailTemplate_type_createdAt_idx_00d94001",
+    "label": "Create index \"EmailTemplate_type_createdAt_idx_00d94001\" on \"EmailTemplate\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "EmailTemplate_type_createdAt_idx_00d94001",
+        "table": "EmailTemplate"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"EmailTemplate_type_createdAt_idx_00d94001\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"EmailTemplate_type_createdAt_idx_00d94001\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "index \"EmailTemplate_type_createdAt_idx_00d94001\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"EmailTemplate_type_createdAt_idx_00d94001\"",
+        "sql": "CREATE INDEX \"EmailTemplate_type_createdAt_idx_00d94001\" ON \"public\".\"EmailTemplate\" (\"type\", \"createdAt\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"EmailTemplate_type_createdAt_idx_00d94001\" exists on \"EmailTemplate\" with the planned definition",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" INNER JOIN \"pg_index\" AS \"i\" ON \"i\".\"indexrelid\" = \"c\".\"oid\" INNER JOIN \"pg_am\" AS \"m\" ON \"m\".\"oid\" = \"c\".\"relam\" WHERE (\"c\".\"oid\" = to_regclass($1) AND (\"c\".\"relkind\" = $2 OR \"c\".\"relkind\" = $3) AND \"i\".\"indrelid\" = to_regclass($4) AND NOT (\"i\".\"indisunique\") AND \"m\".\"amname\" = $5 AND (\"i\".\"indexprs\" IS NULL AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"i\".\"indkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"i\".\"indrelid\" AND key_attribute.attnum = key_column.attnum) = ($6)::jsonb) AND \"i\".\"indpred\" IS NULL)) AS \"result\"",
+        "params": [
+          "\"public\".\"EmailTemplate_type_createdAt_idx_00d94001\"",
+          "i",
+          "I",
+          "\"public\".\"EmailTemplate\"",
+          "btree",
+          "[\"type\",\"createdAt\"]"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.EmailTemplate.EmailTemplate_createdById_fkey",
+    "label": "Add foreign key \"EmailTemplate_createdById_fkey\" on \"EmailTemplate\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "EmailTemplate_createdById_fkey",
+        "table": "EmailTemplate"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"EmailTemplate_createdById_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "EmailTemplate_createdById_fkey",
+          "public",
+          "\"public\".\"EmailTemplate\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "FK \"EmailTemplate_createdById_fkey\" on \"EmailTemplate\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"EmailTemplate_createdById_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"EmailTemplate\"\nADD CONSTRAINT \"EmailTemplate_createdById_fkey\"\nFOREIGN KEY (\"createdById\")\nREFERENCES \"public\".\"User\" (\"id\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"EmailTemplate_createdById_fkey\" exists with the planned columns, referenced table and actions",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3) AND \"c\".\"contype\" = $4 AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"c\".\"conkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"c\".\"conrelid\" AND key_attribute.attnum = key_column.attnum) = ($5)::jsonb AND \"c\".\"confrelid\" = to_regclass($6) AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"c\".\"confkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"c\".\"confrelid\" AND key_attribute.attnum = key_column.attnum) = ($7)::jsonb AND \"c\".\"confdeltype\" = $8 AND \"c\".\"confupdtype\" = $9)) AS \"result\"",
+        "params": [
+          "EmailTemplate_createdById_fkey",
+          "public",
+          "\"public\".\"EmailTemplate\"",
+          "f",
+          "[\"createdById\"]",
+          "\"public\".\"User\"",
+          "[\"id\"]",
+          "a",
+          "a"
+        ]
+      }
+    ]
+  }
+]

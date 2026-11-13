@@ -48,6 +48,8 @@ import {
   SUPPORT_REQUEST_CATEGORY_LABELS,
 } from '../db/types';
 import { deliverEmailNotification, type EmailDeliveryResult } from './email-notifications';
+import { renderTemplateForRecipient } from './email-template-service';
+import { getEmailTemplateById, isEmailTemplateTableMissing } from '../db/email-templates';
 import { hasAdminCapability, hasTeacherCapability } from '../rbac';
 
 export interface NotifyInput {
@@ -239,6 +241,33 @@ export async function onEnrollmentCreated(enrollment: Enrollment): Promise<Notif
     });
   } catch (error) {
     return failure(error, 'onEnrollmentCreated');
+  }
+}
+
+/**
+ * A student was enrolled in a course. Recipient: the course instructor.
+ *
+ * NAME ONLY — the message carries the student's name and the course
+ * title, and NEVER any fee / price / amount. Teachers are told a new
+ * enrolment arrived; what the student paid is not their business.
+ */
+export async function onEnrollmentCreatedForInstructor(
+  enrollment: Enrollment,
+): Promise<NotifyResult> {
+  try {
+    const course = await getCourseById(enrollment.courseId);
+    if (!course) return { ok: false, reason: 'course-not-found' };
+    const student = await getUserById(enrollment.studentId);
+    const studentName = student?.name?.trim() || 'A student';
+    return notifyUser(course.instructorId, {
+      type: 'enrollment',
+      event: 'enrollment',
+      title: `New enrollment from ${studentName}`,
+      body: `New enrollment from ${studentName} in ${course.title}.`,
+      linkUrl: `/instructor/courses/${course.id}`,
+    });
+  } catch (error) {
+    return failure(error, 'onEnrollmentCreatedForInstructor');
   }
 }
 
@@ -490,12 +519,96 @@ export interface SendAdminNotificationInput {
   target: AdminSendTarget;
   requiresAcknowledge?: boolean;
   linkUrl?: string;
+  /**
+   * Email-builder template to send instead of the raw title/body.
+   * When set, the template's subject/body are resolved per recipient
+   * (placeholders from that recipient's own data) and used as the
+   * notification title/body. The raw title/body are ignored.
+   */
+  templateId?: string;
+}
+
+/** Resolve an admin broadcast target to its recipient user ids. */
+async function resolveAdminTargetUserIds(target: AdminSendTarget): Promise<string[] | null> {
+  if (target.type === 'course') {
+    const enrollments = await getEnrollmentsByCourse(target.courseId);
+    return enrollments.map((e) => e.studentId);
+  }
+  if (target.type === 'user') {
+    const user = await getUserById(target.userId);
+    return user ? [user.id] : null;
+  }
+  const users = await getAllUsers();
+  if (target.type === 'all') return users.map((u) => u.id);
+  return target.role === 'student'
+    ? users.filter((u) => u.role === 'student').map((u) => u.id)
+    : target.role === 'instructor'
+      ? users.filter((u) => hasTeacherCapability(u)).map((u) => u.id)
+      : users.filter((u) => hasAdminCapability(u)).map((u) => u.id);
 }
 
 export async function sendAdminNotification(
   input: SendAdminNotificationInput,
 ): Promise<NotifySummary> {
   try {
+    // Template broadcast (email builder): resolve the saved template's
+    // subject/body per recipient, so {{STUDENT_NAME}} etc. come from
+    // each recipient's own data. The per-user loop mirrors notifyUsers
+    // (same summary counting, same prefs honoured inside notifyUser).
+    if (input.templateId) {
+      let template;
+      try {
+        template = await getEmailTemplateById(input.templateId);
+      } catch (error) {
+        if (isEmailTemplateTableMissing(error)) {
+          console.error('[notification-service] EmailTemplate table missing — run the SQL migration first');
+          return { ok: false, sent: 0, skipped: 0, failed: 0 };
+        }
+        throw error;
+      }
+      if (!template) return { ok: false, sent: 0, skipped: 0, failed: 0 };
+      const ids = await resolveAdminTargetUserIds(input.target);
+      if (ids === null) return { ok: false, sent: 0, skipped: 0, failed: 1 };
+      // Course context (title + teacher) when the broadcast targets one course.
+      let courseContext: { title?: string | null; teacherName?: string | null } | undefined;
+      if (input.target.type === 'course') {
+        const course = await getCourseById(input.target.courseId);
+        if (course) {
+          const teacher = await getUserById(course.instructorId);
+          courseContext = { title: course.title, teacherName: teacher?.name ?? null };
+        }
+      }
+      const summary: NotifySummary = { ok: true, sent: 0, skipped: 0, failed: 0 };
+      for (const userId of [...new Set(ids)]) {
+        const user = await getUserById(userId);
+        if (!user) {
+          summary.failed += 1;
+          continue;
+        }
+        const rendered = renderTemplateForRecipient(template, {
+          student: { name: user.name, email: user.email },
+          teacher: courseContext ? { name: courseContext.teacherName } : undefined,
+          course: courseContext ? { title: courseContext.title } : undefined,
+        });
+        const result = await notifyUser(userId, {
+          type: 'announcement',
+          event: 'announcement',
+          title: rendered.subject,
+          // The in-app notification (and its email mirror) carry the
+          // resolved plain-text body — same as every other notification.
+          // The template's rich HTML rendering is what the test email
+          // sends and the builder preview shows.
+          body: rendered.text,
+          category: input.category,
+          linkUrl: input.linkUrl,
+          requiresAcknowledge: input.requiresAcknowledge ?? false,
+        });
+        if (!result.ok) summary.failed += 1;
+        else if ('skipped' in result && result.skipped) summary.skipped += 1;
+        else summary.sent += 1;
+      }
+      return summary;
+    }
     const notifyInput: NotifyInput = {
       type: 'announcement',
       event: 'announcement',
@@ -516,15 +629,8 @@ export async function sendAdminNotification(
       if ('skipped' in result && result.skipped) return { ok: true, sent: 0, skipped: 1, failed: 0 };
       return { ok: true, sent: 1, skipped: 0, failed: 0 };
     }
-    const users = await getAllUsers();
-    const ids =
-      input.target.type === 'all'
-        ? users.map((u) => u.id)
-        : input.target.role === 'student'
-          ? users.filter((u) => u.role === 'student').map((u) => u.id)
-          : input.target.role === 'instructor'
-            ? users.filter((u) => hasTeacherCapability(u)).map((u) => u.id)
-            : users.filter((u) => hasAdminCapability(u)).map((u) => u.id);
+    const ids = await resolveAdminTargetUserIds(input.target);
+    if (ids === null) return { ok: false, sent: 0, skipped: 0, failed: 1 };
     return notifyUsers(ids, notifyInput);
   } catch (error) {
     console.error('[notification-service] sendAdminNotification failed:', error);

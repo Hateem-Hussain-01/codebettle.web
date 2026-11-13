@@ -29,6 +29,8 @@ import type {
   CourseRowLike,
   Enrollment,
   EnrollmentRow,
+  EmailTemplate,
+  EmailTemplateRow,
   FormDefinition,
   FormDefinitionRow,
   FormField,
@@ -768,5 +770,20 @@ export function toPublicQuiz(quiz: Quiz): PublicQuiz {
       topic: q.topic,
       options: q.options.map((o) => ({ id: o.id, text: o.text, position: o.position })),
     })),
+  };
+}
+
+/** Map a stored email-template row. Unknown `type` values fall back to 'broadcast'. */
+export function mapEmailTemplateRow(row: EmailTemplateRow): EmailTemplate {
+  return {
+    id: row.id,
+    name: row.name,
+    subject: row.subject,
+    htmlBody: row.htmlBody,
+    type: row.type === 'system' ? 'system' : 'broadcast',
+    isActive: row.isActive ?? true,
+    createdById: row.createdById,
+    createdAt: row.createdAt.toISOString(),
+    updatedAt: row.updatedAt.toISOString(),
   };
 }

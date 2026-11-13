@@ -83,6 +83,12 @@ const ALLOWLIST: AllowEntry[] = [
     match: 'linear-gradient(135deg,#FDE68A_0%,#F5C518_45%,#C9A000_100%)',
     reason: 'Gold overlay panel is intentionally fixed gold in both themes.',
   },
+  // Rule 4 — hex colour literal inside an inline style prop.
+  {
+    file: 'app/admin/email-templates/email-template-editor-client.tsx',
+    match: "backgroundColor: '#0A0A0A'",
+    reason: 'Email preview iframe: emails are dark by design (dark + gold layout) and must preview on the dark surface in both themes.',
+  },
   // Rule 5 — bare text-primary (bright gold text, unreadable on white).
   {
     file: 'components/auth/AuthShell.tsx',
