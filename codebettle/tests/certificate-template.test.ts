@@ -48,7 +48,11 @@ test('findMissingPlaceholders lists what a template lacks (warn-only)', () => {
     '{{SIGNATURE_TITLE}}',
     '{{QR_CODE}}',
   ]);
-  assert.deepEqual(findMissingPlaceholders(getDefaultTemplateHtml()), []);
+  // The default template no longer carries {{COURSE_ICON}} — the Python
+  // logo next to the course name was removed at the user's request
+  // (13 Nov 2026). The placeholder is still supported for custom
+  // templates, so findMissingPlaceholders still lists it as missing.
+  assert.deepEqual(findMissingPlaceholders(getDefaultTemplateHtml()), ['{{COURSE_ICON}}']);
 });
 
 test('resolveBatch: stored batch wins, else BATCH-8 for Python, else none', () => {
