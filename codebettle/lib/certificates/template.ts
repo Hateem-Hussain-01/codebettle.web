@@ -28,6 +28,13 @@
  * uppercased; a custom template gets the title as-is (its author
  * controls the casing).
  *
+ * COURSE NAME batch suffix: a trailing " Batch <number>" is stripped
+ * from the course title before it is printed ("Python Crash Course
+ * Batch 09" -> "PYTHON CRASH COURSE") — the certificate shows the
+ * course without its cohort suffix, while the website keeps the full
+ * title. The batch itself ("BATCH-8") is a separate field and is
+ * unaffected; resolveBatch still sees the original title.
+ *
  * SIGNATURE: "Ahmad" / "CEO" — the official signatory from the
  * approved design. Do not invent a different name.
  *
@@ -136,6 +143,24 @@ export function toTitleCaseName(name: string): string {
     .join(' ');
 }
 
+/**
+ * Strip a trailing " Batch <number>" suffix from a course title, for
+ * the certificate only ("Python Crash Course Batch 09" ->
+ * "Python Crash Course"). Case-insensitive ("Batch 09", "BATCH 08",
+ * "batch 10"), trailing whitespace tolerated. Only a TRAILING suffix
+ * is removed — "Batch" anywhere else in the title is left alone
+ * ("Python Batch 09 Course" is unchanged). If stripping would leave
+ * an empty string (the title IS the suffix, e.g. "Batch 09"), the
+ * original title is returned unchanged. The website course title is
+ * never touched — this is applied only when building the certificate.
+ */
+export function stripBatchSuffixFromCourseName(title: string): string {
+  const match = /\s+batch\s+\d+\s*$/i.exec(title);
+  if (!match) return title;
+  const stripped = title.slice(0, match.index).trim();
+  return stripped.length > 0 ? stripped : title;
+}
+
 export interface CertificateHtmlValues {
   studentName: string;
   courseName: string;
@@ -241,8 +266,8 @@ export async function buildCertificateHtml(input: BuildCertificateHtmlInput): Pr
     Promise.resolve(buildVerifyQrPng(verifyUrl)),
   ]);
   const courseName = chosen.isDefault
-    ? input.courseTitle.toUpperCase()
-    : input.courseTitle;
+    ? stripBatchSuffixFromCourseName(input.courseTitle).toUpperCase()
+    : stripBatchSuffixFromCourseName(input.courseTitle);
   const html = substituteCertificatePlaceholders(chosen.html, {
     studentName: toTitleCaseName(input.studentName),
     courseName,
