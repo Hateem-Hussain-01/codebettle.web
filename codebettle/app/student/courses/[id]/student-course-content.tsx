@@ -2,11 +2,13 @@
 import { useEffect, useState } from 'react';
 import type { ReactNode } from 'react';
 import { formatDateShort } from '@/lib/utils';
-import { ExternalLink, Download, BookOpen, Video, Lock, Calendar, Clock } from 'lucide-react';
+import { summarizeCourseProgress } from '@/lib/services/progress-service';
+import { ExternalLink, Download, BookOpen, Video, Lock, Calendar, Clock, CheckCircle2 } from 'lucide-react';
 import Card from '@/components/ui/Card';
 import Badge from '@/components/ui/Badge';
 import Button from '@/components/ui/Button';
 import FadeIn from '@/components/ui/FadeIn';
+import ProgressBar from '@/components/ui/ProgressBar';
 import type { PublicCourse } from '@/lib/db/types';
 import PaymentModal from './payment-modal';
 import CourseResources from './course-resources';
@@ -56,6 +58,8 @@ interface StudentCourseContentProps {
   coursePrice: number;
   /** True when a payment submission is already awaiting admin review. */
   hasPendingSubmission: boolean;
+  /** Lessons the student has already marked complete (from the enrolment's LessonProgress rows). */
+  initialCompletedLessonIds: string[];
   /** Server-rendered sidebar (instructor card, announcements) — rendered inside the grid. */
   children: ReactNode;
 }
@@ -70,12 +74,45 @@ export default function StudentCourseContent({
   enrollmentId,
   coursePrice,
   hasPendingSubmission,
+  initialCompletedLessonIds,
   children,
 }: StudentCourseContentProps) {
   const [content, setContent] = useState<{ zoomLink: string; lessons: LessonContent[] } | null>(null);
   const [failed, setFailed] = useState(false);
   const [awaitingApproval, setAwaitingApproval] = useState(hasPendingSubmission);
   const [paymentModalOpen, setPaymentModalOpen] = useState(false);
+  // Student Progress Tracking: completed lesson ids (server-provided
+  // initial state, updated in place when the student toggles a lesson).
+  const [completedIds, setCompletedIds] = useState<string[]>(initialCompletedLessonIds);
+  // Lesson id currently being saved (toggle disabled while its request is in flight).
+  const [togglingId, setTogglingId] = useState<string | null>(null);
+  const [toggleError, setToggleError] = useState(false);
+
+  const progress = summarizeCourseProgress(modules, completedIds);
+
+  /** Mark one lesson complete (or unmark it) via the progress API. */
+  async function toggleLesson(lessonId: string, currentlyCompleted: boolean) {
+    if (togglingId) return;
+    setTogglingId(lessonId);
+    setToggleError(false);
+    try {
+      const res = await fetch(`/api/student/courses/${courseId}/progress`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ lessonId, completed: !currentlyCompleted }),
+      });
+      if (!res.ok) {
+        setToggleError(true);
+        return;
+      }
+      const data = (await res.json()) as { completedLessonIds: string[] };
+      if (Array.isArray(data.completedLessonIds)) setCompletedIds(data.completedLessonIds);
+    } catch {
+      setToggleError(true);
+    } finally {
+      setTogglingId(null);
+    }
+  }
 
   // The gated content is fetched for every enrolment (Phase 1d): a
   // pending-payment enrolment still gets the first 2 lessons' URLs —
@@ -158,6 +195,28 @@ export default function StudentCourseContent({
           <Video className="w-4 h-4" />Zoom link not set. Contact your instructor.
         </div>
       )}
+
+      {/* Your progress — bar + % + next lesson (Student Progress
+          Tracking). The % comes from LessonProgress rows for this
+          enrolment; the next lesson is the first incomplete lesson. */}
+      <div className="bg-dark-card border border-dark-border rounded-xl p-4">
+        <div className="flex items-center justify-between gap-3 mb-2">
+          <p className="text-foreground font-semibold text-sm">Your Progress</p>
+          {progress.isComplete ? (
+            <Badge variant="success">Course complete 🎉</Badge>
+          ) : (
+            <p className="text-muted text-xs">{progress.completedCount} of {progress.totalLessons} lessons complete</p>
+          )}
+        </div>
+        <ProgressBar
+          percent={progress.percent}
+          label={progress.totalLessons === 0 ? 'No lessons yet' : `${progress.percent}% complete`}
+        />
+        {toggleError && <p className="text-red-400 text-xs mt-2">Could not save — please try again.</p>}
+        {!progress.isComplete && progress.nextLesson && (
+          <p className="text-primary-text text-xs mt-2">Up next: {progress.nextLesson.lessonTitle}</p>
+        )}
+      </div>
 
       <div className="grid lg:grid-cols-3 gap-5">
         {/* Sessions & Recordings */}
@@ -254,6 +313,22 @@ export default function StudentCourseContent({
                                 </a>
                               ))}
                             </div>
+                          )}
+                          {/* Mark as complete — Student Progress Tracking.
+                              Only on lessons the student can access (not
+                              locked). Tapping again unmarks the lesson. */}
+                          {content !== null && !locked && (
+                            <button
+                              type="button"
+                              onClick={() => void toggleLesson(ses.id, completedIds.includes(ses.id))}
+                              disabled={togglingId === ses.id}
+                              className={completedIds.includes(ses.id)
+                                ? 'mt-2 inline-flex items-center gap-1.5 text-xs font-medium text-green-400 bg-green-500/10 border border-green-500/20 hover:bg-green-500/20 rounded-lg px-3 py-1.5 transition-colors disabled:opacity-50'
+                                : 'mt-2 inline-flex items-center gap-1.5 text-xs font-medium text-primary-text bg-primary/10 border border-primary/30 hover:bg-primary/20 rounded-lg px-3 py-1.5 transition-colors disabled:opacity-50'}
+                            >
+                              <CheckCircle2 className="w-3.5 h-3.5" />
+                              {togglingId === ses.id ? 'Saving…' : completedIds.includes(ses.id) ? 'Completed ✓ — tap to unmark' : 'Mark as complete'}
+                            </button>
                           )}
                         </div>
                       </div>

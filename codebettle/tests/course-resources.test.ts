@@ -185,8 +185,11 @@ test('wiring: student course content renders CourseResources below the lesson li
   assert.match(page, /import CourseResources from '\.\/course-resources'/);
   assert.match(page, /<CourseResources modules=\{modules\} lessons=\{content\?\.lessons \?\? null\} paymentPending=\{paymentPending\} \/>/);
   // No second fetch for resources — the section reuses the gated content
-  // (exactly one fetch of the content endpoint in this file).
-  assert.equal((page.match(/fetch\(`\/api\/student\/courses\//g) ?? []).length, 1);
+  // (exactly one fetch of the content endpoint in this file). The
+  // progress toggle POSTs to /progress (mark/unmark a lesson) — that is
+  // a write, not a second content fetch, so it is allowed here.
+  assert.equal((page.match(/fetch\(`\/api\/student\/courses\/\$\{courseId\}\/content`/g) ?? []).length, 1);
+  assert.match(page, /fetch\(`\/api\/student\/courses\/\$\{courseId\}\/progress`, \{\s*method: 'POST'/);
   const section = read('app/student/courses/[id]/course-resources.tsx');
   assert.doesNotMatch(section, /fetch\(/);
   assert.doesNotMatch(section, /\/api\//);

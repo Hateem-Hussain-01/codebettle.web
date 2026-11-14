@@ -143,6 +143,7 @@ export default async function StudentCourseViewPage({ params }: { params: Promis
         enrollmentId={enrollment.id}
         coursePrice={course.price}
         hasPendingSubmission={pendingSubmission !== null}
+        initialCompletedLessonIds={enrollment.completedLessons}
       >
         {/* Sidebar */}
         <FadeIn delay={0.1} className="space-y-4">
