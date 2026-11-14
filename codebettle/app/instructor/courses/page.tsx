@@ -31,6 +31,13 @@ export default async function InstructorCoursesPage() {
     batches: batchesByCourse.get(c.id) ?? [],
   }));
 
+  // SECURITY (opaque course key): instructor course links carry the
+  // urlKey, never the raw course id. Before
+  // codebettle-course-urlkey-migration.sql runs, rows read from the DB
+  // carry no urlKey (fail-safe: mapper returns null) — show an honest
+  // banner and no dead Manage link for those courses.
+  const keysMissing = coursesWithStats.some((c) => !c.urlKey);
+
   return (
     <div className="space-y-6">
       <FadeIn>
@@ -39,6 +46,17 @@ export default async function InstructorCoursesPage() {
           {myCourses.length} course{myCourses.length !== 1 ? 's' : ''} assigned to you by admin. You can add class recordings and manage content.
         </p>
       </FadeIn>
+
+      {keysMissing && (
+        <Card className="py-6 px-6 text-center">
+          <p className="text-foreground font-semibold mb-2">Course links are being upgraded</p>
+          <p className="text-muted text-sm max-w-md mx-auto">
+            The instructor pages now open courses by a private key, and the course keys have not been created yet.
+            Ask the admin to run <code className="text-primary-text">codebettle-course-urlkey-migration.sql</code> in the
+            Supabase SQL Editor, then reopen this page.
+          </p>
+        </Card>
+      )}
 
       {myCourses.length === 0 ? (
         <Card className="py-16 text-center">
@@ -96,11 +114,17 @@ export default async function InstructorCoursesPage() {
                   </div>
                 )}
 
-                <Link href={`/instructor/courses/${course.id}`}>
-                  <Button fullWidth variant="outline" size="sm">
+                {course.urlKey ? (
+                  <Link href={`/instructor/courses/${course.urlKey}`}>
+                    <Button fullWidth variant="outline" size="sm">
+                      <Settings className="w-3.5 h-3.5" /> Manage Course
+                    </Button>
+                  </Link>
+                ) : (
+                  <Button fullWidth variant="outline" size="sm" disabled>
                     <Settings className="w-3.5 h-3.5" /> Manage Course
                   </Button>
-                </Link>
+                )}
               </div>
             </FadeIn>
           ))}

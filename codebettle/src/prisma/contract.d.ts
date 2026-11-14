@@ -23,7 +23,7 @@ import type {
 } from '@prisma/orm-postgres/contract/types';
 
 export type StorageHash =
-  StorageHashBase<'e6c0d779d0dc3299d62efb211ade4e7e40ad06e45e82f02483b495e139710944'>;
+  StorageHashBase<'a40cc5e4a66528e1947cc3d073d687449fb376f45141e3e86a996f7bb313235d'>;
 export type ExecutionHash =
   ExecutionHashBase<'4b7f1f572e79a25e5364a2f57a5e317582bff4d871b8850bbe577b5f407c48b0'>;
 export type ProfileHash =
@@ -853,6 +853,7 @@ export namespace Models {
     thumbnail: FieldOutputTypes['public']['Course']['thumbnail'];
     title: FieldOutputTypes['public']['Course']['title'];
     updatedAt: FieldOutputTypes['public']['Course']['updatedAt'];
+    urlKey: FieldOutputTypes['public']['Course']['urlKey'];
     whatYouLearn: FieldOutputTypes['public']['Course']['whatYouLearn'];
     zoomLink: FieldOutputTypes['public']['Course']['zoomLink'];
     announcements: public_Announcement[];
@@ -3309,6 +3310,12 @@ type ContractBase = Omit<
                   readonly typeParams: { readonly precision: 3 };
                   readonly many: false;
                 };
+                readonly urlKey: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
                 readonly whatYouLearn: {
                   readonly dataType: 'pg/text';
                   readonly codecId: 'pg/text@1';
@@ -3323,7 +3330,10 @@ type ContractBase = Omit<
                 };
               };
               primaryKey: { readonly columns: readonly ['id'] };
-              uniques: readonly [{ readonly columns: readonly ['slug'] }];
+              uniques: readonly [
+                { readonly columns: readonly ['slug'] },
+                { readonly columns: readonly ['urlKey'] },
+              ];
               indexes: readonly [
                 {
                   readonly name: 'Course_instructorId_idx_6b1d9b50';
@@ -9213,6 +9223,10 @@ type ContractBase = Omit<
                   readonly typeParams: { readonly precision: 3 };
                 };
               };
+              readonly urlKey: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
               readonly whatYouLearn: {
                 readonly nullable: false;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
@@ -9390,6 +9404,7 @@ type ContractBase = Omit<
                 readonly thumbnail: { readonly column: 'thumbnail' };
                 readonly title: { readonly column: 'title' };
                 readonly updatedAt: { readonly column: 'updatedAt' };
+                readonly urlKey: { readonly column: 'urlKey' };
                 readonly whatYouLearn: { readonly column: 'whatYouLearn' };
                 readonly zoomLink: { readonly column: 'zoomLink' };
               };

@@ -26,6 +26,11 @@ const INST1: SessionUser = { id: 'inst-1', name: 'Usman', email: 'usman@codebett
 const INST2: SessionUser = { id: 'inst-2', name: 'Sara', email: 'sara@codebettle.com', role: 'instructor' };
 const STU1: SessionUser = { id: 'stu-1', name: 'Ali', email: 'ali@example.com', role: 'student' };
 
+// Opaque instructor-portal keys (48 hex) for the seeded courses. The
+// instructor announcement route takes the course's urlKey as courseId.
+const KEY1 = 'a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6';
+const KEY2 = 'f6e5d4c3b2a1f6e5d4c3b2a1f6e5d4c3b2a1f6e5d4c3b2a1';
+
 let fake: FakeDb;
 
 function jsonReq(url: string, method: string, body?: unknown): NextRequest {
@@ -36,13 +41,13 @@ function jsonReq(url: string, method: string, body?: unknown): NextRequest {
   });
 }
 
-function course(id: string, instructorId: string) {
+function course(id: string, instructorId: string, urlKey: string | null = null) {
   return {
     id, slug: id, title: id, description: 'Intro', longDescription: 'Long',
     thumbnail: '/t.png', category: 'Web_Development', level: 'beginner', pricePkr: 5000, isFree: false,
     instructorId, zoomLink: null, schedule: null, status: 'published',
     isFeatured: false, isCompleted: false, completedAt: null, requirements: [], whatYouLearn: [],
-    tags: [], enrolledCount: 0, rating: 0, reviewCount: 0,
+    tags: [], enrolledCount: 0, rating: 0, reviewCount: 0, urlKey,
     createdAt: D('2024-04-01'), updatedAt: D('2024-04-01'),
   };
 }
@@ -56,7 +61,7 @@ test.beforeEach(() => {
     { id: 'inst-2', name: 'Sara', email: 'sara@codebettle.com', passwordHash: '$2b$12$hash', role: 'instructor', status: 'active', joinedAt: D('2024-01-01') },
     { id: 'stu-1', name: 'Ali', email: 'ali@example.com', passwordHash: '$2b$12$hash', role: 'student', status: 'active', joinedAt: D('2024-01-02') },
   ]);
-  fake.seed('Course', [course('course-1', 'inst-1'), course('course-2', 'inst-2')]);
+  fake.seed('Course', [course('course-1', 'inst-1', KEY1), course('course-2', 'inst-2', KEY2)]);
   fake.seed('Announcement', [
     { id: 'ann-1', title: 'Week 1', content: 'Welcome', type: 'course', courseId: 'course-1', authorId: 'inst-1', isActive: true, createdAt: D('2024-05-01') },
     { id: 'ann-2', title: 'Week 1', content: 'Hi', type: 'course', courseId: 'course-2', authorId: 'inst-2', isActive: true, createdAt: D('2024-05-01') },
@@ -105,7 +110,7 @@ test('admin routes reject non-admins and signed-out users', async () => {
 test('instructor POST to their own course works; to another instructor’s course is 403', async () => {
   __setTestSession(INST1);
   const ok = await instructorCreate(jsonReq('http://localhost/api/instructor/announcements', 'POST', {
-    title: 'Quiz moved', content: 'Quiz is now Thursday', courseId: 'course-1',
+    title: 'Quiz moved', content: 'Quiz is now Thursday', courseId: KEY1,
   }));
   assert.equal(ok.status, 201);
   const body = await ok.json() as { announcement: { type: string; courseId: string; authorId: string } };
@@ -114,7 +119,7 @@ test('instructor POST to their own course works; to another instructor’s cours
   assert.equal(body.announcement.authorId, 'inst-1');
 
   const forbidden = await instructorCreate(jsonReq('http://localhost/api/instructor/announcements', 'POST', {
-    title: 'Hijack', content: 'Not my course', courseId: 'course-2',
+    title: 'Hijack', content: 'Not my course', courseId: KEY2,
   }));
   assert.equal(forbidden.status, 403);
 
@@ -125,7 +130,7 @@ test('instructor POST to their own course works; to another instructor’s cours
 
   __setTestSession(STU1);
   const asStudent = await instructorCreate(jsonReq('http://localhost/api/instructor/announcements', 'POST', {
-    title: 'x', content: 'y', courseId: 'course-1',
+    title: 'x', content: 'y', courseId: KEY1,
   }));
   assert.equal(asStudent.status, 403);
 });

@@ -249,6 +249,16 @@ export interface Course {
   certificateTemplateHtml?: string | null;
   /** Public course outline PDF URL, or null when no outline is attached. */
   outlineUrl?: string | null;
+  /**
+   * Opaque per-course key for INSTRUCTOR URLs only
+   * (/instructor/courses/<urlKey>, /api/instructor/courses/<urlKey>/...).
+   * 48 random hex chars, unrelated to the id — it cannot be guessed or
+   * derived from it. Null on rows read before the urlKey migration ran
+   * (fail-safe: the mapper treats a missing value as null). NEVER sent
+   * to public or student surfaces (see toPublicCourse); the only client
+   * component that receives it is the owning instructor's manage page.
+   */
+  urlKey?: string | null;
 }
 
 /**
@@ -259,7 +269,7 @@ export interface Course {
  * Admin and instructor surfaces keep the full shape (they are behind
  * auth and need the link to run the class).
  */
-export type PublicCourse = Omit<Course, 'zoomLink'>;
+export type PublicCourse = Omit<Course, 'zoomLink' | 'urlKey'>;
 
 export interface Enrollment {
   id: string;
@@ -916,15 +926,17 @@ export type CourseRow = Pick<
   | 'updatedAt'
   | 'certificateTemplateHtml'
   | 'outlineUrl'
+  | 'urlKey'
 >;
 
 /**
- * A course row as read from the DB. certificateTemplateHtml and outlineUrl
- * are optional here: the legacy select (pre-migration fallback) does not
- * return them, and the mapper treats a missing value as null.
+ * A course row as read from the DB. certificateTemplateHtml, outlineUrl
+ * and urlKey are optional here: the legacy select (pre-migration
+ * fallback) does not return them, and the mapper treats a missing value
+ * as null.
  */
-export type CourseRowLike = Omit<CourseRow, 'certificateTemplateHtml' | 'outlineUrl'> &
-  Partial<Pick<CourseRow, 'certificateTemplateHtml' | 'outlineUrl'>>;
+export type CourseRowLike = Omit<CourseRow, 'certificateTemplateHtml' | 'outlineUrl' | 'urlKey'> &
+  Partial<Pick<CourseRow, 'certificateTemplateHtml' | 'outlineUrl' | 'urlKey'>>;
 
 export type ModuleRow = Pick<Models.public_Module, 'id' | 'courseId' | 'title' | 'position'>;
 

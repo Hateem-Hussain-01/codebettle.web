@@ -10,6 +10,7 @@
  * Instructors may never change a course's status or instructorId — those
  * are admin-only (publishCourse capability).
  */
+import { randomBytes } from 'node:crypto';
 import {
   createCourse,
   createLesson,
@@ -18,6 +19,7 @@ import {
   deleteModule,
   getCourseById,
   getCourseBySlug,
+  getCourseByUrlKey,
   softDeleteCourse,
   updateCourse,
   updateLesson,
@@ -52,6 +54,49 @@ async function loadCourse(courseId: string): Promise<Course | ServiceError> {
   const course = await getCourseById(courseId);
   if (!course) return notFound('Course');
   return course;
+}
+
+/**
+ * Opaque instructor-portal key: 48 random hex chars (24 random bytes).
+ * Unrelated to the course id, so it cannot be guessed or derived from
+ * it. Same length as the migration backfill (48 hex chars), so keys made
+ * at creation and keys backfilled by the SQL twin look identical.
+ */
+export function generateCourseUrlKey(): string {
+  return randomBytes(24).toString('hex');
+}
+
+/**
+ * Load a course by its opaque instructor-portal key (never by raw id).
+ * A raw course id passed here matches nothing and returns notFound —
+ * urlKeys are 48 random hex chars, so a short predictable id can never
+ * collide with one. Pre-migration (column missing) getCourseByUrlKey
+ * returns null, which also lands here as notFound; the page maps that
+ * case to the "run the SQL" state via hasCourseUrlKeyColumn.
+ */
+async function loadCourseByUrlKey(urlKey: string): Promise<Course | ServiceError> {
+  const course = await getCourseByUrlKey(urlKey);
+  if (!course) return notFound('Course');
+  return course;
+}
+
+/**
+ * Load a course by urlKey and check the actor may edit it (admin, or
+ * the owning instructor). The instructor-portal twin of
+ * loadCourseForEdit: every instructor page and API route resolves the
+ * URL key through this, so a raw course id — or another instructor's
+ * key — never reaches the course. The ownership check is the second
+ * layer (defense in depth) behind the unguessable key.
+ */
+export async function loadCourseForEditByUrlKey(
+  actor: Actor,
+  urlKey: string,
+): Promise<{ course: Course } | ServiceError> {
+  const course = await loadCourseByUrlKey(urlKey);
+  if ('error' in course) return course;
+  const denied = isEditor(actor, course);
+  if (denied) return denied;
+  return { course };
 }
 
 /**
@@ -128,25 +173,44 @@ export async function createCourseService(
   const certificateTemplateHtml = isTeacherOnly(actor)
     ? undefined
     : input.certificateTemplateHtml;
-  const course = await createCourse({
-    slug,
-    title: input.title,
-    description: input.description,
-    longDescription: input.longDescription,
-    thumbnail: input.thumbnail,
-    category: input.category,
-    level: input.level,
-    pricePkr: input.price,
-    isFree: input.isFree ?? input.price === 0,
-    instructorId,
-    zoomLink: input.zoomLink,
-    schedule: input.schedule ?? null,
-    requirements: input.requirements,
-    whatYouLearn: input.whatYouLearn,
-    tags: input.tags,
-    certificateTemplateHtml: certificateTemplateHtml ?? null,
-    outlineUrl: input.outlineUrl ?? null,
-  });
+  // Every new course gets a fresh opaque instructor-portal key. A
+  // collision is ~impossible (2^-192 per attempt) but the unique
+  // constraint makes it observable, so retry with a fresh key — only
+  // when the violation names the urlKey constraint. A slug collision
+  // (or anything else) is rethrown immediately, never retried.
+  const MAX_URL_KEY_ATTEMPTS = 5;
+  let course: Course | null = null;
+  for (let attempt = 0; attempt < MAX_URL_KEY_ATTEMPTS; attempt++) {
+    try {
+      course = await createCourse({
+        slug,
+        title: input.title,
+        description: input.description,
+        longDescription: input.longDescription,
+        thumbnail: input.thumbnail,
+        category: input.category,
+        level: input.level,
+        pricePkr: input.price,
+        isFree: input.isFree ?? input.price === 0,
+        instructorId,
+        zoomLink: input.zoomLink,
+        schedule: input.schedule ?? null,
+        requirements: input.requirements,
+        whatYouLearn: input.whatYouLearn,
+        tags: input.tags,
+        certificateTemplateHtml: certificateTemplateHtml ?? null,
+        outlineUrl: input.outlineUrl ?? null,
+        urlKey: generateCourseUrlKey(),
+      });
+      break;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      const urlKeyCollision =
+        /Course_urlKey_key|urlKey/i.test(message) && /unique|duplicate/i.test(message);
+      if (!urlKeyCollision || attempt === MAX_URL_KEY_ATTEMPTS - 1) throw error;
+    }
+  }
+  if (!course) throw new Error('Could not create course');
   await logAudit({ actorId: actor.id, action: 'course.create', entity: 'course', entityId: course.id, detail: slug });
   return { course };
 }

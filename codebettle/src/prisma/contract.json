@@ -2992,6 +2992,13 @@
                   }
                 }
               },
+              "urlKey": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
               "whatYouLearn": {
                 "many": {
                   "elementNullable": false
@@ -3287,6 +3294,9 @@
                 },
                 "updatedAt": {
                   "column": "updatedAt"
+                },
+                "urlKey": {
+                  "column": "urlKey"
                 },
                 "whatYouLearn": {
                   "column": "whatYouLearn"
@@ -11823,6 +11833,11 @@
                     "precision": 3
                   }
                 },
+                "urlKey": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                },
                 "whatYouLearn": {
                   "codecId": "pg/text@1",
                   "dataType": "pg/text",
@@ -11877,6 +11892,11 @@
                 {
                   "columns": [
                     "slug"
+                  ]
+                },
+                {
+                  "columns": [
+                    "urlKey"
                   ]
                 }
               ]
@@ -17094,7 +17114,7 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "e6c0d779d0dc3299d62efb211ade4e7e40ad06e45e82f02483b495e139710944"
+    "storageHash": "a40cc5e4a66528e1947cc3d073d687449fb376f45141e3e86a996f7bb313235d"
   },
   "execution": {
     "executionHash": "4b7f1f572e79a25e5364a2f57a5e317582bff4d871b8850bbe577b5f407c48b0",

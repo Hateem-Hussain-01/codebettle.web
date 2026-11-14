@@ -22,7 +22,11 @@ export default function InstructorAnnouncementsClient({ courses: myCourses, init
   const initial = initialAnnouncements;
   const [announcements, setAnnouncements] = useState(initial);
   const [isOpen, setIsOpen] = useState(false);
-  const [form, setForm] = useState({ title: '', content: '', courseId: myCourses[0]?.id || '' });
+  // SECURITY (opaque course key): the announcement form posts the
+  // course's urlKey, never its raw id — the API resolves it the same
+  // way. A course without a key yet (migration not run) has no usable
+  // option value, so posting for it fails closed at the API.
+  const [form, setForm] = useState({ title: '', content: '', courseId: myCourses[0]?.urlKey || '' });
   const [saving, setSaving] = useState(false);
 
   const handlePost = async () => {
@@ -43,7 +47,7 @@ export default function InstructorAnnouncementsClient({ courses: myCourses, init
       setAnnouncements(a => [data.announcement as Announcement, ...a]);
       toast.success('Announcement posted!');
       setIsOpen(false);
-      setForm({ title: '', content: '', courseId: myCourses[0]?.id || '' });
+      setForm({ title: '', content: '', courseId: myCourses[0]?.urlKey || '' });
     } catch {
       toast.error('Could not post the announcement — please try again');
     } finally {
@@ -109,7 +113,7 @@ export default function InstructorAnnouncementsClient({ courses: myCourses, init
 
       <Modal isOpen={isOpen} onClose={() => setIsOpen(false)} title="New Announcement">
         <div className="space-y-4">
-          <Select label="Course" value={form.courseId} onChange={e => setForm(f => ({ ...f, courseId: e.target.value }))} options={myCourses.map(c => ({ value: c.id, label: c.title }))} />
+          <Select label="Course" value={form.courseId} onChange={e => setForm(f => ({ ...f, courseId: e.target.value }))} options={myCourses.map(c => ({ value: c.urlKey || '', label: c.title }))} />
           <Input label="Title" placeholder="Announcement title" value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} />
           <Textarea label="Message" placeholder="Write your announcement..." value={form.content} onChange={e => setForm(f => ({ ...f, content: e.target.value }))} rows={4} />
           <div className="flex gap-3">
