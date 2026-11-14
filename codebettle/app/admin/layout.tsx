@@ -7,7 +7,7 @@ import { hasAdminCapability } from '@/lib/rbac';
 import { isSuperAdmin } from '@/lib/super-admin';
 import { canSeeAuditLog } from '@/components/audit/audit-helpers';
 import PortalLayout from '@/components/layout/PortalLayout';
-import { LayoutDashboard, BookOpen, Users, GraduationCap, ClipboardList, Tag, Bell, FileText, Newspaper, BarChart2, Award, Settings, UserCheck, Mail, Megaphone, MessageSquare, ShieldCheck, ScrollText, ListChecks, Mails, User, Trophy, SlidersHorizontal, Star, PanelTop, CalendarCheck, UserPlus, MailPlus, LayoutTemplate } from 'lucide-react';
+import { LayoutDashboard, BookOpen, Users, GraduationCap, ClipboardList, Tag, Bell, FileText, Newspaper, BarChart2, Award, Settings, UserCheck, Mail, Megaphone, MessageSquare, ShieldCheck, ScrollText, ListChecks, Mails, User, Trophy, SlidersHorizontal, Star, PanelTop, CalendarCheck, UserPlus, MailPlus, Link2, LayoutTemplate } from 'lucide-react';
 
 const NAV_ICONS = {
   dashboard: <LayoutDashboard className="w-5 h-5" />,
@@ -42,6 +42,8 @@ const NAV_ICONS = {
   'book-a-call': <CalendarCheck className="w-5 h-5" />,
   ambassadors: <UserPlus className="w-5 h-5" />,
   subscribers: <MailPlus className="w-5 h-5" />,
+  // Links page sidebar icon.
+  'links-page': <Link2 className="w-5 h-5" />,
   settings: <Settings className="w-5 h-5" />,
   // Page Builder sidebar icon — LAST in the sidebar (ADMIN_AREAS order).
   'page-builder': <LayoutTemplate className="w-5 h-5" />,

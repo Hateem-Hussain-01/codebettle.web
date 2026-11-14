@@ -91,6 +91,17 @@ export type SiteSettings = {
    * (brand/navbar-logo.png). Empty = fall back to the default below.
    */
   navbarLogoUrl: string;
+  /**
+   * Links page (/links, Linktree-style — managed from Admin > Links
+   * Page). The tagline under the company name, and the contact details
+   * shown on the card: phone + email on ONE line (separated by a dot),
+   * location on its own line below. Empty stored values fall back to
+   * the defaults below.
+   */
+  linksTagline: string;
+  linksPhone: string;
+  linksEmail: string;
+  linksLocation: string;
 };
 
 export const DEFAULT_SETTINGS: SiteSettings = {
@@ -125,6 +136,12 @@ export const DEFAULT_SETTINGS: SiteSettings = {
   // 13 Nov 2026 to the PUBLIC course-images bucket (verified live).
   navbarLogoUrl:
     'https://phuzoxshzdfzjvephlhq.supabase.co/storage/v1/object/public/course-images/brand/navbar-logo.png',
+  // Links page contact details (Admin > Links Page): the verified
+  // company contact, shown phone + email on one line, location below.
+  linksTagline: 'Learn. Code. Success.',
+  linksPhone: '+92 305 5261893',
+  linksEmail: 'info@codebettle.com',
+  linksLocation: 'Lahore, Punjab, Pakistan',
 };
 
 /** Storage key for each setting field. All values are strings. */
@@ -146,6 +163,10 @@ export const SETTING_KEYS: Record<keyof SiteSettings, string> = {
   statsCertificatesIssued: 'successStories.stats.certificatesIssued',
   statsAverageRating: 'successStories.stats.averageRating',
   navbarLogoUrl: 'navbar.logoUrl',
+  linksTagline: 'linksPage.tagline',
+  linksPhone: 'linksPage.phone',
+  linksEmail: 'linksPage.email',
+  linksLocation: 'linksPage.location',
 };
 
 const STRING_FIELDS: Array<keyof SiteSettings> = [
@@ -165,6 +186,10 @@ const STRING_FIELDS: Array<keyof SiteSettings> = [
   'statsCertificatesIssued',
   'statsAverageRating',
   'navbarLogoUrl',
+  'linksTagline',
+  'linksPhone',
+  'linksEmail',
+  'linksLocation',
 ];
 
 /** Thrown by updateSiteSettings() for invalid input (HTTP 400). */
@@ -303,7 +328,7 @@ function validatePatch(patch: Partial<SiteSettings>): Array<{ field: keyof SiteS
     if (!value) {
       throw new SettingsValidationError(`${field} must not be empty`);
     }
-    if (field === 'contactEmail' && !isEmailLike(value)) {
+    if ((field === 'contactEmail' || field === 'linksEmail') && !isEmailLike(value)) {
       throw new SettingsValidationError('Contact email must be a valid email address');
     }
     cleaned.push({ field, stored: value });
@@ -343,6 +368,10 @@ function rowsToSettings(rows: Array<{ key: string; value: string }>): SiteSettin
     statsCertificatesIssued: pickString('statsCertificatesIssued'),
     statsAverageRating: pickString('statsAverageRating'),
     navbarLogoUrl: pickString('navbarLogoUrl'),
+    linksTagline: pickString('linksTagline'),
+    linksPhone: pickString('linksPhone'),
+    linksEmail: pickString('linksEmail'),
+    linksLocation: pickString('linksLocation'),
   };
 }
 

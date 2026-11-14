@@ -661,6 +661,22 @@ export interface NavItem {
   updatedAt: string;
 }
 
+/** One link button on the public /links page, managed from Admin > Links Page. */
+export interface Link {
+  id: string;
+  label: string;
+  /** Site path (e.g. /courses) or a full URL. */
+  url: string;
+  /** Icon key from LINK_ICON_OPTIONS (lib/links.ts). */
+  icon: string;
+  /** Order top to bottom (lower first). */
+  order: number;
+  /** False hides the button from the public page while keeping it in admin. */
+  enabled: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
 /** An instructor application from the become-instructor form. */
 export interface InstructorApplication {
   id: string;
@@ -1035,6 +1051,11 @@ export type StudentReviewRow = Pick<
 export type NavItemRow = Pick<
   Models.public_NavItem,
   'id' | 'label' | 'href' | 'order' | 'enabled' | 'createdAt' | 'updatedAt'
+>;
+
+export type LinkRow = Pick<
+  Models.public_Link,
+  'id' | 'label' | 'url' | 'icon' | 'order' | 'enabled' | 'createdAt' | 'updatedAt'
 >;
 
 export type BlogPostRow = Pick<

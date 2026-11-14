@@ -23,9 +23,9 @@ import type {
 } from '@prisma/orm-postgres/contract/types';
 
 export type StorageHash =
-  StorageHashBase<'d4ce9adf1c16a3c166863f72d6f960ecc11c860741509da7ac8a01ab6a0cdfa3'>;
+  StorageHashBase<'30f6fc41b6cfd0b75e303345a6e5dfa16fd974c44c6b63588b55e901fc3f3d1c'>;
 export type ExecutionHash =
-  ExecutionHashBase<'50d6b78e5589590708424555c51169b80ce39643b4d4c3236c595275b7d0ddbd'>;
+  ExecutionHashBase<'1c8dffdb66de9cbe9342b040ec511e58f7f0fafeae478bfdef84c747ef401fc2'>;
 export type ProfileHash =
   ProfileHashBase<'3916f444a8a17ad749191acf9e08dad97d1a327b88c2f1d45d12f240296aa8b2'>;
 
@@ -961,6 +961,17 @@ export namespace Models {
     lesson: public_Lesson;
     readonly [RelationKeys]?: 'enrollment' | 'lesson';
   };
+  export type public_Link = {
+    createdAt: FieldOutputTypes['public']['Link']['createdAt'];
+    enabled: FieldOutputTypes['public']['Link']['enabled'];
+    icon: FieldOutputTypes['public']['Link']['icon'];
+    id: FieldOutputTypes['public']['Link']['id'];
+    label: FieldOutputTypes['public']['Link']['label'];
+    order: FieldOutputTypes['public']['Link']['order'];
+    updatedAt: FieldOutputTypes['public']['Link']['updatedAt'];
+    url: FieldOutputTypes['public']['Link']['url'];
+    readonly [RelationKeys]?: never;
+  };
   export type public_LoginEvent = {
     createdAt: FieldOutputTypes['public']['LoginEvent']['createdAt'];
     email: FieldOutputTypes['public']['LoginEvent']['email'];
@@ -1489,6 +1500,7 @@ export declare const models: {
     Invitation: Models.public_Invitation;
     Lesson: Models.public_Lesson;
     LessonProgress: Models.public_LessonProgress;
+    Link: Models.public_Link;
     LoginEvent: Models.public_LoginEvent;
     Module: Models.public_Module;
     NavItem: Models.public_NavItem;
@@ -3922,6 +3934,84 @@ type ContractBase = Omit<
                   };
                 },
               ];
+            };
+            readonly Link: {
+              columns: {
+                readonly createdAt: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly nullable: false;
+                  readonly default: { readonly kind: 'function'; readonly expression: 'now()' };
+                  readonly typeParams: { readonly precision: 3 };
+                  readonly many: false;
+                };
+                readonly enabled: {
+                  readonly dataType: 'pg/bool';
+                  readonly codecId: 'pg/bool@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'literal';
+                    readonly value: DefaultLiteralValue<'pg/bool@1', true>;
+                  };
+                  readonly many: false;
+                };
+                readonly icon: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'literal';
+                    readonly value: DefaultLiteralValue<'pg/text@1', 'link'>;
+                  };
+                  readonly many: false;
+                };
+                readonly id: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly label: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly order: {
+                  readonly dataType: 'pg/int4';
+                  readonly codecId: 'pg/int4@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'literal';
+                    readonly value: DefaultLiteralValue<'pg/int4@1', 0>;
+                  };
+                  readonly many: false;
+                };
+                readonly updatedAt: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly nullable: false;
+                  readonly typeParams: { readonly precision: 3 };
+                  readonly many: false;
+                };
+                readonly url: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+              };
+              primaryKey: { readonly columns: readonly ['id'] };
+              uniques: readonly [];
+              indexes: readonly [
+                {
+                  readonly name: 'Link_enabled_order_idx_a20b7215';
+                  readonly prefix: 'Link_enabled_order_idx';
+                  readonly columns: readonly ['enabled', 'order'];
+                  readonly unique: false;
+                },
+              ];
+              foreignKeys: readonly [];
             };
             readonly LoginEvent: {
               columns: {
@@ -7206,6 +7296,7 @@ type ContractBase = Omit<
       readonly namespace: 'public' & NamespaceId;
       readonly model: 'LessonProgress';
     };
+    readonly Link: { readonly namespace: 'public' & NamespaceId; readonly model: 'Link' };
     readonly LoginEvent: {
       readonly namespace: 'public' & NamespaceId;
       readonly model: 'LoginEvent';
@@ -9492,6 +9583,65 @@ type ContractBase = Omit<
                 readonly completedAt: { readonly column: 'completedAt' };
                 readonly enrollmentId: { readonly column: 'enrollmentId' };
                 readonly lessonId: { readonly column: 'lessonId' };
+              };
+            };
+          };
+          readonly Link: {
+            readonly fields: {
+              readonly createdAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly typeParams: { readonly precision: 3 };
+                };
+              };
+              readonly enabled: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/bool@1' };
+              };
+              readonly icon: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly id: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly label: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly order: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/int4@1' };
+              };
+              readonly updatedAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly typeParams: { readonly precision: 3 };
+                };
+              };
+              readonly url: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+            };
+            readonly relations: Record<string, never>;
+            readonly storage: {
+              readonly table: 'Link';
+              readonly namespaceId: 'public';
+              readonly fields: {
+                readonly createdAt: { readonly column: 'createdAt' };
+                readonly enabled: { readonly column: 'enabled' };
+                readonly icon: { readonly column: 'icon' };
+                readonly id: { readonly column: 'id' };
+                readonly label: { readonly column: 'label' };
+                readonly order: { readonly column: 'order' };
+                readonly updatedAt: { readonly column: 'updatedAt' };
+                readonly url: { readonly column: 'url' };
               };
             };
           };
@@ -13267,6 +13417,43 @@ type ContractBase = Omit<
           readonly ref: {
             readonly entry: 'Lesson';
             readonly field: 'id';
+            readonly namespace: 'public';
+          };
+        },
+        {
+          readonly onCreate: {
+            readonly id: 'timestampNow';
+            readonly kind: 'generator';
+            readonly params: { readonly precision: 3 };
+          };
+          readonly ref: {
+            readonly entry: 'Link';
+            readonly field: 'createdAt';
+            readonly namespace: 'public';
+          };
+        },
+        {
+          readonly onCreate: { readonly id: 'cuid2'; readonly kind: 'generator' };
+          readonly ref: {
+            readonly entry: 'Link';
+            readonly field: 'id';
+            readonly namespace: 'public';
+          };
+        },
+        {
+          readonly onCreate: {
+            readonly id: 'timestampNow';
+            readonly kind: 'generator';
+            readonly params: { readonly precision: 3 };
+          };
+          readonly onUpdate: {
+            readonly id: 'timestampNow';
+            readonly kind: 'generator';
+            readonly params: { readonly precision: 3 };
+          };
+          readonly ref: {
+            readonly entry: 'Link';
+            readonly field: 'updatedAt';
             readonly namespace: 'public';
           };
         },

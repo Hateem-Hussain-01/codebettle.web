@@ -57,6 +57,8 @@ import type {
   NotificationRow,
   NavItem,
   NavItemRow,
+  Link,
+  LinkRow,
   Page,
   PageRow,
   ParseWarning,
@@ -845,6 +847,19 @@ export function mapNavItemRow(row: NavItemRow): NavItem {
     id: row.id,
     label: row.label,
     href: row.href,
+    order: row.order,
+    enabled: row.enabled,
+    createdAt: dateToString(row.createdAt),
+    updatedAt: dateToString(row.updatedAt),
+  };
+}
+
+export function mapLinkRow(row: LinkRow): Link {
+  return {
+    id: row.id,
+    label: row.label,
+    url: row.url,
+    icon: row.icon,
     order: row.order,
     enabled: row.enabled,
     createdAt: dateToString(row.createdAt),
