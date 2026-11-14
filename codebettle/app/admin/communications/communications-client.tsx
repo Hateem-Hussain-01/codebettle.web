@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
+import { useAdminUrl } from '@/components/admin/AdminBasePathContext';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
 import Card from '@/components/ui/Card';
@@ -58,7 +59,6 @@ import { SUPPORT_REQUEST_CATEGORY_LABELS } from '@/lib/db/types';
  * targeted sends are composed on Worker B's page at
  * /admin/notifications/compose (live on this branch).
  */
-const COMPOSE_NOTIFICATIONS_HREF = '/admin/notifications/compose';
 
 type TabId = 'general' | 'teachers' | 'students' | 'teacher-announcements' | 'teacher-targeted' | 'requests' | 'receipts';
 
@@ -103,6 +103,7 @@ export default function CommunicationsClient({
   targeted: TargetedRow[];
   stats: Stats;
 }) {
+  const adminUrl = useAdminUrl();
   const [tab, setTab] = useState<TabId>('general');
   const [query, setQuery] = useState('');
   const [originFilter, setOriginFilter] = useState<'all' | 'admin' | 'teacher'>('all');
@@ -291,7 +292,7 @@ export default function CommunicationsClient({
                   {expandedId === entry.announcement.id ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
                   {expandedId === entry.announcement.id ? 'Hide receipts' : 'Read receipts'}
                 </button>
-                <Link href="/admin/announcements" className="text-xs text-primary-text hover:underline">
+                <Link href={adminUrl("/announcements")} className="text-xs text-primary-text hover:underline">
                   View in Announcements →
                 </Link>
               </div>
@@ -360,10 +361,10 @@ export default function CommunicationsClient({
           </p>
         </div>
         <div className="flex gap-2 flex-wrap">
-          <Link href="/admin/announcements">
+          <Link href={adminUrl("/announcements")}>
             <Button variant="secondary" size="sm"><Plus className="w-4 h-4" />New announcement</Button>
           </Link>
-          <Link href={COMPOSE_NOTIFICATIONS_HREF}>
+          <Link href={adminUrl('/notifications/compose')}>
             <Button size="sm"><Send className="w-4 h-4" />Compose notification</Button>
           </Link>
         </div>
@@ -500,7 +501,7 @@ export default function CommunicationsClient({
               <p className="text-muted text-xs mb-3">
                 GET /api/admin/requests is still being built (Worker C) — this summary will fill in once it lands.
               </p>
-              <Link href="/admin/requests" className="text-xs text-primary-text hover:underline">
+              <Link href={adminUrl("/requests")} className="text-xs text-primary-text hover:underline">
                 Open the request queue →
               </Link>
             </Card>
@@ -537,7 +538,7 @@ export default function CommunicationsClient({
                     ))}
                   </ul>
                 )}
-                <Link href="/admin/requests" className="inline-block mt-3 text-xs text-primary-text hover:underline">
+                <Link href={adminUrl("/requests")} className="inline-block mt-3 text-xs text-primary-text hover:underline">
                   Open the full request queue →
                 </Link>
               </Card>
@@ -590,7 +591,7 @@ export default function CommunicationsClient({
                             ] ?? request.category}
                           </Badge>
                           <Badge variant="muted">{request.status.replaceAll('_', ' ')}</Badge>
-                          <Link href="/admin/requests" className="text-xs text-primary-text hover:underline">
+                          <Link href={adminUrl("/requests")} className="text-xs text-primary-text hover:underline">
                             Open in queue →
                           </Link>
                         </div>

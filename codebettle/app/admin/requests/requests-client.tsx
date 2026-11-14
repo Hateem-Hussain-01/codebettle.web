@@ -1,6 +1,7 @@
 'use client';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useAdminUrl } from '@/components/admin/AdminBasePathContext';
 import { ChevronLeft, ChevronRight, Inbox } from 'lucide-react';
 import Button from '@/components/ui/Button';
 import Card from '@/components/ui/Card';
@@ -48,6 +49,7 @@ export default function RequestsClient({
   search,
 }: RequestsClientProps) {
   const router = useRouter();
+  const adminUrl = useAdminUrl();
   const [status, setStatus] = useState(statusFilter);
   const [category, setCategory] = useState(categoryFilter);
   const [searchInput, setSearchInput] = useState(search);
@@ -61,7 +63,7 @@ export default function RequestsClient({
     if (c) params.set('category', c);
     if (query.trim()) params.set('q', query.trim());
     params.set('page', String(next.page ?? 1));
-    router.push(`/admin/requests?${params.toString()}`);
+    router.push(adminUrl(`/requests?${params.toString()}`));
   };
 
   const newCount = initialRequests.filter((r) => r.status === 'new').length;
@@ -140,7 +142,7 @@ export default function RequestsClient({
         <div className="space-y-3">
           {initialRequests.map((req, i) => (
             <FadeIn key={req.id} delay={Math.min(i, 4) * 0.05}>
-              <button type="button" onClick={() => router.push(`/admin/requests/${req.id}`)} className="w-full text-left cursor-pointer">
+              <button type="button" onClick={() => router.push(adminUrl(`/requests/${req.id}`))} className="w-full text-left cursor-pointer">
               <Card hover>
                 <div className="flex items-start gap-3">
                   <div className="flex-1 min-w-0">

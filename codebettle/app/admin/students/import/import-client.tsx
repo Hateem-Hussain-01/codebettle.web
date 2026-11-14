@@ -1,6 +1,7 @@
 'use client';
 import { useRef, useState } from 'react';
 import Link from 'next/link';
+import { useAdminUrl } from '@/components/admin/AdminBasePathContext';
 import Button from '@/components/ui/Button';
 import Textarea from '@/components/ui/Textarea';
 import Badge from '@/components/ui/Badge';
@@ -45,6 +46,7 @@ const SAMPLE_CSV = 'name,email,role,phone\nAli Khan,ali@example.com,student,0300
  * existing reset/setup flow. Admin accounts can never be imported.
  */
 export default function StudentsImportClient() {
+  const adminUrl = useAdminUrl();
   const [csv, setCsv] = useState('');
   const [preview, setPreview] = useState<Preview | null>(null);
   const [result, setResult] = useState<ImportResult | null>(null);
@@ -109,7 +111,7 @@ export default function StudentsImportClient() {
   return (
     <div className="space-y-6">
       <FadeIn className="flex items-center gap-3">
-        <Link href="/admin/students" className="text-muted hover:text-primary-text transition-colors">
+        <Link href={adminUrl("/students")} className="text-muted hover:text-primary-text transition-colors">
           <ArrowLeft className="w-5 h-5" />
         </Link>
         <div>

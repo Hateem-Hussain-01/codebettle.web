@@ -1,5 +1,6 @@
 import { connection } from 'next/server';
 import Link from 'next/link';
+import { adminUrl } from '@/lib/admin-url';
 import { redirect } from 'next/navigation';
 import { getSession } from '@/lib/auth';
 import { hasAdminCapability } from '@/lib/rbac';
@@ -31,7 +32,7 @@ export default async function AdminNotificationsPage({
       <div className="mb-4 flex items-center justify-between">
         <h1 className="text-2xl font-bold text-foreground">Notifications</h1>
         <Link
-          href="/admin/notifications/compose"
+          href={adminUrl("/notifications/compose")}
           className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-ink hover:bg-primary-dark active:scale-95"
         >
           Compose notification

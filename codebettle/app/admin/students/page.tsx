@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { useAdminUrl } from '@/components/admin/AdminBasePathContext';
 import Button from '@/components/ui/Button';
 import Badge from '@/components/ui/Badge';
 import Input from '@/components/ui/Input';
@@ -57,6 +58,7 @@ const PAGE_LIMITS = [10, 25, 50];
  * the status filter run over the loaded page, as before.
  */
 export default function AdminStudentsPage() {
+  const adminUrl = useAdminUrl();
   const [students, setStudents] = useState<SafeStudent[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState('');
@@ -217,7 +219,7 @@ export default function AdminStudentsPage() {
           <p className="text-muted text-sm mt-1">{total} total • {students.filter(s => s.status === 'active').length} active on this page</p>
         </div>
         <div className="flex items-center gap-2">
-          <Link href="/admin/students/import">
+          <Link href={adminUrl("/students/import")}>
             <Button variant="secondary"><Upload className="w-4 h-4" />Import CSV</Button>
           </Link>
           <Button onClick={() => setIsCreateOpen(true)}><Plus className="w-4 h-4" />Create Student</Button>

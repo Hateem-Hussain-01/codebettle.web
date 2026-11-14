@@ -10,6 +10,7 @@ import FadeIn from '@/components/ui/FadeIn';
 import { Search, Plus, Edit, Trash2, Eye, EyeOff, Star, Video, Archive } from 'lucide-react';
 import { formatPrice } from '@/lib/utils';
 import Link from 'next/link';
+import { useAdminUrl } from '@/components/admin/AdminBasePathContext';
 import toast from 'react-hot-toast';
 import type { Course } from '@/lib/db/types';
 
@@ -31,6 +32,7 @@ async function patchCourse(id: string, body: Record<string, unknown>): Promise<C
 }
 
 export default function CoursesClient({ courses: allCourses, instructorNames }: CoursesClientProps) {
+  const adminUrl = useAdminUrl();
   const [courseList, setCourseList] = useState(allCourses);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
@@ -85,7 +87,7 @@ export default function CoursesClient({ courses: allCourses, instructorNames }: 
           <h1 className="text-2xl font-black text-foreground">Courses</h1>
           <p className="text-muted text-sm mt-1">{filtered.length} course{filtered.length !== 1 ? 's' : ''}</p>
         </div>
-        <Link href="/admin/courses/new"><Button><Plus className="w-4 h-4" />Create Course</Button></Link>
+        <Link href={adminUrl("/courses/new")}><Button><Plus className="w-4 h-4" />Create Course</Button></Link>
       </FadeIn>
 
       {/* Filters */}
@@ -128,7 +130,7 @@ export default function CoursesClient({ courses: allCourses, instructorNames }: 
                     </td>
                     <td className="py-3 px-4">
                       <div className="flex items-center gap-1">
-                        <Link href={`/admin/courses/${course.id}`} title="View Details" className="text-muted hover:text-blue-400 transition-colors p-1">
+                        <Link href={adminUrl(`/courses/${course.id}`)} title="View Details" className="text-muted hover:text-blue-400 transition-colors p-1">
                           <Edit className="w-4 h-4" />
                         </Link>
                         <button onClick={() => toggleStatus(course.id)} title={course.status === 'published' ? 'Unpublish' : 'Publish'} className="text-muted hover:text-primary-text transition-colors p-1 cursor-pointer">

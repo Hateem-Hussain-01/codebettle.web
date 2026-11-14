@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useAdminUrl } from '@/components/admin/AdminBasePathContext';
 import { ArrowLeft, Eye, Send, Trash2 } from 'lucide-react';
 import Button from '@/components/ui/Button';
 import Card from '@/components/ui/Card';
@@ -32,6 +33,7 @@ interface EditorProps {
  */
 export default function EmailTemplateEditorClient({ templateId }: EditorProps) {
   const router = useRouter();
+  const adminUrl = useAdminUrl();
   const isNew = !templateId;
   const [loading, setLoading] = useState(!isNew);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -124,7 +126,7 @@ export default function EmailTemplateEditorClient({ templateId }: EditorProps) {
         return;
       }
       toast.success(isNew ? 'Template created' : 'Template saved');
-      router.push('/admin/email-templates');
+      router.push(adminUrl('/email-templates'));
       router.refresh();
     } catch {
       toast.error('Could not save the template — please try again');
@@ -144,7 +146,7 @@ export default function EmailTemplateEditorClient({ templateId }: EditorProps) {
         return;
       }
       toast.success('Template deleted');
-      router.push('/admin/email-templates');
+      router.push(adminUrl('/email-templates'));
       router.refresh();
     } catch {
       toast.error('Could not delete the template — please try again');
@@ -192,7 +194,7 @@ export default function EmailTemplateEditorClient({ templateId }: EditorProps) {
     return (
       <Card className="p-6 text-center">
         <p className="text-sm text-red-400">{loadError}</p>
-        <Button variant="secondary" className="mt-4" onClick={() => router.push('/admin/email-templates')}>
+        <Button variant="secondary" className="mt-4" onClick={() => router.push(adminUrl('/email-templates'))}>
           Back to templates
         </Button>
       </Card>
@@ -204,7 +206,7 @@ export default function EmailTemplateEditorClient({ templateId }: EditorProps) {
       <div>
         <button
           type="button"
-          onClick={() => router.push('/admin/email-templates')}
+          onClick={() => router.push(adminUrl('/email-templates'))}
           className="flex items-center gap-1 text-sm text-muted hover:text-foreground transition-colors cursor-pointer mb-3"
         >
           <ArrowLeft className="w-4 h-4" /> All templates
