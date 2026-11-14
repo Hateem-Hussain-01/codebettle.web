@@ -18,11 +18,16 @@ import toast from 'react-hot-toast';
  * hold that tab's capability — the server's instruction is then shown
  * inline under the tabs so the user sees which tab to switch to.
  * The Become an Instructor link is kept.
+ *
+ * `adminOnly` (secret admin sign-in page only): a single Admin tab,
+ * no Student / Instructor tabs and no tab switching, and the form
+ * sends requestedRole 'admin'. The server then only lets accounts
+ * with admin capability through.
  */
-export default function LoginForm() {
+export default function LoginForm({ adminOnly = false }: { adminOnly?: boolean }) {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [role, setRole] = useState<'student' | 'instructor'>('student');
+  const [role, setRole] = useState<'student' | 'instructor' | 'admin'>(adminOnly ? 'admin' : 'student');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -77,26 +82,39 @@ export default function LoginForm() {
         <p className="mt-1 text-sm text-muted">Sign in to continue your learning journey</p>
       </div>
 
-      <div role="tablist" aria-label="Sign in as" className="mb-4 grid grid-cols-2 gap-1 rounded-lg border border-dark-border bg-background p-1">
-        <button
-          type="button"
-          role="tab"
-          aria-selected={role === 'student'}
-          onClick={() => switchTab('student')}
-          className={`cursor-pointer rounded-md px-3 py-2 text-sm font-semibold transition-colors ${role === 'student' ? 'bg-primary text-ink' : 'text-muted hover:text-foreground'}`}
-        >
-          Student
-        </button>
-        <button
-          type="button"
-          role="tab"
-          aria-selected={role === 'instructor'}
-          onClick={() => switchTab('instructor')}
-          className={`cursor-pointer rounded-md px-3 py-2 text-sm font-semibold transition-colors ${role === 'instructor' ? 'bg-primary text-ink' : 'text-muted hover:text-foreground'}`}
-        >
-          Instructor
-        </button>
-      </div>
+      {adminOnly ? (
+        <div role="tablist" aria-label="Sign in as" className="mb-4 rounded-lg border border-dark-border bg-background p-1">
+          <button
+            type="button"
+            role="tab"
+            aria-selected
+            className="w-full cursor-default rounded-md bg-primary px-3 py-2 text-sm font-semibold text-ink"
+          >
+            Admin
+          </button>
+        </div>
+      ) : (
+        <div role="tablist" aria-label="Sign in as" className="mb-4 grid grid-cols-2 gap-1 rounded-lg border border-dark-border bg-background p-1">
+          <button
+            type="button"
+            role="tab"
+            aria-selected={role === 'student'}
+            onClick={() => switchTab('student')}
+            className={`cursor-pointer rounded-md px-3 py-2 text-sm font-semibold transition-colors ${role === 'student' ? 'bg-primary text-ink' : 'text-muted hover:text-foreground'}`}
+          >
+            Student
+          </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={role === 'instructor'}
+            onClick={() => switchTab('instructor')}
+            className={`cursor-pointer rounded-md px-3 py-2 text-sm font-semibold transition-colors ${role === 'instructor' ? 'bg-primary text-ink' : 'text-muted hover:text-foreground'}`}
+          >
+            Instructor
+          </button>
+        </div>
+      )}
 
       {roleMismatch && (
         <div role="alert" className="mb-4 flex items-start gap-2 rounded-lg border border-primary/40 bg-primary/10 px-3 py-2.5 text-sm text-foreground">

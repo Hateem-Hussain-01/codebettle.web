@@ -15,10 +15,12 @@ export const metadata = {
  * — it is not linked from the public site, the sitemap or robots.txt,
  * and the old /admin/* URLs are blocked by the proxy. The admin
  * layout exempts this page from its guard (it renders the login form
- * with no portal chrome). Admins sign in through the same form as
- * everyone else (no Admin tab — admin capability passes both tabs);
- * after login the API returns the secret dashboard URL and the form
- * redirects there.
+ * with no portal chrome). The form shows a single Admin tab — there
+ * are no Student / Instructor tabs here, and the server only lets
+ * accounts with admin capability through (a student or instructor
+ * gets a 403 telling them to use the public sign-in). After login
+ * the API returns the secret dashboard URL and the form redirects
+ * there.
  *
  * The page reminds the admin to save the link and offers a download
  * button, because the link cannot be found by searching.
@@ -33,7 +35,7 @@ export default function AdminSigninPage() {
             <h1 className="mt-3 text-xl font-bold text-foreground">Admin sign in</h1>
             <p className="mt-1 text-sm text-muted">Sign in to the admin panel</p>
           </div>
-          <LoginForm />
+          <LoginForm adminOnly />
         </div>
         <div className="mt-6 bg-dark-card border border-dark-border rounded-xl p-5 text-center">
           <p className="text-sm text-muted leading-relaxed">
