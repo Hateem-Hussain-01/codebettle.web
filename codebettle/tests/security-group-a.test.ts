@@ -55,15 +55,20 @@ const ADMIN_SESSION: SessionUser = { id: 'admin-1', name: 'Admin', email: 'admin
 const INST1_SESSION: SessionUser = { id: 'inst-1', name: 'Usman', email: 'usman@codebettle.com', role: 'instructor' };
 const INST2_SESSION: SessionUser = { id: 'inst-2', name: 'Fatima', email: 'fatima@codebettle.com', role: 'instructor' };
 
+// Opaque instructor-portal keys (48 hex) for the seeded courses. Instructor
+// routes resolve the URL param as a urlKey only — a raw course id 404s.
+const KEY1 = 'a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6';
+const KEY2 = 'f6e5d4c3b2a1f6e5d4c3b2a1f6e5d4c3b2a1f6e5d4c3b2a1';
+
 let fake: FakeDb;
 
-function course(id: string, instructorId: string, isFree = false) {
+function course(id: string, instructorId: string, isFree = false, urlKey: string | null = null) {
   return {
     id, slug: id, title: id, description: 'Intro', longDescription: 'Long',
     thumbnail: '/t.png', category: 'Web_Development', level: 'beginner', pricePkr: 5000, isFree,
     instructorId, zoomLink: 'https://zoom.example.com/1', schedule: null, status: 'published',
     isFeatured: false, isCompleted: false, completedAt: null, requirements: [], whatYouLearn: [],
-    tags: [], enrolledCount: 0, rating: 0, reviewCount: 0,
+    tags: [], enrolledCount: 0, rating: 0, reviewCount: 0, urlKey,
     createdAt: D('2024-04-01'), updatedAt: D('2024-04-01'),
   };
 }
@@ -77,7 +82,7 @@ function seedBase() {
     { id: 'stu-pending', name: 'Pending Student', email: 'pending@example.com', passwordHash: '$2b$12$hash', role: 'student', status: 'active', joinedAt: D('2024-01-01') },
     { id: 'stu-free', name: 'Free Student', email: 'free@example.com', passwordHash: '$2b$12$hash', role: 'student', status: 'active', joinedAt: D('2024-01-01') },
   ]);
-  fake.seed('Course', [course('course-1', 'inst-1'), course('course-2', 'inst-2')]);
+  fake.seed('Course', [course('course-1', 'inst-1', false, KEY1), course('course-2', 'inst-2', false, KEY2)]);
   fake.seed('Enrollment', [
     { id: 'enr-paid', studentId: 'stu-paid', courseId: 'course-1', enrolledAt: D('2024-05-01'), isCompleted: true, completedAt: D('2024-06-01'), paymentStatus: 'paid', amountPaid: 5000, couponUsed: null, deletedAt: null },
     { id: 'enr-pending', studentId: 'stu-pending', courseId: 'course-1', enrolledAt: D('2024-05-01'), isCompleted: true, completedAt: D('2024-06-01'), paymentStatus: 'pending', amountPaid: 0, couponUsed: null, deletedAt: null },
@@ -284,33 +289,33 @@ test('NEW-13: a flag-admin (isAdmin with a non-admin primary role) can moderate 
 
 test('INST-03: PATCH another instructor\'s course with an empty body is 403 (not 400); the owner still gets 400', async () => {
   __setTestSession(INST2_SESSION);
-  const other = await patchInstructorCourse(jsonReq('http://localhost/api/instructor/courses/course-1', 'PATCH', {}), { params: Promise.resolve({ id: 'course-1' }) });
+  const other = await patchInstructorCourse(jsonReq(`http://localhost/api/instructor/courses/${KEY1}`, 'PATCH', {}), { params: Promise.resolve({ id: KEY1 }) });
   assert.equal(other.status, 403, await other.text());
 
   __setTestSession(INST1_SESSION);
-  const ownerEmpty = await patchInstructorCourse(jsonReq('http://localhost/api/instructor/courses/course-1', 'PATCH', {}), { params: Promise.resolve({ id: 'course-1' }) });
+  const ownerEmpty = await patchInstructorCourse(jsonReq(`http://localhost/api/instructor/courses/${KEY1}`, 'PATCH', {}), { params: Promise.resolve({ id: KEY1 }) });
   assert.equal(ownerEmpty.status, 400, await ownerEmpty.text());
 
-  const ownerOk = await patchInstructorCourse(jsonReq('http://localhost/api/instructor/courses/course-1', 'PATCH', { title: 'Renamed by owner' }), { params: Promise.resolve({ id: 'course-1' }) });
+  const ownerOk = await patchInstructorCourse(jsonReq(`http://localhost/api/instructor/courses/${KEY1}`, 'PATCH', { title: 'Renamed by owner' }), { params: Promise.resolve({ id: KEY1 }) });
   assert.equal(ownerOk.status, 200, await ownerOk.text());
 });
 
 test('INST-03: PATCH another instructor\'s lesson with an invalid body is 403', async () => {
   __setTestSession(INST2_SESSION);
   const res = await patchInstructorLesson(
-    jsonReq('http://localhost/api/instructor/courses/course-1/modules/m1/lessons/l1', 'PATCH', {}),
-    { params: Promise.resolve({ id: 'course-1', moduleId: 'm1', lessonId: 'l1' }) },
+    jsonReq(`http://localhost/api/instructor/courses/${KEY1}/modules/m1/lessons/l1`, 'PATCH', {}),
+    { params: Promise.resolve({ id: KEY1, moduleId: 'm1', lessonId: 'l1' }) },
   );
   assert.equal(res.status, 403, await res.text());
 });
 
 test('INST-03: POST an announcement for another instructor\'s course with missing fields is 403; the owner still posts', async () => {
   __setTestSession(INST2_SESSION);
-  const other = await postInstructorAnnouncement(jsonReq('http://localhost/api/instructor/announcements', 'POST', { courseId: 'course-1' }));
+  const other = await postInstructorAnnouncement(jsonReq('http://localhost/api/instructor/announcements', 'POST', { courseId: KEY1 }));
   assert.equal(other.status, 403, await other.text());
 
   __setTestSession(INST1_SESSION);
-  const owner = await postInstructorAnnouncement(jsonReq('http://localhost/api/instructor/announcements', 'POST', { courseId: 'course-1', title: 'Hello', content: 'Welcome' }));
+  const owner = await postInstructorAnnouncement(jsonReq('http://localhost/api/instructor/announcements', 'POST', { courseId: KEY1, title: 'Hello', content: 'Welcome' }));
   assert.equal(owner.status, 201, await owner.text());
 });
 

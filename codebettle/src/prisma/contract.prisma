@@ -224,6 +224,16 @@ model User {
 model Course {
   id              String             @id @onCreate(cuid(2))
   slug            String             @unique
+  // Opaque, unguessable per-course key used in INSTRUCTOR URLs only
+  // (/instructor/courses/<urlKey>, /api/instructor/courses/<urlKey>/...).
+  // Raw course ids (course-3, ...) are predictable and visible in public
+  // course data, so they must never identify a course in the instructor
+  // portal: a raw id in an instructor URL 404s. Generated as 48 random
+  // hex chars (crypto.randomBytes(24)) at creation; backfilled for
+  // existing rows by the migration. NOT a hash of the id (unrelated to
+  // it, so it cannot be derived). Public pages keep using the slug;
+  // student/admin routes keep using the id.
+  urlKey          String             @unique
   title           String
   description     String
   longDescription String

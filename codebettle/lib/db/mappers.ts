@@ -300,8 +300,13 @@ export function toSafeUser(user: User): Omit<User, 'passwordHash'> {
  * sensitive fields blanked.
  */
 export function toPublicCourse(course: Course): PublicCourse {
-  const { zoomLink: _zoomLink, ...pub } = course;
+  // The instructor-portal key must never reach a public (or student)
+  // surface: it is the only thing standing between a predictable course
+  // id and an instructor URL, so it is stripped here alongside the
+  // Zoom link. (PublicCourse also omits it at the type level.)
+  const { zoomLink: _zoomLink, urlKey: _urlKey, ...pub } = course;
   void _zoomLink;
+  void _urlKey;
   return {
     ...pub,
     modules: pub.modules.map((mod) => ({
@@ -372,6 +377,8 @@ export function mapCourseRow(
     certificateTemplateHtml: row.certificateTemplateHtml ?? null,
     // Rows read before the outline migration ran carry no outline column.
     outlineUrl: row.outlineUrl ?? null,
+    // Rows read before the urlKey migration ran carry no urlKey column.
+    urlKey: row.urlKey ?? null,
     createdAt: dateToString(row.createdAt),
     updatedAt: dateToString(row.updatedAt),
   };

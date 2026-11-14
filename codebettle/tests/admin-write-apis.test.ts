@@ -13,6 +13,11 @@ const INST1: SessionUser = { id: 'inst-1', name: 'Usman', email: 'usman@codebett
 const INST2: SessionUser = { id: 'inst-2', name: 'Sara', email: 'sara@codebettle.com', role: 'instructor' };
 const STU1: SessionUser = { id: 'stu-1', name: 'Ali', email: 'ali@example.com', role: 'student' };
 
+// Opaque instructor-portal keys (48 hex) for the seeded courses. Instructor
+// routes resolve the URL param as a urlKey only — a raw course id 404s.
+const KEY1 = 'a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6';
+const KEY2 = 'f6e5d4c3b2a1f6e5d4c3b2a1f6e5d4c3b2a1f6e5d4c3b2a1';
+
 let fake: FakeDb;
 
 function jsonReq(url: string, method: string, body?: unknown): NextRequest {
@@ -39,7 +44,7 @@ test.beforeEach(() => {
       thumbnail: '/t.png', category: 'Web_Development', level: 'beginner', pricePkr: 5000, isFree: false,
       instructorId: 'inst-1', zoomLink: null, schedule: null, status: 'draft',
       isFeatured: false, isCompleted: false, completedAt: null, requirements: [], whatYouLearn: [],
-      tags: [], enrolledCount: 1, rating: 0, reviewCount: 0,
+      tags: [], enrolledCount: 1, rating: 0, reviewCount: 0, urlKey: KEY1,
       createdAt: D('2024-04-01'), updatedAt: D('2024-04-01'),
     },
     {
@@ -47,7 +52,7 @@ test.beforeEach(() => {
       thumbnail: '/t.png', category: 'Programming', level: 'beginner', pricePkr: 0, isFree: true,
       instructorId: 'inst-2', zoomLink: null, schedule: null, status: 'published',
       isFeatured: false, isCompleted: false, completedAt: null, requirements: [], whatYouLearn: [],
-      tags: [], enrolledCount: 0, rating: 0, reviewCount: 0,
+      tags: [], enrolledCount: 0, rating: 0, reviewCount: 0, urlKey: KEY2,
       createdAt: D('2024-04-01'), updatedAt: D('2024-04-01'),
     },
   ]);
@@ -203,31 +208,31 @@ test('instructor courses: own course editable, status change 403, other course 4
   const instructorCourse = await import('../app/api/instructor/courses/[id]/route');
 
   __setTestSession(INST1);
-  const own = await instructorCourse.PATCH(jsonReq('http://localhost/api/instructor/courses/course-1', 'PATCH', { title: 'Web 101 v2' }), {
-    params: Promise.resolve({ id: 'course-1' }),
+  const own = await instructorCourse.PATCH(jsonReq(`http://localhost/api/instructor/courses/${KEY1}`, 'PATCH', { title: 'Web 101 v2' }), {
+    params: Promise.resolve({ id: KEY1 }),
   });
   assert.equal(own.status, 200);
   assert.equal((await own.json()).course.title, 'Web 101 v2');
 
-  const status = await instructorCourse.PATCH(jsonReq('http://localhost/api/instructor/courses/course-1', 'PATCH', { status: 'published' }), {
-    params: Promise.resolve({ id: 'course-1' }),
+  const status = await instructorCourse.PATCH(jsonReq(`http://localhost/api/instructor/courses/${KEY1}`, 'PATCH', { status: 'published' }), {
+    params: Promise.resolve({ id: KEY1 }),
   });
   assert.equal(status.status, 403);
 
-  const others = await instructorCourse.PATCH(jsonReq('http://localhost/api/instructor/courses/course-2', 'PATCH', { title: 'Hijack' }), {
-    params: Promise.resolve({ id: 'course-2' }),
+  const others = await instructorCourse.PATCH(jsonReq(`http://localhost/api/instructor/courses/${KEY2}`, 'PATCH', { title: 'Hijack' }), {
+    params: Promise.resolve({ id: KEY2 }),
   });
   assert.equal(others.status, 403);
 
   __setTestSession(STU1);
-  const asStudent = await instructorCourse.PATCH(jsonReq('http://localhost/api/instructor/courses/course-1', 'PATCH', { title: 'x' }), {
-    params: Promise.resolve({ id: 'course-1' }),
+  const asStudent = await instructorCourse.PATCH(jsonReq(`http://localhost/api/instructor/courses/${KEY1}`, 'PATCH', { title: 'x' }), {
+    params: Promise.resolve({ id: KEY1 }),
   });
   assert.equal(asStudent.status, 403);
 
   __setTestSession(null);
-  const anon = await instructorCourse.PATCH(jsonReq('http://localhost/api/instructor/courses/course-1', 'PATCH', { title: 'x' }), {
-    params: Promise.resolve({ id: 'course-1' }),
+  const anon = await instructorCourse.PATCH(jsonReq(`http://localhost/api/instructor/courses/${KEY1}`, 'PATCH', { title: 'x' }), {
+    params: Promise.resolve({ id: KEY1 }),
   });
   assert.equal(anon.status, 401);
 });
@@ -245,15 +250,15 @@ test('modules/lessons: admin and instructor create; ownership enforced', async (
 
   __setTestSession(INST2);
   const others = await instructorLessons.POST(
-    jsonReq('http://localhost/api/instructor/courses/course-1/modules/mod-1/lessons', 'POST', { title: 'Nope' }),
-    { params: Promise.resolve({ id: 'course-1', moduleId: 'mod-1' }) },
+    jsonReq(`http://localhost/api/instructor/courses/${KEY1}/modules/mod-1/lessons`, 'POST', { title: 'Nope' }),
+    { params: Promise.resolve({ id: KEY1, moduleId: 'mod-1' }) },
   );
   assert.equal(others.status, 403);
 
   __setTestSession(INST1);
   const own = await instructorLessons.POST(
-    jsonReq('http://localhost/api/instructor/courses/course-1/modules/mod-1/lessons', 'POST', { title: 'L2' }),
-    { params: Promise.resolve({ id: 'course-1', moduleId: 'mod-1' }) },
+    jsonReq(`http://localhost/api/instructor/courses/${KEY1}/modules/mod-1/lessons`, 'POST', { title: 'L2' }),
+    { params: Promise.resolve({ id: KEY1, moduleId: 'mod-1' }) },
   );
   assert.equal(own.status, 201);
   assert.equal((await own.json()).lesson.title, 'L2');

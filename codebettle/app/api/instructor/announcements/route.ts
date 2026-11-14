@@ -2,16 +2,18 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { assertNotViewAs, invalidBody, readJson, requireRoles } from '@/lib/api-helpers';
 import { createAnnouncement } from '@/lib/db/announcements';
-import { getCourseById } from '@/lib/db/courses';
+import { getCourseByUrlKey } from '@/lib/db/courses';
 import { onAnnouncementPublished } from '@/lib/services/notification-service';
 
 /**
  * POST /api/instructor/announcements — an instructor posts a course
  * announcement (Phase 7; the instructor page used to fake it).
- * Body: { title, content, courseId }. The course must exist AND belong
- * to the instructor — an instructor can only announce to their own
- * courses. The notification hook fires after creation (enrolled
- * students are notified), best-effort like the admin route.
+ * Body: { title, content, courseId }. The courseId is the course's
+ * urlKey (opaque instructor-portal key), never its raw id: a raw id
+ * 404s here. The course must exist AND belong to the instructor — an
+ * instructor can only announce to their own courses. The notification
+ * hook fires after creation (enrolled students are notified),
+ * best-effort like the admin route.
  */
 const instructorAnnouncementSchema = z.object({
   title: z.string().trim().min(1),
@@ -37,9 +39,9 @@ export async function POST(request: NextRequest) {
     // nothing to check ownership against, so the full schema validation
     // (400) runs instead.
     const rawCourseId = (body as { courseId?: unknown } | null)?.courseId;
-    let course: Awaited<ReturnType<typeof getCourseById>> = null;
+    let course: Awaited<ReturnType<typeof getCourseByUrlKey>> = null;
     if (typeof rawCourseId === 'string' && rawCourseId) {
-      course = await getCourseById(rawCourseId);
+      course = await getCourseByUrlKey(rawCourseId);
       if (!course) return NextResponse.json({ error: 'Course not found' }, { status: 404 });
       if (course.instructorId !== auth.session.id) {
         return NextResponse.json({ error: 'You can only announce to your own courses' }, { status: 403 });
@@ -51,14 +53,14 @@ export async function POST(request: NextRequest) {
     // A valid parse always carries a courseId, so the pre-check above
     // already loaded it; re-fetch only if it was somehow skipped.
     if (!course) {
-      course = await getCourseById(courseId);
+      course = await getCourseByUrlKey(courseId);
       if (!course) return NextResponse.json({ error: 'Course not found' }, { status: 404 });
     }
     const announcement = await createAnnouncement({
       title,
       content,
       type: 'course',
-      courseId,
+      courseId: course.id,
       authorId: auth.session.id,
     });
     try {

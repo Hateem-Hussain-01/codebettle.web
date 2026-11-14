@@ -272,7 +272,11 @@ export async function onEnrollmentCreatedForInstructor(
       event: 'enrollment',
       title: `New enrollment from ${studentName}`,
       body: `New enrollment from ${studentName} in ${course.title}${batchLabel}.`,
-      linkUrl: `/instructor/courses/${course.id}`,
+      // SECURITY (opaque course key): the link carries the urlKey, never
+      // the raw course id. Before the urlKey migration runs the course
+      // has no key — then no link is sent (rather than a dead raw-id
+      // link that would 404).
+      linkUrl: course.urlKey ? `/instructor/courses/${course.urlKey}` : undefined,
     });
   } catch (error) {
     return failure(error, 'onEnrollmentCreatedForInstructor');

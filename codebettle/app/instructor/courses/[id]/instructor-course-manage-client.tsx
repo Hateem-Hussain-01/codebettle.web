@@ -75,7 +75,12 @@ export default function InstructorCourseManageClient({ course, enrolledStudents,
   const totalSessions = modules.reduce((a, m) => a + m.lessons.length, 0);
   const uploadedCount = Object.values(recordings).filter(Boolean).length;
 
-  const apiBase = `/api/instructor/courses/${course.id}`;
+  // SECURITY (opaque course key): instructor API calls carry the
+  // urlKey, never the raw course id. The page only renders this client
+  // after resolving the course by its urlKey, so course.urlKey is set
+  // here; the '' fallback fails closed (every call 404s) if it somehow
+  // is not — a raw id is never sent.
+  const apiBase = `/api/instructor/courses/${course.urlKey ?? ''}`;
 
   async function api(path: string, method: string, body?: Record<string, unknown>): Promise<{ ok: boolean; data: any }> {
     const res = await fetch(path, {

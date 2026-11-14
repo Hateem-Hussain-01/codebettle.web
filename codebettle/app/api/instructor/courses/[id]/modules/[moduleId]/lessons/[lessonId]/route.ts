@@ -1,10 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { assertNotViewAs, invalidBody, readJson, requireRoles, serviceError } from '@/lib/api-helpers';
 import { lessonUpdateSchema } from '@/lib/api-schemas';
-import { deleteLessonService, loadCourseForEdit, updateLessonService } from '@/lib/services/course-service';
+import { deleteLessonService, loadCourseForEditByUrlKey, updateLessonService } from '@/lib/services/course-service';
 
 /**
  * PATCH/DELETE /api/instructor/courses/[id]/modules/[moduleId]/lessons/[lessonId] — your own course only.
+ * The [id] path param is the course's urlKey (opaque instructor-portal
+ * key), never its raw id: a raw id 404s here.
  *
  * INST-03: the ownership check runs BEFORE body validation — an
  * instructor PATCHing a lesson in someone else's course gets 403 even
@@ -20,7 +22,7 @@ export async function PATCH(
   if (viewing) return viewing;
   const { id, moduleId, lessonId } = await params;
 
-  const allowed = await loadCourseForEdit(auth.session, id);
+  const allowed = await loadCourseForEditByUrlKey(auth.session, id);
   if ('error' in allowed) return serviceError(allowed);
   const body = await readJson(request);
   if (body === null) return invalidBody();
@@ -31,7 +33,7 @@ export async function PATCH(
   if (Object.keys(parsed.data).length === 0) {
     return NextResponse.json({ error: 'Nothing to update' }, { status: 400 });
   }
-  const result = await updateLessonService(auth.session, id, moduleId, lessonId, parsed.data);
+  const result = await updateLessonService(auth.session, allowed.course.id, moduleId, lessonId, parsed.data);
   if ('error' in result) return serviceError(result);
   return NextResponse.json({ lesson: result.lesson });
 }
@@ -46,7 +48,9 @@ export async function DELETE(
   if (viewing) return viewing;
   const { id, moduleId, lessonId } = await params;
 
-  const result = await deleteLessonService(auth.session, id, moduleId, lessonId);
+  const allowed = await loadCourseForEditByUrlKey(auth.session, id);
+  if ('error' in allowed) return serviceError(allowed);
+  const result = await deleteLessonService(auth.session, allowed.course.id, moduleId, lessonId);
   if ('error' in result) return serviceError(result);
   return NextResponse.json({ success: true });
 }
