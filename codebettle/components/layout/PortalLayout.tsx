@@ -185,20 +185,27 @@ export default function PortalLayout({ user, navItems, children, portalName, adm
 
       {/* Main content */}
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
-        {/* Back button (PR #33): fixed chip below the portal header and,
-            on desktop, beside the 16rem sidebar. On a portal dashboard
-            it goes back to the previous page (or home when there is no
-            history). */}
-        <BackButton className="top-[4.5rem] left-4 lg:left-[17rem]" />
         {/* Top bar — relative z-20 so the ThemeToggle / UserMenu dropdowns
             (absolute, z-50 inside this header's stacking context) paint
             ABOVE the <main> content below. Without it the header's
             backdrop-blur stacking context (z-auto) paints in DOM order
             and <main> — which comes after it — covers the open menu. */}
         <header className="relative z-20 h-14 flex items-center justify-between px-4 sm:px-6 border-b border-dark-border bg-dark-card/50 backdrop-blur-sm flex-shrink-0">
-          <button onClick={() => setSidebarOpen(true)} aria-label="Open menu" className="lg:hidden text-muted hover:text-foreground p-1 rounded cursor-pointer">
-            <Menu className="w-5 h-5" />
-          </button>
+          <div className="flex items-center gap-2">
+            {/* Back button (PR #33, alignment fix 14 Nov 2026): in-flow
+                in the header, left side, next to the mobile menu
+                button. It used to be a fixed chip at top-[4.5rem]
+                floating over the content — 72px, right where the
+                page heading starts (header h-14 + content p-4/p-6),
+                so it covered every portal page's title. In the
+                header it is always visible, never overlaps a heading,
+                and works on every portal page (admin / student /
+                instructor). */}
+            <BackButton inline />
+            <button onClick={() => setSidebarOpen(true)} aria-label="Open menu" className="lg:hidden text-muted hover:text-foreground p-1 rounded cursor-pointer">
+              <Menu className="w-5 h-5" />
+            </button>
+          </div>
           <div className="flex-1 lg:flex-none" />
           <div className="flex items-center gap-3">
             {/* Module 17 — portal switcher. Rendered only when the user

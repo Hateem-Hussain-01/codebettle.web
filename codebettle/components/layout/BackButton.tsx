@@ -8,21 +8,28 @@ import { cn } from '@/lib/utils';
 /**
  * Small back button, shown on every page (PR #33).
  *
- * Unobtrusive (small, top-left, dark + gold) and layout-safe: it is a
- * fixed-position chip that floats above the content instead of taking
- * a row in any page layout, so it cannot break existing pages. Goes
+ * Unobtrusive (small, top-left, dark + gold) and layout-safe. Goes
  * back in history when there is one; on a page with no history (e.g.
  * the home page opened directly) it goes home instead of doing
  * nothing. Hidden on the home page itself — there is nothing to go
  * back to there.
  *
- * Positioning is passed in by the layout that mounts it, because
- * public pages and portal pages have different chrome: public pages
- * sit under the sticky navbar (top-20), portal pages under the
- * portal header and — on desktop — beside the 16rem sidebar
- * (lg:left-[17rem]).
+ * Two mountings (the layouts have different chrome):
+ * - Fixed chip (default): `fixed` above the content, positioned by
+ *   `className` (default `top-20 left-4`). Used on public pages,
+ *   which sit under the sticky navbar — their headings start far
+ *   below the chip (main pt-16 + hero py-16/20), so it cannot cover
+ *   a title.
+ * - Inline (`inline` prop): in-flow, no `fixed` positioning, for the
+ *   portal header. The portal used to mount the fixed chip at
+ *   top-[4.5rem] — 72px — but the portal header is only h-14 (56px)
+ *   and the content starts at p-4/p-6, so the chip sat right on top
+ *   of every page heading (Eman, 14 Nov 2026: the "← Back" chip
+ *   covered the "Quizzes" title on every admin/student page). In
+ *   the header it is always visible, never covers a heading, and
+ *   works on every portal page.
  */
-export default function BackButton({ className }: { className?: string }) {
+export default function BackButton({ className, inline = false }: { className?: string; inline?: boolean }) {
   const router = useRouter();
   const pathname = usePathname();
   const [canGoBack, setCanGoBack] = useState(false);
@@ -47,8 +54,13 @@ export default function BackButton({ className }: { className?: string }) {
       aria-label="Go back"
       title="Go back"
       className={cn(
-        'fixed z-40 inline-flex items-center gap-1.5 rounded-full border border-dark-border bg-dark-card/90 px-3 py-1.5 text-xs font-semibold text-muted shadow-lg backdrop-blur transition-colors hover:text-primary-text hover:border-primary/50',
-        className ?? 'top-20 left-4',
+        'inline-flex items-center gap-1.5 rounded-full border border-dark-border bg-dark-card/90 px-3 py-1.5 text-xs font-semibold text-muted shadow-lg backdrop-blur transition-colors hover:text-primary-text hover:border-primary/50',
+        // Exactly one positioning mode: inline is in-flow (portal
+        // header), the default is the fixed chip (public pages).
+        // cn() is a plain join (lib/utils.ts) — never emit both
+        // `fixed` and `relative` or the winner is CSS-order luck.
+        inline ? 'relative shrink-0' : cn('fixed z-40', className ?? 'top-20 left-4'),
+        inline && className,
       )}
     >
       <ArrowLeft className="w-3.5 h-3.5" />
