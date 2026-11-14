@@ -24,6 +24,14 @@
       "model": "ApplicationStageHistory",
       "namespace": "public"
     },
+    "Assignment": {
+      "model": "Assignment",
+      "namespace": "public"
+    },
+    "AssignmentSubmission": {
+      "model": "AssignmentSubmission",
+      "namespace": "public"
+    },
     "AuditLog": {
       "model": "AuditLog",
       "namespace": "public"
@@ -540,6 +548,23 @@
               {
                 "name": "admin",
                 "value": "admin"
+              }
+            ]
+          },
+          "SubmissionStatus": {
+            "codecId": "pg/text@1",
+            "members": [
+              {
+                "name": "submitted",
+                "value": "submitted"
+              },
+              {
+                "name": "graded",
+                "value": "graded"
+              },
+              {
+                "name": "late",
+                "value": "late"
               }
             ]
           },
@@ -1213,6 +1238,388 @@
               "table": "ApplicationStageHistory"
             }
           },
+          "Assignment": {
+            "fields": {
+              "batchId": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "courseId": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "createdAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "precision": 3
+                  }
+                }
+              },
+              "createdBy": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "description": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "dueDate": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "precision": 3
+                  }
+                }
+              },
+              "id": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "maxMarks": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
+              "title": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "updatedAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "precision": 3
+                  }
+                }
+              }
+            },
+            "relations": {
+              "batch": {
+                "cardinality": "N:1",
+                "nullable": true,
+                "on": {
+                  "localFields": [
+                    "batchId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "Batch",
+                  "namespace": "public"
+                }
+              },
+              "course": {
+                "cardinality": "N:1",
+                "nullable": false,
+                "on": {
+                  "localFields": [
+                    "courseId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "Course",
+                  "namespace": "public"
+                }
+              },
+              "creator": {
+                "cardinality": "N:1",
+                "nullable": false,
+                "on": {
+                  "localFields": [
+                    "createdBy"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "User",
+                  "namespace": "public"
+                }
+              },
+              "submissions": {
+                "cardinality": "1:N",
+                "on": {
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "assignmentId"
+                  ]
+                },
+                "to": {
+                  "model": "AssignmentSubmission",
+                  "namespace": "public"
+                }
+              }
+            },
+            "storage": {
+              "fields": {
+                "batchId": {
+                  "column": "batchId"
+                },
+                "courseId": {
+                  "column": "courseId"
+                },
+                "createdAt": {
+                  "column": "createdAt"
+                },
+                "createdBy": {
+                  "column": "createdBy"
+                },
+                "description": {
+                  "column": "description"
+                },
+                "dueDate": {
+                  "column": "dueDate"
+                },
+                "id": {
+                  "column": "id"
+                },
+                "maxMarks": {
+                  "column": "maxMarks"
+                },
+                "title": {
+                  "column": "title"
+                },
+                "updatedAt": {
+                  "column": "updatedAt"
+                }
+              },
+              "namespaceId": "public",
+              "table": "Assignment"
+            }
+          },
+          "AssignmentSubmission": {
+            "fields": {
+              "assignmentId": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "colabUrl": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "createdAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "precision": 3
+                  }
+                }
+              },
+              "feedback": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "gradedAt": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "precision": 3
+                  }
+                }
+              },
+              "gradedBy": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "id": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "marks": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
+              "status": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                },
+                "valueSet": {
+                  "entityKind": "enum",
+                  "entityName": "SubmissionStatus",
+                  "namespaceId": "public",
+                  "plane": "domain"
+                }
+              },
+              "studentId": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "submittedAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "precision": 3
+                  }
+                }
+              },
+              "updatedAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "precision": 3
+                  }
+                }
+              }
+            },
+            "relations": {
+              "assignment": {
+                "cardinality": "N:1",
+                "nullable": false,
+                "on": {
+                  "localFields": [
+                    "assignmentId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "Assignment",
+                  "namespace": "public"
+                }
+              },
+              "grader": {
+                "cardinality": "N:1",
+                "nullable": true,
+                "on": {
+                  "localFields": [
+                    "gradedBy"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "User",
+                  "namespace": "public"
+                }
+              },
+              "student": {
+                "cardinality": "N:1",
+                "nullable": false,
+                "on": {
+                  "localFields": [
+                    "studentId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "User",
+                  "namespace": "public"
+                }
+              }
+            },
+            "storage": {
+              "fields": {
+                "assignmentId": {
+                  "column": "assignmentId"
+                },
+                "colabUrl": {
+                  "column": "colabUrl"
+                },
+                "createdAt": {
+                  "column": "createdAt"
+                },
+                "feedback": {
+                  "column": "feedback"
+                },
+                "gradedAt": {
+                  "column": "gradedAt"
+                },
+                "gradedBy": {
+                  "column": "gradedBy"
+                },
+                "id": {
+                  "column": "id"
+                },
+                "marks": {
+                  "column": "marks"
+                },
+                "status": {
+                  "column": "status"
+                },
+                "studentId": {
+                  "column": "studentId"
+                },
+                "submittedAt": {
+                  "column": "submittedAt"
+                },
+                "updatedAt": {
+                  "column": "updatedAt"
+                }
+              },
+              "namespaceId": "public",
+              "table": "AssignmentSubmission"
+            }
+          },
           "AuditLog": {
             "fields": {
               "action": {
@@ -1416,6 +1823,21 @@
               }
             },
             "relations": {
+              "assignments": {
+                "cardinality": "1:N",
+                "on": {
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "batchId"
+                  ]
+                },
+                "to": {
+                  "model": "Assignment",
+                  "namespace": "public"
+                }
+              },
               "course": {
                 "cardinality": "N:1",
                 "nullable": false,
@@ -2584,6 +3006,21 @@
                 },
                 "to": {
                   "model": "Announcement",
+                  "namespace": "public"
+                }
+              },
+              "assignments": {
+                "cardinality": "1:N",
+                "on": {
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "courseId"
+                  ]
+                },
+                "to": {
+                  "model": "Assignment",
                   "namespace": "public"
                 }
               },
@@ -8623,6 +9060,21 @@
                   "namespace": "public"
                 }
               },
+              "assignmentSubmissions": {
+                "cardinality": "1:N",
+                "on": {
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "studentId"
+                  ]
+                },
+                "to": {
+                  "model": "AssignmentSubmission",
+                  "namespace": "public"
+                }
+              },
               "auditLogs": {
                 "cardinality": "1:N",
                 "on": {
@@ -8698,6 +9150,21 @@
                   "namespace": "public"
                 }
               },
+              "createdAssignments": {
+                "cardinality": "1:N",
+                "on": {
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "createdBy"
+                  ]
+                },
+                "to": {
+                  "model": "Assignment",
+                  "namespace": "public"
+                }
+              },
               "createdForms": {
                 "cardinality": "1:N",
                 "on": {
@@ -8770,6 +9237,21 @@
                 },
                 "to": {
                   "model": "FormSubmission",
+                  "namespace": "public"
+                }
+              },
+              "gradedSubmissions": {
+                "cardinality": "1:N",
+                "on": {
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "gradedBy"
+                  ]
+                },
+                "to": {
+                  "model": "AssignmentSubmission",
                   "namespace": "public"
                 }
               },
@@ -9747,6 +10229,363 @@
                 ]
               },
               "uniques": []
+            },
+            "Assignment": {
+              "columns": {
+                "batchId": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": true
+                },
+                "courseId": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                },
+                "createdAt": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "dataType": "pg/timestamptz",
+                  "default": {
+                    "expression": "now()",
+                    "kind": "function"
+                  },
+                  "nullable": false,
+                  "typeParams": {
+                    "precision": 3
+                  }
+                },
+                "createdBy": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                },
+                "description": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                },
+                "dueDate": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "dataType": "pg/timestamptz",
+                  "nullable": true,
+                  "typeParams": {
+                    "precision": 3
+                  }
+                },
+                "id": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                },
+                "maxMarks": {
+                  "codecId": "pg/int4@1",
+                  "dataType": "pg/int4",
+                  "nullable": false
+                },
+                "title": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                },
+                "updatedAt": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "dataType": "pg/timestamptz",
+                  "nullable": false,
+                  "typeParams": {
+                    "precision": 3
+                  }
+                }
+              },
+              "foreignKeys": [
+                {
+                  "index": {
+                    "name": "Assignment_courseId_idx_12f72d2a"
+                  },
+                  "source": {
+                    "columns": [
+                      "courseId"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "Assignment"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "Course"
+                  }
+                },
+                {
+                  "index": {
+                    "name": "Assignment_batchId_idx_84d4b0b9"
+                  },
+                  "source": {
+                    "columns": [
+                      "batchId"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "Assignment"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "Batch"
+                  }
+                },
+                {
+                  "index": {
+                    "name": "Assignment_createdBy_idx_ba0f792f"
+                  },
+                  "source": {
+                    "columns": [
+                      "createdBy"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "Assignment"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "User"
+                  }
+                }
+              ],
+              "indexes": [
+                {
+                  "columns": [
+                    "batchId"
+                  ],
+                  "name": "Assignment_batchId_idx_84d4b0b9",
+                  "prefix": "Assignment_batchId_idx",
+                  "unique": false
+                },
+                {
+                  "columns": [
+                    "courseId"
+                  ],
+                  "name": "Assignment_courseId_idx_12f72d2a",
+                  "prefix": "Assignment_courseId_idx",
+                  "unique": false
+                },
+                {
+                  "columns": [
+                    "createdBy"
+                  ],
+                  "name": "Assignment_createdBy_idx_ba0f792f",
+                  "prefix": "Assignment_createdBy_idx",
+                  "unique": false
+                }
+              ],
+              "primaryKey": {
+                "columns": [
+                  "id"
+                ]
+              },
+              "uniques": []
+            },
+            "AssignmentSubmission": {
+              "checks": [
+                {
+                  "expression": "\"status\" IN ('submitted', 'graded', 'late')",
+                  "name": "AssignmentSubmission_status_check_05f9290c",
+                  "prefix": "AssignmentSubmission_status_check"
+                }
+              ],
+              "columns": {
+                "assignmentId": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                },
+                "colabUrl": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                },
+                "createdAt": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "dataType": "pg/timestamptz",
+                  "default": {
+                    "expression": "now()",
+                    "kind": "function"
+                  },
+                  "nullable": false,
+                  "typeParams": {
+                    "precision": 3
+                  }
+                },
+                "feedback": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": true
+                },
+                "gradedAt": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "dataType": "pg/timestamptz",
+                  "nullable": true,
+                  "typeParams": {
+                    "precision": 3
+                  }
+                },
+                "gradedBy": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": true
+                },
+                "id": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                },
+                "marks": {
+                  "codecId": "pg/int4@1",
+                  "dataType": "pg/int4",
+                  "nullable": true
+                },
+                "status": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "default": {
+                    "kind": "literal",
+                    "value": "submitted"
+                  },
+                  "nullable": false,
+                  "valueSet": {
+                    "entityKind": "valueSet",
+                    "entityName": "SubmissionStatus",
+                    "namespaceId": "public",
+                    "plane": "storage"
+                  }
+                },
+                "studentId": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                },
+                "submittedAt": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "dataType": "pg/timestamptz",
+                  "default": {
+                    "expression": "now()",
+                    "kind": "function"
+                  },
+                  "nullable": false,
+                  "typeParams": {
+                    "precision": 3
+                  }
+                },
+                "updatedAt": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "dataType": "pg/timestamptz",
+                  "nullable": false,
+                  "typeParams": {
+                    "precision": 3
+                  }
+                }
+              },
+              "foreignKeys": [
+                {
+                  "index": {
+                    "name": "AssignmentSubmission_assignmentId_idx_8cfb4ac4"
+                  },
+                  "source": {
+                    "columns": [
+                      "assignmentId"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "AssignmentSubmission"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "Assignment"
+                  }
+                },
+                {
+                  "index": {
+                    "name": "AssignmentSubmission_studentId_idx_bf255322"
+                  },
+                  "source": {
+                    "columns": [
+                      "studentId"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "AssignmentSubmission"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "User"
+                  }
+                },
+                {
+                  "index": {
+                    "name": "AssignmentSubmission_gradedBy_idx_142121bc"
+                  },
+                  "source": {
+                    "columns": [
+                      "gradedBy"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "AssignmentSubmission"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "User"
+                  }
+                }
+              ],
+              "indexes": [
+                {
+                  "columns": [
+                    "assignmentId"
+                  ],
+                  "name": "AssignmentSubmission_assignmentId_idx_8cfb4ac4",
+                  "prefix": "AssignmentSubmission_assignmentId_idx",
+                  "unique": false
+                },
+                {
+                  "columns": [
+                    "gradedBy"
+                  ],
+                  "name": "AssignmentSubmission_gradedBy_idx_142121bc",
+                  "prefix": "AssignmentSubmission_gradedBy_idx",
+                  "unique": false
+                },
+                {
+                  "columns": [
+                    "studentId"
+                  ],
+                  "name": "AssignmentSubmission_studentId_idx_bf255322",
+                  "prefix": "AssignmentSubmission_studentId_idx",
+                  "unique": false
+                }
+              ],
+              "primaryKey": {
+                "columns": [
+                  "id"
+                ]
+              },
+              "uniques": [
+                {
+                  "columns": [
+                    "assignmentId",
+                    "studentId"
+                  ]
+                }
+              ]
             },
             "AuditLog": {
               "columns": {
@@ -16117,6 +16956,14 @@
                 "admin"
               ]
             },
+            "SubmissionStatus": {
+              "kind": "valueSet",
+              "values": [
+                "submitted",
+                "graded",
+                "late"
+              ]
+            },
             "SuccessStoryStatus": {
               "kind": "valueSet",
               "values": [
@@ -16139,10 +16986,10 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "30f6fc41b6cfd0b75e303345a6e5dfa16fd974c44c6b63588b55e901fc3f3d1c"
+    "storageHash": "1e54b8fab5c36897213d5679375b2db6485649eb6ade4414cc4a76e551bee58a"
   },
   "execution": {
-    "executionHash": "1c8dffdb66de9cbe9342b040ec511e58f7f0fafeae478bfdef84c747ef401fc2",
+    "executionHash": "cbdbddafb02eba614db1beb6011e6428dfa6ec26a5d9f23e406c931ba4a05849",
     "mutations": {
       "defaults": [
         {
@@ -16309,6 +17156,112 @@
           "ref": {
             "entry": "ApplicationStageHistory",
             "field": "id",
+            "namespace": "public"
+          }
+        },
+        {
+          "onCreate": {
+            "id": "timestampNow",
+            "kind": "generator",
+            "params": {
+              "precision": 3
+            }
+          },
+          "ref": {
+            "entry": "Assignment",
+            "field": "createdAt",
+            "namespace": "public"
+          }
+        },
+        {
+          "onCreate": {
+            "id": "cuid2",
+            "kind": "generator"
+          },
+          "ref": {
+            "entry": "Assignment",
+            "field": "id",
+            "namespace": "public"
+          }
+        },
+        {
+          "onCreate": {
+            "id": "timestampNow",
+            "kind": "generator",
+            "params": {
+              "precision": 3
+            }
+          },
+          "onUpdate": {
+            "id": "timestampNow",
+            "kind": "generator",
+            "params": {
+              "precision": 3
+            }
+          },
+          "ref": {
+            "entry": "Assignment",
+            "field": "updatedAt",
+            "namespace": "public"
+          }
+        },
+        {
+          "onCreate": {
+            "id": "timestampNow",
+            "kind": "generator",
+            "params": {
+              "precision": 3
+            }
+          },
+          "ref": {
+            "entry": "AssignmentSubmission",
+            "field": "createdAt",
+            "namespace": "public"
+          }
+        },
+        {
+          "onCreate": {
+            "id": "cuid2",
+            "kind": "generator"
+          },
+          "ref": {
+            "entry": "AssignmentSubmission",
+            "field": "id",
+            "namespace": "public"
+          }
+        },
+        {
+          "onCreate": {
+            "id": "timestampNow",
+            "kind": "generator",
+            "params": {
+              "precision": 3
+            }
+          },
+          "ref": {
+            "entry": "AssignmentSubmission",
+            "field": "submittedAt",
+            "namespace": "public"
+          }
+        },
+        {
+          "onCreate": {
+            "id": "timestampNow",
+            "kind": "generator",
+            "params": {
+              "precision": 3
+            }
+          },
+          "onUpdate": {
+            "id": "timestampNow",
+            "kind": "generator",
+            "params": {
+              "precision": 3
+            }
+          },
+          "ref": {
+            "entry": "AssignmentSubmission",
+            "field": "updatedAt",
             "namespace": "public"
           }
         },

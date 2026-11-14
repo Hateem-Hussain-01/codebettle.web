@@ -3,12 +3,13 @@ import { getSession } from '@/lib/auth';
 import { getAdminBasePath } from '@/lib/admin-url';
 import PortalLayout from '@/components/layout/PortalLayout';
 import TeacherMessagePopup from '@/components/notifications/TeacherMessagePopup';
-import { LayoutDashboard, BookOpen, Award, StickyNote, Heart, Star, Bell, User, FileQuestion, LifeBuoy } from 'lucide-react';
+import { LayoutDashboard, BookOpen, Award, StickyNote, Heart, Star, Bell, User, FileQuestion, LifeBuoy, ClipboardList } from 'lucide-react';
 
 const NAV_ITEMS = [
   { href: '/student/dashboard', label: 'Dashboard', icon: <LayoutDashboard className="w-5 h-5" /> },
   { href: '/student/courses', label: 'My Courses', icon: <BookOpen className="w-5 h-5" /> },
   { href: '/student/quizzes', label: 'Quizzes', icon: <FileQuestion className="w-5 h-5" /> },
+  { href: '/student/assignments', label: 'Assignments', icon: <ClipboardList className="w-5 h-5" /> },
   { href: '/student/certificates', label: 'Certificates', icon: <Award className="w-5 h-5" /> },
   { href: '/student/notes', label: 'My Notes', icon: <StickyNote className="w-5 h-5" /> },
   { href: '/student/wishlist', label: 'Wishlist', icon: <Heart className="w-5 h-5" /> },

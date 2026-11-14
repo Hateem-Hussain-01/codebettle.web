@@ -61,18 +61,18 @@ test.afterEach(() => {
 // Pure helpers
 // ---------------------------------------------------------------------------
 
-test('survey: the checkbox list covers all 28 admin areas, in sidebar order', () => {
+test('survey: the checkbox list covers all 29 admin areas, in sidebar order', () => {
   assert.deepEqual(
     ADMIN_AREAS.map((a) => a.key),
     [
-      'dashboard', 'courses', 'students', 'instructors', 'enrollments',
+      'dashboard', 'courses', 'students', 'instructors', 'enrollments', 'assignments',
       'coupons', 'announcements', 'messages', 'requests', 'notifications', 'communications', 'blog',
       'content', 'reports', 'certificates', 'applications', 'forms', 'success-stories',
       'success-stories-management', 'reviews', 'email-templates', 'navbar-editor',
       'book-a-call', 'ambassadors', 'subscribers', 'links-page', 'settings', 'page-builder',
     ],
   );
-  assert.equal(new Set(ADMIN_AREAS.map((a) => a.key)).size, 28);
+  assert.equal(new Set(ADMIN_AREAS.map((a) => a.key)).size, 29);
   // Page Builder is its own section, LAST in the sidebar (Eman's instruction).
   assert.equal(ADMIN_AREAS[ADMIN_AREAS.length - 1]?.key, 'page-builder');
   assert.equal(ADMIN_AREAS[ADMIN_AREAS.length - 1]?.href, '/admin/page-builder');

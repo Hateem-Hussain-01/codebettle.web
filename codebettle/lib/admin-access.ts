@@ -39,6 +39,7 @@ export type AdminAreaKey =
   | 'students'
   | 'instructors'
   | 'enrollments'
+  | 'assignments'
   | 'coupons'
   | 'announcements'
   | 'messages'
@@ -76,6 +77,12 @@ export const ADMIN_AREAS: readonly AdminArea[] = [
   { key: 'students', label: 'Students', href: '/admin/students', description: 'Student list and profiles, including CSV import' },
   { key: 'instructors', label: 'Instructors', href: '/admin/instructors', description: 'Instructor list and profiles' },
   { key: 'enrollments', label: 'Enrollments', href: '/admin/enrollments', description: 'Enrolments, payments and completion' },
+  // Assignments & Grading: teacher-set assignments with Google Colab
+  // link submissions (never files) and marks + feedback. A NEW area
+  // (not folded into 'courses') because submissions are student work
+  // with their own grading workflow. Restricted admins do NOT get it
+  // by default (secure default: missing keys are denied).
+  { key: 'assignments', label: 'Assignments', href: '/admin/assignments', description: 'Course assignments and Colab link submissions (grade, view marks/feedback)' },
   { key: 'coupons', label: 'Coupon Codes', href: '/admin/coupons', description: 'Discount coupon codes' },
   { key: 'announcements', label: 'Announcements', href: '/admin/announcements', description: 'Site-wide and course announcements' },
   { key: 'messages', label: 'Messages', href: '/admin/messages', description: 'Contact messages from visitors' },

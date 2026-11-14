@@ -85,6 +85,8 @@ const NULLABLE_FIELDS: Record<string, string[]> = {
   Subscriber: [],
   BookACall: ['phone', 'courseInterest', 'preferredContact'],
   AmbassadorApplication: [],
+  Assignment: ['batchId', 'dueDate'],
+  AssignmentSubmission: ['marks', 'feedback', 'gradedAt', 'gradedBy'],
 };
 
 let idCounter = 0;

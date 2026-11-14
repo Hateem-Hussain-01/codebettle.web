@@ -677,6 +677,73 @@ export interface Link {
   updatedAt: string;
 }
 
+/** Assignment status for a submission: 'late' when submitted after the due date, 'graded' once the teacher marks it. */
+export type SubmissionStatus = 'submitted' | 'graded' | 'late';
+
+/**
+ * An assignment set by a teacher for a course (optionally one batch).
+ * Submissions are Google Colab LINKS only — never files.
+ */
+export interface Assignment {
+  id: string;
+  courseId: string;
+  /** Course title, joined by the repository when it loads assignments. */
+  courseTitle?: string;
+  batchId: string | null;
+  /** Batch label (e.g. "BATCH-8"), joined when the assignment is batch-scoped. */
+  batchLabel?: string | null;
+  title: string;
+  description: string;
+  /** ISO date string, or null when there is no due date. */
+  dueDate: string | null;
+  maxMarks: number;
+  createdBy: string;
+  /** Teacher name, joined by the repository when it loads assignments. */
+  creatorName?: string;
+  createdAt: string;
+  updatedAt: string;
+  /** Number of submissions, joined by the repository when it loads assignments. */
+  submissionCount?: number;
+  /** Number of graded submissions, joined by the repository when it loads assignments. */
+  gradedCount?: number;
+}
+
+/**
+ * One student's submission for an assignment: a Google Colab link.
+ * `isLate` is computed from submittedAt vs the assignment's due date
+ * so the UI can show the late flag even after grading (when the
+ * status becomes 'graded').
+ */
+export interface AssignmentSubmission {
+  id: string;
+  assignmentId: string;
+  /** Assignment title, joined by the repository when it loads submissions. */
+  assignmentTitle?: string;
+  /** Max marks of the assignment, joined by the repository when it loads submissions. */
+  maxMarks?: number;
+  /** Due date of the assignment (ISO string), joined for the late flag. */
+  dueDate?: string | null;
+  studentId: string;
+  /** Student name, joined by the repository when it loads submissions. */
+  studentName?: string;
+  /** Student email, joined by the repository when it loads submissions. */
+  studentEmail?: string;
+  /** Google Colab notebook link (colab.research.google.com). */
+  colabUrl: string;
+  submittedAt: string;
+  status: SubmissionStatus;
+  /** True when submitted after the due date (computed, also true on graded late submissions). */
+  isLate: boolean;
+  marks: number | null;
+  feedback: string | null;
+  gradedAt: string | null;
+  gradedBy: string | null;
+  /** Teacher name who graded, joined by the repository when it loads submissions. */
+  graderName?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
 /** An instructor application from the become-instructor form. */
 export interface InstructorApplication {
   id: string;
@@ -1995,6 +2062,36 @@ export type PageRow = Pick<
   | 'slug'
   | 'status'
   | 'blocks'
+  | 'createdAt'
+  | 'updatedAt'
+>;
+
+export type AssignmentRow = Pick<
+  Models.public_Assignment,
+  | 'id'
+  | 'courseId'
+  | 'batchId'
+  | 'title'
+  | 'description'
+  | 'dueDate'
+  | 'maxMarks'
+  | 'createdBy'
+  | 'createdAt'
+  | 'updatedAt'
+>;
+
+export type AssignmentSubmissionRow = Pick<
+  Models.public_AssignmentSubmission,
+  | 'id'
+  | 'assignmentId'
+  | 'studentId'
+  | 'colabUrl'
+  | 'submittedAt'
+  | 'status'
+  | 'marks'
+  | 'feedback'
+  | 'gradedAt'
+  | 'gradedBy'
   | 'createdAt'
   | 'updatedAt'
 >;

@@ -17,6 +17,10 @@ import type {
   AmbassadorApplication,
   AmbassadorApplicationRow,
   AmbassadorApplicationStatus,
+  Assignment,
+  AssignmentRow,
+  AssignmentSubmission,
+  AssignmentSubmissionRow,
   Batch,
   BatchRow,
   BlogPost,
@@ -864,6 +868,43 @@ export function mapLinkRow(row: LinkRow): Link {
     enabled: row.enabled,
     createdAt: dateToString(row.createdAt),
     updatedAt: dateToString(row.updatedAt),
+  };
+}
+
+export function mapAssignmentRow(row: AssignmentRow): Assignment {
+  return {
+    id: row.id,
+    courseId: row.courseId,
+    batchId: row.batchId,
+    title: row.title,
+    description: row.description,
+    dueDate: row.dueDate ? row.dueDate.toISOString() : null,
+    maxMarks: row.maxMarks,
+    createdBy: row.createdBy,
+    createdAt: row.createdAt.toISOString(),
+    updatedAt: row.updatedAt.toISOString(),
+  };
+}
+
+export function mapSubmissionRow(
+  row: AssignmentSubmissionRow,
+  dueDate: Date | null,
+): AssignmentSubmission {
+  const submittedAt = row.submittedAt instanceof Date ? row.submittedAt : new Date(row.submittedAt);
+  return {
+    id: row.id,
+    assignmentId: row.assignmentId,
+    studentId: row.studentId,
+    colabUrl: row.colabUrl,
+    submittedAt: submittedAt.toISOString(),
+    status: row.status as AssignmentSubmission['status'],
+    isLate: dueDate ? submittedAt.getTime() > dueDate.getTime() : false,
+    marks: row.marks,
+    feedback: row.feedback,
+    gradedAt: row.gradedAt ? row.gradedAt.toISOString() : null,
+    gradedBy: row.gradedBy,
+    createdAt: row.createdAt.toISOString(),
+    updatedAt: row.updatedAt.toISOString(),
   };
 }
 
