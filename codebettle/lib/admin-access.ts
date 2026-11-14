@@ -59,6 +59,7 @@ export type AdminAreaKey =
   | 'book-a-call'
   | 'ambassadors'
   | 'subscribers'
+  | 'links-page'
   | 'settings'
   | 'page-builder';
 
@@ -132,6 +133,12 @@ export const ADMIN_AREAS: readonly AdminArea[] = [
   { key: 'book-a-call', label: 'Book a Call', href: '/admin/book-a-call', description: 'Free career-guidance call requests (review, mark contacted/done)' },
   { key: 'ambassadors', label: 'Ambassadors', href: '/admin/ambassadors', description: 'Campus ambassador applications (review, approve/reject)' },
   { key: 'subscribers', label: 'Subscribers', href: '/admin/subscribers', description: 'Newsletter subscribers from the footer' },
+  // Links page (Linktree-style public /links page): link buttons +
+  // contact details, reached only by the direct link sent to clients.
+  // A NEW area (not folded into 'content') because it is a public
+  // page with its own editor + share workflow. Restricted admins do
+  // NOT get it by default (secure default: missing keys are denied).
+  { key: 'links-page', label: 'Links Page', href: '/admin/links-page', description: 'Public Links page for clients (link buttons, contact details, copy/share link)' },
   { key: 'settings', label: 'Settings', href: '/admin/settings', description: 'Site settings' },
   // Page Builder: block-based custom pages (title + slug + blocks,
   // published live at /pages/<slug>). A NEW area, placed LAST in the
@@ -230,7 +237,7 @@ export function areaForAdminPath(pathname: string): AdminAreaKey | 'access' | nu
 /**
  * Normalise a permissions map received from the access UI before saving.
  * - Unknown keys are dropped; non-boolean values are dropped.
- * - All 27 areas true collapses to undefined (full admin), so "grant
+ * - All 28 areas true collapses to undefined (full admin), so "grant
  *   everything" stays a real full admin.
  * - No areas true stays `{}` (restricted admin with nothing granted).
  * Returns undefined for full admin, otherwise the restricted map.

@@ -1164,6 +1164,26 @@ model NavItem {
   @@index([enabled, order])
 }
 
+// One link on the public /links page (Linktree-style, managed from
+// Admin > Links Page). `url` is a site path (e.g. /courses) or a full
+// URL; `icon` is an icon key from LINK_ICON_OPTIONS (lib/links.ts);
+// `order` orders the buttons top to bottom (lower first); `enabled`
+// false hides the button from the public page while keeping it in
+// admin. The /links page itself is NOT in the navbar, footer, sitemap
+// or robots — it is reached only by the direct link sent to clients.
+model Link {
+  id        String   @id @onCreate(cuid(2))
+  label     String
+  url       String
+  icon      String   @default("link")
+  order     Int      @default(0)
+  enabled   Boolean  @default(true)
+  createdAt DateTime @default(now()) @onCreate(now())
+  updatedAt temporal.UpdatedAt
+
+  @@index([enabled, order])
+}
+
 // Newsletter subscribers (footer Subscribe). One row per email; the
 // footer posts to /api/subscribe and the admin Subscribers section
 // lists them. Unsubscribe is a delete.
