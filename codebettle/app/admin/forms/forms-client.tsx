@@ -1,6 +1,7 @@
 'use client';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useAdminUrl } from '@/components/admin/AdminBasePathContext';
 import {
   Plus, Trash2, Eye, EyeOff, Pencil, ListChecks, Inbox, ExternalLink,
 } from 'lucide-react';
@@ -29,6 +30,7 @@ import toast from 'react-hot-toast';
  */
 export default function FormsClient() {
   const router = useRouter();
+  const adminUrl = useAdminUrl();
   const [forms, setForms] = useState<AdminFormListItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -108,7 +110,7 @@ export default function FormsClient() {
       setCreateName('');
       setCreateDescription('');
       setCreateType('General');
-      router.push(`/admin/forms/${created.id}/builder`);
+      router.push(adminUrl(`/forms/${created.id}/builder`));
     } catch {
       toast.error('Could not create the form — check your connection and try again');
     } finally {
@@ -242,14 +244,14 @@ export default function FormsClient() {
                   <tr
                     key={form.id}
                     className="border-b border-dark-border/40 last:border-0 hover:bg-dark-border/10 cursor-pointer"
-                    onClick={() => router.push(`/admin/forms/${form.id}/builder`)}
+                    onClick={() => router.push(adminUrl(`/forms/${form.id}/builder`))}
                   >
                     <td className="py-3 px-4">
                       <button
                         type="button"
                         onClick={(e) => {
                           e.stopPropagation();
-                          router.push(`/admin/forms/${form.id}/submissions`);
+                          router.push(adminUrl(`/forms/${form.id}/submissions`));
                         }}
                         title="View submissions"
                         className="text-foreground text-sm font-medium hover:text-primary-text hover:underline text-left cursor-pointer"
@@ -271,7 +273,7 @@ export default function FormsClient() {
                         type="button"
                         onClick={(e) => {
                           e.stopPropagation();
-                          router.push(`/admin/forms/${form.id}/submissions`);
+                          router.push(adminUrl(`/forms/${form.id}/submissions`));
                         }}
                         title="View submissions"
                         className="text-muted text-xs hover:text-primary-text hover:underline cursor-pointer"
@@ -283,7 +285,7 @@ export default function FormsClient() {
                     <td className="py-3 px-4" onClick={(e) => e.stopPropagation()}>
                       <div className="flex items-center gap-1">
                         <button
-                          onClick={() => router.push(`/admin/forms/${form.id}/builder`)}
+                          onClick={() => router.push(adminUrl(`/forms/${form.id}/builder`))}
                           title="Open builder"
                           className="text-muted hover:text-primary-text p-1 cursor-pointer disabled:opacity-50"
                           disabled={busyId === form.id}
@@ -291,7 +293,7 @@ export default function FormsClient() {
                           <Pencil className="w-4 h-4" />
                         </button>
                         <button
-                          onClick={() => router.push(`/admin/forms/${form.id}/submissions`)}
+                          onClick={() => router.push(adminUrl(`/forms/${form.id}/submissions`))}
                           title="View submissions"
                           className="text-muted hover:text-primary-text p-1 cursor-pointer"
                         >

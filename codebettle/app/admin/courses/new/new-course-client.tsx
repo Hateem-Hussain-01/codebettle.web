@@ -1,6 +1,7 @@
 'use client';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useAdminUrl } from '@/components/admin/AdminBasePathContext';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
 import Textarea from '@/components/ui/Textarea';
@@ -32,6 +33,7 @@ interface NewCourseClientProps {
 
 export default function NewCourseClient({ instructors: allInstructors }: NewCourseClientProps) {
   const router = useRouter();
+  const adminUrl = useAdminUrl();
   const instructors = allInstructors.filter(i => i.status === 'active');
   const [saving, setSaving] = useState(false);
   const [thumbnailUploading, setThumbnailUploading] = useState(false);
@@ -197,7 +199,7 @@ export default function NewCourseClient({ instructors: allInstructors }: NewCour
         ? 'Course published!'
         : 'Course saved as draft — instructor can now add curriculum!');
       if (curriculumFailed) toast.error('Course saved, but some curriculum items could not be saved');
-      router.push(`/admin/courses/${courseId}`);
+      router.push(adminUrl(`/courses/${courseId}`));
     } finally {
       setSaving(false);
     }
@@ -227,7 +229,7 @@ export default function NewCourseClient({ instructors: allInstructors }: NewCour
     <div className="space-y-6 max-w-4xl">
       <FadeIn className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <Link href="/admin/courses"><Button variant="ghost" size="sm"><ArrowLeft className="w-4 h-4" /></Button></Link>
+          <Link href={adminUrl("/courses")}><Button variant="ghost" size="sm"><ArrowLeft className="w-4 h-4" /></Button></Link>
           <div>
             <h1 className="text-2xl font-black text-foreground">Create New Course</h1>
             <p className="text-muted text-sm mt-0.5">Save as draft — instructor will add curriculum, then you publish</p>
@@ -485,7 +487,7 @@ export default function NewCourseClient({ instructors: allInstructors }: NewCour
       </FadeIn>
 
       <div className="flex justify-end gap-3 pb-8">
-        <Link href="/admin/courses"><Button variant="secondary">Cancel</Button></Link>
+        <Link href={adminUrl("/courses")}><Button variant="secondary">Cancel</Button></Link>
         <Button variant="outline" onClick={() => handleSave(false)} loading={saving}><Save className="w-4 h-4" />Save Draft</Button>
         <Button onClick={() => handleSave(true)} loading={saving}>Publish Course</Button>
       </div>

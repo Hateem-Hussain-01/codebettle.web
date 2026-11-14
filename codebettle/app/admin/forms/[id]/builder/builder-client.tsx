@@ -1,6 +1,7 @@
 'use client';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
+import { useAdminUrl } from '@/components/admin/AdminBasePathContext';
 import { useRouter } from 'next/navigation';
 import {
   ArrowLeft, Save, Eye, EyeOff, Trash2, Copy, ChevronUp, ChevronDown,
@@ -203,6 +204,7 @@ function FieldPreview({ field, textColor }: { field: FormField; textColor?: stri
  */
 export default function BuilderClient({ formId }: { formId: string }) {
   const router = useRouter();
+  const adminUrl = useAdminUrl();
   const [form, setForm] = useState<AdminFormDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -569,7 +571,7 @@ export default function BuilderClient({ formId }: { formId: string }) {
         <p className="text-muted text-sm mt-1">{loadError ?? 'Form not found'}</p>
         <div className="mt-4 flex justify-center gap-3">
           <Button variant="secondary" size="sm" onClick={() => void loadForm()}>Try again</Button>
-          <Button variant="secondary" size="sm" onClick={() => router.push('/admin/forms')}>Back to forms</Button>
+          <Button variant="secondary" size="sm" onClick={() => router.push(adminUrl('/forms'))}>Back to forms</Button>
         </div>
       </Card>
     );
@@ -600,7 +602,7 @@ export default function BuilderClient({ formId }: { formId: string }) {
       {/* Top bar */}
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div className="flex items-center gap-3 min-w-0">
-          <Link href="/admin/forms" className="text-muted hover:text-foreground p-1 shrink-0" title="Back to forms">
+          <Link href={adminUrl("/forms")} className="text-muted hover:text-foreground p-1 shrink-0" title="Back to forms">
             <ArrowLeft className="w-5 h-5" />
           </Link>
           <div className="min-w-0">
@@ -613,7 +615,7 @@ export default function BuilderClient({ formId }: { formId: string }) {
         </div>
         <div className="flex items-center gap-2 flex-wrap">
           <Badge variant={status === 'published' ? 'success' : 'muted'}>{formStatusLabel(status)}</Badge>
-          <Button variant="secondary" size="sm" onClick={() => router.push(`/admin/forms/${formId}/submissions`)}>
+          <Button variant="secondary" size="sm" onClick={() => router.push(adminUrl(`/forms/${formId}/submissions`))}>
             <ListChecks className="w-4 h-4" />Submissions
           </Button>
           <Button variant="secondary" size="sm" onClick={openPreview} title="Open the public form in a new tab (admin preview — drafts included)">

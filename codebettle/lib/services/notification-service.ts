@@ -30,6 +30,7 @@ import { getBatchById } from '../db/batches';
 import { getEnrollmentsByCourse } from '../db/enrollments';
 import { createNotification, notificationExistsForAnnouncement } from '../db/notifications';
 import { getAllUsers, getUserById, getUserNotificationPrefs } from '../db/users';
+import { adminUrl } from '../admin-url';
 import type {
   Announcement,
   Certificate,
@@ -722,7 +723,7 @@ export async function onFormSubmissionCreated(
       event: 'form_submission',
       title: `New submission: ${form.name}`,
       body: `A new response was submitted to the “${form.name}” form.${who}`,
-      linkUrl: '/admin/forms',
+      linkUrl: adminUrl('/forms'),
     });
   } catch (error) {
     console.error('[notification-service] onFormSubmissionCreated failed:', error);

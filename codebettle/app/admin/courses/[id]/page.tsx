@@ -1,4 +1,5 @@
 import { notFound } from 'next/navigation';
+import { adminUrl } from '@/lib/admin-url';
 import { getCourseById } from '@/lib/db/courses';
 import { getEnrollmentsByCourse } from '@/lib/db/enrollments';
 import { getInstructors, getUserById } from '@/lib/db/users';
@@ -55,7 +56,7 @@ export default async function AdminCourseDetailPage({ params }: { params: Promis
     <div className="space-y-6 max-w-4xl">
       <FadeIn className="flex items-center justify-between flex-wrap gap-3">
         <div className="flex items-start gap-3">
-          <Link href="/admin/courses"><Button variant="ghost" size="sm">← Back</Button></Link>
+          <Link href={adminUrl("/courses")}><Button variant="ghost" size="sm">← Back</Button></Link>
           <div>
             <h1 className="text-xl font-black text-foreground">{course.title}</h1>
             <div className="flex items-center gap-2 mt-1 flex-wrap">

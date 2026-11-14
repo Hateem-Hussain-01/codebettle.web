@@ -1,6 +1,7 @@
 'use client';
 import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useAdminUrl } from '@/components/admin/AdminBasePathContext';
 import { Plus, Trash2, Pencil, Mail, AlertTriangle, Send } from 'lucide-react';
 import Button from '@/components/ui/Button';
 import Badge from '@/components/ui/Badge';
@@ -30,6 +31,7 @@ import { SYSTEM_EMAILS } from '@/lib/email/registry';
  */
 export default function EmailTemplatesClient() {
   const router = useRouter();
+  const adminUrl = useAdminUrl();
   const [templates, setTemplates] = useState<EmailTemplate[]>([]);
   const [loading, setLoading] = useState(true);
   const [tableMissing, setTableMissing] = useState(false);
@@ -118,7 +120,7 @@ export default function EmailTemplatesClient() {
               Templates can be picked when composing a notification.
             </p>
           </div>
-          <Button onClick={() => router.push('/admin/email-templates/new')} disabled={tableMissing}>
+          <Button onClick={() => router.push(adminUrl('/email-templates/new'))} disabled={tableMissing}>
             <Plus className="w-4 h-4 mr-1" /> New template
           </Button>
         </div>
@@ -177,7 +179,7 @@ export default function EmailTemplatesClient() {
             Create your first template — for example a welcome email for new students,
             or a course announcement with placeholders.
           </p>
-          <Button className="mt-4" onClick={() => router.push('/admin/email-templates/new')} disabled={tableMissing}>
+          <Button className="mt-4" onClick={() => router.push(adminUrl('/email-templates/new'))} disabled={tableMissing}>
             <Plus className="w-4 h-4 mr-1" /> New template
           </Button>
         </Card>
@@ -188,7 +190,7 @@ export default function EmailTemplatesClient() {
               <div className="flex items-start justify-between gap-4">
                 <button
                   type="button"
-                  onClick={() => router.push(`/admin/email-templates/${template.id}`)}
+                  onClick={() => router.push(adminUrl(`/email-templates/${template.id}`))}
                   className="text-left cursor-pointer min-w-0"
                 >
                   <span className="flex items-center gap-2 flex-wrap">
@@ -218,7 +220,7 @@ export default function EmailTemplatesClient() {
                     type="button"
                     aria-label={`Edit ${template.name}`}
                     title="Edit"
-                    onClick={() => router.push(`/admin/email-templates/${template.id}`)}
+                    onClick={() => router.push(adminUrl(`/email-templates/${template.id}`))}
                     className="p-2 rounded-lg text-muted hover:text-foreground hover:bg-dark-border transition-colors cursor-pointer"
                   >
                     <Pencil className="w-4 h-4" />

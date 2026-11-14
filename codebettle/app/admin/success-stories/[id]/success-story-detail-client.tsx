@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
+import { useAdminUrl } from '@/components/admin/AdminBasePathContext';
 import { useRouter } from 'next/navigation';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
@@ -42,6 +43,7 @@ interface DetailResponse {
 
 export default function SuccessStoryDetailClient({ id }: { id: string }) {
   const router = useRouter();
+  const adminUrl = useAdminUrl();
   const [submission, setSubmission] = useState<SuccessStorySubmission | null>(null);
   const [media, setMedia] = useState<{ profilePictureUrl?: string; videoPlaybackUrl?: string }>({});
   const [loading, setLoading] = useState(true);
@@ -170,7 +172,7 @@ export default function SuccessStoryDetailClient({ id }: { id: string }) {
       const res = await fetch(`/api/admin/success-stories/${id}`, { method: 'DELETE' });
       const json = (await res.json()) as { error?: string };
       if (!res.ok) throw new Error(json.error ?? 'Could not delete the submission');
-      router.push('/admin/success-stories');
+      router.push(adminUrl('/success-stories'));
     } catch (error) {
       setActionError(error instanceof Error ? error.message : 'Could not delete the submission');
       setBusy(false);
@@ -199,7 +201,7 @@ export default function SuccessStoryDetailClient({ id }: { id: string }) {
     return (
       <div className="bg-red-500/10 border border-red-500/40 rounded-xl p-6">
         <p className="text-sm font-bold text-red-400">{loadError ?? 'Submission not found'}</p>
-        <Link href="/admin/success-stories" className="text-sm text-primary-text hover:underline mt-2 inline-block">
+        <Link href={adminUrl("/success-stories")} className="text-sm text-primary-text hover:underline mt-2 inline-block">
           ← Back to Success Stories
         </Link>
       </div>
@@ -221,7 +223,7 @@ export default function SuccessStoryDetailClient({ id }: { id: string }) {
 
   return (
     <div className="space-y-6">
-      <Link href="/admin/success-stories" className="inline-flex items-center gap-1.5 text-sm font-medium text-muted hover:text-foreground transition-colors">
+      <Link href={adminUrl("/success-stories")} className="inline-flex items-center gap-1.5 text-sm font-medium text-muted hover:text-foreground transition-colors">
         <ArrowLeft className="w-4 h-4" /> All Submissions
       </Link>
 

@@ -1,6 +1,7 @@
 'use client';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
+import { useAdminUrl } from '@/components/admin/AdminBasePathContext';
 import { useRouter } from 'next/navigation';
 import {
   ArrowLeft, ChevronLeft, ChevronRight, Download, Inbox, Eye, EyeOff, Pencil,
@@ -36,6 +37,7 @@ type ReviewFilter = '' | 'reviewed' | 'unreviewed';
  */
 export default function SubmissionsClient({ formId }: { formId: string }) {
   const router = useRouter();
+  const adminUrl = useAdminUrl();
   const [form, setForm] = useState<AdminFormDetail | null>(null);
   const [submissions, setSubmissions] = useState<AdminSubmission[]>([]);
   const [total, setTotal] = useState(0);
@@ -228,7 +230,7 @@ export default function SubmissionsClient({ formId }: { formId: string }) {
     <div className="space-y-6">
       <FadeIn className="flex items-center justify-between flex-wrap gap-3">
         <div className="flex items-center gap-3 min-w-0">
-          <Link href="/admin/forms" className="text-muted hover:text-foreground p-1 shrink-0" title="Back to forms">
+          <Link href={adminUrl("/forms")} className="text-muted hover:text-foreground p-1 shrink-0" title="Back to forms">
             <ArrowLeft className="w-5 h-5" />
           </Link>
           <div className="min-w-0">
@@ -242,7 +244,7 @@ export default function SubmissionsClient({ formId }: { formId: string }) {
           </div>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
-          <Button variant="secondary" size="sm" onClick={() => router.push(`/admin/forms/${formId}/builder`)}>
+          <Button variant="secondary" size="sm" onClick={() => router.push(adminUrl(`/forms/${formId}/builder`))}>
             <Pencil className="w-4 h-4" />Open builder
           </Button>
           <Button size="sm" onClick={() => void exportCsv()} loading={exporting} disabled={exporting}>

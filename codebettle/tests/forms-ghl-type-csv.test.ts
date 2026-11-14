@@ -207,8 +207,10 @@ test('forms list: name and submissions count link to submissions; row still open
   const src = read('app/admin/forms/forms-client.tsx');
 
   // The name is a button that stops the row click and navigates to
-  // the submissions page.
-  assert.match(src, /<button[^>]*\n?\s*type="button"[\s\S]*?e\.stopPropagation\(\);\s*router\.push\(`\/admin\/forms\/\$\{form\.id\}\/submissions`\)/);
+  // the submissions page (through the admin URL hook, so it follows
+  // the secret admin base path — a hardcoded /admin/... link would
+  // redirect home, see tests/admin-links.test.ts).
+  assert.match(src, /<button[^>]*\n?\s*type="button"[\s\S]*?e\.stopPropagation\(\);\s*router\.push\(adminUrl\(`\/forms\/\$\{form\.id\}\/submissions`\)\)/);
   assert.ok(src.includes('{form.name}'), 'name button renders the form name');
   // The submissions-count cell is a button to the same page.
   assert.match(src, /submissionCountOf\(form\)/);
@@ -216,7 +218,7 @@ test('forms list: name and submissions count link to submissions; row still open
   assert.ok(src.slice(0, countLink).includes('/submissions'), 'count cell links to submissions');
 
   // The row click still opens the builder, and the pencil still does.
-  assert.ok(src.includes('onClick={() => router.push(`/admin/forms/${form.id}/builder`)}'));
+  assert.ok(src.includes('onClick={() => router.push(adminUrl(`/forms/${form.id}/builder`))}'));
   assert.ok(src.includes('title="Open builder"'));
   assert.ok(src.includes('title="View submissions"'));
 

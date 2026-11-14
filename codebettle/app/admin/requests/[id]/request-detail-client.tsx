@@ -1,6 +1,7 @@
 'use client';
 import { useState } from 'react';
 import Link from 'next/link';
+import { useAdminUrl } from '@/components/admin/AdminBasePathContext';
 import { ArrowLeft, Paperclip } from 'lucide-react';
 import Button from '@/components/ui/Button';
 import Card from '@/components/ui/Card';
@@ -35,6 +36,7 @@ import {
  * is already a signed URL / app path is linked directly instead.
  */
 export default function RequestDetailClient({ initialRequest }: { initialRequest: AdminRequest }) {
+  const adminUrl = useAdminUrl();
   const [request, setRequest] = useState<AdminRequest>(initialRequest);
   const [status, setStatus] = useState<RequestStatus>(initialRequest.status as RequestStatus);
   const [adminReply, setAdminReply] = useState(initialRequest.adminReply ?? '');
@@ -96,7 +98,7 @@ export default function RequestDetailClient({ initialRequest }: { initialRequest
   return (
     <div className="space-y-6">
       <FadeIn>
-        <Link href="/admin/requests" className="text-muted text-sm hover:text-foreground inline-flex items-center gap-1">
+        <Link href={adminUrl("/requests")} className="text-muted text-sm hover:text-foreground inline-flex items-center gap-1">
           <ArrowLeft className="w-4 h-4" /> Back to requests
         </Link>
         <h1 className="text-2xl font-black text-foreground mt-2">{request.subject}</h1>

@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
+import { useAdminUrl } from '@/components/admin/AdminBasePathContext';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
 import type { TeamMember } from '@/lib/db/types';
@@ -113,6 +114,7 @@ async function readError(res: Response, fallback: string): Promise<string> {
 }
 
 export default function ManagementClient() {
+  const adminUrl = useAdminUrl();
   const [config, setConfig] = useState<ConfigResponse | null>(null);
   const [team, setTeam] = useState<TeamMember[]>([]);
   const [stories, setStories] = useState<SuccessStorySubmission[]>([]);
@@ -490,7 +492,7 @@ export default function ManagementClient() {
           The CEO message, vision text and CEO photo are edited in Admin &gt; Settings &gt; Success Stories — the same editor as before, so there is only one place to change them.
         </p>
         <div className="mt-4">
-          <Link href="/admin/settings">
+          <Link href={adminUrl("/settings")}>
             <Button variant="secondary" size="sm">Open Settings — Success Stories</Button>
           </Link>
         </div>
@@ -753,7 +755,7 @@ export default function ManagementClient() {
             <Trophy className="w-5 h-5 text-primary-text" /> Success Stories ({stories.length})
           </h2>
           <div className="flex items-center gap-2">
-            <Link href="/admin/success-stories">
+            <Link href={adminUrl("/success-stories")}>
               <Button variant="secondary" size="sm">Review submissions</Button>
             </Link>
             <Button variant="secondary" size="sm" onClick={() => { setStoryForm(EMPTY_STORY_FORM); setShowStoryForm((s) => !s); }}>
@@ -762,7 +764,7 @@ export default function ManagementClient() {
           </div>
         </div>
         <p className="text-sm text-muted">
-          Approved stories appear on the public page. The eye toggle hides a story from the public page without deleting it; the arrows change its display order. Reviewing student submissions (approve / reject / feature) stays in <Link href="/admin/success-stories" className="text-primary-text underline">Admin &gt; Success Stories</Link>.
+          Approved stories appear on the public page. The eye toggle hides a story from the public page without deleting it; the arrows change its display order. Reviewing student submissions (approve / reject / feature) stays in <Link href={adminUrl("/success-stories")} className="text-primary-text underline">Admin &gt; Success Stories</Link>.
         </p>
         {showStoryForm && (
           <div className="rounded-lg border border-dark-border bg-background p-4 space-y-3">
@@ -831,7 +833,7 @@ export default function ManagementClient() {
                     >
                       {story.enabled ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
                     </button>
-                    <Link href={`/admin/success-stories/${story.id}`} aria-label="Open review" className="p-1.5 text-muted hover:text-foreground">
+                    <Link href={adminUrl(`/success-stories/${story.id}`)} aria-label="Open review" className="p-1.5 text-muted hover:text-foreground">
                       <ArrowRight className="w-4 h-4" />
                     </Link>
                     <button onClick={() => void deleteStory(story)} aria-label="Delete" className="p-1.5 text-red-400 hover:text-red-300">

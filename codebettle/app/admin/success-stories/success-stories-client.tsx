@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
+import { useAdminUrl } from '@/components/admin/AdminBasePathContext';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
 import {
@@ -27,6 +28,7 @@ interface ListResponse {
 }
 
 export default function SuccessStoriesClient() {
+  const adminUrl = useAdminUrl();
   const [submissions, setSubmissions] = useState<SuccessStorySubmission[]>([]);
   const [total, setTotal] = useState(0);
   const [tablesReady, setTablesReady] = useState(true);
@@ -157,7 +159,7 @@ export default function SuccessStoriesClient() {
         <div className="bg-dark-card border border-dark-border rounded-xl overflow-hidden">
           <div className="divide-y divide-dark-border">
             {visible.map((s) => (
-              <Link key={s.id} href={`/admin/success-stories/${s.id}`}>
+              <Link key={s.id} href={adminUrl(`/success-stories/${s.id}`)}>
                 <div className="flex items-center gap-4 px-5 py-4 hover:bg-primary/5 transition-colors cursor-pointer">
                   {s.profilePictureUrl ? (
                     // eslint-disable-next-line @next/next/no-img-element

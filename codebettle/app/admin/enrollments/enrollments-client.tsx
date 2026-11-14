@@ -1,6 +1,7 @@
 'use client';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
+import { useAdminUrl } from '@/components/admin/AdminBasePathContext';
 import Button from '@/components/ui/Button';
 import Badge from '@/components/ui/Badge';
 import Input from '@/components/ui/Input';
@@ -41,6 +42,7 @@ const CREATE_PAYMENT_OPTIONS = [
  * delete all go through the API and update the list from the response.
  */
 export default function EnrollmentsClient({ students, courses }: EnrollmentsClientProps) {
+  const adminUrl = useAdminUrl();
   const [enrollments, setEnrollments] = useState<Enrollment[]>([]);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -177,7 +179,7 @@ export default function EnrollmentsClient({ students, courses }: EnrollmentsClie
           <p className="text-muted text-sm mt-1">{total} total enrollments</p>
         </div>
         <div className="flex gap-2 items-center">
-          <Link href="/admin/payments">
+          <Link href={adminUrl("/payments")}>
             <Button variant="secondary">Payment Verifications</Button>
           </Link>
           <Button onClick={() => setIsCreateOpen(true)}><Plus className="w-4 h-4" />New Enrollment</Button>
