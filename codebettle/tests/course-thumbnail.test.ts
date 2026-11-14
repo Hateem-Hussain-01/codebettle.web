@@ -25,7 +25,10 @@ const D = (s: string) => new Date(s);
 const ADMIN: SessionUser = { id: 'admin-1', name: 'Admin', email: 'admin@codebettle.com', role: 'admin' };
 const STU1: SessionUser = { id: 'stu-1', name: 'Ali', email: 'ali@example.com', role: 'student' };
 
-const PNG_BYTES = new TextEncoder().encode('fake png bytes').buffer as ArrayBuffer;
+// Real magic bytes: the upload validators now check them, so 'fake png
+// bytes' text no longer passes as an image.
+const PNG_BYTES = new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0x66, 0x61, 0x6b, 0x65]).buffer as ArrayBuffer;
+const JPEG_BYTES = new Uint8Array([0xff, 0xd8, 0xff, 0xe0, 0x66, 0x61, 0x6b, 0x65]).buffer as ArrayBuffer;
 
 function mockClient(overrides: {
   upload?: () => Promise<{ data: { path: string } | null; error: { message: string } | null }>;
@@ -126,7 +129,7 @@ test('upload sends the image to the course-images bucket and returns url + path'
 test('upload accepts a lazy arrayBuffer function and a pending course id (create flow)', async () => {
   const result = await uploadCourseImage(
     'pending',
-    { name: 'thumb.jpg', type: 'image/jpeg', size: PNG_BYTES.byteLength, arrayBuffer: async () => PNG_BYTES },
+    { name: 'thumb.jpg', type: 'image/jpeg', size: JPEG_BYTES.byteLength, arrayBuffer: async () => JPEG_BYTES },
     mockClient(),
   );
   assert.match(result.path, /^courses\/pending\/[0-9a-f-]+\.jpg$/);
@@ -386,7 +389,7 @@ test('ceo photo upload: JPG/PNG/WebP only (no GIF, unlike thumbnails), 5 MB max,
   assert.deepEqual([...CEO_PHOTO_TYPES], ['image/jpeg', 'image/png', 'image/webp']);
   const client = mockClient();
   const result = await uploadCeoPhotoImage(
-    { name: 'ceo.jpg', type: 'image/jpeg', size: PNG_BYTES.byteLength, arrayBuffer: PNG_BYTES },
+    { name: 'ceo.jpg', type: 'image/jpeg', size: JPEG_BYTES.byteLength, arrayBuffer: JPEG_BYTES },
     client,
   );
   assert.match(result.path, /^team\/ceo\/[0-9a-f-]+\.jpg$/);

@@ -23,6 +23,7 @@
  */
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import { randomUUID } from 'node:crypto';
+import { readUploadedBytes, validateUploadedBytes } from './file-validation';
 
 export const PAYMENT_PROOFS_BUCKET = 'payment-proofs';
 export const MAX_PAYMENT_PROOF_BYTES = 5 * 1024 * 1024; // 5 MB
@@ -65,32 +66,23 @@ export function getPaymentProofStorageClient(): SupabaseClient {
   });
 }
 
-async function readBytes(file: PaymentProofFile): Promise<Buffer> {
-  const bytes = typeof file.arrayBuffer === 'function' ? await file.arrayBuffer() : file.arrayBuffer;
-  return Buffer.isBuffer(bytes) ? bytes : Buffer.from(bytes);
-}
-
-/**
- * Upload one transaction screenshot/receipt to
- * `payment-proofs/payment-proofs/<uuid>.<ext>`. Returns the storage
- * path — that is what gets saved to PaymentSubmission.proofUrl.
- * Validation runs before the client is built, so a bad file is a 400
- * even when the service-role key is missing.
- */
 export async function uploadPaymentProof(
   file: PaymentProofFile,
   client?: SupabaseClient,
 ): Promise<{ path: string }> {
-  if (!(ALLOWED_PAYMENT_PROOF_TYPES as readonly string[]).includes(file.type)) {
-    throw new Error('Only PNG, JPEG, WebP images or PDF files are allowed for the payment proof');
-  }
-  if (file.size > MAX_PAYMENT_PROOF_BYTES) {
-    throw new Error('Payment proof must be 5 MB or smaller');
-  }
-  const body = await readBytes(file);
-  if (body.byteLength > MAX_PAYMENT_PROOF_BYTES) {
-    throw new Error('Payment proof must be 5 MB or smaller');
-  }
+  // Magic-byte validation (UPLOAD-01): the bytes must match the
+  // claimed image/PDF type — a renamed file is rejected.
+  const body = await readUploadedBytes(file);
+  const problem = validateUploadedBytes(
+    file.type,
+    file.size,
+    body,
+    ALLOWED_PAYMENT_PROOF_TYPES,
+    MAX_PAYMENT_PROOF_BYTES,
+    'Only PNG, JPEG, WebP images or PDF files are allowed for the payment proof',
+    'Payment proof must be 5 MB or smaller',
+  );
+  if (problem) throw new Error(problem);
   const storage = client ?? getPaymentProofStorageClient();
   const path = `payment-proofs/${randomUUID()}.${PROOF_EXTENSIONS[file.type]}`;
   const { data, error } = await storage.storage

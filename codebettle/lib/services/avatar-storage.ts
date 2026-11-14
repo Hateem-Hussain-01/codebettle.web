@@ -20,6 +20,7 @@
  */
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import { randomUUID } from 'node:crypto';
+import { readUploadedBytes, validateUploadedBytes } from './file-validation';
 
 export const AVATAR_BUCKET = 'avatars';
 export const MAX_AVATAR_BYTES = 5 * 1024 * 1024; // 5 MB
@@ -69,17 +70,19 @@ export async function uploadAvatar(
   file: AvatarFile,
   client?: SupabaseClient,
 ): Promise<{ url: string; path: string }> {
-  if (!ALLOWED_AVATAR_TYPES.includes(file.type)) {
-    throw new Error('Only JPG, PNG, WebP or GIF images are allowed');
-  }
-  if (file.size > MAX_AVATAR_BYTES) {
-    throw new Error('Photo must be 5 MB or smaller');
-  }
-  const bytes = typeof file.arrayBuffer === 'function' ? await file.arrayBuffer() : file.arrayBuffer;
-  const body = Buffer.isBuffer(bytes) ? bytes : Buffer.from(bytes);
-  if (body.byteLength > MAX_AVATAR_BYTES) {
-    throw new Error('Photo must be 5 MB or smaller');
-  }
+  // Magic-byte validation (UPLOAD-01): the declared MIME is
+  // attacker-controlled — the bytes must match the claimed image type.
+  const body = await readUploadedBytes(file);
+  const problem = validateUploadedBytes(
+    file.type,
+    file.size,
+    body,
+    ALLOWED_AVATAR_TYPES,
+    MAX_AVATAR_BYTES,
+    'Only JPG, PNG, WebP or GIF images are allowed',
+    'Photo must be 5 MB or smaller',
+  );
+  if (problem) throw new Error(problem);
   const storage = client ?? getAvatarStorageClient();
   const path = `${userId}/${randomUUID()}.${EXTENSIONS[file.type]}`;
   const { data, error } = await storage.storage

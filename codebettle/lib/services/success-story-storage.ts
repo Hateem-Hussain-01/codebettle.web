@@ -41,6 +41,7 @@ import {
   extensionForMime,
 } from '../success-story-validation';
 import { APPLICATION_FILES_BUCKET } from './application-storage';
+import { magicBytesMatch } from './file-validation';
 
 export const SUCCESS_STORIES_BUCKET = 'success-stories';
 
@@ -207,6 +208,89 @@ export async function deleteSuccessStoryFile(
   } catch {
     // Best-effort cleanup — a leftover file is not a submission failure.
   }
+}
+
+// ---------------------------------------------------------------------------
+// Server-side content verification (NEW-2).
+// ---------------------------------------------------------------------------
+//
+// The browser PUTs file bytes DIRECTLY to Supabase through a signed
+// upload URL, so the API never sees the bytes — the mint step can only
+// check the CLAIMED mime/size. `verifySuccessStoryFile` (above) reads
+// existence/size/MIME from Storage metadata, but that MIME is the
+// Content-Type the uploader declared on the PUT, so it is just as
+// attacker-controlled. An attacker can mint a URL for `image/jpeg`,
+// PUT arbitrary bytes (a script, an executable), and the metadata
+// check passes.
+//
+// The submit endpoint therefore verifies the ACTUAL bytes server-side
+// before the submission is created: it downloads only the first 16
+// bytes (a Range request — a 100 MB video is never downloaded whole)
+// and checks the magic bytes against the claimed MIME. On mismatch
+// the object is deleted and the submission is rejected.
+
+/** First bytes of a stored object (at most 16), or null when it cannot be read. */
+export async function downloadSuccessStoryFileHead(
+  bucket: string,
+  path: string,
+  client?: SupabaseClient,
+  fetchImpl: typeof fetch = fetch,
+): Promise<Buffer | null> {
+  const storage = client ?? getSuccessStoryStorageClient();
+  let signedUrl: string | undefined;
+  try {
+    const { data, error } = await storage.storage.from(bucket).createSignedUrl(path, 60);
+    if (error || !data?.signedUrl) return null;
+    signedUrl = data.signedUrl;
+  } catch {
+    return null;
+  }
+  let res: Response;
+  try {
+    res = await fetchImpl(signedUrl, { headers: { Range: 'bytes=0-15' } });
+  } catch {
+    return null;
+  }
+  if (!res.ok || !res.body) return null;
+  try {
+    const reader = res.body.getReader();
+    try {
+      const { value } = await reader.read();
+      if (!value) return null;
+      return Buffer.from(value).subarray(0, 16);
+    } finally {
+      // Bound the transfer even if the server ignores Range: only the
+      // first chunk is ever read.
+      await reader.cancel().catch(() => undefined);
+    }
+  } catch {
+    return null;
+  }
+}
+
+export type FileContentsCheck = 'ok' | 'mismatch' | 'unavailable';
+
+/**
+ * Verify a stored object's bytes match its claimed MIME (magic bytes).
+ * 'ok' — bytes match, or the MIME has no reliable magic bytes
+ * (text/plain: MIME + size is the whole check, as in form uploads).
+ * 'mismatch' — the bytes contradict the claimed type.
+ * 'unavailable' — the bytes could not be read (fail-closed: the caller
+ * rejects the submission rather than trusting unverified content).
+ */
+export async function verifySuccessStoryFileContents(
+  bucket: string,
+  path: string,
+  mime: string | null | undefined,
+  client?: SupabaseClient,
+  fetchImpl: typeof fetch = fetch,
+): Promise<FileContentsCheck> {
+  if (!mime) return 'ok';
+  const head = await downloadSuccessStoryFileHead(bucket, path, client, fetchImpl);
+  if (head === null) return 'unavailable';
+  const match = magicBytesMatch(mime, head);
+  if (match === false) return 'mismatch';
+  return 'ok';
 }
 
 /** The bucket a stored path lives in, from its prefix. */

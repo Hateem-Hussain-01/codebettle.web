@@ -179,7 +179,7 @@ test('cover URL validation: http(s) and same-origin paths pass; the rest fail', 
 // Item 5 — cover upload service (existing public `course-images` bucket)
 // ---------------------------------------------------------------------------
 
-const PNG = new TextEncoder().encode('fake png bytes').buffer as ArrayBuffer;
+const PNG = new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0x66, 0x61, 0x6b, 0x65]).buffer as ArrayBuffer;
 
 function mockStorageClient(): { client: SupabaseClient; calls: { bucket: string; path?: string }[] } {
   const calls: { bucket: string; path?: string }[] = [];

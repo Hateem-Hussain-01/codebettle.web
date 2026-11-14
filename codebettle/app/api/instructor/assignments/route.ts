@@ -7,7 +7,7 @@ import {
   createAssignment,
   listAssignmentsEnriched,
 } from '@/lib/db/assignments';
-import { getCourseById, getCoursesByInstructor } from '@/lib/db/courses';
+import { getAllCourses, getCourseById, getCoursesByInstructor } from '@/lib/db/courses';
 import { getBatchesByCourse } from '@/lib/db/batches';
 
 /**
@@ -16,16 +16,18 @@ import { getBatchesByCourse } from '@/lib/db/batches';
  * submission/graded counts. Also returns the teacher's courses (with
  * their batches) for the create form, and `tablesReady` so the UI can
  * show a "run the SQL" state when the migration has not run yet.
- * POST — create an assignment for one of the teacher's own courses.
- * Guard: requireRoles(['instructor', 'admin']). An admin may create
- * for any course; a pure teacher only for their own.
+ * A pure admin (NEW-12) sees ALL courses, so they are not locked out
+ * of the read — an admin with no courses of their own would otherwise
+ * see nothing. POST — create an assignment for one of the teacher's
+ * own courses. Guard: requireRoles(['instructor', 'admin']). An admin
+ * may create for any course; a pure teacher only for their own.
  */
 export async function GET() {
-  const auth = await requireRoles(['instructor']);
+  const auth = await requireRoles(['instructor', 'admin']);
   if ('error' in auth) return auth.error;
   const [tablesReady, courses] = await Promise.all([
     areAssignmentTablesReady(),
-    getCoursesByInstructor(auth.session.id),
+    hasAdminCapability(auth.session) ? getAllCourses() : getCoursesByInstructor(auth.session.id),
   ]);
   const assignments = await listAssignmentsEnriched(courses.map((c) => c.id));
   const coursesWithBatches = await Promise.all(

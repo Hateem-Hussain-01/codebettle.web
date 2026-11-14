@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { assertNotViewAs, requireAdminArea } from '@/lib/api-helpers';
+import { assertNotViewAs, requireAdminArea, requireFullAdmin } from '@/lib/api-helpers';
 import {
   deleteAssignment,
   getAssignmentById,
@@ -11,8 +11,10 @@ type Params = { params: Promise<{ id: string }> };
 /**
  * GET /api/admin/assignments/[id] — one assignment with its
  * submissions (enriched with student names). DELETE — delete the
- * assignment and its submissions. Guard:
- * requireAdminArea('assignments').
+ * assignment and its submissions. Guard: GET requireAdminArea
+ * ('assignments'); DELETE requireFullAdmin (NEW-8 — a destructive
+ * delete must not rest on the area grant alone, matching DELETE
+ * /api/admin/course-reviews/[id]).
  */
 export async function GET(_request: NextRequest, { params }: Params) {
   const auth = await requireAdminArea('assignments');
@@ -25,7 +27,7 @@ export async function GET(_request: NextRequest, { params }: Params) {
 }
 
 export async function DELETE(_request: NextRequest, { params }: Params) {
-  const auth = await requireAdminArea('assignments');
+  const auth = await requireFullAdmin();
   if ('error' in auth) return auth.error;
   const viewing = assertNotViewAs(auth.session);
   if (viewing) return viewing;

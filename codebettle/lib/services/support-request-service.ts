@@ -35,6 +35,7 @@ import {
   createApplicationFileSignedUrl,
   type ApplicationFile,
 } from './application-storage';
+import { readUploadedBytes, validateUploadedBytes } from './file-validation';
 import {
   SUPPORT_REQUEST_CATEGORIES,
   SUPPORT_REQUEST_STATUSES,
@@ -72,32 +73,23 @@ export function isSupportRequestStatus(value: unknown): value is SupportRequestS
   return (SUPPORT_REQUEST_STATUSES as readonly string[]).includes(value as string);
 }
 
-async function readBytes(file: ApplicationFile): Promise<Buffer> {
-  const bytes = typeof file.arrayBuffer === 'function' ? await file.arrayBuffer() : file.arrayBuffer;
-  return Buffer.isBuffer(bytes) ? bytes : Buffer.from(bytes);
-}
-
-/**
- * Validate + upload one support-request attachment to
- * `application-files/support-requests/<uuid>.<ext>`. Returns the
- * storage path. Validation runs before the client is built, so a bad
- * file is a 400 even when the service-role key is missing. A missing
- * key throws naming the env var (the route maps that to 503).
- */
 export async function uploadSupportRequestAttachment(
   file: ApplicationFile,
   client?: SupabaseClient,
 ): Promise<{ path: string }> {
-  if (!ALLOWED_SUPPORT_REQUEST_ATTACHMENT_TYPES.includes(file.type as (typeof ALLOWED_SUPPORT_REQUEST_ATTACHMENT_TYPES)[number])) {
-    throw new Error('Only PDF, DOC, DOCX, JPG or PNG files are allowed for the attachment');
-  }
-  if (file.size > MAX_SUPPORT_REQUEST_ATTACHMENT_BYTES) {
-    throw new Error('Attachment must be 5 MB or smaller');
-  }
-  const body = await readBytes(file);
-  if (body.byteLength > MAX_SUPPORT_REQUEST_ATTACHMENT_BYTES) {
-    throw new Error('Attachment must be 5 MB or smaller');
-  }
+  // Magic-byte validation (UPLOAD-01): the bytes must match the
+  // claimed document/image type — a renamed file is rejected.
+  const body = await readUploadedBytes(file);
+  const problem = validateUploadedBytes(
+    file.type,
+    file.size,
+    body,
+    ALLOWED_SUPPORT_REQUEST_ATTACHMENT_TYPES,
+    MAX_SUPPORT_REQUEST_ATTACHMENT_BYTES,
+    'Only PDF, DOC, DOCX, JPG or PNG files are allowed for the attachment',
+    'Attachment must be 5 MB or smaller',
+  );
+  if (problem) throw new Error(problem);
   const storage = client ?? getApplicationStorageClient();
   const path = `support-requests/${randomUUID()}.${ATTACHMENT_EXTENSIONS[file.type]}`;
   const { data, error } = await storage.storage

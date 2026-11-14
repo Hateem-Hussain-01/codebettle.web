@@ -30,7 +30,7 @@ import {
   type ListSuccessStorySubmissionsFilter,
   type UpdateSuccessStorySubmissionInput,
 } from '../db/success-stories';
-import { getSuccessStoryPublicUrl, verifySuccessStoryFile, bucketForSuccessStoryPath, deleteSuccessStoryFile, SUCCESS_STORIES_BUCKET } from './success-story-storage';
+import { getSuccessStoryPublicUrl, verifySuccessStoryFile, verifySuccessStoryFileContents, bucketForSuccessStoryPath, deleteSuccessStoryFile, SUCCESS_STORIES_BUCKET } from './success-story-storage';
 import { APPLICATION_FILES_BUCKET } from './application-storage';
 import {
   EVIDENCE_MIMES,
@@ -128,6 +128,18 @@ async function verifyReferencedFiles(input: SuccessStorySubmitInput): Promise<st
     }
     if (info.size !== undefined && info.size > check.maxBytes) {
       return `${check.label} is larger than the allowed size`;
+    }
+    // NEW-2: verify the ACTUAL bytes server-side. The Storage MIME is
+    // attacker-controlled (it is just the Content-Type from the direct
+    // PUT), so existence/MIME/size alone cannot catch a renamed file.
+    const contents = await verifySuccessStoryFileContents(bucket, check.path, info.mime);
+    if (contents === 'mismatch') {
+      // Delete the bad object so it never lingers in the bucket.
+      await deleteSuccessStoryFile(bucket, check.path);
+      return `${check.label} contents do not match its file type — please upload it again`;
+    }
+    if (contents === 'unavailable') {
+      return `${check.label} could not be verified — please upload it again`;
     }
   }
   return null;

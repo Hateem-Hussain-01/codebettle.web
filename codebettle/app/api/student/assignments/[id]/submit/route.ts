@@ -69,6 +69,11 @@ export async function POST(request: NextRequest, { params }: Params) {
     if (/not set up yet/i.test(message)) {
       return NextResponse.json({ error: message }, { status: 503 });
     }
+    // NEW-14: the repo layer enforces the Colab-link invariant too —
+    // surface its validation error as a 400, not a 500.
+    if (/Google Colab link/i.test(message)) {
+      return NextResponse.json({ error: message }, { status: 400 });
+    }
     return NextResponse.json({ error: 'Could not submit the assignment' }, { status: 500 });
   }
 }

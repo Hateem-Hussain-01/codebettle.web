@@ -49,6 +49,7 @@ import {
   type FormFileReference,
   type UploadVariant,
 } from '../form-uploads';
+import { magicBytesMatch } from './file-validation';
 
 export { APPLICATION_FILES_BUCKET };
 
@@ -85,61 +86,6 @@ export class FormUploadError extends Error {
 async function readBytes(file: FormUploadFile): Promise<Buffer> {
   const bytes = typeof file.arrayBuffer === 'function' ? await file.arrayBuffer() : file.arrayBuffer;
   return Buffer.isBuffer(bytes) ? bytes : Buffer.from(bytes);
-}
-
-/** True when `bytes` starts with `prefix` (ASCII prefix, e.g. '%PDF'). */
-function startsWith(bytes: Buffer, prefix: string): boolean {
-  return bytes.length >= prefix.length && bytes.subarray(0, prefix.length).toString('latin1') === prefix;
-}
-
-function startsWithBytes(bytes: Buffer, prefix: number[]): boolean {
-  if (bytes.length < prefix.length) return false;
-  return prefix.every((b, i) => bytes[i] === b);
-}
-
-/**
- * Magic-byte check for one MIME type. Returns true when the bytes are
- * consistent with the claimed type, false when they contradict it.
- * Returns null for types with no reliable magic bytes (plain text) —
- * the caller treats null as "no signal, MIME + extension decide".
- */
-function magicMatches(mime: string, bytes: Buffer): boolean | null {
-  switch (mime) {
-    case 'application/pdf':
-      return startsWith(bytes, '%PDF');
-    case 'image/png':
-      return startsWithBytes(bytes, [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
-    case 'image/jpeg':
-      return startsWithBytes(bytes, [0xff, 0xd8, 0xff]);
-    case 'image/gif':
-      return startsWith(bytes, 'GIF87a') || startsWith(bytes, 'GIF89a');
-    case 'image/webp':
-      return (
-        bytes.length >= 12 &&
-        startsWith(bytes, 'RIFF') &&
-        bytes.subarray(8, 12).toString('latin1') === 'WEBP'
-      );
-    case 'application/vnd.openxmlformats-officedocument.wordprocessingml.document':
-    case 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet':
-    case 'application/vnd.openxmlformats-officedocument.presentationml.presentation':
-      // OOXML files are ZIP archives.
-      return startsWithBytes(bytes, [0x50, 0x4b, 0x03, 0x04]);
-    case 'application/msword':
-    case 'application/vnd.ms-excel':
-    case 'application/vnd.ms-powerpoint':
-      // Legacy Office files are OLE compound documents.
-      return startsWithBytes(bytes, [0xd0, 0xcf, 0x11, 0xe0, 0xa1, 0xb1, 0x1a, 0xe1]);
-    case 'video/mp4':
-    case 'video/quicktime':
-      // 'ftyp' box at offset 4.
-      return bytes.length >= 8 && bytes.subarray(4, 8).toString('latin1') === 'ftyp';
-    case 'video/webm':
-      return startsWithBytes(bytes, [0x1a, 0x45, 0xdf, 0xa3]);
-    default:
-      // text/plain, text/csv, text/markdown, application/rtf: no
-      // reliable magic bytes — MIME + extension is the whole check.
-      return null;
-  }
 }
 
 /**
@@ -186,7 +132,7 @@ export async function validateFormUploadFile(
   if (bytes.byteLength === 0) {
     return 'The file is empty';
   }
-  const magic = magicMatches(file.type, bytes);
+  const magic = magicBytesMatch(file.type, bytes);
   if (magic === false) {
     return `The file contents do not match its type (${file.type}) — a renamed file is not accepted`;
   }

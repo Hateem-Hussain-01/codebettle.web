@@ -25,6 +25,7 @@
  */
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import { randomUUID } from 'node:crypto';
+import { readUploadedBytes, validateUploadedBytes } from './file-validation';
 
 export const APPLICATION_FILES_BUCKET = 'application-files';
 export const MAX_CV_BYTES = 5 * 1024 * 1024; // 5 MB
@@ -75,18 +76,6 @@ export function getApplicationStorageClient(): SupabaseClient {
   });
 }
 
-async function readBytes(file: ApplicationFile): Promise<Buffer> {
-  const bytes = typeof file.arrayBuffer === 'function' ? await file.arrayBuffer() : file.arrayBuffer;
-  return Buffer.isBuffer(bytes) ? bytes : Buffer.from(bytes);
-}
-
-/**
- * Upload one application file to `application-files/<kind>s/<uuid>.<ext>`.
- * Returns the storage path — that is what gets saved to
- * InstructorApplication.cvUrl / demoRecordingUrl. Validation runs
- * before the client is built, so a bad file is a 400 even when the
- * service-role key is missing.
- */
 export async function uploadApplicationFile(
   kind: ApplicationFileKind,
   file: ApplicationFile,
@@ -96,20 +85,21 @@ export async function uploadApplicationFile(
   const maxBytes = kind === 'cv' ? MAX_CV_BYTES : MAX_DEMO_RECORDING_BYTES;
   const extensions = kind === 'cv' ? CV_EXTENSIONS : DEMO_EXTENSIONS;
   const label = kind === 'cv' ? 'CV' : 'Demo recording';
-  if (!allowed.includes(file.type)) {
-    throw new Error(
-      kind === 'cv'
-        ? 'Only PDF, DOC or DOCX files are allowed for the CV'
-        : 'Only MP4, WebM or MOV videos are allowed for the demo recording',
-    );
-  }
-  if (file.size > maxBytes) {
-    throw new Error(`${label} must be ${kind === 'cv' ? '5 MB' : '100 MB'} or smaller`);
-  }
-  const body = await readBytes(file);
-  if (body.byteLength > maxBytes) {
-    throw new Error(`${label} must be ${kind === 'cv' ? '5 MB' : '100 MB'} or smaller`);
-  }
+  // Magic-byte validation (UPLOAD-01): the bytes must match the
+  // claimed document/video type — a renamed file is rejected.
+  const body = await readUploadedBytes(file);
+  const problem = validateUploadedBytes(
+    file.type,
+    file.size,
+    body,
+    allowed,
+    maxBytes,
+    kind === 'cv'
+      ? 'Only PDF, DOC or DOCX files are allowed for the CV'
+      : 'Only MP4, WebM or MOV videos are allowed for the demo recording',
+    `${label} must be ${kind === 'cv' ? '5 MB' : '100 MB'} or smaller`,
+  );
+  if (problem) throw new Error(problem);
   const storage = client ?? getApplicationStorageClient();
   const path = `${kind === 'cv' ? 'cvs' : 'demos'}/${randomUUID()}.${extensions[file.type]}`;
   const { data, error } = await storage.storage

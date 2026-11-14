@@ -8,11 +8,14 @@ type Params = { params: Promise<{ id: string }> };
 /**
  * GET /api/instructor/assignments/[id]/submissions — all submissions
  * for one assignment, enriched with student names/emails and the
- * late flag. Guard: requireRoles(['instructor']); the teacher must
- * teach the assignment's course (admins may view any assignment).
+ * late flag. Guard: requireRoles(['instructor', 'admin']) (NEW-12 —
+ * previously instructors only, so a pure admin was locked out of the
+ * read while the write routes already allowed admins); the teacher
+ * must teach the assignment's course (admins may view any assignment
+ * — canManageAssignment already returns true for admins).
  */
 export async function GET(_request: NextRequest, { params }: Params) {
-  const auth = await requireRoles(['instructor']);
+  const auth = await requireRoles(['instructor', 'admin']);
   if ('error' in auth) return auth.error;
   const { id } = await params;
   const assignment = await getAssignmentById(id);
