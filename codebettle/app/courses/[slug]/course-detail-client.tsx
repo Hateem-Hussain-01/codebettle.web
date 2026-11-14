@@ -1,5 +1,6 @@
 'use client';
 import { useState } from 'react';
+import Link from 'next/link';
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
 import Button from '@/components/ui/Button';
@@ -320,25 +321,66 @@ export default function CourseDetailClient({ course, instructor, reviews, slug, 
                 </FadeIn>
               )}
 
-              {/* Reviews */}
-              {reviews.length > 0 && (
+              {/* Reviews — approved student reviews only (pending/rejected never reach this page) */}
+              {(reviews.length > 0 || enrolled) && (
                 <FadeIn delay={0.05}>
                 <section>
-                  <h2 className="text-xl font-bold text-foreground mb-4">Student Reviews</h2>
-                  <div className="space-y-4">
-                    {reviews.map(review => (
-                      <div key={review.id} className="bg-dark-card border border-dark-border rounded-xl p-4">
-                        <div className="flex items-center gap-3 mb-2">
-                          <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-primary-text text-xs font-bold">{review.studentId.slice(-2).toUpperCase()}</div>
-                          <div>
-                            <StarRating rating={review.rating} size="sm" />
-                            <p className="text-xs text-muted">{formatDate(review.createdAt)}</p>
-                          </div>
-                        </div>
-                        <p className="text-sm text-muted">{review.comment}</p>
-                      </div>
-                    ))}
+                  <div className="flex flex-wrap items-baseline justify-between gap-2 mb-4">
+                    <h2 className="text-xl font-bold text-foreground">Student Reviews</h2>
+                    {enrolled && (
+                      <Link href="/student/reviews" className="text-sm font-medium text-primary-text hover:underline">
+                        Write a review
+                      </Link>
+                    )}
                   </div>
+                  {reviews.length > 0 ? (
+                    <>
+                      {/* Rating summary: average + per-star breakdown */}
+                      <div className="bg-dark-card border border-dark-border rounded-xl p-4 mb-4 flex flex-wrap items-center gap-6">
+                        <div className="text-center">
+                          <p className="text-3xl font-black text-foreground">
+                            {(reviews.reduce((a, r) => a + r.rating, 0) / reviews.length).toFixed(1)}
+                          </p>
+                          <StarRating rating={Math.round(reviews.reduce((a, r) => a + r.rating, 0) / reviews.length)} size="sm" />
+                          <p className="text-xs text-muted mt-1">{reviews.length} review{reviews.length !== 1 ? 's' : ''}</p>
+                        </div>
+                        <div className="flex-1 min-w-52 space-y-1.5">
+                          {[5, 4, 3, 2, 1].map((stars) => {
+                            const count = reviews.filter((r) => r.rating === stars).length;
+                            const pct = reviews.length === 0 ? 0 : Math.round((count / reviews.length) * 100);
+                            return (
+                              <div key={stars} className="flex items-center gap-2 text-xs">
+                                <span className="w-6 text-muted">{stars}★</span>
+                                <div className="flex-1 h-2 rounded-full bg-zinc-800 overflow-hidden">
+                                  <div className="h-full bg-primary rounded-full" style={{ width: `${pct}%` }} />
+                                </div>
+                                <span className="w-8 text-right text-muted">{count}</span>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                      <div className="space-y-4">
+                        {reviews.map(review => (
+                          <div key={review.id} className="bg-dark-card border border-dark-border rounded-xl p-4">
+                            <div className="flex items-center gap-3 mb-2">
+                              <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-primary-text text-xs font-bold">{review.studentId.slice(-2).toUpperCase()}</div>
+                              <div>
+                                <StarRating rating={review.rating} size="sm" />
+                                <p className="text-xs text-muted">{formatDate(review.createdAt)}</p>
+                              </div>
+                            </div>
+                            {review.title && <p className="font-semibold text-foreground text-sm mb-1">{review.title}</p>}
+                            <p className="text-sm text-muted">{review.comment}</p>
+                          </div>
+                        ))}
+                      </div>
+                    </>
+                  ) : (
+                    <p className="text-sm text-muted bg-dark-card border border-dark-border rounded-xl p-4">
+                      No reviews yet — be the first to share your experience with this course.
+                    </p>
+                  )}
                 </section>
                 </FadeIn>
               )}

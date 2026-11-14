@@ -36,6 +36,8 @@ const NAV_ICONS = {
   'success-stories-management': <SlidersHorizontal className="w-5 h-5" />,
   // Home reviews carousel sidebar icon (PR #32).
   reviews: <Star className="w-5 h-5" />,
+  // Course Reviews (moderated student reviews) sidebar icon.
+  'course-reviews': <MessageSquare className="w-5 h-5" />,
   // Email builder sidebar icon.
   'email-templates': <Mails className="w-5 h-5" />,
   // Navbar Editor sidebar icon (PR #32).

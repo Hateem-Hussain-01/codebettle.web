@@ -39,6 +39,23 @@ const TIMESTAMP_DEFAULTS = new Set([
   'submittedAt',
 ]);
 
+/**
+ * Column defaults the real DB applies on insert (and, for Review, the
+ * moderation migration backfills on existing rows). The fake applies
+ * them in create() and seed() so a row without the field behaves like
+ * a real row: e.g. a seeded Review without `status` is approved, so
+ * getApprovedReviewsByCourse (which filters status = 'approved') sees it.
+ */
+const COLUMN_DEFAULTS: Record<string, Record<string, unknown>> = {
+  Review: { status: 'approved' },
+};
+
+function applyColumnDefaults(model: string, row: Row): void {
+  for (const [field, value] of Object.entries(COLUMN_DEFAULTS[model] ?? {})) {
+    if (row[field] === undefined) row[field] = value;
+  }
+}
+
 /** Relations the repositories include: parent model -> relation -> child model + FK. */
 const RELATIONS: Record<string, Record<string, { model: string; fk: string }>> = {
   Course: { modules: { model: 'Module', fk: 'courseId' } },
@@ -58,6 +75,7 @@ const NULLABLE_FIELDS: Record<string, string[]> = {
   Enrollment: ['completedAt', 'couponUsed', 'deletedAt', 'batchId'],
   Batch: ['startDate', 'endDate', 'capacity', 'instructorId'],
   Certificate: ['batch', 'revokedAt'],
+  Review: ['title'],
   Announcement: ['courseId'],
   ContactMessage: ['subject'],
   Notification: ['readAt', 'announcementId', 'linkUrl', 'acknowledgedAt'],
@@ -294,6 +312,7 @@ class FakeCollection {
     for (const f of TIMESTAMP_DEFAULTS) {
       if (row[f] === undefined) row[f] = new Date();
     }
+    applyColumnDefaults(this.model, row);
     for (const f of NULLABLE_FIELDS[this.model] ?? []) {
       if (row[f] === undefined) row[f] = null;
     }
@@ -359,8 +378,10 @@ export class FakeDb {
   seed(model: string, rows: Row[]): void {
     if (!this.tables[model]) this.tables[model] = new Map();
     for (const row of rows) {
-      const key = row.id !== undefined && row.id !== null ? (row.id as string) : JSON.stringify(row);
-      this.tables[model].set(key, { ...row });
+      const stored = { ...row };
+      applyColumnDefaults(model, stored);
+      const key = stored.id !== undefined && stored.id !== null ? (stored.id as string) : JSON.stringify(stored);
+      this.tables[model].set(key, stored);
     }
   }
 

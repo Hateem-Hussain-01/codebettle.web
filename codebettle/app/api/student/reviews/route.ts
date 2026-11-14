@@ -5,14 +5,16 @@ import { createReviewService } from '@/lib/services/review-service';
 
 /**
  * POST /api/student/reviews — write a review (Phase 7, student only).
- * Body: { courseId: string, rating: 1-5, comment: string }.
+ * Body: { courseId: string, rating: 1-5, title?: string, comment: string }.
  * One review per student per course, and only for courses the student
- * is enrolled in. The course rating + reviewCount are recomputed from
- * the stored reviews (CB-12 fix — the displayed rating was seed data).
+ * is enrolled in. New reviews start `pending` — they show on the public
+ * course page only after an admin approves them. The course rating +
+ * reviewCount are recomputed from the APPROVED reviews only.
  */
 const reviewSchema = z.object({
   courseId: z.string().min(1),
   rating: z.number().int().min(1).max(5),
+  title: z.string().max(200).optional(),
   comment: z.string().min(1).max(2000),
 });
 

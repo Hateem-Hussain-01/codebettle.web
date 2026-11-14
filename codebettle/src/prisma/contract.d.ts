@@ -23,9 +23,9 @@ import type {
 } from '@prisma/orm-postgres/contract/types';
 
 export type StorageHash =
-  StorageHashBase<'1e54b8fab5c36897213d5679375b2db6485649eb6ade4414cc4a76e551bee58a'>;
+  StorageHashBase<'e6c0d779d0dc3299d62efb211ade4e7e40ad06e45e82f02483b495e139710944'>;
 export type ExecutionHash =
-  ExecutionHashBase<'cbdbddafb02eba614db1beb6011e6428dfa6ec26a5d9f23e406c931ba4a05849'>;
+  ExecutionHashBase<'4b7f1f572e79a25e5364a2f57a5e317582bff4d871b8850bbe577b5f407c48b0'>;
 export type ProfileHash =
   ProfileHashBase<'3916f444a8a17ad749191acf9e08dad97d1a327b88c2f1d45d12f240296aa8b2'>;
 
@@ -404,6 +404,12 @@ type FieldTypeOverrides = {
           readonly input: 'mcq' | 'fill_blank' | 'checkbox' | 'choose_two' | 'choose_three';
         };
       };
+      readonly Review: {
+        readonly status: {
+          readonly output: 'pending' | 'approved' | 'rejected';
+          readonly input: 'pending' | 'approved' | 'rejected';
+        };
+      };
       readonly SuccessStorySubmission: {
         readonly status: {
           readonly output: 'pending' | 'under_review' | 'approved' | 'rejected';
@@ -565,6 +571,12 @@ type ColumnTypeOverrides = {
       readonly type: {
         readonly output: 'mcq' | 'fill_blank' | 'checkbox' | 'choose_two' | 'choose_three';
         readonly input: 'mcq' | 'fill_blank' | 'checkbox' | 'choose_two' | 'choose_three';
+      };
+    };
+    readonly Review: {
+      readonly status: {
+        readonly output: 'pending' | 'approved' | 'rejected';
+        readonly input: 'pending' | 'approved' | 'rejected';
       };
     };
     readonly SuccessStorySubmission: {
@@ -1247,7 +1259,10 @@ export namespace Models {
     createdAt: FieldOutputTypes['public']['Review']['createdAt'];
     id: FieldOutputTypes['public']['Review']['id'];
     rating: FieldOutputTypes['public']['Review']['rating'];
+    status: FieldOutputTypes['public']['Review']['status'];
     studentId: FieldOutputTypes['public']['Review']['studentId'];
+    title: FieldOutputTypes['public']['Review']['title'];
+    updatedAt: FieldOutputTypes['public']['Review']['updatedAt'];
     course: public_Course;
     student: public_User;
     readonly [RelationKeys]?: 'course' | 'student';
@@ -5947,10 +5962,33 @@ type ContractBase = Omit<
                   readonly nullable: false;
                   readonly many: false;
                 };
+                readonly status: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'literal';
+                    readonly value: DefaultLiteralValue<'pg/text@1', 'approved'>;
+                  };
+                  readonly many: false;
+                };
                 readonly studentId: {
                   readonly dataType: 'pg/text';
                   readonly codecId: 'pg/text@1';
                   readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly title: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly updatedAt: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly nullable: false;
+                  readonly typeParams: { readonly precision: 3 };
                   readonly many: false;
                 };
               };
@@ -5961,6 +5999,12 @@ type ContractBase = Omit<
                   readonly name: 'Review_courseId_idx_12f72d2a';
                   readonly prefix: 'Review_courseId_idx';
                   readonly columns: readonly ['courseId'];
+                  readonly unique: false;
+                },
+                {
+                  readonly name: 'Review_courseId_status_idx_7c6c2bd8';
+                  readonly prefix: 'Review_courseId_status_idx';
+                  readonly columns: readonly ['courseId', 'status'];
                   readonly unique: false;
                 },
                 {
@@ -7534,6 +7578,10 @@ type ContractBase = Omit<
             readonly QuizStatus: {
               readonly kind: 'valueSet';
               readonly values: readonly ['draft', 'published', 'archived'];
+            };
+            readonly ReviewStatus: {
+              readonly kind: 'valueSet';
+              readonly values: readonly ['pending', 'approved', 'rejected'];
             };
             readonly Role: {
               readonly kind: 'valueSet';
@@ -11587,9 +11635,25 @@ type ContractBase = Omit<
                 readonly nullable: false;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/int4@1' };
               };
+              readonly status: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
               readonly studentId: {
                 readonly nullable: false;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly title: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly updatedAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly typeParams: { readonly precision: 3 };
+                };
               };
             };
             readonly relations: {
@@ -11624,7 +11688,10 @@ type ContractBase = Omit<
                 readonly createdAt: { readonly column: 'createdAt' };
                 readonly id: { readonly column: 'id' };
                 readonly rating: { readonly column: 'rating' };
+                readonly status: { readonly column: 'status' };
                 readonly studentId: { readonly column: 'studentId' };
+                readonly title: { readonly column: 'title' };
+                readonly updatedAt: { readonly column: 'updatedAt' };
               };
             };
           };
@@ -13332,6 +13399,14 @@ type ContractBase = Omit<
               { readonly name: 'archived'; readonly value: 'archived' },
             ];
           };
+          readonly ReviewStatus: {
+            readonly codecId: 'pg/text@1';
+            readonly members: readonly [
+              { readonly name: 'pending'; readonly value: 'pending' },
+              { readonly name: 'approved'; readonly value: 'approved' },
+              { readonly name: 'rejected'; readonly value: 'rejected' },
+            ];
+          };
           readonly Role: {
             readonly codecId: 'pg/text@1';
             readonly members: readonly [
@@ -13454,6 +13529,11 @@ type ContractBase = Omit<
             { readonly name: 'draft'; readonly value: 'draft' },
             { readonly name: 'published'; readonly value: 'published' },
             { readonly name: 'archived'; readonly value: 'archived' },
+          ];
+          readonly ReviewStatus: readonly [
+            { readonly name: 'pending'; readonly value: 'pending' },
+            { readonly name: 'approved'; readonly value: 'approved' },
+            { readonly name: 'rejected'; readonly value: 'rejected' },
           ];
           readonly Role: readonly [
             { readonly name: 'student'; readonly value: 'student' },
@@ -14551,6 +14631,23 @@ type ContractBase = Omit<
           readonly ref: {
             readonly entry: 'Review';
             readonly field: 'id';
+            readonly namespace: 'public';
+          };
+        },
+        {
+          readonly onCreate: {
+            readonly id: 'timestampNow';
+            readonly kind: 'generator';
+            readonly params: { readonly precision: 3 };
+          };
+          readonly onUpdate: {
+            readonly id: 'timestampNow';
+            readonly kind: 'generator';
+            readonly params: { readonly precision: 3 };
+          };
+          readonly ref: {
+            readonly entry: 'Review';
+            readonly field: 'updatedAt';
             readonly namespace: 'public';
           };
         },

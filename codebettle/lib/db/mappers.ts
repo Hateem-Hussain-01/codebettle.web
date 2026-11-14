@@ -80,6 +80,7 @@ import type {
   QuizRow,
   Review,
   ReviewRow,
+  ReviewRowLike,
   SocialLinks,
   Subscriber,
   SubscriberRow,
@@ -688,14 +689,21 @@ export function mapFormSubmissionRow(row: FormSubmissionRow): FormSubmission {
   };
 }
 
-export function mapReviewRow(row: ReviewRow): Review {
+export function mapReviewRow(row: ReviewRowLike): Review {
+  // Legacy rows (pre-moderation migration) carry no title/status/updatedAt:
+  // they were public from the start, so they default to approved with
+  // updatedAt = createdAt.
+  const createdAt = dateToString(row.createdAt);
   return {
     id: row.id,
     studentId: row.studentId,
     courseId: row.courseId,
     rating: row.rating,
+    title: row.title ?? null,
     comment: row.comment,
-    createdAt: dateToString(row.createdAt),
+    status: row.status ?? 'approved',
+    createdAt,
+    updatedAt: row.updatedAt ? dateToString(row.updatedAt) : createdAt,
   };
 }
 

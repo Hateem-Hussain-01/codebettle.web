@@ -7,7 +7,7 @@ import { getCourseBySlug } from '@/lib/db/courses';
 import { getEnrollmentsByStudent, isEnrolled } from '@/lib/db/enrollments';
 import { toPublicCourse } from '@/lib/db/mappers';
 import { getUserById } from '@/lib/db/users';
-import { getReviewsByCourse } from '@/lib/db/reviews';
+import { getApprovedReviewsByCourse } from '@/lib/db/reviews';
 import CourseDetailClient from './course-detail-client';
 
 /**
@@ -45,7 +45,9 @@ export default async function CourseDetailPage({ params }: { params: Promise<{ s
   if (!course) notFound();
 
   const instructor = await getUserById(course.instructorId);
-  const reviews = await getReviewsByCourse(course.id);
+  // Only APPROVED student reviews are public — pending/rejected ones
+  // never show here.
+  const reviews = await getApprovedReviewsByCourse(course.id);
   // Already-enrolled students see "Continue Learning" instead of the
   // enrol button (the page itself stays public — no session = not enrolled).
   const session = await getSession();
