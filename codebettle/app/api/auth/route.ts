@@ -43,24 +43,29 @@ const loginSchema = z.object({
   action: z.literal('login'),
   email: z.string().min(1),
   password: z.string().min(1),
-  // The Student | Instructor tab the sign-in page had selected. Sent by
-  // LoginForm; optional so older callers keep working. Absent = the
+  // The tab the sign-in page had selected. Sent by LoginForm;
+  // 'admin' comes from the secret admin sign-in page (its single
+  // Admin tab). Optional so older callers keep working. Absent = the
   // default tab ('student') — a crafted request that omits it is
   // treated as a Student-tab sign-in and CANNOT bypass the guard.
-  requestedRole: z.enum(['student', 'instructor']).optional(),
+  requestedRole: z.enum(['student', 'instructor', 'admin']).optional(),
 });
 
 /**
- * Role-mismatch messages, keyed by the tab the caller asked for. The
- * account's actual role is always the other one in a mismatch (a
- * student has no teacher capability, an instructor has no student
- * capability), so the instruction is always accurate.
+ * Role-mismatch messages, keyed by the tab the caller asked for. For
+ * the Student | Instructor tabs the account's actual role is always
+ * the other one in a mismatch (a student has no teacher capability,
+ * an instructor has no student capability), so the instruction is
+ * always accurate. For the Admin tab the account is a student or an
+ * instructor, so the message is generic on purpose.
  */
 const ROLE_MISMATCH_MESSAGES: Record<LoginPortal, string> = {
   student:
     'This account is registered as an Instructor. Please switch to the Instructor tab to sign in.',
   instructor:
     'This account is registered as a Student. Please switch to the Student tab to sign in.',
+  admin:
+    'This sign-in is for admins only. Please use the Student or Instructor sign-in instead.',
 };
 
 const registerSchema = z.object({

@@ -76,8 +76,11 @@ export function isStudent(user: CapabilitySubject | null | undefined): boolean {
   return user?.role === 'student';
 }
 
-/** The two portals on the sign-in page (Student | Instructor tabs). */
-export type LoginPortal = 'student' | 'instructor';
+/**
+ * The portals on the sign-in pages: Student | Instructor tabs on the
+ * public page, and Admin on the secret admin sign-in page (PR #36).
+ */
+export type LoginPortal = 'student' | 'instructor' | 'admin';
 
 /**
  * Login role-mismatch guard: does this account hold the capability the
@@ -85,20 +88,26 @@ export type LoginPortal = 'student' | 'instructor';
  * the password is verified — never before, so the result cannot be
  * used to enumerate accounts (a wrong password still returns the
  * generic invalid-credentials error).
+ * - 'admin' tab (secret admin sign-in page): ONLY admin capability
+ *   passes. Students and instructors are rejected with an instruction
+ *   to use the public sign-in instead.
  * - 'student' tab: the primary role must be student, OR the account
- *   is an admin. Admins sign in through this same page (there is no
- *   Admin tab), so admin capability passes BOTH tabs — otherwise
- *   admins would be locked out entirely.
+ *   is an admin. Admins sign in through the public page too (they
+ *   pass BOTH tabs there) — otherwise admins would be locked out
+ *   entirely.
  * - 'instructor' tab: the account must hold the teacher capability
  *   (isTeacher flag or legacy instructor role), OR be an admin.
  * - A user who is BOTH (primary role 'student' + isTeacher flag)
- *   passes either tab.
+ *   passes either public tab.
  */
 export function matchesLoginPortal(
   user: CapabilitySubject | null | undefined,
   portal: LoginPortal,
 ): boolean {
   if (!user) return false;
+  // The Admin tab is admin-only: a student or instructor cannot sign
+  // in on the admin page, even though admins pass both public tabs.
+  if (portal === 'admin') return hasAdminCapability(user);
   if (hasAdminCapability(user)) return true;
   return portal === 'student' ? isStudent(user) : hasTeacherCapability(user);
 }

@@ -15,6 +15,8 @@ const STUDENT_MSG =
   'This account is registered as a Student. Please switch to the Student tab to sign in.';
 const INSTRUCTOR_MSG =
   'This account is registered as an Instructor. Please switch to the Instructor tab to sign in.';
+const ADMIN_MSG =
+  'This sign-in is for admins only. Please use the Student or Instructor sign-in instead.';
 
 test.beforeEach(() => {
   __setDbClient(createFakeDb().asClient());
@@ -46,7 +48,7 @@ async function makeUser(
 function loginReq(
   email: string,
   password: string,
-  requestedRole?: 'student' | 'instructor',
+  requestedRole?: 'student' | 'instructor' | 'admin',
 ): NextRequest {
   const body: Record<string, string> = { action: 'login', email, password };
   if (requestedRole !== undefined) body.requestedRole = requestedRole;
@@ -60,7 +62,7 @@ function loginReq(
 async function attemptLogin(
   email: string,
   password: string,
-  requestedRole?: 'student' | 'instructor',
+  requestedRole?: 'student' | 'instructor' | 'admin',
 ): Promise<{ status: number; body: Record<string, unknown>; setCookie: string | null }> {
   const res = await authPost(loginReq(email, password, requestedRole));
   const body = (await res.json()) as Record<string, unknown>;
@@ -105,7 +107,7 @@ test('pure student via Student tab and pure instructor via Instructor tab still 
   assert.equal((i.body.user as { role: string }).role, 'instructor');
 });
 
-test('admin signs in via EITHER tab (there is no Admin tab — this is how admins log in today)', async () => {
+test('admin signs in via EITHER public tab (admins pass both tabs on the public page)', async () => {
   const email = await makeUser('admin', 'admin', { isAdmin: true });
   const viaStudent = await attemptLogin(email, PASSWORD, 'student');
   assert.equal(viaStudent.status, 200);
@@ -113,6 +115,53 @@ test('admin signs in via EITHER tab (there is no Admin tab — this is how admin
   const viaInstructor = await attemptLogin(email, PASSWORD, 'instructor');
   assert.equal(viaInstructor.status, 200);
   assert.equal((viaInstructor.body.user as { role: string }).role, 'admin');
+});
+
+test('admin signs in via the Admin tab (secret admin sign-in page) and lands on the admin dashboard', async () => {
+  const email = await makeUser('admin-portal', 'admin', { isAdmin: true });
+  const res = await attemptLogin(email, PASSWORD, 'admin');
+  assert.equal(res.status, 200);
+  assert.equal((res.body.user as { role: string }).role, 'admin');
+  assert.ok(res.setCookie?.includes('cb_session'), 'session cookie must be set');
+  // No ADMIN_BASE_PATH in the test env, so the default 'admin' base is used.
+  assert.equal(res.body.dashboardUrl, '/admin/dashboard');
+});
+
+test('student email + Admin tab is rejected with the admin-only instruction and no session', async () => {
+  const email = await makeUser('student-admin-portal', 'student');
+  const res = await attemptLogin(email, PASSWORD, 'admin');
+  assert.equal(res.status, 403);
+  assert.equal(res.body.error, ADMIN_MSG);
+  assert.equal(res.setCookie, null, 'no session cookie must be set on a rejected login');
+});
+
+test('instructor email + Admin tab is rejected with the admin-only instruction and no session', async () => {
+  const email = await makeUser('instructor-admin-portal', 'instructor', { isTeacher: true });
+  const res = await attemptLogin(email, PASSWORD, 'admin');
+  assert.equal(res.status, 403);
+  assert.equal(res.body.error, ADMIN_MSG);
+  assert.equal(res.setCookie, null, 'no session cookie must be set on a rejected login');
+});
+
+test('legacy admin (role without the flag) signs in via the Admin tab', async () => {
+  const email = await makeUser('legacy-admin-portal', 'admin');
+  const res = await attemptLogin(email, PASSWORD, 'admin');
+  assert.equal(res.status, 200);
+  assert.equal((res.body.user as { role: string }).role, 'admin');
+  assert.ok(res.setCookie?.includes('cb_session'), 'session cookie must be set');
+});
+
+test('wrong password with the Admin tab still returns the generic error, never the role message', async () => {
+  const email = await makeUser('wrongpw-admin', 'student');
+  const res = await attemptLogin(email, 'WrongPass123', 'admin');
+  assert.equal(res.status, 401);
+  assert.equal(res.body.error, 'Invalid email or password');
+});
+
+test('unknown email with the Admin tab still returns the generic error (no enumeration)', async () => {
+  const res = await attemptLogin(`nobody-admin-${suffix()}@example.com`, PASSWORD, 'admin');
+  assert.equal(res.status, 401);
+  assert.equal(res.body.error, 'Invalid email or password');
 });
 
 test('wrong password with the wrong tab still returns the generic error, never the role message', async () => {
@@ -167,8 +216,14 @@ test('matchesLoginPortal unit matrix', () => {
   assert.equal(matchesLoginPortal(both, 'instructor'), true);
   assert.equal(matchesLoginPortal(admin, 'student'), true);
   assert.equal(matchesLoginPortal(admin, 'instructor'), true);
+  assert.equal(matchesLoginPortal(admin, 'admin'), true);
   assert.equal(matchesLoginPortal(legacyInstructor, 'instructor'), true);
   assert.equal(matchesLoginPortal(legacyAdmin, 'student'), true);
+  assert.equal(matchesLoginPortal(legacyAdmin, 'admin'), true);
+  assert.equal(matchesLoginPortal(student, 'admin'), false);
+  assert.equal(matchesLoginPortal(instructor, 'admin'), false);
+  assert.equal(matchesLoginPortal(both, 'admin'), false);
   assert.equal(matchesLoginPortal(null, 'student'), false);
   assert.equal(matchesLoginPortal(undefined, 'instructor'), false);
+  assert.equal(matchesLoginPortal(null, 'admin'), false);
 });
