@@ -55,6 +55,7 @@ export type AdminAreaKey =
   | 'success-stories'
   | 'success-stories-management'
   | 'reviews'
+  | 'course-reviews'
   | 'email-templates'
   | 'navbar-editor'
   | 'book-a-call'
@@ -122,6 +123,12 @@ export const ADMIN_AREAS: readonly AdminArea[] = [
   // Home reviews carousel (PR #32): admin-managed student reviews
   // shown on the home landing page. Below Success Stories in the nav.
   { key: 'reviews', label: 'Reviews', href: '/admin/reviews', description: 'Home page student reviews (carousel, enable/disable, add, edit)' },
+  // Course Reviews (student-submitted, moderated): per-course reviews
+  // students write themselves. A NEW area (not folded into 'reviews')
+  // because these are moderated submissions (pending -> approved /
+  // rejected) that publish to the public course pages, while 'reviews'
+  // is the admin-written home carousel.
+  { key: 'course-reviews', label: 'Course Reviews', href: '/admin/course-reviews', description: 'Student course reviews (moderate, approve/reject, edit, delete)' },
   // Email builder: admin email templates (GHL-style) with subject
   // editing and placeholders. A NEW area (not folded into
   // 'notifications') because templates are their own workflow.

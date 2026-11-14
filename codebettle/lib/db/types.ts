@@ -341,13 +341,19 @@ export interface Announcement {
   isActive: boolean;
 }
 
+/** Moderation status for a student-submitted course review. */
+export type ReviewStatus = 'pending' | 'approved' | 'rejected';
+
 export interface Review {
   id: string;
   studentId: string;
   courseId: string;
   rating: number;
+  title: string | null;
   comment: string;
+  status: ReviewStatus;
   createdAt: string;
+  updatedAt: string;
 }
 
 /**
@@ -968,8 +974,16 @@ export type AnnouncementRow = Pick<
 
 export type ReviewRow = Pick<
   Models.public_Review,
-  'id' | 'studentId' | 'courseId' | 'rating' | 'comment' | 'createdAt'
+  'id' | 'studentId' | 'courseId' | 'rating' | 'title' | 'comment' | 'status' | 'createdAt' | 'updatedAt'
 >;
+
+/**
+ * A Review row as the mapper accepts it: the legacy select (pre-moderation
+ * fallback) does not return title/status/updatedAt, and the mapper treats
+ * a missing value as "public from the start" (approved, updatedAt = createdAt).
+ */
+export type ReviewRowLike = Omit<ReviewRow, 'title' | 'status' | 'updatedAt'> &
+  Partial<Pick<ReviewRow, 'title' | 'status' | 'updatedAt'>>;
 
 export type ContactMessageRow = Pick<
   Models.public_ContactMessage,

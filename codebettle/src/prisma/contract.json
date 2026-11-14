@@ -534,6 +534,23 @@
               }
             ]
           },
+          "ReviewStatus": {
+            "codecId": "pg/text@1",
+            "members": [
+              {
+                "name": "pending",
+                "value": "pending"
+              },
+              {
+                "name": "approved",
+                "value": "approved"
+              },
+              {
+                "name": "rejected",
+                "value": "rejected"
+              }
+            ]
+          },
           "Role": {
             "codecId": "pg/text@1",
             "members": [
@@ -7007,11 +7024,41 @@
                   "kind": "scalar"
                 }
               },
+              "status": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                },
+                "valueSet": {
+                  "entityKind": "enum",
+                  "entityName": "ReviewStatus",
+                  "namespaceId": "public",
+                  "plane": "domain"
+                }
+              },
               "studentId": {
                 "nullable": false,
                 "type": {
                   "codecId": "pg/text@1",
                   "kind": "scalar"
+                }
+              },
+              "title": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "updatedAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "precision": 3
+                  }
                 }
               }
             },
@@ -7066,8 +7113,17 @@
                 "rating": {
                   "column": "rating"
                 },
+                "status": {
+                  "column": "status"
+                },
                 "studentId": {
                   "column": "studentId"
+                },
+                "title": {
+                  "column": "title"
+                },
+                "updatedAt": {
+                  "column": "updatedAt"
                 }
               },
               "namespaceId": "public",
@@ -15049,6 +15105,13 @@
               ]
             },
             "Review": {
+              "checks": [
+                {
+                  "expression": "\"status\" IN ('pending', 'approved', 'rejected')",
+                  "name": "Review_status_check_19a2b525",
+                  "prefix": "Review_status_check"
+                }
+              ],
               "columns": {
                 "comment": {
                   "codecId": "pg/text@1",
@@ -15082,10 +15145,38 @@
                   "dataType": "pg/int4",
                   "nullable": false
                 },
+                "status": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "default": {
+                    "kind": "literal",
+                    "value": "approved"
+                  },
+                  "nullable": false,
+                  "valueSet": {
+                    "entityKind": "valueSet",
+                    "entityName": "ReviewStatus",
+                    "namespaceId": "public",
+                    "plane": "storage"
+                  }
+                },
                 "studentId": {
                   "codecId": "pg/text@1",
                   "dataType": "pg/text",
                   "nullable": false
+                },
+                "title": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": true
+                },
+                "updatedAt": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "dataType": "pg/timestamptz",
+                  "nullable": false,
+                  "typeParams": {
+                    "precision": 3
+                  }
                 }
               },
               "foreignKeys": [
@@ -15135,6 +15226,15 @@
                   ],
                   "name": "Review_courseId_idx_12f72d2a",
                   "prefix": "Review_courseId_idx",
+                  "unique": false
+                },
+                {
+                  "columns": [
+                    "courseId",
+                    "status"
+                  ],
+                  "name": "Review_courseId_status_idx_7c6c2bd8",
+                  "prefix": "Review_courseId_status_idx",
                   "unique": false
                 },
                 {
@@ -16948,6 +17048,14 @@
                 "archived"
               ]
             },
+            "ReviewStatus": {
+              "kind": "valueSet",
+              "values": [
+                "pending",
+                "approved",
+                "rejected"
+              ]
+            },
             "Role": {
               "kind": "valueSet",
               "values": [
@@ -16986,10 +17094,10 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "1e54b8fab5c36897213d5679375b2db6485649eb6ade4414cc4a76e551bee58a"
+    "storageHash": "e6c0d779d0dc3299d62efb211ade4e7e40ad06e45e82f02483b495e139710944"
   },
   "execution": {
-    "executionHash": "cbdbddafb02eba614db1beb6011e6428dfa6ec26a5d9f23e406c931ba4a05849",
+    "executionHash": "4b7f1f572e79a25e5364a2f57a5e317582bff4d871b8850bbe577b5f407c48b0",
     "mutations": {
       "defaults": [
         {
@@ -18294,6 +18402,27 @@
           "ref": {
             "entry": "Review",
             "field": "id",
+            "namespace": "public"
+          }
+        },
+        {
+          "onCreate": {
+            "id": "timestampNow",
+            "kind": "generator",
+            "params": {
+              "precision": 3
+            }
+          },
+          "onUpdate": {
+            "id": "timestampNow",
+            "kind": "generator",
+            "params": {
+              "precision": 3
+            }
+          },
+          "ref": {
+            "entry": "Review",
+            "field": "updatedAt",
             "namespace": "public"
           }
         },

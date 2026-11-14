@@ -4,7 +4,7 @@ import { NextRequest } from 'next/server';
 import { __resetDbClient, __setDbClient } from '../lib/db/client';
 import { __resetTestSession, __setTestSession } from '../lib/api-helpers';
 import { createFakeDb, type FakeDb } from './fake-db';
-import { createReviewService, deleteReviewService } from '../lib/services/review-service';
+import { approveReviewService, createReviewService, deleteReviewService } from '../lib/services/review-service';
 import { getCourseById } from '../lib/db/courses';
 import { POST } from '../app/api/student/reviews/route';
 import { DELETE } from '../app/api/student/reviews/[id]/route';
@@ -15,8 +15,9 @@ import type { SessionUser } from '../lib/services/auth-service';
  * Before Phase 7 submit/delete were local-only fakes and
  * Course.rating/reviewCount never moved from their seed values.
  * Now: only enrolled students may review, once per course, and the
- * course stats are recomputed from the stored reviews on every
- * create/delete.
+ * course stats are recomputed from the APPROVED reviews on every
+ * create/delete/approve (Course Reviews moderation: a new review
+ * starts pending and only counts once an admin approves it).
  */
 
 const D = (s: string) => new Date(s);
@@ -76,15 +77,24 @@ test.afterEach(() => {
 
 // --- Service ---
 
-test('create recomputes the course rating from stored reviews', async () => {
+test('create starts pending: the rating only counts it once approved', async () => {
   const res = await createReviewService(STU1, { courseId: 'course-1', rating: 5, comment: 'Excellent!' });
   assert.ok('review' in res, JSON.stringify(res));
   assert.equal(res.review.rating, 5);
-  // (4 + 5) / 2 = 4.5, count 2 — the stale seed stats (4.5/2) are replaced by real ones.
+  assert.equal(res.review.status, 'pending');
+  // Pending: only the approved rev-1 (4 stars) counts — the stale seed
+  // stats (4.5/2) are replaced by real ones (4/1).
+  const before = await getCourseById('course-1');
+  assert.equal(before?.rating, 4);
+  assert.equal(before?.reviewCount, 1);
+  // Approve: (4 + 5) / 2 = 4.5, count 2.
+  const approved = await approveReviewService(ADMIN, res.review.id);
+  assert.ok('review' in approved, JSON.stringify(approved));
+  assert.equal(approved.review.status, 'approved');
   const course = await getCourseById('course-1');
   assert.equal(course?.rating, 4.5);
   assert.equal(course?.reviewCount, 2);
-  assert.equal(res.course?.rating, 4.5);
+  assert.equal(approved.course?.rating, 4.5);
 });
 
 test('duplicate review is a 409', async () => {
@@ -142,9 +152,17 @@ test('POST /api/student/reviews: 201 for an enrolled student, 401 signed out, 40
     courseId: 'course-2', rating: 4, comment: 'Solid intro',
   }));
   assert.equal(ok.status, 201);
-  const body = await ok.json() as { course: { rating: number; reviewCount: number } };
-  assert.equal(body.course.rating, 4);
-  assert.equal(body.course.reviewCount, 1);
+  const body = await ok.json() as { review: { id: string; status: string }; course: { rating: number; reviewCount: number } };
+  // Pending: the review is stored but not counted yet.
+  assert.equal(body.review.status, 'pending');
+  assert.equal(body.course.rating, 0);
+  assert.equal(body.course.reviewCount, 0);
+  // Approve it: now it counts.
+  const approved = await approveReviewService(ADMIN, body.review.id);
+  assert.ok('review' in approved, JSON.stringify(approved));
+  const course = await getCourseById('course-2');
+  assert.equal(course?.rating, 4);
+  assert.equal(course?.reviewCount, 1);
 
   const dup = await POST(jsonReq('http://localhost/api/student/reviews', 'POST', {
     courseId: 'course-2', rating: 5, comment: 'Again',

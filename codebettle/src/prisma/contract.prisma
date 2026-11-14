@@ -691,17 +691,31 @@ model QuizAnswer {
   @@unique([attemptId, questionId])
 }
 
+// Course review moderation (student-submitted course reviews).
+// A review starts `pending` and only shows publicly once an admin
+// approves it. `approved` is the column default so the reviews written
+// before moderation existed stay live.
+enum ReviewStatus {
+  pending
+  approved
+  rejected
+}
+
 model Review {
-  id        String   @id @onCreate(cuid(2))
+  id        String       @id @onCreate(cuid(2))
   studentId String
-  student   User     @relation(fields: [studentId], references: [id])
+  student   User         @relation(fields: [studentId], references: [id])
   courseId  String
-  course    Course   @relation(fields: [courseId], references: [id])
+  course    Course       @relation(fields: [courseId], references: [id])
   rating    Int
+  title     String?
   comment   String
-  createdAt DateTime @default(now()) @onCreate(now())
+  status    ReviewStatus @default(approved)
+  createdAt DateTime     @default(now()) @onCreate(now())
+  updatedAt temporal.UpdatedAt
 
   @@unique([studentId, courseId])
+  @@index([courseId, status])
 }
 
 model Announcement {
