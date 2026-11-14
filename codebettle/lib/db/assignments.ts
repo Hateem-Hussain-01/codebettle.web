@@ -11,6 +11,8 @@
  * submission is just a URL string in the database.
  */
 import { getDb } from './client';
+import { logAudit } from './audit';
+import { isValidColabUrl } from '../assignments';
 import { mapAssignmentRow, mapSubmissionRow, stripUndefined } from './mappers';
 import type {
   Assignment,
@@ -178,6 +180,10 @@ export interface CreateSubmissionInput {
 }
 
 export async function createSubmission(input: CreateSubmissionInput): Promise<AssignmentSubmission> {
+  // NEW-14: same Colab-link invariant as updateSubmission (see above).
+  if (!isValidColabUrl(input.colabUrl)) {
+    throw new Error('Please paste a Google Colab link (colab.research.google.com).');
+  }
   try {
     const row = await getDb().orm.public.AssignmentSubmission.create({
       assignmentId: input.assignmentId,
@@ -272,6 +278,12 @@ export async function updateSubmission(
   id: string,
   input: UpdateSubmissionInput,
 ): Promise<AssignmentSubmission | null> {
+  // NEW-14: the repo layer enforces the Colab-link invariant too, so a
+  // future caller that skips the route-level validation can never store
+  // an arbitrary URL as a submission.
+  if (input.colabUrl !== undefined && !isValidColabUrl(input.colabUrl)) {
+    throw new Error('Please paste a Google Colab link (colab.research.google.com).');
+  }
   try {
     const updated = await getDb()
       .orm.public.AssignmentSubmission.where({ id })
@@ -289,12 +301,16 @@ export interface GradeSubmissionInput {
   gradedBy: string;
 }
 
-/** Grade a submission: marks + feedback, status -> 'graded'. */
+/** Grade a submission: marks + feedback, status -> 'graded'. Writes an
+ * audit entry (NEW-7): a first grade logs 'assignment.grade', a
+ * re-grade logs 'assignment.regrade' with the old marks, so a silent
+ * overwrite is impossible to miss. */
 export async function gradeSubmission(
   id: string,
   input: GradeSubmissionInput,
 ): Promise<AssignmentSubmission | null> {
   try {
+    const previous = await getSubmissionById(id);
     const updated = await getDb()
       .orm.public.AssignmentSubmission.where({ id })
       .update({
@@ -305,7 +321,24 @@ export async function gradeSubmission(
         gradedBy: input.gradedBy,
       });
     if (!updated) return null;
-    return getSubmissionById(id);
+    const graded = await getSubmissionById(id);
+    // Audit (best-effort: a logging failure must never fail the grade
+    // itself — the marks are already saved at this point).
+    try {
+      const wasRegrade = previous?.status === 'graded';
+      await logAudit({
+        actorId: input.gradedBy,
+        action: wasRegrade ? 'assignment.regrade' : 'assignment.grade',
+        entity: 'assignment_submission',
+        entityId: id,
+        detail: wasRegrade
+          ? `Re-graded submission ${id}: ${previous?.marks ?? '—'} marks -> ${input.marks} marks`
+          : `Graded submission ${id}: ${input.marks} marks`,
+      });
+    } catch {
+      // Audit logging must never break grading.
+    }
+    return graded;
   } catch (error) {
     throwIfTablesMissing(error);
   }

@@ -118,15 +118,33 @@ function validPayload(overrides: Partial<SuccessStorySubmitInput> = {}): Success
 
 let fake: FakeDb;
 
+// NEW-2: submit now verifies the stored bytes server-side (magic bytes
+// via a Range fetch of the signed URL), so the tests stub fetch to
+// return bytes matching the file extension in the signed URL — .jpg
+// gets JPEG bytes, .pdf gets PDF bytes, .mp4 gets ftyp bytes.
+const JPEG_HEAD = new Uint8Array([0xff, 0xd8, 0xff, 0xe0, 0x66, 0x61, 0x6b, 0x65]);
+const PDF_HEAD = new TextEncoder().encode('%PDF-1.4 fake pdf');
+const MP4_HEAD = new Uint8Array([0, 0, 0, 24, 0x66, 0x74, 0x79, 0x70, 0x69, 0x73, 0x6f, 0x6d, 0, 0, 0, 0]);
+
+let originalFetch: typeof fetch;
+
 test.beforeEach(() => {
   fake = createFakeDb();
   __setDbClient(fake.asClient());
   __setSuccessStoryStorageClient(mockStorageClient());
+  originalFetch = globalThis.fetch;
+  globalThis.fetch = (async (url: string) => {
+    const path = new URL(url).pathname;
+    if (path.endsWith('.pdf')) return new Response(PDF_HEAD);
+    if (path.endsWith('.mp4')) return new Response(MP4_HEAD);
+    return new Response(JPEG_HEAD);
+  }) as typeof fetch;
 });
 
 test.afterEach(() => {
   __resetDbClient();
   __resetSuccessStoryStorageClient();
+  globalThis.fetch = originalFetch;
 });
 
 // ---------------------------------------------------------------------------

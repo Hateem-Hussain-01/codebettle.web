@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAdminArea } from '@/lib/api-helpers';
 import { uploadPageImage } from '@/lib/services/course-image-storage';
+import { validateStorageKeySegment } from '@/lib/services/file-validation';
 
 /**
  * POST /api/admin/page-builder/upload — upload a block image for the
@@ -29,6 +30,11 @@ export async function POST(request: NextRequest) {
   if (typeof pageId !== 'string' || !pageId.trim()) {
     return NextResponse.json({ error: 'pageId is required' }, { status: 400 });
   }
+  // NEW-9: pageId becomes a storage-key segment — reject anything but
+  // letters/digits/`_`/`-` so a caller cannot scatter objects under
+  // unexpected prefixes (../../x). The storage layer checks again.
+  const segmentError = validateStorageKeySegment(pageId.trim(), 'Page id');
+  if (segmentError) return NextResponse.json({ error: segmentError }, { status: 400 });
   const file = form.get('image');
   if (!file || !(file instanceof File)) {
     return NextResponse.json({ error: 'An image file is required' }, { status: 400 });
@@ -56,6 +62,10 @@ export async function POST(request: NextRequest) {
       );
     }
     if (message.includes('Only JPG, PNG, WebP or GIF') || message.includes('5 MB or smaller')) {
+      return NextResponse.json({ error: message }, { status: 400 });
+    }
+    // NEW-9: the storage-layer segment check — surface as a 400, not a 500.
+    if (message.includes('contains characters that are not allowed')) {
       return NextResponse.json({ error: message }, { status: 400 });
     }
     return NextResponse.json({ error: 'Page image upload failed' }, { status: 500 });

@@ -10,7 +10,13 @@ import {
 } from '../lib/services/application-storage';
 
 const PDF_BYTES = new TextEncoder().encode('%PDF-1.4 fake pdf').buffer as ArrayBuffer;
-const MP4_BYTES = new TextEncoder().encode('fake mp4').buffer as ArrayBuffer;
+// Minimal MP4: 4-byte box size + 'ftyp' at offset 4 (magicBytesMatch
+// checks exactly that). 'fake mp4' text has no ftyp marker.
+const MP4_BYTES = new Uint8Array([0, 0, 0, 24, 0x66, 0x74, 0x79, 0x70, 0x69, 0x73, 0x6f, 0x6d, 0, 0, 0, 0]).buffer as ArrayBuffer;
+// Legacy .doc (OLE compound document) magic + 'fake'.
+const DOC_BYTES = new Uint8Array([0xd0, 0xcf, 0x11, 0xe0, 0xa1, 0xb1, 0x1a, 0xe1, 0x66, 0x61, 0x6b, 0x65]).buffer as ArrayBuffer;
+// OOXML .docx: 'PK\x03\x04' + 'fake'.
+const DOCX_BYTES = new Uint8Array([0x50, 0x4b, 0x03, 0x04, 0x66, 0x61, 0x6b, 0x65]).buffer as ArrayBuffer;
 
 function mockClient(overrides: {
   upload?: () => Promise<{ data: { path: string } | null; error: { message: string } | null }>;
@@ -59,13 +65,13 @@ test('CV upload sends the file to the private application-files bucket and retur
 test('CV upload accepts DOC and DOCX with the right extension', async () => {
   const doc = await uploadApplicationFile(
     'cv',
-    { name: 'cv.doc', type: 'application/msword', size: 10, arrayBuffer: PDF_BYTES },
+    { name: 'cv.doc', type: 'application/msword', size: DOC_BYTES.byteLength, arrayBuffer: DOC_BYTES },
     mockClient(),
   );
   assert.ok(doc.path.endsWith('.doc'), doc.path);
   const docx = await uploadApplicationFile(
     'cv',
-    { name: 'cv.docx', type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', size: 10, arrayBuffer: PDF_BYTES },
+    { name: 'cv.docx', type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', size: DOCX_BYTES.byteLength, arrayBuffer: DOCX_BYTES },
     mockClient(),
   );
   assert.ok(docx.path.endsWith('.docx'), docx.path);

@@ -14,6 +14,7 @@
  */
 import { NextRequest, NextResponse } from 'next/server';
 import { getSession, type SessionUser } from './auth';
+import { isSameOriginRequest } from './security';
 import { hasAdminArea, hasAnyAdminArea, isFullAdmin, type AdminAreaKey } from './admin-access';
 import { hasAdminCapability, hasTeacherCapability } from './rbac';
 import { isSuperAdmin } from './super-admin';
@@ -267,6 +268,22 @@ export async function readJson(request: NextRequest): Promise<unknown | null> {
   } catch {
     return null;
   }
+}
+
+/**
+ * CSRF defence-in-depth (NEW-5): reject a state-changing request
+ * whose Origin/Referer is cross-origin. Returns the 403 response, or
+ * null when the request is allowed. Same-origin and header-less
+ * requests pass (the SameSite=Lax session cookie is the primary CSRF
+ * defence). Enforcement is central in the proxy for every /api/*
+ * mutation, so routes do not need to call this — it exists for
+ * route-level use and for tests.
+ */
+export function assertSameOrigin(request: NextRequest): NextResponse | null {
+  if (!isSameOriginRequest(request)) {
+    return NextResponse.json({ error: 'Cross-origin request rejected' }, { status: 403 });
+  }
+  return null;
 }
 
 export function invalidBody(message = 'Invalid request body'): NextResponse {

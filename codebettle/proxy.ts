@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { buildCspHeader, generateNonce, shouldAllowFraming } from '@/lib/security';
+import { API_CSP, buildCspHeader, generateNonce, isSameOriginRequest, shouldAllowFraming } from '@/lib/security';
 import { adminUrl, getAdminBasePath, isAdminPath, isAdminSigninPath, isLegacyAdminPath } from '@/lib/admin-url';
 
 /**
@@ -103,6 +103,39 @@ function setPageSecurityHeaders(
 
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
+
+  // NEW-5 + NEW-10: API + static-asset responses. These never reach
+  // the maintenance/portal logic — API routes authorize themselves,
+  // and the maintenance check's own fetch targets /api/settings/public,
+  // so this branch MUST return before any isMaintenanceMode() call or
+  // the proxy would recurse on its own fetch.
+  if (isApiOrStaticPath(pathname)) {
+    // NEW-5: a state-changing API request must be same-origin (CSRF
+    // defence-in-depth behind the SameSite=Lax session cookie).
+    // GET/HEAD/OPTIONS are read-only (or preflight) and stay open; a
+    // request with no Origin/Referer (curl, server fetches) passes.
+    if (
+      pathname.startsWith('/api/') &&
+      request.method !== 'GET' &&
+      request.method !== 'HEAD' &&
+      request.method !== 'OPTIONS' &&
+      !isSameOriginRequest(request)
+    ) {
+      const denied = new NextResponse(
+        JSON.stringify({ error: 'Cross-origin request rejected' }),
+        { status: 403, headers: { 'content-type': 'application/json' } },
+      );
+      denied.headers.set('Content-Security-Policy', API_CSP);
+      denied.headers.set('X-Frame-Options', 'DENY');
+      return denied;
+    }
+    // NEW-10: API/static responses get a restrictive CSP + no framing.
+    const response = NextResponse.next();
+    response.headers.set('Content-Security-Policy', API_CSP);
+    response.headers.set('X-Frame-Options', 'DENY');
+    return response;
+  }
+
   // Embed render only: /forms/<slug>?embed=1. Draft preview
   // (?preview=1) is NOT an embed — it stays unframeable.
   const allowFraming = shouldAllowFraming(pathname, request.nextUrl.searchParams.get('embed'));
@@ -184,5 +217,39 @@ export const config = {
         { type: 'header', key: 'purpose', value: 'prefetch' },
       ],
     },
+    // NEW-10: API + static assets also run through the proxy so they
+    // get the restrictive CSP / X-Frame-Options headers (and the
+    // NEW-5 same-origin check on API mutations). Prefetch requests
+    // still skip it.
+    {
+      source: '/api/:path*',
+      missing: [
+        { type: 'header', key: 'next-router-prefetch' },
+        { type: 'header', key: 'purpose', value: 'prefetch' },
+      ],
+    },
+    {
+      source: '/_next/static/:path*',
+      missing: [
+        { type: 'header', key: 'next-router-prefetch' },
+        { type: 'header', key: 'purpose', value: 'prefetch' },
+      ],
+    },
+    {
+      source: '/_next/image/:path*',
+      missing: [
+        { type: 'header', key: 'next-router-prefetch' },
+        { type: 'header', key: 'purpose', value: 'prefetch' },
+      ],
+    },
   ],
 };
+
+/** API + Next.js static-asset paths (handled by the NEW-5/NEW-10 branch above). */
+function isApiOrStaticPath(pathname: string): boolean {
+  return (
+    pathname.startsWith('/api/') ||
+    pathname.startsWith('/_next/static/') ||
+    pathname.startsWith('/_next/image/')
+  );
+}

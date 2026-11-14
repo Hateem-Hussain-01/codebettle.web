@@ -22,6 +22,38 @@
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import { randomUUID } from 'node:crypto';
 import { ALLOWED_COURSE_IMAGE_TYPES, MAX_COURSE_IMAGE_BYTES } from '../thumbnail';
+import {
+  isValidStorageKeySegment,
+  readUploadedBytes,
+  validateUploadedBytes,
+} from './file-validation';
+
+/**
+ * Shared image validation (UPLOAD-01): declared MIME allowlist + size
+ * + magic bytes, so a renamed file can never be stored as an image.
+ * Returns the verified bytes for the upload. Throws the endpoint's
+ * own error wording on failure.
+ */
+async function validateAndReadImage(
+  file: CourseImageFile,
+  allowedTypes: readonly string[],
+  maxBytes: number,
+  typeError: string,
+  sizeError: string,
+): Promise<Buffer> {
+  const body = await readUploadedBytes(file);
+  const problem = validateUploadedBytes(
+    file.type,
+    file.size,
+    body,
+    allowedTypes,
+    maxBytes,
+    typeError,
+    sizeError,
+  );
+  if (problem) throw new Error(problem);
+  return body;
+}
 
 export const COURSE_IMAGE_BUCKET = 'course-images';
 export { ALLOWED_COURSE_IMAGE_TYPES, MAX_COURSE_IMAGE_BYTES };
@@ -72,17 +104,19 @@ export async function uploadCourseImage(
   file: CourseImageFile,
   client?: SupabaseClient,
 ): Promise<{ url: string; path: string }> {
-  if (!(ALLOWED_COURSE_IMAGE_TYPES as readonly string[]).includes(file.type)) {
-    throw new Error('Only JPG, PNG, WebP or GIF images are allowed');
+  // NEW-9: the course id becomes a storage-key segment — reject
+  // anything but letters/digits/`_`/`-` so a caller cannot scatter
+  // objects under unexpected prefixes.
+  if (!isValidStorageKeySegment(courseId)) {
+    throw new Error('Course id contains characters that are not allowed');
   }
-  if (file.size > MAX_COURSE_IMAGE_BYTES) {
-    throw new Error('Image must be 5 MB or smaller');
-  }
-  const bytes = typeof file.arrayBuffer === 'function' ? await file.arrayBuffer() : file.arrayBuffer;
-  const body = Buffer.isBuffer(bytes) ? bytes : Buffer.from(bytes);
-  if (body.byteLength > MAX_COURSE_IMAGE_BYTES) {
-    throw new Error('Image must be 5 MB or smaller');
-  }
+  const body = await validateAndReadImage(
+    file,
+    ALLOWED_COURSE_IMAGE_TYPES,
+    MAX_COURSE_IMAGE_BYTES,
+    'Only JPG, PNG, WebP or GIF images are allowed',
+    'Image must be 5 MB or smaller',
+  );
   const storage = client ?? getCourseImageStorageClient();
   const path = `courses/${courseId}/${randomUUID()}.${EXTENSIONS[file.type]}`;
   const { data, error } = await storage.storage
@@ -150,17 +184,17 @@ export async function uploadFormCoverImage(
   file: FormCoverFile,
   client?: SupabaseClient,
 ): Promise<{ url: string; path: string }> {
-  if (!(ALLOWED_COURSE_IMAGE_TYPES as readonly string[]).includes(file.type)) {
-    throw new Error('Only JPG, PNG, WebP or GIF images are allowed');
+  // NEW-9: the form id becomes a storage-key segment — see uploadCourseImage.
+  if (!isValidStorageKeySegment(formId)) {
+    throw new Error('Form id contains characters that are not allowed');
   }
-  if (file.size > MAX_COURSE_IMAGE_BYTES) {
-    throw new Error('Image must be 5 MB or smaller');
-  }
-  const bytes = typeof file.arrayBuffer === 'function' ? await file.arrayBuffer() : file.arrayBuffer;
-  const body = Buffer.isBuffer(bytes) ? bytes : Buffer.from(bytes);
-  if (body.byteLength > MAX_COURSE_IMAGE_BYTES) {
-    throw new Error('Image must be 5 MB or smaller');
-  }
+  const body = await validateAndReadImage(
+    file,
+    ALLOWED_COURSE_IMAGE_TYPES,
+    MAX_COURSE_IMAGE_BYTES,
+    'Only JPG, PNG, WebP or GIF images are allowed',
+    'Image must be 5 MB or smaller',
+  );
   const storage = client ?? getCourseImageStorageClient();
   const path = `forms/${formId}/${randomUUID()}.${EXTENSIONS[file.type]}`;
   const { data, error } = await storage.storage
@@ -233,17 +267,13 @@ export async function uploadCeoPhotoImage(
   file: CeoPhotoFile,
   client?: SupabaseClient,
 ): Promise<{ url: string; path: string }> {
-  if (!(CEO_PHOTO_TYPES as readonly string[]).includes(file.type)) {
-    throw new Error('Only JPG, PNG or WebP images are allowed');
-  }
-  if (file.size > MAX_COURSE_IMAGE_BYTES) {
-    throw new Error('Image must be 5 MB or smaller');
-  }
-  const bytes = typeof file.arrayBuffer === 'function' ? await file.arrayBuffer() : file.arrayBuffer;
-  const body = Buffer.isBuffer(bytes) ? bytes : Buffer.from(bytes);
-  if (body.byteLength > MAX_COURSE_IMAGE_BYTES) {
-    throw new Error('Image must be 5 MB or smaller');
-  }
+  const body = await validateAndReadImage(
+    file,
+    CEO_PHOTO_TYPES,
+    MAX_COURSE_IMAGE_BYTES,
+    'Only JPG, PNG or WebP images are allowed',
+    'Image must be 5 MB or smaller',
+  );
   const storage = client ?? getCourseImageStorageClient();
   const path = `team/ceo/${randomUUID()}.${EXTENSIONS[file.type]}`;
   const { data, error } = await storage.storage
@@ -301,17 +331,13 @@ export async function uploadTeamMemberPhotoImage(
   file: TeamMemberPhotoFile,
   client?: SupabaseClient,
 ): Promise<{ url: string; path: string }> {
-  if (!(TEAM_MEMBER_PHOTO_TYPES as readonly string[]).includes(file.type)) {
-    throw new Error('Only JPG, PNG or WebP images are allowed');
-  }
-  if (file.size > MAX_COURSE_IMAGE_BYTES) {
-    throw new Error('Image must be 5 MB or smaller');
-  }
-  const bytes = typeof file.arrayBuffer === 'function' ? await file.arrayBuffer() : file.arrayBuffer;
-  const body = Buffer.isBuffer(bytes) ? bytes : Buffer.from(bytes);
-  if (body.byteLength > MAX_COURSE_IMAGE_BYTES) {
-    throw new Error('Image must be 5 MB or smaller');
-  }
+  const body = await validateAndReadImage(
+    file,
+    TEAM_MEMBER_PHOTO_TYPES,
+    MAX_COURSE_IMAGE_BYTES,
+    'Only JPG, PNG or WebP images are allowed',
+    'Image must be 5 MB or smaller',
+  );
   const storage = client ?? getCourseImageStorageClient();
   const path = `team/members/${randomUUID()}.${EXTENSIONS[file.type]}`;
   const { data, error } = await storage.storage
@@ -349,17 +375,13 @@ export async function uploadStudentReviewPhotoImage(
   file: StudentReviewPhotoFile,
   client?: SupabaseClient,
 ): Promise<{ url: string; path: string }> {
-  if (!(STUDENT_REVIEW_PHOTO_TYPES as readonly string[]).includes(file.type)) {
-    throw new Error('Only JPG, PNG or WebP images are allowed');
-  }
-  if (file.size > MAX_COURSE_IMAGE_BYTES) {
-    throw new Error('Image must be 5 MB or smaller');
-  }
-  const bytes = typeof file.arrayBuffer === 'function' ? await file.arrayBuffer() : file.arrayBuffer;
-  const body = Buffer.isBuffer(bytes) ? bytes : Buffer.from(bytes);
-  if (body.byteLength > MAX_COURSE_IMAGE_BYTES) {
-    throw new Error('Image must be 5 MB or smaller');
-  }
+  const body = await validateAndReadImage(
+    file,
+    STUDENT_REVIEW_PHOTO_TYPES,
+    MAX_COURSE_IMAGE_BYTES,
+    'Only JPG, PNG or WebP images are allowed',
+    'Image must be 5 MB or smaller',
+  );
   const storage = client ?? getCourseImageStorageClient();
   const path = `reviews/${randomUUID()}.${EXTENSIONS[file.type]}`;
   const { data, error } = await storage.storage
@@ -399,17 +421,13 @@ export async function uploadNavbarLogoImage(
   file: NavbarLogoFile,
   client?: SupabaseClient,
 ): Promise<{ url: string; path: string }> {
-  if (!(NAVBAR_LOGO_TYPES as readonly string[]).includes(file.type)) {
-    throw new Error('Only JPG, PNG or WebP images are allowed');
-  }
-  if (file.size > MAX_NAVBAR_LOGO_BYTES) {
-    throw new Error('Logo must be 2 MB or smaller');
-  }
-  const bytes = typeof file.arrayBuffer === 'function' ? await file.arrayBuffer() : file.arrayBuffer;
-  const body = Buffer.isBuffer(bytes) ? bytes : Buffer.from(bytes);
-  if (body.byteLength > MAX_NAVBAR_LOGO_BYTES) {
-    throw new Error('Logo must be 2 MB or smaller');
-  }
+  const body = await validateAndReadImage(
+    file,
+    NAVBAR_LOGO_TYPES,
+    MAX_NAVBAR_LOGO_BYTES,
+    'Only JPG, PNG or WebP images are allowed',
+    'Logo must be 2 MB or smaller',
+  );
   const storage = client ?? getCourseImageStorageClient();
   const path = `brand/${randomUUID()}.${EXTENSIONS[file.type]}`;
   const { data, error } = await storage.storage
@@ -452,17 +470,18 @@ export async function uploadPageImage(
   file: PageImageFile,
   client?: SupabaseClient,
 ): Promise<{ url: string; path: string }> {
-  if (!(ALLOWED_COURSE_IMAGE_TYPES as readonly string[]).includes(file.type)) {
-    throw new Error('Only JPG, PNG, WebP or GIF images are allowed');
+  // NEW-9: the page id comes from the editor form — it becomes a
+  // storage-key segment, so reject anything but letters/digits/`_`/`-`.
+  if (!isValidStorageKeySegment(pageId)) {
+    throw new Error('Page id contains characters that are not allowed');
   }
-  if (file.size > MAX_COURSE_IMAGE_BYTES) {
-    throw new Error('Image must be 5 MB or smaller');
-  }
-  const bytes = typeof file.arrayBuffer === 'function' ? await file.arrayBuffer() : file.arrayBuffer;
-  const body = Buffer.isBuffer(bytes) ? bytes : Buffer.from(bytes);
-  if (body.byteLength > MAX_COURSE_IMAGE_BYTES) {
-    throw new Error('Image must be 5 MB or smaller');
-  }
+  const body = await validateAndReadImage(
+    file,
+    ALLOWED_COURSE_IMAGE_TYPES,
+    MAX_COURSE_IMAGE_BYTES,
+    'Only JPG, PNG, WebP or GIF images are allowed',
+    'Image must be 5 MB or smaller',
+  );
   const storage = client ?? getCourseImageStorageClient();
   const path = `pages/${pageId}/${randomUUID()}.${EXTENSIONS[file.type]}`;
   const { data, error } = await storage.storage

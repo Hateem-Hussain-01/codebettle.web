@@ -14,11 +14,18 @@
  * NO live upload happens here or in tests: the key is not available on
  * this VM. Tests pass a mock client instead of calling the getter.
  * Live setup goes in the runbook: create the `blog-pdfs` bucket in the
- * Supabase dashboard (Storage -> New bucket, private) and set
+ * Supabase dashboard (Storage -> New bucket, PUBLIC) and set
  * SUPABASE_SERVICE_ROLE_KEY in .env.local / Vercel env vars.
+ *
+ * NEW-6 (14 Nov 2026): the bucket MUST be public. Blog PDFs are
+ * attached to public blog posts and linked directly from the public
+ * blog page (`getPublicUrl`), so a private bucket silently breaks
+ * them — the returned URL 404s. The live bucket was verified private
+ * and flipped to public via the Storage API on 14 Nov 2026.
  */
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import { randomUUID } from 'node:crypto';
+import { readUploadedBytes, validateUploadedBytes } from './file-validation';
 
 export const BLOG_PDF_BUCKET = 'blog-pdfs';
 export const MAX_BLOG_PDF_BYTES = 10 * 1024 * 1024; // 10 MB
@@ -58,17 +65,18 @@ export async function uploadBlogPdf(
   file: BlogPdfFile,
   client?: SupabaseClient,
 ): Promise<{ url: string; path: string }> {
-  if (file.type !== 'application/pdf') {
-    throw new Error('Only PDF files are allowed');
-  }
-  if (file.size > MAX_BLOG_PDF_BYTES) {
-    throw new Error('PDF must be 10 MB or smaller');
-  }
-  const bytes = typeof file.arrayBuffer === 'function' ? await file.arrayBuffer() : file.arrayBuffer;
-  const body = Buffer.isBuffer(bytes) ? bytes : Buffer.from(bytes);
-  if (body.byteLength > MAX_BLOG_PDF_BYTES) {
-    throw new Error('PDF must be 10 MB or smaller');
-  }
+  // Magic-byte validation (UPLOAD-01): the bytes must start with %PDF.
+  const body = await readUploadedBytes(file);
+  const problem = validateUploadedBytes(
+    file.type,
+    file.size,
+    body,
+    ['application/pdf'],
+    MAX_BLOG_PDF_BYTES,
+    'Only PDF files are allowed',
+    'PDF must be 10 MB or smaller',
+  );
+  if (problem) throw new Error(problem);
   const storage = client ?? getBlogStorageClient();
   const path = `blogs/${randomUUID()}.pdf`;
   const { data, error } = await storage.storage

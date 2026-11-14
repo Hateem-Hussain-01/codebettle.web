@@ -31,7 +31,12 @@ export function isValidColabUrl(value: string): boolean {
   }
   if (url.protocol !== 'https:') return false;
   if (url.hostname.toLowerCase() !== COLAB_HOST) return false;
-  return true;
+  // NEW-14: pinning the host is not enough — a bare
+  // https://colab.research.google.com/foo is not a notebook. Colab
+  // notebook URLs live under /drive/ (a Drive file) or /github/ (a
+  // GitHub file); anything else is rejected.
+  const path = url.pathname.toLowerCase();
+  return path.startsWith('/drive/') || path.startsWith('/github/');
 }
 
 /** Human-readable error for a bad Colab link, or null when it is fine. */

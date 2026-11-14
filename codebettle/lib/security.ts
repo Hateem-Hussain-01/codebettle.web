@@ -134,6 +134,57 @@ export function shouldAllowFraming(pathname: string, embedParam: string | null):
   return pathname.startsWith('/forms/') && pathname !== '/forms/' && embedParam === '1';
 }
 
+// ---------------------------------------------------------------------------
+// Same-origin check (NEW-5 — CSRF defence-in-depth) + API CSP (NEW-10).
+// ---------------------------------------------------------------------------
+
+/**
+ * True when a request is same-origin (or carries no Origin/Referer to
+ * judge by). A cross-site form POST or fetch carries an Origin header
+ * naming the attacker's site; a same-origin request names this app's
+ * own origin. Requests with NO Origin and NO Referer (curl,
+ * server-side fetches, non-browser clients) are allowed — the absence
+ * of the header is not proof of forgery, and the SameSite=Lax session
+ * cookie is the primary CSRF defence for those. A literal "null"
+ * Origin (sandboxed iframe / file:// page) is never same-origin.
+ *
+ * `request` only needs `url` + `headers.get`, so the proxy (Edge) and
+ * the API helpers (Node) share the rule — and unit tests can pass a
+ * plain object.
+ */
+export function isSameOriginRequest(request: {
+  url: string;
+  headers: { get(name: string): string | null };
+}): boolean {
+  const origin = request.headers.get('origin');
+  const referer = request.headers.get('referer');
+  const candidate = origin ?? referer;
+  if (!candidate) return true;
+  if (candidate === 'null') return false;
+  let requestOrigin: string;
+  try {
+    requestOrigin = new URL(request.url).origin;
+  } catch {
+    return false;
+  }
+  try {
+    return new URL(candidate).origin === requestOrigin;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Restrictive CSP for API + static responses (NEW-10). API responses
+ * are JSON, never documents — but if one is ever navigated to directly
+ * or served with a sniffable type, this stops it becoming an XSS
+ * vector: nothing may load, nothing may frame it, and `sandbox`
+ * treats it as a unique origin with no script execution. Static
+ * assets loaded as subresources ignore this header; loaded directly
+ * they render as inert text.
+ */
+export const API_CSP = "default-src 'none'; frame-ancestors 'none'; sandbox";
+
 /** One fresh, unpredictable nonce per request (base64 of a UUID). */
 export function generateNonce(): string {
   return Buffer.from(crypto.randomUUID()).toString('base64');
