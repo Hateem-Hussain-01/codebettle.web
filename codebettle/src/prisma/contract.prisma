@@ -129,6 +129,16 @@ enum QuizScoringPolicy {
   partial
 }
 
+// Assignment submission status. A submission is 'late' when it is
+// submitted after the assignment's dueDate; grading moves it to
+// 'graded'. The late flag is also exposed as a computed `isLate` on
+// the mapped type so the UI can still show it after grading.
+enum SubmissionStatus {
+  submitted
+  graded
+  late
+}
+
 model User {
   id                 String                  @id @onCreate(cuid(2))
   name               String
@@ -193,6 +203,9 @@ model User {
   blogPosts          BlogPost[]
   quizzesCreated     Quiz[]             @relation("QuizCreator")
   quizAttempts       QuizAttempt[]      @relation("QuizAttempts")
+  createdAssignments Assignment[]       @relation("AssignmentCreator")
+  assignmentSubmissions AssignmentSubmission[] @relation("AssignmentSubmissionStudent")
+  gradedSubmissions  AssignmentSubmission[] @relation("AssignmentSubmissionGrader")
   notes              Note[]
   wishlist           Wishlist[]
   supportRequests    SupportRequest[]   @relation("SupportRequestStudent")
@@ -259,6 +272,7 @@ model Course {
   announcements   Announcement[]
   successStories  SuccessStorySubmission[]
   quizzes         Quiz[]
+  assignments     Assignment[]
   notes           Note[]
   wishlistEntries Wishlist[]
   supportRequests SupportRequest[]
@@ -315,10 +329,61 @@ model Batch {
 
   enrollments  Enrollment[]
   successStories SuccessStorySubmission[]
+  assignments  Assignment[]
 
   @@unique([courseId, batchNumber])
   @@index([courseId])
   @@index([instructorId])
+}
+
+// Assignments & grading: a teacher creates an assignment for one of
+// their courses (optionally scoped to a single batch); students submit
+// a Google Colab LINK (never a file — no Storage bucket, no file
+// handling anywhere in this feature; a submission is just a URL
+// string). One submission per student per assignment; a student may
+// update their Colab link until the teacher grades it.
+model Assignment {
+  id          String   @id @onCreate(cuid(2))
+  courseId    String
+  course      Course   @relation(fields: [courseId], references: [id])
+  batchId     String?
+  batch       Batch?   @relation(fields: [batchId], references: [id])
+  title       String
+  description String
+  dueDate     DateTime?
+  maxMarks    Int
+  createdBy   String
+  creator     User     @relation("AssignmentCreator", fields: [createdBy], references: [id])
+  createdAt   DateTime @default(now()) @onCreate(now())
+  updatedAt   temporal.UpdatedAt
+
+  submissions AssignmentSubmission[]
+
+  @@index([courseId])
+  @@index([batchId])
+  @@index([createdBy])
+}
+
+model AssignmentSubmission {
+  id           String           @id @onCreate(cuid(2))
+  assignmentId String
+  assignment   Assignment       @relation(fields: [assignmentId], references: [id])
+  studentId    String
+  student      User             @relation("AssignmentSubmissionStudent", fields: [studentId], references: [id])
+  colabUrl     String
+  submittedAt  DateTime         @default(now()) @onCreate(now())
+  status       SubmissionStatus @default(submitted)
+  marks        Int?
+  feedback     String?
+  gradedAt     DateTime?
+  gradedBy     String?
+  grader       User?            @relation("AssignmentSubmissionGrader", fields: [gradedBy], references: [id])
+  createdAt    DateTime         @default(now()) @onCreate(now())
+  updatedAt    temporal.UpdatedAt
+
+  @@unique([assignmentId, studentId])
+  @@index([assignmentId])
+  @@index([studentId])
 }
 
 model Enrollment {

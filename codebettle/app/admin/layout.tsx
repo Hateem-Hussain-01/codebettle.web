@@ -15,6 +15,8 @@ const NAV_ICONS = {
   students: <Users className="w-5 h-5" />,
   instructors: <GraduationCap className="w-5 h-5" />,
   enrollments: <ClipboardList className="w-5 h-5" />,
+  // Assignments & Grading sidebar icon.
+  assignments: <FileText className="w-5 h-5" />,
   coupons: <Tag className="w-5 h-5" />,
   announcements: <Bell className="w-5 h-5" />,
   messages: <Mail className="w-5 h-5" />,
