@@ -7,7 +7,6 @@ import {
   DEFAULT_PAGE_STATS,
   DEFAULT_VIDEO_CONFIG,
   compareTeamMembers,
-  groupTeamByLevel,
   isTeamMemberLevel,
   moveItem,
   orderValuesAfterMove,
@@ -126,28 +125,26 @@ test('stats: defaults are the home page numbers; blank stored values fall back',
 });
 
 // ---------------------------------------------------------------------------
-// Team grouping + Load More + reorder (pure)
+// Team flat order + Load More + reorder (pure)
 // ---------------------------------------------------------------------------
 
-test('team grouping: enabled only, Management → Departments → Trainers, ordered within a group', () => {
-  const groups = groupTeamByLevel([
-    { id: 't1', level: 'trainer', orderInLevel: 0, enabled: true },
-    { id: 'd2', level: 'department', department: 'Engineering', orderInLevel: 1, enabled: true },
-    { id: 'm1', level: 'management', orderInLevel: 0, enabled: true },
-    { id: 'd1', level: 'department', department: 'Design', orderInLevel: 0, enabled: true },
-    { id: 'd3', level: 'department', department: 'Design', orderInLevel: 1, enabled: true },
-    { id: 'x', level: 'management', orderInLevel: 0, enabled: false },
-  ]);
-  assert.deepEqual(
-    groups.map((g) => ({ level: g.level, department: g.department, ids: g.members.map((m) => m.id) })),
-    [
-      { level: 'management', department: null, ids: ['m1'] },
-      { level: 'department', department: 'Design', ids: ['d1', 'd3'] },
-      { level: 'department', department: 'Engineering', ids: ['d2'] },
-      { level: 'trainer', department: null, ids: ['t1'] },
-    ],
-  );
-  // Group headings + level guard.
+test('team sorting: flat sortOrder only — level and department do NOT order the list', () => {
+  // A trainer with sortOrder 0 comes before a manager with sortOrder 1:
+  // the About page shows one flat list in the admin-set order, no
+  // hierarchy grouping (Eman's 14 Nov 2026 change).
+  const members = [
+    { id: 'm', sortOrder: 1 },
+    { id: 't', sortOrder: 0 },
+    { id: 'd', sortOrder: 2 },
+  ];
+  assert.deepEqual([...members].sort(compareTeamMembers).map((m) => m.id), ['t', 'm', 'd']);
+  // Ties on sortOrder fall back to id (deterministic first render).
+  const tied = [
+    { id: 'b', sortOrder: 0 },
+    { id: 'a', sortOrder: 0 },
+  ];
+  assert.deepEqual([...tied].sort(compareTeamMembers).map((m) => m.id), ['a', 'b']);
+  // Level label + level guard (level is still stored, just not used for order).
   assert.equal(teamLevelLabel('management'), 'Management');
   assert.equal(teamLevelLabel('department', 'Design'), 'Design');
   assert.equal(teamLevelLabel('department', null), 'Departments');
@@ -155,15 +152,6 @@ test('team grouping: enabled only, Management → Departments → Trainers, orde
   assert.equal(isTeamMemberLevel('management'), true);
   assert.equal(isTeamMemberLevel('bogus'), false);
   assert.equal(isTeamMemberLevel(1), false);
-});
-
-test('team sorting: hierarchy order beats alphabetical level names', () => {
-  const members = [
-    { id: 't', level: 'trainer', orderInLevel: 0 },
-    { id: 'd', level: 'department', orderInLevel: 0 },
-    { id: 'm', level: 'management', orderInLevel: 0 },
-  ];
-  assert.deepEqual([...members].sort(compareTeamMembers).map((m) => m.id), ['m', 'd', 't']);
 });
 
 test('load more: first 5, then 5 more per click, never past the total', () => {
@@ -212,6 +200,11 @@ test('team validation: name + designation required, level must be named, departm
   );
   assert.equal(validateTeamMember({ fullName: 'Ahmad', designation: 'CEO', level: 'management' }), null);
   assert.equal(validateTeamMember({ fullName: 'Ahmad', designation: 'CEO' }), null);
+  assert.equal(
+    validateTeamMember({ fullName: 'Ahmad', designation: 'CEO', sortOrder: -1 }),
+    'Order must be a whole number of 0 or more',
+  );
+  assert.equal(validateTeamMember({ fullName: 'Ahmad', designation: 'CEO', sortOrder: 2 }), null);
 });
 
 test('review validation: rating 1-5, text required', () => {
@@ -275,7 +268,7 @@ test('team: CRUD + enabled visibility (disabled stays in admin, hidden publicly)
     designation: 'Chief Executive Officer',
     bio: 'Founder',
     level: 'management',
-    orderInLevel: 0,
+    sortOrder: 0,
   });
   assert.equal(member.fullName, 'Ahmad Hassan');
   assert.equal(member.level, 'management');
@@ -290,17 +283,32 @@ test('team: CRUD + enabled visibility (disabled stays in admin, hidden publicly)
     designation: 'Designer',
     level: 'department',
     department: 'Design',
-    orderInLevel: 0,
+    sortOrder: 1,
   });
   assert.equal(designer.department, 'Design');
   const moved = await updateTeamMember(designer.id, { level: 'trainer', department: null });
   assert.equal(moved?.level, 'trainer');
   assert.equal(moved?.department, undefined);
 
-  // Admin list is hierarchy order (management before trainer).
+  // Admin list is flat sortOrder order (NOT hierarchy: the trainer
+  // Sara with sortOrder 1 comes after Ahmad with sortOrder 0).
   assert.deepEqual(
     (await listTeamMembers()).map((m) => m.fullName),
     ['Ahmad Hassan', 'Sara Designer'],
+  );
+
+  // The admin arrows swap sortOrder between two adjacent members
+  // (the whole flat list, not just within a level) — the public
+  // About page order flips with it.
+  await updateTeamMember(member.id, { sortOrder: 1 });
+  await updateTeamMember(designer.id, { sortOrder: 0 });
+  assert.deepEqual(
+    (await listTeamMembers()).map((m) => m.fullName),
+    ['Sara Designer', 'Ahmad Hassan'],
+  );
+  assert.deepEqual(
+    (await listEnabledTeamMembers()).map((m) => m.fullName),
+    ['Sara Designer', 'Ahmad Hassan'],
   );
 
   const updated = await updateTeamMember(member.id, { enabled: false });
@@ -453,20 +461,16 @@ test('seed data: exact placeholder names, one team member per level, no placehol
   }
 });
 
-test('seeded team: fixed ids land in the DB and the About page groups them Management → Design → Trainers', async () => {
+test('seeded team: fixed ids land in the DB and the About page shows them flat in seed sortOrder', async () => {
   const now = new Date();
   fake.seed(
     'TeamMember',
     TEAM_SEED_MEMBERS.map((m) => ({ ...m, photoUrl: null, enabled: true, createdAt: now, updatedAt: now })),
   );
-  const groups = groupTeamByLevel(await listEnabledTeamMembers());
+  // Flat list, admin-set order (sortOrder 0, 1, 2) — no grouping.
   assert.deepEqual(
-    groups.map((g) => ({ level: g.level, department: g.department, names: g.members.map((m) => m.fullName) })),
-    [
-      { level: 'management', department: null, names: ['Ali Raza'] },
-      { level: 'department', department: 'Design', names: ['Fatima Khan'] },
-      { level: 'trainer', department: null, names: ['Usman Ali'] },
-    ],
+    (await listEnabledTeamMembers()).map((m) => m.fullName),
+    ['Ali Raza', 'Fatima Khan', 'Usman Ali'],
   );
   // The seeded rows are disable-able and delete-able from admin.
   await updateTeamMember('seed-team-ali-raza', { enabled: false });

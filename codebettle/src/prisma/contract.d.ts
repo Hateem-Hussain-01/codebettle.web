@@ -23,7 +23,7 @@ import type {
 } from '@prisma/orm-postgres/contract/types';
 
 export type StorageHash =
-  StorageHashBase<'1755dd25ae5e44399cec215c469899aba1f22557dd6847129ca08f980461d7c5'>;
+  StorageHashBase<'d4ce9adf1c16a3c166863f72d6f960ecc11c860741509da7ac8a01ab6a0cdfa3'>;
 export type ExecutionHash =
   ExecutionHashBase<'50d6b78e5589590708424555c51169b80ce39643b4d4c3236c595275b7d0ddbd'>;
 export type ProfileHash =
@@ -1354,8 +1354,8 @@ export namespace Models {
     id: FieldOutputTypes['public']['TeamMember']['id'];
     level: FieldOutputTypes['public']['TeamMember']['level'];
     linkedinUrl: FieldOutputTypes['public']['TeamMember']['linkedinUrl'];
-    orderInLevel: FieldOutputTypes['public']['TeamMember']['orderInLevel'];
     photoUrl: FieldOutputTypes['public']['TeamMember']['photoUrl'];
+    sortOrder: FieldOutputTypes['public']['TeamMember']['sortOrder'];
     updatedAt: FieldOutputTypes['public']['TeamMember']['updatedAt'];
     websiteUrl: FieldOutputTypes['public']['TeamMember']['websiteUrl'];
     xUrl: FieldOutputTypes['public']['TeamMember']['xUrl'];
@@ -6700,7 +6700,13 @@ type ContractBase = Omit<
                   readonly nullable: true;
                   readonly many: false;
                 };
-                readonly orderInLevel: {
+                readonly photoUrl: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly sortOrder: {
                   readonly dataType: 'pg/int4';
                   readonly codecId: 'pg/int4@1';
                   readonly nullable: false;
@@ -6708,12 +6714,6 @@ type ContractBase = Omit<
                     readonly kind: 'literal';
                     readonly value: DefaultLiteralValue<'pg/int4@1', 0>;
                   };
-                  readonly many: false;
-                };
-                readonly photoUrl: {
-                  readonly dataType: 'pg/text';
-                  readonly codecId: 'pg/text@1';
-                  readonly nullable: true;
                   readonly many: false;
                 };
                 readonly updatedAt: {
@@ -6740,9 +6740,9 @@ type ContractBase = Omit<
               uniques: readonly [];
               indexes: readonly [
                 {
-                  readonly name: 'TeamMember_enabled_level_orderInLevel_idx_65721722';
-                  readonly prefix: 'TeamMember_enabled_level_orderInLevel_idx';
-                  readonly columns: readonly ['enabled', 'level', 'orderInLevel'];
+                  readonly name: 'TeamMember_enabled_sortOrder_idx_f5142a7d';
+                  readonly prefix: 'TeamMember_enabled_sortOrder_idx';
+                  readonly columns: readonly ['enabled', 'sortOrder'];
                   readonly unique: false;
                 },
               ];
@@ -11798,13 +11798,13 @@ type ContractBase = Omit<
                 readonly nullable: true;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
               };
-              readonly orderInLevel: {
-                readonly nullable: false;
-                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/int4@1' };
-              };
               readonly photoUrl: {
                 readonly nullable: true;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly sortOrder: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/int4@1' };
               };
               readonly updatedAt: {
                 readonly nullable: false;
@@ -11838,8 +11838,8 @@ type ContractBase = Omit<
                 readonly id: { readonly column: 'id' };
                 readonly level: { readonly column: 'level' };
                 readonly linkedinUrl: { readonly column: 'linkedinUrl' };
-                readonly orderInLevel: { readonly column: 'orderInLevel' };
                 readonly photoUrl: { readonly column: 'photoUrl' };
+                readonly sortOrder: { readonly column: 'sortOrder' };
                 readonly updatedAt: { readonly column: 'updatedAt' };
                 readonly websiteUrl: { readonly column: 'websiteUrl' };
                 readonly xUrl: { readonly column: 'xUrl' };

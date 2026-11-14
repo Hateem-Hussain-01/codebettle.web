@@ -608,21 +608,23 @@ export interface TeamMember {
   githubUrl?: string;
   websiteUrl?: string;
   /**
-   * Hierarchy level, top first: 'management' → 'department' →
-   * 'trainer'. The public About page groups in exactly this order.
+   * Hierarchy level: 'management' → 'department' → 'trainer'. Stored
+   * (the admin form keeps it) but NO LONGER used for grouping or
+   * ordering on the public About page — the page shows one flat list
+   * in sortOrder (Eman's 14 Nov 2026 change).
    */
   level: TeamMemberLevel;
   /** Department name for department-level members (e.g. 'Design'); null otherwise. */
   department?: string;
-  /** Order within the level (lower first). */
-  orderInLevel: number;
+  /** Global display order on the About page (lower first). Set by the admin with the up/down arrows. */
+  sortOrder: number;
   /** False hides the card from the public page while keeping it in admin. */
   enabled: boolean;
   createdAt: string;
   updatedAt: string;
 }
 
-/** Team hierarchy level (see lib/management.ts TEAM_LEVEL_ORDER). */
+/** Team level (stored; no longer used for grouping or ordering — the About page is one flat list in sortOrder). */
 export type TeamMemberLevel = 'management' | 'department' | 'trainer';
 
 /** One review in the home page "What Our Students Say" carousel. */
@@ -1007,7 +1009,7 @@ export type TeamMemberRow = Pick<
   | 'websiteUrl'
   | 'level'
   | 'department'
-  | 'orderInLevel'
+  | 'sortOrder'
   | 'enabled'
   | 'createdAt'
   | 'updatedAt'

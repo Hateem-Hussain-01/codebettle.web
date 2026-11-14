@@ -64,12 +64,19 @@ export interface CreateTeamMemberInput {
   websiteUrl?: string | null;
   level?: TeamMemberLevel;
   department?: string | null;
-  orderInLevel?: number;
+  sortOrder?: number;
   enabled?: boolean;
+}
+
+/** Next display order: one past the current max, so a new member lands at the end of the flat list. */
+async function nextTeamMemberSortOrder(): Promise<number> {
+  const members = await listTeamMembers();
+  return members.reduce((max, m) => Math.max(max, m.sortOrder), -1) + 1;
 }
 
 export async function createTeamMember(input: CreateTeamMemberInput): Promise<TeamMember> {
   try {
+    const sortOrder = input.sortOrder ?? (await nextTeamMemberSortOrder());
     const row = await getDb().orm.public.TeamMember.create({
       photoUrl: input.photoUrl ?? null,
       fullName: input.fullName,
@@ -81,7 +88,7 @@ export async function createTeamMember(input: CreateTeamMemberInput): Promise<Te
       websiteUrl: input.websiteUrl ?? null,
       level: input.level ?? 'management',
       department: input.department?.trim() || null,
-      orderInLevel: input.orderInLevel ?? 0,
+      sortOrder,
       enabled: input.enabled ?? true,
     });
     return mapTeamMemberRow(row as TeamMemberRow);
@@ -98,10 +105,9 @@ export async function getTeamMemberById(id: string): Promise<TeamMember | null> 
 }
 
 /**
- * Admin list: every member, hierarchy order (Management → Departments
- * → Trainers, then order in level). Sorted in memory: the DB stores
- * level as text, and alphabetical text order ('department' <
- * 'management') is NOT the hierarchy order.
+ * Admin list: every member, in global display order (sortOrder, then
+ * id). The public page shows the same flat order — no hierarchy
+ * grouping (Eman's 14 Nov 2026 change).
  */
 export async function listTeamMembers(): Promise<TeamMember[]> {
   return withTeamMemberTableFallback(async () => {
@@ -129,7 +135,7 @@ export interface UpdateTeamMemberInput {
   websiteUrl?: string | null;
   level?: TeamMemberLevel;
   department?: string | null;
-  orderInLevel?: number;
+  sortOrder?: number;
   enabled?: boolean;
 }
 

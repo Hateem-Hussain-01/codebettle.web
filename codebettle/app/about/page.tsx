@@ -4,17 +4,17 @@ import FadeIn from '@/components/ui/FadeIn';
 import TeamSection from '@/components/sections/TeamSection';
 import { getSession } from '@/lib/auth';
 import { listEnabledTeamMembers } from '@/lib/db/team-members';
-import { groupTeamByLevel } from '@/lib/management';
 import { Target, Eye, Heart } from 'lucide-react';
 
 export default async function AboutPage() {
   const session = await getSession();
   // Admin-managed team (PR #32, moved here from /success-stories by
-  // Eman's 13 Nov 2026 change): enabled members only, grouped
-  // Management → Departments → Trainers. Empty until the migration
-  // has run / an admin adds members — the section shows its honest
-  // empty state instead of breaking.
-  const teamGroups = groupTeamByLevel(await listEnabledTeamMembers());
+  // Eman's 13 Nov 2026 change; flat by his 14 Nov 2026 change):
+  // enabled members only, ONE flat list in the admin-set display
+  // order (sortOrder) — no department/hierarchy grouping. Empty
+  // until the migration has run / an admin adds members — the
+  // section shows its honest empty state instead of breaking.
+  const teamMembers = await listEnabledTeamMembers();
 
   return (
     <>
@@ -54,7 +54,7 @@ export default async function AboutPage() {
             <span className="text-primary-text text-sm font-semibold uppercase tracking-wider">Meet Our Team</span>
             <h2 className="text-3xl font-black text-foreground mt-2">Meet the Team Behind <span className="gradient-text">CodeBettle</span></h2>
           </FadeIn>
-          <TeamSection groups={teamGroups} />
+          <TeamSection members={teamMembers} />
         </div>
       </main>
       <Footer />

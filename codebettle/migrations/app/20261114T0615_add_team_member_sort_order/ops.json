@@ -1,0 +1,248 @@
+[
+ {
+  "id": "dropIndex.TeamMember.TeamMember_enabled_level_orderInLevel_idx_65721722",
+  "label": "Drop index \"TeamMember_enabled_level_orderInLevel_idx_65721722\"",
+  "operationClass": "widening",
+  "target": {
+   "id": "postgres",
+   "details": {
+    "schema": "public",
+    "objectType": "index",
+    "name": "TeamMember_enabled_level_orderInLevel_idx_65721722",
+    "table": "TeamMember"
+   }
+  },
+  "precheck": [
+   {
+    "description": "ensure index \"TeamMember_enabled_level_orderInLevel_idx_65721722\" exists",
+    "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+    "params": [
+     "\"public\".\"TeamMember_enabled_level_orderInLevel_idx_65721722\""
+    ],
+    "expectation": {
+     "expects": "present",
+     "object": "index \"TeamMember_enabled_level_orderInLevel_idx_65721722\""
+    }
+   }
+  ],
+  "execute": [
+   {
+    "description": "drop index \"TeamMember_enabled_level_orderInLevel_idx_65721722\"",
+    "sql": "DROP INDEX \"public\".\"TeamMember_enabled_level_orderInLevel_idx_65721722\"",
+    "params": []
+   }
+  ],
+  "postcheck": [
+   {
+    "description": "verify index \"TeamMember_enabled_level_orderInLevel_idx_65721722\" does not exist",
+    "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+    "params": [
+     "\"public\".\"TeamMember_enabled_level_orderInLevel_idx_65721722\""
+    ],
+    "expectation": {
+     "expects": "absent",
+     "object": "index \"TeamMember_enabled_level_orderInLevel_idx_65721722\""
+    }
+   }
+  ]
+ },
+ {
+  "id": "column.public.TeamMember.sortOrder",
+  "label": "Add column \"sortOrder\" to \"TeamMember\"",
+  "operationClass": "additive",
+  "target": {
+   "id": "postgres",
+   "details": {
+    "schema": "public",
+    "objectType": "column",
+    "name": "sortOrder",
+    "table": "TeamMember"
+   }
+  },
+  "precheck": [
+   {
+    "description": "ensure column \"sortOrder\" is missing",
+    "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+    "params": [
+     "public",
+     "TeamMember",
+     "sortOrder"
+    ],
+    "expectation": {
+     "expects": "absent",
+     "object": "column \"sortOrder\" on \"TeamMember\""
+    }
+   }
+  ],
+  "execute": [
+   {
+    "description": "add column \"sortOrder\"",
+    "sql": "ALTER TABLE \"public\".\"TeamMember\" ADD COLUMN \"sortOrder\" int4 DEFAULT 0 NOT NULL"
+   }
+  ],
+  "postcheck": [
+   {
+    "description": "verify column \"sortOrder\" exists",
+    "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+    "params": [
+     "public",
+     "TeamMember",
+     "sortOrder"
+    ],
+    "expectation": {
+     "expects": "present",
+     "object": "column \"sortOrder\" on \"TeamMember\""
+    }
+   },
+   {
+    "description": "verify column \"sortOrder\" has type \"integer\"",
+    "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_attribute\" AS \"a\" INNER JOIN \"pg_class\" AS \"c\" ON \"c\".\"oid\" = \"a\".\"attrelid\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"relnamespace\" WHERE (\"n\".\"nspname\" = $1 AND \"c\".\"relname\" = $2 AND \"a\".\"attname\" = $3 AND (format_type(\"a\".\"atttypid\", \"a\".\"atttypmod\")) = $4 AND NOT (\"a\".\"attisdropped\"))) AS \"result\"",
+    "params": [
+     "public",
+     "TeamMember",
+     "sortOrder",
+     "integer"
+    ]
+   },
+   {
+    "description": "verify column \"sortOrder\" is NOT NULL",
+    "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3 AND \"is_nullable\" = $4)) AS \"result\"",
+    "params": [
+     "public",
+     "TeamMember",
+     "sortOrder",
+     "NO"
+    ]
+   }
+  ]
+ },
+ {
+  "id": "data.public.TeamMember.backfill-sort-order",
+  "label": "Backfill team member display order",
+  "operationClass": "data",
+  "target": {
+   "id": "postgres",
+   "details": {
+    "schema": "public",
+    "objectType": "table",
+    "name": "TeamMember"
+   }
+  },
+  "precheck": [],
+  "execute": [
+   {
+    "description": "Backfill sortOrder from hierarchy order",
+    "sql": "UPDATE \"public\".\"TeamMember\" t SET \"sortOrder\" = sub.rn - 1 FROM (SELECT \"id\", ROW_NUMBER() OVER (ORDER BY CASE \"level\" WHEN 'management' THEN 0 WHEN 'department' THEN 1 WHEN 'trainer' THEN 2 ELSE 3 END, CASE WHEN \"level\" = 'department' THEN COALESCE(\"department\", '') ELSE '' END, \"orderInLevel\", \"id\") AS rn FROM \"public\".\"TeamMember\") sub WHERE t.\"id\" = sub.\"id\""
+   }
+  ],
+  "postcheck": [
+   {
+    "description": "verify sortOrder values are dense (0..n-1)",
+    "sql": "SELECT (COUNT(DISTINCT \"sortOrder\") = COUNT(*)) AS \"result\" FROM \"public\".\"TeamMember\"",
+    "params": [],
+    "expectation": {
+     "expects": "present",
+     "object": "dense sortOrder values"
+    }
+   }
+  ]
+ },
+ {
+  "id": "dropColumn.TeamMember.orderInLevel",
+  "label": "Drop column \"orderInLevel\" from \"TeamMember\"",
+  "operationClass": "destructive",
+  "target": {
+   "id": "postgres",
+   "details": {
+    "schema": "public",
+    "objectType": "column",
+    "name": "orderInLevel",
+    "table": "TeamMember"
+   }
+  },
+  "precheck": [
+   {
+    "description": "ensure column \"orderInLevel\" exists",
+    "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+    "params": [
+     "public",
+     "TeamMember",
+     "orderInLevel"
+    ],
+    "expectation": {
+     "expects": "present",
+     "object": "column \"orderInLevel\" on \"TeamMember\""
+    }
+   }
+  ],
+  "execute": [
+   {
+    "description": "drop column \"orderInLevel\"",
+    "sql": "ALTER TABLE \"public\".\"TeamMember\" DROP COLUMN \"orderInLevel\""
+   }
+  ],
+  "postcheck": [
+   {
+    "description": "verify column \"orderInLevel\" does not exist",
+    "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+    "params": [
+     "public",
+     "TeamMember",
+     "orderInLevel"
+    ],
+    "expectation": {
+     "expects": "absent",
+     "object": "column \"orderInLevel\" on \"TeamMember\""
+    }
+   }
+  ]
+ },
+ {
+  "id": "index.TeamMember.TeamMember_enabled_sortOrder_idx_f5142a7d",
+  "label": "Create index \"TeamMember_enabled_sortOrder_idx_f5142a7d\" on \"TeamMember\"",
+  "operationClass": "additive",
+  "target": {
+   "id": "postgres",
+   "details": {
+    "schema": "public",
+    "objectType": "index",
+    "name": "TeamMember_enabled_sortOrder_idx_f5142a7d",
+    "table": "TeamMember"
+   }
+  },
+  "precheck": [
+   {
+    "description": "ensure index \"TeamMember_enabled_sortOrder_idx_f5142a7d\" does not exist",
+    "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+    "params": [
+     "\"public\".\"TeamMember_enabled_sortOrder_idx_f5142a7d\""
+    ],
+    "expectation": {
+     "expects": "absent",
+     "object": "index \"TeamMember_enabled_sortOrder_idx_f5142a7d\""
+    }
+   }
+  ],
+  "execute": [
+   {
+    "description": "create index \"TeamMember_enabled_sortOrder_idx_f5142a7d\"",
+    "sql": "CREATE INDEX \"TeamMember_enabled_sortOrder_idx_f5142a7d\" ON \"public\".\"TeamMember\" (\"enabled\", \"sortOrder\")",
+    "params": []
+   }
+  ],
+  "postcheck": [
+   {
+    "description": "verify index \"TeamMember_enabled_sortOrder_idx_f5142a7d\" exists on \"TeamMember\" with the planned definition",
+    "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" INNER JOIN \"pg_index\" AS \"i\" ON \"i\".\"indexrelid\" = \"c\".\"oid\" INNER JOIN \"pg_am\" AS \"m\" ON \"m\".\"oid\" = \"c\".\"relam\" WHERE (\"c\".\"oid\" = to_regclass($1) AND (\"c\".\"relkind\" = $2 OR \"c\".\"relkind\" = $3) AND \"i\".\"indrelid\" = to_regclass($4) AND NOT (\"i\".\"indisunique\") AND \"m\".\"amname\" = $5 AND (\"i\".\"indexprs\" IS NULL AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"i\".\"indkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"i\".\"indrelid\" AND key_attribute.attnum = key_column.attnum) = ($6)::jsonb) AND \"i\".\"indpred\" IS NULL)) AS \"result\"",
+    "params": [
+     "\"public\".\"TeamMember_enabled_sortOrder_idx_f5142a7d\"",
+     "i",
+     "I",
+     "\"public\".\"TeamMember\"",
+     "btree",
+     "[\"enabled\",\"sortOrder\"]"
+    ]
+   }
+  ]
+ }
+]
