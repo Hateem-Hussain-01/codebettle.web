@@ -9,8 +9,10 @@ import CourseThumbnail from '@/components/ui/CourseThumbnail';
 import Input from '@/components/ui/Input';
 import type { Batch, PublicCourse, Review, SafeUser } from '@/lib/db/types';
 import { formatPrice, getLevelColor, getCategoryColor, formatDate, getTotalLessonsCount, getCourseDuration } from '@/lib/utils';
+import { summarizeCourseProgress } from '@/lib/services/progress-service';
 import { ChevronDown, ChevronUp, BookOpen, Clock, Users, Award, CheckCircle, Tag, Play, Heart, Download, CalendarDays } from 'lucide-react';
 import FadeIn from '@/components/ui/FadeIn';
+import ProgressBar from '@/components/ui/ProgressBar';
 import { useWishlist } from '@/hooks/use-wishlist';
 import toast from 'react-hot-toast';
 
@@ -21,15 +23,20 @@ interface CourseDetailClientProps {
   slug: string;
   /** True when the signed-in student is already enrolled (false for visitors / other roles). */
   enrolled: boolean;
+  /** Lessons the enrolled student has marked complete (LessonProgress). Empty for visitors / non-enrolled students. */
+  completedLessonIds: string[];
   /** The open batch (latest upcoming/ongoing) — what new students enrol in. Null when no batches exist yet. */
   openBatch: Batch | null;
   /** All batches, newest first (open batch + history). */
   batches: Batch[];
 }
 
-export default function CourseDetailClient({ course, instructor, reviews, slug, enrolled, openBatch, batches }: CourseDetailClientProps) {
+export default function CourseDetailClient({ course, instructor, reviews, slug, enrolled, completedLessonIds, openBatch, batches }: CourseDetailClientProps) {
   const totalLessons = getTotalLessonsCount(course.modules);
   const duration = getCourseDuration(course.modules);
+  // Student Progress Tracking: % complete + next lesson for an enrolled
+  // student (computed from this course's modules + their completed ids).
+  const progress = enrolled ? summarizeCourseProgress(course.modules, completedLessonIds) : null;
 
   const [openModules, setOpenModules] = useState<Record<string, boolean>>({ [course.modules[0]?.id]: true });
   // Wishlist heart (Phase 0d): only rendered for signed-in students.
@@ -175,6 +182,23 @@ export default function CourseDetailClient({ course, instructor, reviews, slug, 
                     <Button fullWidth size="lg" neon onClick={handleEnroll} disabled={enrolling} className="mb-3">
                       {enrolled ? 'Continue Learning' : enrolling ? 'Enrolling…' : course.isFree ? 'Enroll for Free' : 'Enroll Now'}
                     </Button>
+                    {/* Your progress — Student Progress Tracking. Only for an
+                        enrolled student: bar + % + next lesson (or complete). */}
+                    {enrolled && progress && (
+                      <div className="mb-3">
+                        <ProgressBar
+                          percent={progress.percent}
+                          label={progress.totalLessons === 0
+                            ? 'No lessons yet'
+                            : `${progress.percent}% complete · ${progress.completedCount} of ${progress.totalLessons} lessons`}
+                        />
+                        {progress.isComplete ? (
+                          <p className="text-green-400 text-xs mt-1.5 text-center">Course complete 🎉</p>
+                        ) : progress.nextLesson ? (
+                          <p className="text-primary-text text-xs mt-1.5 text-center">Up next: {progress.nextLesson.lessonTitle}</p>
+                        ) : null}
+                      </div>
+                    )}
                     {/* Open batch — the batch the Enroll button enrols into. */}
                     {openBatch && (
                       <p className="flex items-center justify-center gap-1.5 text-xs text-muted mb-3">

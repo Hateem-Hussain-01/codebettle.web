@@ -157,6 +157,26 @@ export async function markLessonComplete(
   return { ok: true };
 }
 
+/**
+ * Unmark one lesson complete for an enrolment (idempotent — ok even
+ * when the lesson was not marked complete). The LessonProgress row is
+ * deleted; the enrolment and the lesson are untouched.
+ */
+export async function unmarkLessonComplete(
+  enrollmentId: string,
+  lessonId: string,
+): Promise<{ ok: true } | { error: string }> {
+  const enrollment = await getDb()
+    .orm.public.Enrollment.where({ id: enrollmentId })
+    .where((e) => e.deletedAt.isNull())
+    .first();
+  if (!enrollment) return { error: 'Enrollment not found' };
+  const lesson = await getDb().orm.public.Lesson.where({ id: lessonId }).first();
+  if (!lesson) return { error: 'Lesson not found' };
+  await getDb().orm.public.LessonProgress.where({ enrollmentId, lessonId }).delete();
+  return { ok: true };
+}
+
 export interface UpdateEnrollmentInput {
   isCompleted?: boolean;
   completedAt?: string | null;

@@ -4,7 +4,7 @@ import { connection } from 'next/server';
 import { getSession } from '@/lib/auth';
 import { getBatchesByCourse, getOpenBatchForCourse } from '@/lib/db/batches';
 import { getCourseBySlug } from '@/lib/db/courses';
-import { isEnrolled } from '@/lib/db/enrollments';
+import { getEnrollmentsByStudent, isEnrolled } from '@/lib/db/enrollments';
 import { toPublicCourse } from '@/lib/db/mappers';
 import { getUserById } from '@/lib/db/users';
 import { getReviewsByCourse } from '@/lib/db/reviews';
@@ -50,6 +50,12 @@ export default async function CourseDetailPage({ params }: { params: Promise<{ s
   // enrol button (the page itself stays public — no session = not enrolled).
   const session = await getSession();
   const enrolled = session?.role === 'student' ? await isEnrolled(session.id, course.id) : false;
+  // Student Progress Tracking: an enrolled student also sees their
+  // progress bar + next lesson on this page. The completed lesson ids
+  // come from the enrolment's LessonProgress rows.
+  const completedLessonIds = enrolled && session
+    ? (await getEnrollmentsByStudent(session.id)).find((e) => e.courseId === course.id)?.completedLessons ?? []
+    : [];
   // Batches: the open batch (latest upcoming/ongoing) is what new
   // students enrol in; older batches are shown as history. When the
   // batch table has not been created yet (SQL not run), both are empty
@@ -58,5 +64,5 @@ export default async function CourseDetailPage({ params }: { params: Promise<{ s
     getOpenBatchForCourse(course.id),
     getBatchesByCourse(course.id),
   ]);
-  return <CourseDetailClient course={toPublicCourse(course)} instructor={instructor} reviews={reviews} slug={slug} enrolled={enrolled} openBatch={openBatch} batches={batches} />;
+  return <CourseDetailClient course={toPublicCourse(course)} instructor={instructor} reviews={reviews} slug={slug} enrolled={enrolled} completedLessonIds={completedLessonIds} openBatch={openBatch} batches={batches} />;
 }

@@ -4,6 +4,7 @@ import { getEnrollmentsByStudent } from '@/lib/db/enrollments';
 import { getCoursesByIds } from '@/lib/db/courses';
 import { getCertificatesByStudent } from '@/lib/db/certificates';
 import { getSiteWideAnnouncements } from '@/lib/db/announcements';
+import { summarizeCourseProgress } from '@/lib/services/progress-service';
 import { formatDateShort } from '@/lib/utils';
 import Link from 'next/link';
 import { BookOpen, Award, Bell, ArrowRight, CheckCircle } from 'lucide-react';
@@ -11,6 +12,7 @@ import Card from '@/components/ui/Card';
 import Badge from '@/components/ui/Badge';
 import FadeIn from '@/components/ui/FadeIn';
 import CourseThumbnail from '@/components/ui/CourseThumbnail';
+import ProgressBar from '@/components/ui/ProgressBar';
 
 export default async function StudentDashboard() {
   const session = await getSession();
@@ -80,6 +82,10 @@ export default async function StudentDashboard() {
             <div className="space-y-3">
               {enrolledCourses.slice(0, 4).map(({ enrollment, course }) => {
                 const batch = enrollment.batchId ? batchById.get(enrollment.batchId) : null;
+                // Student Progress Tracking: % complete + next lesson for
+                // this enrolment (completed lessons come from the
+                // LessonProgress table via the enrolment).
+                const progress = summarizeCourseProgress(course!.modules, enrollment.completedLessons);
                 return (
                 <Link key={enrollment.id} href={`/student/courses/${enrollment.courseId}`}>
                   <Card hover glow className="p-4">
@@ -89,6 +95,20 @@ export default async function StudentDashboard() {
                         <p className="text-foreground font-semibold text-sm truncate">{course!.title}</p>
                         <p className="text-muted text-xs">{enrollment.completedLessons.length} lessons accessed</p>
                         {batch && <p className="text-muted text-xs">Batch {batch.batchNumber}{batch.startDate ? ` — starts ${formatDateShort(batch.startDate)}` : ''}</p>}
+                        {/* Progress — bar + % + next lesson (or complete). The whole card links to the course page, so tapping here continues the course. */}
+                        <div className="mt-2">
+                          <ProgressBar
+                            percent={progress.percent}
+                            label={progress.totalLessons === 0
+                              ? 'No lessons yet'
+                              : `${progress.percent}% complete · ${progress.completedCount} of ${progress.totalLessons} lessons`}
+                          />
+                          {progress.isComplete ? (
+                            <p className="text-green-400 text-xs mt-1">Course complete 🎉</p>
+                          ) : progress.nextLesson ? (
+                            <p className="text-primary-text text-xs mt-1">Continue: {progress.nextLesson.lessonTitle}</p>
+                          ) : null}
+                        </div>
                       </div>
                       {enrollment.isCompleted
                         ? <Badge variant="success">Completed</Badge>
