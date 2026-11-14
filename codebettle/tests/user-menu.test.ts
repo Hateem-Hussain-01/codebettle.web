@@ -195,11 +195,13 @@ test('Navbar: logged-in desktop shows UserMenu; Login/Get Started stay for guest
   assert.match(navbar, /Login/);
   assert.match(navbar, /Get Started/);
   // The bare portal Button (Admin Panel / Dashboard / My Learning) is
-  // gone from the desktop auth area; the mobile "Go to Portal" button
-  // is intentionally kept.
+  // gone from the desktop auth area; the mobile "Back to Dashboard"
+  // button is intentionally kept (renamed from "Go to Portal" on
+  // 14 Nov 2026 so the mobile wording matches the desktop button).
   assert.doesNotMatch(navbar, /Admin Panel/);
   assert.doesNotMatch(navbar, /My Learning/);
-  assert.match(navbar, /Go to Portal/);
+  assert.doesNotMatch(navbar, /Go to Portal/);
+  assert.match(navbar, /Back to Dashboard/);
 });
 
 test('UserMenu source: outside-click + Escape close, arrow keys move between items', () => {

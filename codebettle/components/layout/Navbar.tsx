@@ -135,12 +135,25 @@ export default function Navbar({ session, navItems: navItemsProp, logoUrl: logoU
           <div className="hidden md:flex items-center gap-3">
             <ThemeToggle />
             {session && menuLinks ? (
-              <UserMenu
-                user={{ name: session.name, email: session.email, avatar: session.avatar }}
-                profileHref={menuLinks.profileHref}
-                settingsHref={menuLinks.settingsHref}
-                onLogout={handleLogout}
-              />
+              <>
+                {/* Back to Dashboard (Eman, 14 Nov 2026): a logged-in
+                    user on the home page (or any public page) had no
+                    visible way back to their dashboard — the avatar
+                    menu has no Dashboard link. The href reuses the
+                    existing portalLink: student/instructor dashboards
+                    directly, admin via /api/portal (server-side
+                    redirect, so the secret admin base path never
+                    appears in the page or the JS bundle). */}
+                <Link href={portalLink!}>
+                  <Button variant="primary" size="sm">Back to Dashboard</Button>
+                </Link>
+                <UserMenu
+                  user={{ name: session.name, email: session.email, avatar: session.avatar }}
+                  profileHref={menuLinks.profileHref}
+                  settingsHref={menuLinks.settingsHref}
+                  onLogout={handleLogout}
+                />
+              </>
             ) : (
               <>
                 <Link href="/auth/login"><Button variant="ghost" size="sm">Login</Button></Link>
@@ -175,7 +188,7 @@ export default function Navbar({ session, navItems: navItemsProp, logoUrl: logoU
               <div className="pt-2 border-t border-dark-border flex flex-col gap-2">
                 {session ? (
                   <Link href={portalLink!} onClick={() => setMobileOpen(false)}>
-                    <Button variant="primary" size="sm" fullWidth>Go to Portal</Button>
+                    <Button variant="primary" size="sm" fullWidth>Back to Dashboard</Button>
                   </Link>
                 ) : (
                   <>
