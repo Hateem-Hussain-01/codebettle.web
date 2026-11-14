@@ -134,6 +134,13 @@ export async function renderCertificatePdf(html: string): Promise<Buffer> {
     let contentHeight: number;
     try {
       page = await browser.newPage();
+      // SECURITY (ADM-03): a certificate template is admin-authored HTML
+      // rendered server-side into a PDF. JavaScript is never needed for
+      // a static certificate, so it stays off — a <script> in a template
+      // (malicious or pasted by accident) cannot execute in Chromium
+      // during any student's download. page.evaluate below still works:
+      // it is driven over CDP, not by page JavaScript.
+      await page.setJavaScriptEnabled(false);
       await page.setContent(html, { waitUntil: 'load' });
       // Fit the single-page design onto one A4 landscape page (see header).
       contentHeight = await page.evaluate(() => document.body.scrollHeight);

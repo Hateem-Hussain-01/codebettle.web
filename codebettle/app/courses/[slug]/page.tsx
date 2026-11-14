@@ -7,7 +7,7 @@ import { getCourseBySlug } from '@/lib/db/courses';
 import { getEnrollmentsByStudent, isEnrolled } from '@/lib/db/enrollments';
 import { toPublicCourse } from '@/lib/db/mappers';
 import { getUserById } from '@/lib/db/users';
-import { getApprovedReviewsByCourse } from '@/lib/db/reviews';
+import { getApprovedPublicReviewsByCourse } from '@/lib/db/reviews';
 import CourseDetailClient from './course-detail-client';
 
 /**
@@ -46,8 +46,9 @@ export default async function CourseDetailPage({ params }: { params: Promise<{ s
 
   const instructor = await getUserById(course.instructorId);
   // Only APPROVED student reviews are public — pending/rejected ones
-  // never show here.
-  const reviews = await getApprovedReviewsByCourse(course.id);
+  // never show here. The public shape (STU-05) carries the author's
+  // display name instead of the internal studentId.
+  const reviews = await getApprovedPublicReviewsByCourse(course.id);
   // Already-enrolled students see "Continue Learning" instead of the
   // enrol button (the page itself stays public — no session = not enrolled).
   const session = await getSession();

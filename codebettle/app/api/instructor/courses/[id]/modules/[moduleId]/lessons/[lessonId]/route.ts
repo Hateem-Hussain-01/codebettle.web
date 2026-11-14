@@ -1,9 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { assertNotViewAs, invalidBody, readJson, requireRoles, serviceError } from '@/lib/api-helpers';
 import { lessonUpdateSchema } from '@/lib/api-schemas';
-import { deleteLessonService, updateLessonService } from '@/lib/services/course-service';
+import { deleteLessonService, loadCourseForEdit, updateLessonService } from '@/lib/services/course-service';
 
-/** PATCH/DELETE /api/instructor/courses/[id]/modules/[moduleId]/lessons/[lessonId] — your own course only. */
+/**
+ * PATCH/DELETE /api/instructor/courses/[id]/modules/[moduleId]/lessons/[lessonId] — your own course only.
+ *
+ * INST-03: the ownership check runs BEFORE body validation — an
+ * instructor PATCHing a lesson in someone else's course gets 403 even
+ * with an empty body, instead of a 400 ("Nothing to update").
+ */
 export async function PATCH(
   request: NextRequest,
   { params }: { params: Promise<{ id: string; moduleId: string; lessonId: string }> },
@@ -14,6 +20,8 @@ export async function PATCH(
   if (viewing) return viewing;
   const { id, moduleId, lessonId } = await params;
 
+  const allowed = await loadCourseForEdit(auth.session, id);
+  if ('error' in allowed) return serviceError(allowed);
   const body = await readJson(request);
   if (body === null) return invalidBody();
   const parsed = lessonUpdateSchema.safeParse(body);

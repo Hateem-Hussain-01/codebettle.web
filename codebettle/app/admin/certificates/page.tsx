@@ -18,12 +18,17 @@ export default async function AdminCertificatesPage() {
   const students = await getAllUsers();
   const courses = await getAllCourses();
 
-  // Completed enrolments that do not have a certificate yet.
+  // Completed enrolments that do not have a certificate yet — and whose
+  // payment is verified (SECURITY NEW-1: a pending-payment enrolment is
+  // never offered for issuing, matching the issueCertificate gate).
   const { items: enrollments } = await listEnrollments({ limit: '100' });
   const { items: certificates } = await listCertificates({ limit: '100' });
   const certifiedEnrollmentIds = new Set(certificates.map((c) => c.enrollmentId));
   const eligibleEnrollments = enrollments.filter(
-    (e) => e.isCompleted && !certifiedEnrollmentIds.has(e.id),
+    (e) =>
+      e.isCompleted &&
+      (e.paymentStatus === 'paid' || e.paymentStatus === 'free') &&
+      !certifiedEnrollmentIds.has(e.id),
   );
 
   return (

@@ -357,6 +357,24 @@ export interface Review {
 }
 
 /**
+ * A course review as served to the public course page (STU-05). The
+ * author's internal studentId never leaves the server — only the display
+ * name (avatar initial + byline). Admin paths and the student's own
+ * reviews keep using Review (with studentId).
+ */
+export interface PublicReview {
+  id: string;
+  courseId: string;
+  rating: number;
+  title: string | null;
+  comment: string;
+  status: ReviewStatus;
+  createdAt: string;
+  updatedAt: string;
+  studentName: string;
+}
+
+/**
  * A message sent through the public contact form (Phase 7). The model
  * already existed in the Prisma contract (migration 1) but nothing ever
  * wrote to it — the form faked the send. Messages are admin-only to

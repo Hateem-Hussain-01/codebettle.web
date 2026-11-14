@@ -13,7 +13,8 @@
 import { getDb } from './client';
 import { isMissingColumnError } from './certificates';
 import { mapReviewRow } from './mappers';
-import type { Review, ReviewStatus } from './types';
+import { getUsersByIds } from './users';
+import type { PublicReview, Review, ReviewStatus } from './types';
 
 /** Columns the pre-moderation Review table lacks. */
 const NEW_REVIEW_COLUMNS = ['title', 'status', 'updatedAt'];
@@ -58,6 +59,29 @@ export async function getApprovedReviewsByCourse(courseId: string): Promise<Revi
     return base.where({ status: 'approved' }).orderBy((r) => r.createdAt.desc()).all();
   });
   return rows.map(mapReviewRow);
+}
+
+/**
+ * Approved reviews in their PUBLIC shape (STU-05): the author's internal
+ * studentId is replaced by the display name, so the public course page
+ * payload contains no internal user ids. Missing authors read as
+ * "Student". The internal getApprovedReviewsByCourse stays for
+ * recomputeCourseRating (server-side only, never sent to a client).
+ */
+export async function getApprovedPublicReviewsByCourse(courseId: string): Promise<PublicReview[]> {
+  const reviews = await getApprovedReviewsByCourse(courseId);
+  const authors = await getUsersByIds(reviews.map((r) => r.studentId));
+  return reviews.map((r) => ({
+    id: r.id,
+    courseId: r.courseId,
+    rating: r.rating,
+    title: r.title,
+    comment: r.comment,
+    status: r.status,
+    createdAt: r.createdAt,
+    updatedAt: r.updatedAt,
+    studentName: authors.get(r.studentId)?.name ?? 'Student',
+  }));
 }
 
 /**

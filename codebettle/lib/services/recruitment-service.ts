@@ -592,7 +592,7 @@ export async function startViewAs(
   actor: Actor,
   teacherId: string,
 ): Promise<
-  Result<{ token: string; expiresAt: number | null; teacher: { id: string; name: string; email: string; role: string } }>
+  Result<{ token: string; expiresAt: number; teacher: { id: string; name: string; email: string; role: string } }>
 > {
   if (!hasAdminCapability(actor)) return forbidden('Only admins can view a teacher portal');
   if (teacherId === actor.id) return badRequest('You cannot view your own portal as a teacher');
@@ -605,9 +605,10 @@ export async function startViewAs(
     return forbidden('Only a teacher portal can be viewed — student portals are never opened this way');
   }
   if (teacher.status !== 'active') return badRequest('Only an active teacher account can be viewed');
-  // No expiry: the viewing session lasts until the admin clicks Exit,
-  // signs out, or closes the browser.
-  const { token } = mintViewAsToken(actor.id, teacherId);
+  // ADM-02: the token lives 30 minutes from minting (VIEW_AS_TTL_MS) —
+  // the viewing session ends when it expires, or earlier on Exit,
+  // logout, or closing the browser.
+  const { token, expiresAt } = mintViewAsToken(actor.id, teacherId);
   await logAudit({
     actorId: actor.id,
     action: 'admin.view_as.start',
@@ -617,7 +618,7 @@ export async function startViewAs(
   });
   return {
     token,
-    expiresAt: null,
+    expiresAt,
     teacher: { id: teacher.id, name: teacher.name, email: teacher.email, role: teacher.role },
   };
 }

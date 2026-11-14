@@ -63,9 +63,11 @@ test('each check flags a seeded inconsistency', async () => {
     { id: 'enr-2', studentId: 'stu-2', courseId: 'course-1', enrolledAt: D('2024-05-01'), isCompleted: false, completedAt: null, paymentStatus: 'free', amountPaid: 0, couponUsed: null, deletedAt: null },
     { id: 'enr-3', studentId: 'stu-1', courseId: 'course-2', enrolledAt: D('2024-05-01'), isCompleted: false, completedAt: null, paymentStatus: 'free', amountPaid: 0, couponUsed: null, deletedAt: null },
     { id: 'enr-4', studentId: 'stu-1', courseId: 'course-1', enrolledAt: D('2024-05-01'), isCompleted: false, completedAt: null, paymentStatus: 'free', amountPaid: 100, couponUsed: null, deletedAt: null },
+    { id: 'enr-5', studentId: 'stu-1', courseId: 'course-1', enrolledAt: D('2024-05-01'), isCompleted: true, completedAt: D('2024-06-01'), paymentStatus: 'pending', amountPaid: 0, couponUsed: null, deletedAt: null },
   ]);
   fake.seed('Certificate', [
     { id: 'cert-2', studentId: 'stu-1', courseId: 'course-1', enrollmentId: 'enr-4', certificateNumber: 'CB-2026-002', verificationToken: 'tok', issuedAt: D('2024-06-02') },
+    { id: 'cert-3', studentId: 'stu-1', courseId: 'course-1', enrollmentId: 'enr-5', certificateNumber: 'CB-2026-003', verificationToken: 'tok', issuedAt: D('2024-06-02') },
   ]);
   fake.seed('Review', [
     { id: 'rev-2', studentId: 'ghost-student', courseId: 'course-1', rating: 4, comment: 'Orphan', createdAt: D('2024-06-03') },
@@ -79,6 +81,8 @@ test('each check flags a seeded inconsistency', async () => {
   assert.deepEqual(summary.enrolmentsPaidButFree.exampleIds, ['enr-4']);
   assert.equal(summary.certificatesForIncompleteEnrolments.count, 1);
   assert.deepEqual(summary.certificatesForIncompleteEnrolments.exampleIds, ['cert-2']);
+  assert.equal(summary.certificatesForUnpaidEnrolments.count, 1);
+  assert.deepEqual(summary.certificatesForUnpaidEnrolments.exampleIds, ['cert-3']);
   assert.equal(summary.reviewsWithMissingStudentOrCourse.count, 2);
   assert.deepEqual([...summary.reviewsWithMissingStudentOrCourse.exampleIds].sort(), ['rev-2', 'rev-3']);
   assert.ok(summary.checkedAt);
@@ -90,6 +94,7 @@ test('consistent data reports clean counts', async () => {
   assert.equal(summary.enrolmentsWithDeletedStudentOrCourse.count, 0);
   assert.equal(summary.enrolmentsPaidButFree.count, 0);
   assert.equal(summary.certificatesForIncompleteEnrolments.count, 0);
+  assert.equal(summary.certificatesForUnpaidEnrolments.count, 0);
   assert.equal(summary.reviewsWithMissingStudentOrCourse.count, 0);
 });
 

@@ -54,6 +54,24 @@ async function loadCourse(courseId: string): Promise<Course | ServiceError> {
   return course;
 }
 
+/**
+ * Load a course and check the actor may edit it (admin, or the owning
+ * instructor). Shared by the service mutations AND by routes that must
+ * run the ownership check BEFORE body validation (INST-03): a route
+ * calls this first, so an unauthorized caller gets 403 even with an
+ * empty/invalid body, instead of a 400 that leaks endpoint behaviour.
+ */
+export async function loadCourseForEdit(
+  actor: Actor,
+  courseId: string,
+): Promise<{ course: Course } | ServiceError> {
+  const course = await loadCourse(courseId);
+  if ('error' in course) return course;
+  const denied = isEditor(actor, course);
+  if (denied) return denied;
+  return { course };
+}
+
 async function checkInstructorTarget(instructorId: string): Promise<ServiceError | null> {
   const user = await getUserById(instructorId);
   if (!user) return notFound('Instructor');
@@ -104,6 +122,12 @@ export async function createCourseService(
     if (err) return err;
   }
   if (await getCourseBySlug(slug)) return badRequest('A course with this slug already exists');
+  // SECURITY (ADM-03): same as updateCourseService — a teacher-only
+  // actor may not attach a certificate template (raw HTML rendered into
+  // every student's certificate PDF). Only admins may set it.
+  const certificateTemplateHtml = isTeacherOnly(actor)
+    ? undefined
+    : input.certificateTemplateHtml;
   const course = await createCourse({
     slug,
     title: input.title,
@@ -120,7 +144,7 @@ export async function createCourseService(
     requirements: input.requirements,
     whatYouLearn: input.whatYouLearn,
     tags: input.tags,
-    certificateTemplateHtml: input.certificateTemplateHtml ?? null,
+    certificateTemplateHtml: certificateTemplateHtml ?? null,
     outlineUrl: input.outlineUrl ?? null,
   });
   await logAudit({ actorId: actor.id, action: 'course.create', entity: 'course', entityId: course.id, detail: slug });
@@ -156,13 +180,19 @@ export async function updateCourseService(
   courseId: string,
   input: UpdateCourseServiceInput,
 ): Promise<Result<{ course: Course }>> {
-  const course = await loadCourse(courseId);
-  if ('error' in course) return course;
-  const denied = isEditor(actor, course);
-  if (denied) return denied;
+  const loaded = await loadCourseForEdit(actor, courseId);
+  if ('error' in loaded) return loaded;
   if (isTeacherOnly(actor) && (input.status !== undefined || input.instructorId !== undefined)) {
     return forbidden('Instructors cannot change a course status or instructor');
   }
+  // SECURITY (ADM-03): the certificate template is raw HTML rendered
+  // (via headless Chromium) into every student's certificate PDF, so
+  // only admins may set it. A teacher-only actor's template is dropped
+  // here as well as at the route boundary (the instructor schema omits
+  // the field), so no caller can smuggle one in through this service.
+  const certificateTemplateHtml = isTeacherOnly(actor)
+    ? undefined
+    : input.certificateTemplateHtml;
   if (input.title !== undefined && !input.title.trim()) return badRequest('Title is required');
   if (input.price !== undefined && (!Number.isInteger(input.price) || input.price < 0)) {
     return badRequest('Price must be a non-negative number');
@@ -189,7 +219,7 @@ export async function updateCourseService(
     requirements: input.requirements,
     whatYouLearn: input.whatYouLearn,
     tags: input.tags,
-    certificateTemplateHtml: input.certificateTemplateHtml,
+    certificateTemplateHtml,
     outlineUrl: input.outlineUrl,
   });
   if (!updated) return notFound('Course');
@@ -344,10 +374,9 @@ export async function updateLessonService(
   lessonId: string,
   input: UpdateLessonServiceInput,
 ): Promise<Result<{ lesson: Lesson }>> {
-  const course = await loadCourse(courseId);
-  if ('error' in course) return course;
-  const denied = isEditor(actor, course);
-  if (denied) return denied;
+  const loaded = await loadCourseForEdit(actor, courseId);
+  if ('error' in loaded) return loaded;
+  const course = loaded.course;
   const lesson = findLesson(course, moduleId, lessonId);
   if ('error' in lesson) return lesson;
   if (input.title !== undefined && !input.title.trim()) return badRequest('Title is required');

@@ -8,7 +8,7 @@ import Badge from '@/components/ui/Badge';
 import StarRating from '@/components/ui/StarRating';
 import CourseThumbnail from '@/components/ui/CourseThumbnail';
 import Input from '@/components/ui/Input';
-import type { Batch, PublicCourse, Review, SafeUser } from '@/lib/db/types';
+import type { Batch, PublicCourse, PublicReview, SafeUser } from '@/lib/db/types';
 import { formatPrice, getLevelColor, getCategoryColor, formatDate, getTotalLessonsCount, getCourseDuration } from '@/lib/utils';
 import { summarizeCourseProgress } from '@/lib/services/progress-service';
 import { ChevronDown, ChevronUp, BookOpen, Clock, Users, Award, CheckCircle, Tag, Play, Heart, Download, CalendarDays } from 'lucide-react';
@@ -20,7 +20,8 @@ import toast from 'react-hot-toast';
 interface CourseDetailClientProps {
   course: PublicCourse;
   instructor: SafeUser | null;
-  reviews: Review[];
+  /** Approved reviews in their public shape (STU-05): display name only, no studentId. */
+  reviews: PublicReview[];
   slug: string;
   /** True when the signed-in student is already enrolled (false for visitors / other roles). */
   enrolled: boolean;
@@ -364,8 +365,9 @@ export default function CourseDetailClient({ course, instructor, reviews, slug, 
                         {reviews.map(review => (
                           <div key={review.id} className="bg-dark-card border border-dark-border rounded-xl p-4">
                             <div className="flex items-center gap-3 mb-2">
-                              <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-primary-text text-xs font-bold">{review.studentId.slice(-2).toUpperCase()}</div>
+                              <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-primary-text text-xs font-bold">{review.studentName.split(' ').filter(Boolean).slice(0, 2).map(w => w[0]).join('').toUpperCase() || 'S'}</div>
                               <div>
+                                <p className="text-sm font-semibold text-foreground">{review.studentName}</p>
                                 <StarRating rating={review.rating} size="sm" />
                                 <p className="text-xs text-muted">{formatDate(review.createdAt)}</p>
                               </div>

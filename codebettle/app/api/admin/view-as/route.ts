@@ -8,12 +8,13 @@ import { VIEW_AS_COOKIE } from '@/lib/view-as';
  * POST /api/admin/view-as — mint a signed token to view ONE teacher's
  * portal, and set it as an httpOnly cookie.
  *
- * No expiry: the viewing session lasts until the admin clicks Exit
- * (POST /api/admin/view-as/exit), signs out, or closes the browser —
- * the cookie is a browser-session cookie (no max-age attribute). The token is
- * re-validated on every request (signature, admin match, teacher
- * still a teacher and active), so a revoked teacher loses view-as
- * immediately.
+ * ADM-02: the token lives 30 minutes from minting (VIEW_AS_TTL_MS,
+ * returned as expiresAt) — the viewing session ends when it expires,
+ * or earlier on Exit (POST /api/admin/view-as/exit), sign-out, or
+ * closing the browser (the cookie is a browser-session cookie, no
+ * max-age attribute). The token is re-validated on every request
+ * (signature, expiry, admin match, teacher still a teacher and
+ * active), so a revoked teacher loses view-as immediately.
  *
  * Teacher Portals ONLY: the service refuses students (and the
  * session overlay in lib/auth.ts re-checks the teacher flag on every
@@ -45,8 +46,9 @@ export async function POST(request: NextRequest) {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
     sameSite: 'lax',
-    // No max-age attribute: a browser-session cookie — the viewing session ends
-    // on Exit, logout, or closing the browser, never on a timer.
+    // No max-age attribute: a browser-session cookie — closing the
+    // browser ends the viewing session. The token itself also expires
+    // 30 minutes after minting (ADM-02), enforced server-side.
     path: '/',
   });
   return response;

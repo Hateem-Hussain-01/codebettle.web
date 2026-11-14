@@ -28,7 +28,9 @@ export const maxDuration = 60;
  * centre between the dots (see lib/certificates/qr.ts).
  *
  * Access: the certificate's own student, or any admin. Anyone else
- * gets 403 — a certificate id is not a capability.
+ * gets the same 404 as a non-existent id (STU-02: a 403 would confirm
+ * the id is real and enable enumeration) — a certificate id is not a
+ * capability.
  * A revoked certificate still downloads (the verify page is the source
  * of truth for validity — it shows revoked/invalid for the same token).
  */
@@ -39,8 +41,11 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
   const { id } = await params;
   const certificate = await getCertificateById(id);
   if (!certificate) return NextResponse.json({ error: 'Certificate not found' }, { status: 404 });
+  // SECURITY (STU-02): an unauthorized certificate returns the SAME 404
+  // as a non-existent one — a 403 would confirm the id is real and let
+  // an attacker enumerate valid certificate ids (seed ids are sequential).
   if (session.id !== certificate.studentId && !hasAdminCapability(session)) {
-    return NextResponse.json({ error: 'Access denied' }, { status: 403 });
+    return NextResponse.json({ error: 'Certificate not found' }, { status: 404 });
   }
 
   const [course, courseTemplateHtml, student] = await Promise.all([

@@ -29,6 +29,12 @@ const securityHeaders = [
 
 const nextConfig: NextConfig = {
   /**
+   * SECURITY (INST-04): do not advertise the stack. Next.js otherwise
+   * emits `X-Powered-By: Next.js` on every response. (`Server: Vercel`
+   * is platform-set and cannot be removed from this codebase.)
+   */
+  poweredByHeader: false,
+  /**
    * Remote images: the navbar logo (PR #32) and other Supabase Storage
    * images are served from the project's public buckets. Only this one
    * host + the public object path are allowed; everything else still
