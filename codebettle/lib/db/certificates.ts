@@ -226,6 +226,12 @@ export async function issueCertificate(
     .first();
   if (!enrollment) return { error: 'Enrollment not found' };
   if (!enrollment.isCompleted) return { error: 'Course is not completed yet' };
+  // SECURITY (NEW-1): a certificate is proof of a PAID completion. A
+  // pending-payment enrolment must never receive one — not via the admin
+  // issue form, not via auto-issue. 'free' covers free courses.
+  if (enrollment.paymentStatus !== 'paid' && enrollment.paymentStatus !== 'free') {
+    return { error: 'Payment has not been verified for this enrollment' };
+  }
   if (enrollment.studentId !== input.studentId || enrollment.courseId !== input.courseId) {
     return { error: 'Enrollment does not match this student and course' };
   }

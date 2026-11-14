@@ -351,6 +351,9 @@ async function tryAutoIssueCertificate(
   enrollment: Enrollment,
 ): Promise<Certificate | null> {
   if (!enrollment.isCompleted || enrollment.certificateEligible !== true) return null;
+  // SECURITY (NEW-1): never auto-issue a certificate for an enrolment
+  // whose payment is still pending — same gate as issueCertificate.
+  if (enrollment.paymentStatus !== 'paid' && enrollment.paymentStatus !== 'free') return null;
   try {
     const existing = await getCertificateByCourseAndStudent(enrollment.courseId, enrollment.studentId);
     if (existing) return null;

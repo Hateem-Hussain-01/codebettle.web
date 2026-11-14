@@ -30,13 +30,29 @@ export async function POST(request: NextRequest) {
   // crash/logout in the announcement flow).
   try {
     const body = await readJson(request);
+    // INST-03: ownership BEFORE body validation. The courseId is the only
+    // field the check needs, so read it from the raw body first: a
+    // courseId naming someone else's course gets 403 even when
+    // title/content are missing. Without a usable courseId there is
+    // nothing to check ownership against, so the full schema validation
+    // (400) runs instead.
+    const rawCourseId = (body as { courseId?: unknown } | null)?.courseId;
+    let course: Awaited<ReturnType<typeof getCourseById>> = null;
+    if (typeof rawCourseId === 'string' && rawCourseId) {
+      course = await getCourseById(rawCourseId);
+      if (!course) return NextResponse.json({ error: 'Course not found' }, { status: 404 });
+      if (course.instructorId !== auth.session.id) {
+        return NextResponse.json({ error: 'You can only announce to your own courses' }, { status: 403 });
+      }
+    }
     const parsed = instructorAnnouncementSchema.safeParse(body);
     if (!parsed.success) return invalidBody('Title, content and course are required');
     const { title, content, courseId } = parsed.data;
-    const course = await getCourseById(courseId);
-    if (!course) return NextResponse.json({ error: 'Course not found' }, { status: 404 });
-    if (course.instructorId !== auth.session.id) {
-      return NextResponse.json({ error: 'You can only announce to your own courses' }, { status: 403 });
+    // A valid parse always carries a courseId, so the pre-check above
+    // already loaded it; re-fetch only if it was somehow skipped.
+    if (!course) {
+      course = await getCourseById(courseId);
+      if (!course) return NextResponse.json({ error: 'Course not found' }, { status: 404 });
     }
     const announcement = await createAnnouncement({
       title,

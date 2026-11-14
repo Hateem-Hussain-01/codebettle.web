@@ -23,7 +23,7 @@
  */
 import { logAudit } from '../db/audit';
 import { getCourseById, getCoursesByInstructor } from '../db/courses';
-import { getEnrollmentsByStudent, isEnrolled } from '../db/enrollments';
+import { getEnrollmentByStudentAndCourse, getEnrollmentsByStudent } from '../db/enrollments';
 import {
   countSubmittedAttempts,
   createAttempt,
@@ -434,6 +434,10 @@ export async function listAvailableQuizzes(actor: Actor): Promise<Result<{ quizz
   const enrollments = await getEnrollmentsByStudent(actor.id);
   const out: AvailableQuiz[] = [];
   for (const enrollment of enrollments) {
+    // SECURITY (NEW-3): quiz questions are paid content, same as lesson
+    // recordings (STU-01's content gate). A pending-payment enrolment
+    // lists no quizzes at all.
+    if (enrollment.paymentStatus !== 'paid' && enrollment.paymentStatus !== 'free') continue;
     const published = await listPublishedQuizzesByCourse(enrollment.courseId);
     for (const quiz of published) {
       const attempts = await listAttemptsByStudent(quiz.id, actor.id);
@@ -468,8 +472,15 @@ export async function startAttempt(
   if (quiz.status !== 'published') return badRequest('This quiz is not published yet');
   const windowError = availabilityError(quiz, now);
   if (windowError) return badRequest(windowError);
-  if (!(await isEnrolled(actor.id, quiz.courseId))) {
+  // SECURITY (NEW-3): quiz questions are paid content — a student whose
+  // payment is still pending may not start a quiz (same gate as the
+  // course content endpoint: 'paid' or 'free').
+  const enrollment = await getEnrollmentByStudentAndCourse(actor.id, quiz.courseId);
+  if (!enrollment) {
     return forbidden('You are not enrolled in this course');
+  }
+  if (enrollment.paymentStatus !== 'paid' && enrollment.paymentStatus !== 'free') {
+    return forbidden('Your payment for this course has not been verified yet');
   }
   const existing = await getInProgressAttempt(quizId, actor.id);
   if (existing) {

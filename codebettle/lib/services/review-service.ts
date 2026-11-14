@@ -16,7 +16,7 @@
  * Course Reviews admin section (consistent with Success Stories).
  */
 import { getCourseById, updateCourse } from '../db/courses';
-import { isEnrolled } from '../db/enrollments';
+import { getEnrollmentByStudentAndCourse } from '../db/enrollments';
 import {
   createReview,
   deleteReview,
@@ -25,6 +25,7 @@ import {
   updateReview,
 } from '../db/reviews';
 import { logAudit } from '../db/audit';
+import { hasAdminCapability } from '../rbac';
 import type { Course, Review, ReviewStatus } from '../db/types';
 import { badRequest, conflict, forbidden, notFound, type Actor, type ServiceError } from './errors';
 
@@ -65,8 +66,16 @@ export async function createReviewService(
   }
   const course = await getCourseById(input.courseId);
   if (!course) return notFound('Course');
-  if (!(await isEnrolled(actor.id, input.courseId))) {
+  // SECURITY (STU-03): a review is social proof that the student took
+  // the course — it requires a VERIFIED payment, not just an enrolment.
+  // A pending-payment enrolment may not review (it also may not see the
+  // paid content yet, so its review would be meaningless).
+  const enrollment = await getEnrollmentByStudentAndCourse(actor.id, input.courseId);
+  if (!enrollment) {
     return forbidden('You can only review a course you are enrolled in');
+  }
+  if (enrollment.paymentStatus !== 'paid' && enrollment.paymentStatus !== 'free') {
+    return forbidden('You can only review a course after your payment is verified');
   }
   const created = await createReview({
     studentId: actor.id,
@@ -169,7 +178,10 @@ export async function deleteReviewService(
 // ---------------------------------------------------------------------------
 
 function requireAdmin(actor: Actor): ServiceError | null {
-  if (actor.role !== 'admin') return forbidden('Only admins can moderate reviews');
+  // SECURITY (NEW-13): capability flags, not the primary role — a
+  // flag-admin (isAdmin, primary role instructor) must be able to
+  // moderate reviews, matching the route guard.
+  if (!hasAdminCapability(actor)) return forbidden('Only admins can moderate reviews');
   return null;
 }
 

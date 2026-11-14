@@ -416,17 +416,22 @@ test('custom stages reject terminal names and duplicate names (case-insensitive)
 // Admin-assisted view-as
 // ---------------------------------------------------------------------------
 
-test('view-as tokens verify with no expiry, and forged or legacy-expired tokens fail', () => {
-  const { token } = mintViewAsToken('admin-1', 'teacher-1');
+test('view-as tokens carry a 30-minute expiry (ADM-02); forged or expired tokens fail', () => {
+  const { token, expiresAt } = mintViewAsToken('admin-1', 'teacher-1', undefined, 1_000_000);
+  // New tokens expire 30 minutes after minting.
+  assert.equal(expiresAt, 1_000_000 + 30 * 60 * 1000);
+
   const payload = verifyViewAsToken(token, 1_000_100);
   assert.ok(payload);
   assert.equal(payload.adminId, 'admin-1');
   assert.equal(payload.teacherId, 'teacher-1');
-  // New tokens carry no expiry at all.
-  assert.equal(payload.expiresAt, undefined);
+  assert.equal(payload.expiresAt, expiresAt);
 
-  // No 15-minute limit: the same token still verifies a year later.
-  assert.ok(verifyViewAsToken(token, 1_000_100 + 365 * 24 * 60 * 60 * 1000));
+  // Still valid just before expiry...
+  assert.ok(verifyViewAsToken(token, expiresAt - 1));
+  // ...dead at expiry, and a year later — no year-long viewing session.
+  assert.equal(verifyViewAsToken(token, expiresAt), null);
+  assert.equal(verifyViewAsToken(token, 1_000_100 + 365 * 24 * 60 * 60 * 1000), null);
 
   // Tampered payload.
   assert.equal(verifyViewAsToken(`${token.slice(0, 10)}x${token.slice(11)}`, 1_000_100), null);

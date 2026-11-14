@@ -88,15 +88,16 @@ test('applications page no longer has any view-as button or code', () => {
   assert.ok(!src.includes('loadOnboardedState'));
 });
 
-test('view-as has no time limit: no TTL constant, session cookie (no maxAge)', () => {
+test('view-as has a 30-minute TTL (ADM-02): token expiry constant, session cookie (no maxAge)', () => {
   const libSrc = read('lib/view-as.ts');
-  assert.ok(!libSrc.includes('VIEW_AS_TTL_MS'));
-  assert.ok(!libSrc.includes('15 * 60'));
+  assert.ok(libSrc.includes('VIEW_AS_TTL_MS'));
+  assert.ok(libSrc.includes('30 * 60 * 1000'));
   const routeSrc = read('app/api/admin/view-as/route.ts');
-  assert.ok(!routeSrc.includes('VIEW_AS_TTL_MS'));
+  // The cookie stays a browser-session cookie (no max-age); the
+  // 30-minute expiry is enforced server-side on the token itself.
   assert.ok(!routeSrc.includes('maxAge'));
-  // The token still verifies — the no-expiry behaviour itself is
-  // covered in tests/recruitment-portal.test.ts.
+  // The token expiry behaviour itself is covered in
+  // tests/security-group-a.test.ts (ADM-02).
 });
 
 test('view-as banner returns to the Instructors page (the new entry point)', () => {

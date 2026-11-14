@@ -96,6 +96,24 @@ export async function isEnrolled(studentId: string, courseId: string): Promise<b
   return row !== null;
 }
 
+/**
+ * The one enrolment for a student in a course, or null. The payment gates
+ * (quiz start, reviews) need the enrolment's paymentStatus, not just its
+ * existence — isEnrolled alone cannot answer that.
+ */
+export async function getEnrollmentByStudentAndCourse(
+  studentId: string,
+  courseId: string,
+): Promise<Enrollment | null> {
+  const row = await getDb()
+    .orm.public.Enrollment.where({ studentId, courseId })
+    .where((e) => e.deletedAt.isNull())
+    .first();
+  if (!row) return null;
+  const progress = await progressFor([row.id]);
+  return mapEnrollmentRow(row, progress);
+}
+
 export async function getEnrollmentById(id: string): Promise<Enrollment | null> {
   const row = await getDb()
     .orm.public.Enrollment.where({ id })

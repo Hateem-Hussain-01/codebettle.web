@@ -58,11 +58,13 @@ test.afterEach(() => {
 const get = (id: string) =>
   GET(new NextRequest(`http://localhost/api/certificates/${id}/download`), { params: Promise.resolve({ id }) });
 
-test('download: signed-out is 401, another student is 403, unknown id is 404', async () => {
+test('download: signed-out is 401, another student is 404 (same as unknown id), unknown id is 404', async () => {
   __setTestSession(null);
   assert.equal((await get('cert-1')).status, 401);
   __setTestSession(STU2);
-  assert.equal((await get('cert-1')).status, 403);
+  // STU-02: a non-owner gets the same 404 as a random id, so certificate
+  // existence cannot be enumerated from the status code.
+  assert.equal((await get('cert-1')).status, 404);
   __setTestSession(STU1);
   assert.equal((await get('nope')).status, 404);
 });

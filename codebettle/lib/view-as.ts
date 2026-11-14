@@ -8,12 +8,15 @@
  * `/api/admin/view-as` route):
  * - An admin mints a signed token for ONE teacher. The token is
  *   `base64url(payload).hex-hmac`, where the payload is
- *   `{ a: adminId, t: teacherId }` — there is deliberately NO expiry:
- *   the session lasts until the admin clicks Exit, signs out, or
- *   closes the browser (the cookie is a browser-session cookie).
- *   Tokens minted before the expiry was removed still carry `e`
- *   (expiresAtMs) and are still honoured until that instant, then
- *   rejected — the expiry check below only runs when `e` is present.
+ *   `{ a: adminId, t: teacherId, e: expiresAtMs }`. The token lives for
+ *   VIEW_AS_TTL_MS (30 minutes, ADM-02): the session ends when the
+ *   token expires, or earlier when the admin clicks Exit, signs out,
+ *   or closes the browser (the cookie is a browser-session cookie).
+ *   The expiry is enforced server-side on every request
+ *   (verifyViewAsToken); tokens minted before the TTL was added carry
+ *   no `e` and are still honoured until the admin exits — they are
+ *   rare (a mint lasts at most one viewing session) and cannot be
+ *   renewed without a fresh admin mint.
  * - The signature is HMAC-SHA256 over the payload with a server-side
  *   secret. The secret is `VIEW_AS_SECRET` (or `SESSION_SECRET` when
  *   set); when neither is configured the secret is a random value
@@ -25,8 +28,8 @@
  * - The token travels as an httpOnly, same-site cookie (`cb_view_as`)
  *   set by the mint route — never in a URL (URLs leak into logs and
  *   history) and never stored in the database. Ending the session is
- *   explicit: Exit (the exit route clears the cookie), logout, or
- *   closing the browser — there is no silent timeout.
+ *   explicit: Exit (the exit route clears the cookie), logout, closing
+ *   the browser, or the 30-minute token expiry (ADM-02).
  * - Verification is server-side only: `lib/auth.ts` re-checks the
  *   signature, that the admin in the token is the admin holding the
  *   session, and that the teacher still exists, is still a teacher
@@ -44,15 +47,19 @@ import { createHmac, randomBytes, timingSafeEqual } from 'node:crypto';
 /** Name of the httpOnly cookie carrying the view-as token. */
 export const VIEW_AS_COOKIE = 'cb_view_as';
 
+/** How long a view-as token lives (ADM-02): 30 minutes from minting. */
+export const VIEW_AS_TTL_MS = 30 * 60 * 1000;
+
 export interface ViewAsPayload {
   /** Admin who minted the token. */
   adminId: string;
   /** Teacher whose portal is being viewed. */
   teacherId: string;
   /**
-   * Legacy only: epoch ms after which the token is dead. Tokens minted
-   * before the expiry was removed carry this; new tokens omit it and
-   * never expire (the session ends on Exit / logout / browser close).
+   * Epoch ms after which the token is dead (ADM-02: minted with
+   * VIEW_AS_TTL_MS). Tokens minted before the TTL was added omit this
+   * and are still honoured until the admin exits — they cannot be
+   * renewed without a fresh admin mint.
    */
   expiresAt?: number;
 }
@@ -87,19 +94,26 @@ function base64urlDecode(input: string): string | null {
   }
 }
 
-/** Mint a signed token for `adminId` to view `teacherId`'s portal. No expiry: the session ends on Exit / logout / browser close. */
+/**
+ * Mint a signed token for `adminId` to view `teacherId`'s portal.
+ * The token lives VIEW_AS_TTL_MS (ADM-02) — the session ends when it
+ * expires, or earlier on Exit / logout / browser close. `nowMs` exists
+ * so tests can mint at a fixed instant.
+ */
 export function mintViewAsToken(
   adminId: string,
   teacherId: string,
   secret: Buffer = resolveViewAsSecret(),
-): { token: string } {
-  const payload: ViewAsPayload = { adminId, teacherId };
+  nowMs: number = Date.now(),
+): { token: string; expiresAt: number } {
+  const expiresAt = nowMs + VIEW_AS_TTL_MS;
+  const payload: ViewAsPayload = { adminId, teacherId, expiresAt };
   const encoded = base64urlEncode(JSON.stringify(payload));
   const signature = createHmac('sha256', secret).update(encoded).digest('hex');
-  return { token: `${encoded}.${signature}` };
+  return { token: `${encoded}.${signature}`, expiresAt };
 }
 
-/** Verify a token. Returns the payload, or null when forged, malformed or (for legacy tokens carrying an expiry) expired. */
+/** Verify a token. Returns the payload, or null when forged, malformed or expired. */
 export function verifyViewAsToken(
   token: string | undefined | null,
   nowMs: number = Date.now(),
@@ -134,8 +148,9 @@ export function verifyViewAsToken(
     return null;
   }
   const parsed = payload as ViewAsPayload;
-  // Legacy tokens minted before the expiry was removed still carry an
-  // expiry — honour it. New tokens carry none and never expire.
+  // Tokens minted with an expiry are dead after it (ADM-02). Tokens
+  // minted before the TTL was added carry no expiry and are still
+  // honoured until the admin exits.
   if (parsed.expiresAt !== undefined && parsed.expiresAt <= nowMs) return null;
   return parsed;
 }

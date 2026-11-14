@@ -103,6 +103,20 @@ export const courseUpdateSchema = z.object({
   outlineUrl: httpUrlSchema.nullable().optional(),
 });
 
+/**
+ * SECURITY (ADM-03): the instructor course-update schema. Identical to
+ * courseUpdateSchema EXCEPT it has no certificateTemplateHtml — the
+ * template is raw HTML rendered (via headless Chromium) into every
+ * student's certificate PDF, so only admins may set it. An instructor
+ * sending the field gets it silently dropped at the route boundary
+ * (zod strips unknown keys); updateCourseService strips it again for
+ * teacher-only actors as defence in depth. The admin route keeps the
+ * full courseUpdateSchema.
+ */
+export const instructorCourseUpdateSchema = courseUpdateSchema.omit({
+  certificateTemplateHtml: true,
+});
+
 export const courseStatusSchema = z.object({
   status: z.enum(courseStatuses),
 });

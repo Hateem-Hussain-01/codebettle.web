@@ -25,6 +25,8 @@ export interface IntegritySummary {
   enrolmentsWithDeletedStudentOrCourse: IntegrityCheck;
   enrolmentsPaidButFree: IntegrityCheck;
   certificatesForIncompleteEnrolments: IntegrityCheck;
+  /** SECURITY (NEW-1): certificates whose enrolment was never paid — the issue gate now blocks these, so any row here predates the fix. */
+  certificatesForUnpaidEnrolments: IntegrityCheck;
   reviewsWithMissingStudentOrCourse: IntegrityCheck;
   checkedAt: string;
 }
@@ -87,9 +89,15 @@ export async function getIntegritySummary(): Promise<IntegritySummary> {
   }
 
   const incompleteCertIds: string[] = [];
+  const unpaidCertIds: string[] = [];
   for (const certificate of certificates) {
     const enrolment = await getEnrollmentById(certificate.enrollmentId);
     if (!enrolment || !enrolment.isCompleted) incompleteCertIds.push(certificate.id);
+    // SECURITY (NEW-1): a certificate on a pending-payment enrolment
+    // should never exist — the issue gate blocks it now.
+    if (enrolment && enrolment.paymentStatus !== 'paid' && enrolment.paymentStatus !== 'free') {
+      unpaidCertIds.push(certificate.id);
+    }
   }
 
   const orphanReviewIds: string[] = [];
@@ -103,6 +111,7 @@ export async function getIntegritySummary(): Promise<IntegritySummary> {
     enrolmentsWithDeletedStudentOrCourse: toCheck(deletedOwnerIds),
     enrolmentsPaidButFree: toCheck(paidButFreeIds),
     certificatesForIncompleteEnrolments: toCheck(incompleteCertIds),
+    certificatesForUnpaidEnrolments: toCheck(unpaidCertIds),
     reviewsWithMissingStudentOrCourse: toCheck(orphanReviewIds),
     checkedAt: new Date().toISOString(),
   };

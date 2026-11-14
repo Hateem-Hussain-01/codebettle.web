@@ -1,13 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { assertNotViewAs, invalidBody, readJson, requireRoles, serviceError } from '@/lib/api-helpers';
-import { courseUpdateSchema } from '@/lib/api-schemas';
-import { updateCourseService } from '@/lib/services/course-service';
+import { instructorCourseUpdateSchema } from '@/lib/api-schemas';
+import { loadCourseForEdit, updateCourseService } from '@/lib/services/course-service';
 
 /**
  * PATCH /api/instructor/courses/[id] — edit a course the instructor teaches.
  * Status and instructorId changes are rejected with 403 (admin-only);
  * the schema accepts them on purpose so the service can reject them
- * instead of silently dropping them.
+ * instead of silently dropping them. certificateTemplateHtml is NOT in
+ * the instructor schema at all (ADM-03): only admins may set the
+ * certificate template, so the field is dropped at the boundary.
+ *
+ * INST-03: the ownership check runs BEFORE body validation — an
+ * instructor PATCHing someone else's course gets 403 even with an empty
+ * body, instead of a 400 ("Nothing to update") that leaks behaviour.
  */
 export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const auth = await requireRoles(['instructor']);
@@ -16,9 +22,11 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
   if (viewing) return viewing;
   const { id } = await params;
 
+  const allowed = await loadCourseForEdit(auth.session, id);
+  if ('error' in allowed) return serviceError(allowed);
   const body = await readJson(request);
   if (body === null) return invalidBody();
-  const parsed = courseUpdateSchema.safeParse(body);
+  const parsed = instructorCourseUpdateSchema.safeParse(body);
   if (!parsed.success) {
     return NextResponse.json({ error: 'Invalid course details' }, { status: 400 });
   }
