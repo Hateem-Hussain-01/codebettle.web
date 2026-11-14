@@ -10,30 +10,17 @@ import type { TeamMemberLevel } from './db/types';
 export type { TeamMemberLevel } from './db/types';
 
 // ---------------------------------------------------------------------------
-// Team hierarchy (Eman's 13 Nov 2026 change): Management at the top,
-// then all departments/teams, then Trainers at the bottom. The order
-// below is the single source of truth for sorting and grouping.
+// Team levels. Level ('management' | 'department' | 'trainer') is still
+// stored per member (the admin form keeps it), but it is NO LONGER
+// used for grouping or ordering anywhere — the About page shows one
+// flat list in sortOrder (Eman's 14 Nov 2026 change).
 // ---------------------------------------------------------------------------
-
-/** Hierarchy order, top first. */
-export const TEAM_LEVEL_ORDER: readonly TeamMemberLevel[] = ['management', 'department', 'trainer'];
-
-const TEAM_LEVEL_RANK: Record<TeamMemberLevel, number> = {
-  management: 0,
-  department: 1,
-  trainer: 2,
-};
 
 export function isTeamMemberLevel(value: unknown): value is TeamMemberLevel {
   return value === 'management' || value === 'department' || value === 'trainer';
 }
 
-/** Rank for sorting: lower = higher in the hierarchy. Unknown levels sort last. */
-export function teamLevelRank(level: string): number {
-  return isTeamMemberLevel(level) ? TEAM_LEVEL_RANK[level] : TEAM_LEVEL_ORDER.length;
-}
-
-/** Group heading for a level: 'Management', the department name, or 'Trainers'. */
+/** Group heading for a level: 'Management', the department name, or 'Trainers'. Used in the admin team list only. */
 export function teamLevelLabel(level: TeamMemberLevel, department?: string | null): string {
   if (level === 'management') return 'Management';
   if (level === 'trainer') return 'Trainers';
@@ -41,16 +28,12 @@ export function teamLevelLabel(level: TeamMemberLevel, department?: string | nul
   return name ? name : 'Departments';
 }
 
-/** Sort team members hierarchy-first: level rank, then order in level, then id. */
+/** Sort team members by global display order, then id (tiebreak). The About page shows one flat list in exactly this order — no hierarchy grouping (Eman's 14 Nov 2026 change). */
 export function compareTeamMembers(
-  a: { level: string; orderInLevel: number; id: string },
-  b: { level: string; orderInLevel: number; id: string },
+  a: { sortOrder: number; id: string },
+  b: { sortOrder: number; id: string },
 ): number {
-  return (
-    teamLevelRank(a.level) - teamLevelRank(b.level) ||
-    a.orderInLevel - b.orderInLevel ||
-    a.id.localeCompare(b.id)
-  );
+  return a.sortOrder - b.sortOrder || a.id.localeCompare(b.id);
 }
 
 // ---------------------------------------------------------------------------
@@ -173,52 +156,6 @@ export function parsePageStats(
 }
 
 // ---------------------------------------------------------------------------
-// Team grouping (public About page): enabled members only, grouped by
-// level in hierarchy order — Management, then one group per department
-// (alphabetical), then Trainers — cards ordered within each group.
-// ---------------------------------------------------------------------------
-
-export interface TeamMemberLike {
-  id: string;
-  level: TeamMemberLevel;
-  department?: string | null;
-  orderInLevel: number;
-  enabled: boolean;
-}
-
-export interface TeamLevelGroup<T extends TeamMemberLike> {
-  level: TeamMemberLevel;
-  /** Department name for department-level groups; null otherwise. */
-  department: string | null;
-  members: T[];
-}
-
-export function groupTeamByLevel<T extends TeamMemberLike>(members: T[]): TeamLevelGroup<T>[] {
-  const enabled = members.filter((m) => m.enabled);
-  const groups = new Map<string, TeamLevelGroup<T>>();
-  for (const m of enabled) {
-    const department = m.level === 'department' ? (m.department?.trim() || null) : null;
-    const key = `${m.level}:${department ?? ''}`;
-    const group = groups.get(key) ?? { level: m.level, department, members: [] };
-    group.members.push(m);
-    groups.set(key, group);
-  }
-  return [...groups.values()]
-    .sort((a, b) => {
-      const rank = teamLevelRank(a.level) - teamLevelRank(b.level);
-      if (rank !== 0) return rank;
-      // Within the department level: groups alphabetical by department.
-      return (a.department ?? '').localeCompare(b.department ?? '');
-    })
-    .map((group) => ({
-      ...group,
-      members: [...group.members].sort(
-        (a, b) => a.orderInLevel - b.orderInLevel || a.id.localeCompare(b.id),
-      ),
-    }));
-}
-
-// ---------------------------------------------------------------------------
 // Load More (stories grid + any paged list): how many items are visible
 // after `loads` clicks, starting from `initial`.
 // ---------------------------------------------------------------------------
@@ -284,7 +221,7 @@ export function validateTeamMember(input: {
   websiteUrl?: string | null;
   level?: string;
   department?: string | null;
-  orderInLevel?: number;
+  sortOrder?: number;
 }): string | null {
   if (!input.fullName.trim()) return 'Full name is required';
   if (input.fullName.trim().length > 100) return 'Full name must be 100 characters or fewer';
@@ -311,7 +248,7 @@ export function validateTeamMember(input: {
   if (input.department && input.department.trim().length > 50) {
     return 'Department name must be 50 characters or fewer';
   }
-  if (input.orderInLevel !== undefined && (!Number.isInteger(input.orderInLevel) || input.orderInLevel < 0)) {
+  if (input.sortOrder !== undefined && (!Number.isInteger(input.sortOrder) || input.sortOrder < 0)) {
     return 'Order must be a whole number of 0 or more';
   }
   return null;

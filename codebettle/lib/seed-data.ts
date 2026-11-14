@@ -28,7 +28,7 @@ export interface TeamSeedMember {
   bio: string;
   level: TeamMemberLevel;
   department: string | null;
-  orderInLevel: number;
+  sortOrder: number;
 }
 
 export const TEAM_SEED_MEMBERS: TeamSeedMember[] = [
@@ -39,7 +39,7 @@ export const TEAM_SEED_MEMBERS: TeamSeedMember[] = [
     bio: 'Leads CodeBettle and works on growing the institute.',
     level: 'management',
     department: null,
-    orderInLevel: 0,
+    sortOrder: 0,
   },
   {
     id: 'seed-team-fatima-khan',
@@ -48,7 +48,7 @@ export const TEAM_SEED_MEMBERS: TeamSeedMember[] = [
     bio: 'Leads the design team and helps students build portfolios.',
     level: 'department',
     department: 'Design',
-    orderInLevel: 0,
+    sortOrder: 1,
   },
   {
     id: 'seed-team-usman-ali',
@@ -57,7 +57,7 @@ export const TEAM_SEED_MEMBERS: TeamSeedMember[] = [
     bio: 'Teaches Python and mentors students on real projects.',
     level: 'trainer',
     department: null,
-    orderInLevel: 0,
+    sortOrder: 2,
   },
 ];
 

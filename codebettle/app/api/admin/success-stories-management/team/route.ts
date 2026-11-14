@@ -41,7 +41,7 @@ export async function POST(request: NextRequest) {
     websiteUrl: typeof v.websiteUrl === 'string' ? v.websiteUrl : null,
     level: levelRaw ?? 'management',
     department: typeof v.department === 'string' ? v.department : null,
-    orderInLevel: typeof v.orderInLevel === 'number' ? v.orderInLevel : 0,
+    sortOrder: typeof v.sortOrder === 'number' ? v.sortOrder : undefined,
     enabled: typeof v.enabled === 'boolean' ? v.enabled : true,
   };
   // A member that is not department-level keeps no department.

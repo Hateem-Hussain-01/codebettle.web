@@ -1116,12 +1116,12 @@ model TeamMember {
   websiteUrl   String?
   level        String   @default("management")
   department   String?
-  orderInLevel Int      @default(0)
+  sortOrder    Int      @default(0)
   enabled      Boolean  @default(true)
   createdAt    DateTime @default(now()) @onCreate(now())
   updatedAt    temporal.UpdatedAt
 
-  @@index([enabled, level, orderInLevel])
+  @@index([enabled, sortOrder])
 }
 
 // One review in the home page "What Our Students Say" carousel.

@@ -39,7 +39,7 @@ export async function PATCH(
     level: typeof v.level === 'string' ? v.level : current.level,
     department:
       typeof v.department === 'string' ? v.department : v.department === null ? null : (current.department ?? null),
-    orderInLevel: typeof v.orderInLevel === 'number' ? v.orderInLevel : current.orderInLevel,
+    sortOrder: typeof v.sortOrder === 'number' ? v.sortOrder : current.sortOrder,
   };
   const error = validateTeamMember(merged);
   if (error) return NextResponse.json({ error }, { status: 400 });

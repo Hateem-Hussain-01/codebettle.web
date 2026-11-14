@@ -815,7 +815,7 @@ export function mapTeamMemberRow(row: TeamMemberRow): TeamMember {
     // page never breaks on a bad row.
     level: isTeamMemberLevel(row.level) ? row.level : 'department',
     department: row.department ?? undefined,
-    orderInLevel: row.orderInLevel,
+    sortOrder: row.sortOrder,
     enabled: row.enabled,
     createdAt: dateToString(row.createdAt),
     updatedAt: dateToString(row.updatedAt),

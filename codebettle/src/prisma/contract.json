@@ -8105,17 +8105,17 @@
                   "kind": "scalar"
                 }
               },
-              "orderInLevel": {
-                "nullable": false,
-                "type": {
-                  "codecId": "pg/int4@1",
-                  "kind": "scalar"
-                }
-              },
               "photoUrl": {
                 "nullable": true,
                 "type": {
                   "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "sortOrder": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/int4@1",
                   "kind": "scalar"
                 }
               },
@@ -8177,11 +8177,11 @@
                 "linkedinUrl": {
                   "column": "linkedinUrl"
                 },
-                "orderInLevel": {
-                  "column": "orderInLevel"
-                },
                 "photoUrl": {
                   "column": "photoUrl"
+                },
+                "sortOrder": {
+                  "column": "sortOrder"
                 },
                 "updatedAt": {
                   "column": "updatedAt"
@@ -15378,7 +15378,12 @@
                   "dataType": "pg/text",
                   "nullable": true
                 },
-                "orderInLevel": {
+                "photoUrl": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": true
+                },
+                "sortOrder": {
                   "codecId": "pg/int4@1",
                   "dataType": "pg/int4",
                   "default": {
@@ -15386,11 +15391,6 @@
                     "value": 0
                   },
                   "nullable": false
-                },
-                "photoUrl": {
-                  "codecId": "pg/text@1",
-                  "dataType": "pg/text",
-                  "nullable": true
                 },
                 "updatedAt": {
                   "codecId": "pg/timestamptz-date@1",
@@ -15416,11 +15416,10 @@
                 {
                   "columns": [
                     "enabled",
-                    "level",
-                    "orderInLevel"
+                    "sortOrder"
                   ],
-                  "name": "TeamMember_enabled_level_orderInLevel_idx_65721722",
-                  "prefix": "TeamMember_enabled_level_orderInLevel_idx",
+                  "name": "TeamMember_enabled_sortOrder_idx_f5142a7d",
+                  "prefix": "TeamMember_enabled_sortOrder_idx",
                   "unique": false
                 }
               ],
@@ -15955,7 +15954,7 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "1755dd25ae5e44399cec215c469899aba1f22557dd6847129ca08f980461d7c5"
+    "storageHash": "d4ce9adf1c16a3c166863f72d6f960ecc11c860741509da7ac8a01ab6a0cdfa3"
   },
   "execution": {
     "executionHash": "50d6b78e5589590708424555c51169b80ce39643b4d4c3236c595275b7d0ddbd",

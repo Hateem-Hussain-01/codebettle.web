@@ -73,7 +73,7 @@ const EMPTY_TEAM_FORM: {
   websiteUrl: string;
   level: TeamMemberLevel;
   department: string;
-  orderInLevel: number;
+  sortOrder: number;
 } = {
   fullName: '',
   designation: '',
@@ -85,7 +85,7 @@ const EMPTY_TEAM_FORM: {
   websiteUrl: '',
   level: 'management',
   department: '',
-  orderInLevel: 0,
+  sortOrder: 0,
 };
 
 const EMPTY_STORY_FORM = {
@@ -299,7 +299,7 @@ export default function ManagementClient() {
       const payload = {
         ...teamForm,
         department: teamForm.level === 'department' ? teamForm.department.trim() : null,
-        orderInLevel: Number(teamForm.orderInLevel) || 0,
+        sortOrder: Number(teamForm.sortOrder) || 0,
       };
       const res = await fetch(
         editingTeamId
@@ -338,27 +338,24 @@ export default function ManagementClient() {
   };
 
   const moveTeamMember = async (member: TeamMember, direction: 'up' | 'down') => {
+    // Reorder in the WHOLE team list (flat): swap the display order
+    // with the adjacent member. The About page shows the team in
+    // exactly this sortOrder — the arrows ARE the public display
+    // order (Eman's 14 Nov 2026 change).
     const sorted = [...team].sort(compareTeamMembers);
-    // Reorder within the member's own group (same level, and same
-    // department for department-level members): swapping order values
-    // only. Moving across levels would leave a member with the wrong
-    // level/department, so level changes happen in the edit form.
-    const group = sorted.filter(
-      (m) => m.level === member.level && (m.department ?? null) === (member.department ?? null),
-    );
-    const idx = group.findIndex((m) => m.id === member.id);
-    const other = direction === 'up' ? group[idx - 1] : group[idx + 1];
+    const idx = sorted.findIndex((m) => m.id === member.id);
+    const other = direction === 'up' ? sorted[idx - 1] : sorted[idx + 1];
     if (!other) return;
     const [r1, r2] = await Promise.all([
       fetch(`/api/admin/success-stories-management/team/${member.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ orderInLevel: other.orderInLevel }),
+        body: JSON.stringify({ sortOrder: other.sortOrder }),
       }),
       fetch(`/api/admin/success-stories-management/team/${other.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ orderInLevel: member.orderInLevel }),
+        body: JSON.stringify({ sortOrder: member.sortOrder }),
       }),
     ]);
     if (!r1.ok || !r2.ok) {
@@ -598,7 +595,8 @@ export default function ManagementClient() {
             variant="secondary"
             size="sm"
             onClick={() => {
-              setTeamForm(EMPTY_TEAM_FORM);
+              // New member goes at the end of the flat list.
+              setTeamForm({ ...EMPTY_TEAM_FORM, sortOrder: team.length });
               setEditingTeamId(null);
               setShowTeamForm((s) => !s);
             }}
@@ -629,7 +627,7 @@ export default function ManagementClient() {
               {teamForm.level === 'department' && (
                 <Input label="Department *" value={teamForm.department} onChange={(e) => setTeamForm({ ...teamForm, department: e.target.value })} placeholder="e.g. Design" />
               )}
-              <Input label="Order within level" type="number" min={0} value={teamForm.orderInLevel} onChange={(e) => setTeamForm({ ...teamForm, orderInLevel: Number(e.target.value) })} />
+              <Input label="Display order" type="number" min={0} value={teamForm.sortOrder} onChange={(e) => setTeamForm({ ...teamForm, sortOrder: Number(e.target.value) })} />
             </div>
             <label className="flex flex-col gap-1.5 text-sm font-medium text-foreground/80">
               Short bio
@@ -692,7 +690,7 @@ export default function ManagementClient() {
                 <p className="text-sm font-semibold text-foreground truncate">
                   {member.fullName} <span className="text-muted font-normal">· {member.designation}</span>
                 </p>
-                <p className="text-xs text-muted">{teamLevelLabel(member.level, member.department)} · Order {member.orderInLevel} · {member.enabled ? 'Shown on the About page' : 'Hidden from the About page'}</p>
+                <p className="text-xs text-muted">{teamLevelLabel(member.level, member.department)} · Display order {member.sortOrder} · {member.enabled ? 'Shown on the About page' : 'Hidden from the About page'}</p>
               </div>
               <div className="flex items-center gap-1 shrink-0">
                 <button onClick={() => void moveTeamMember(member, 'up')} aria-label="Move up" className="p-1.5 text-muted hover:text-foreground"><ArrowUp className="w-4 h-4" /></button>
@@ -718,7 +716,7 @@ export default function ManagementClient() {
                       websiteUrl: member.websiteUrl ?? '',
                       level: member.level,
                       department: member.department ?? '',
-                      orderInLevel: member.orderInLevel,
+                      sortOrder: member.sortOrder,
                     });
                     setEditingTeamId(member.id);
                     setShowTeamForm(true);
