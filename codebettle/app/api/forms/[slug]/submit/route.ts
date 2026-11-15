@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getRequestSession, invalidBody, readJson } from '@/lib/api-helpers';
-import { checkRateLimit, formSubmitRateLimitKey } from '@/lib/rate-limit';
+import { checkRateLimitAsync, getClientIp, formSubmitRateLimitKey } from '@/lib/rate-limit';
 import {
   submitFormMultipartService,
   submitFormService,
@@ -26,16 +26,11 @@ import {
  * the body is read, for both content types).
  * Returns { ok: true, submissionId } or 400 with fieldErrors.
  */
-function clientIp(request: NextRequest): string {
-  const forwarded = request.headers.get('x-forwarded-for');
-  return forwarded ? forwarded.split(',')[0].trim() : 'unknown';
-}
-
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ slug: string }> },
 ) {
-  const limit = checkRateLimit(formSubmitRateLimitKey(clientIp(request)), 5, 15 * 60 * 1000);
+  const limit = await checkRateLimitAsync(formSubmitRateLimitKey(getClientIp(request)), 5, 15 * 60 * 1000);
   if (!limit.allowed) {
     return NextResponse.json(
       { error: 'Too many submissions. Please try again later.' },
