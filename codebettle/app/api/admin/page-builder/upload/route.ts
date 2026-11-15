@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { requireAdminArea } from '@/lib/api-helpers';
 import { uploadPageImage } from '@/lib/services/course-image-storage';
 import { validateStorageKeySegment } from '@/lib/services/file-validation';
+import { isUploadValidationError } from '@/lib/services/file-validation';
 
 /**
  * POST /api/admin/page-builder/upload — upload a block image for the
@@ -62,6 +63,11 @@ export async function POST(request: NextRequest) {
       );
     }
     if (message.includes('Only JPG, PNG, WebP or GIF') || message.includes('5 MB or smaller')) {
+      return NextResponse.json({ error: message }, { status: 400 });
+    }
+    // U-6: magic-byte mismatch / empty / unreadable file is a client
+    // error (400 with the validation message), not a generic 500.
+    if (isUploadValidationError(message)) {
       return NextResponse.json({ error: message }, { status: 400 });
     }
     // NEW-9: the storage-layer segment check — surface as a 400, not a 500.

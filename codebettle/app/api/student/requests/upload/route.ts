@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { assertNotViewAs, invalidBody, requireRoles } from '@/lib/api-helpers';
 import { checkRateLimit, supportRequestRateLimitKey } from '@/lib/rate-limit';
 import { uploadSupportRequestAttachment } from '@/lib/services/support-request-service';
+import { isUploadValidationError } from '@/lib/services/file-validation';
 
 /**
  * POST /api/student/requests/upload — upload one support-request
@@ -63,6 +64,11 @@ export async function POST(request: NextRequest) {
       message.includes('Only PDF') ||
       message.includes('5 MB or smaller')
     ) {
+      return NextResponse.json({ error: message }, { status: 400 });
+    }
+    // U-6: magic-byte mismatch / empty / unreadable file is a client
+    // error (400 with the validation message), not a generic 500.
+    if (isUploadValidationError(message)) {
       return NextResponse.json({ error: message }, { status: 400 });
     }
     return NextResponse.json({ error: 'Attachment upload failed' }, { status: 500 });

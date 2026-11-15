@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { assertNotViewAs, requireRoles } from '@/lib/api-helpers';
+import { checkRateLimit } from '@/lib/rate-limit';
 import { uploadPaymentProof } from '@/lib/services/payment-proof-storage';
+import { isUploadValidationError } from '@/lib/services/file-validation';
 
 /**
  * POST /api/student/payments/upload — upload a transaction
@@ -17,6 +19,18 @@ export async function POST(request: NextRequest) {
   if ('error' in auth) return auth.error;
   const viewing = assertNotViewAs(auth.session);
   if (viewing) return viewing;
+  // U-3: logged-in uploads are rate-limited per user (10 per 15 min —
+  // the same budget as the public application-file upload, which is
+  // also a file upload that costs storage; keyed by user id, not IP,
+  // because the actor is authenticated). Without this a student could
+  // upload unlimited 5 MB payment proofs into Storage.
+  const limit = checkRateLimit(`payment-proof-upload:${auth.session.id}`, 10, 15 * 60 * 1000);
+  if (!limit.allowed) {
+    return NextResponse.json(
+      { error: 'Too many uploads. Please try again later.' },
+      { status: 429 },
+    );
+  }
 
   let form: FormData;
   try {
@@ -48,6 +62,11 @@ export async function POST(request: NextRequest) {
       );
     }
     if (message.includes('Only PNG') || message.includes('5 MB or smaller')) {
+      return NextResponse.json({ error: message }, { status: 400 });
+    }
+    // U-6: magic-byte mismatch / empty / unreadable file is a client
+    // error (400 with the validation message), not a generic 500.
+    if (isUploadValidationError(message)) {
       return NextResponse.json({ error: message }, { status: 400 });
     }
     return NextResponse.json({ error: 'Payment proof upload failed' }, { status: 500 });

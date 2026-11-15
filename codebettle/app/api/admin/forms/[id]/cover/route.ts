@@ -7,6 +7,7 @@ import {
   formCoverImagePathFromUrl,
   uploadFormCoverImage,
 } from '@/lib/services/course-image-storage';
+import { isUploadValidationError } from '@/lib/services/file-validation';
 
 /**
  * POST /api/admin/forms/[id]/cover — upload a form's cover image (admin only).
@@ -80,6 +81,11 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       message.includes('Only JPG, PNG, WebP or GIF') ||
       message.includes('5 MB or smaller')
     ) {
+      return NextResponse.json({ error: message }, { status: 400 });
+    }
+    // U-6: magic-byte mismatch / empty / unreadable file is a client
+    // error (400 with the validation message), not a generic 500.
+    if (isUploadValidationError(message)) {
       return NextResponse.json({ error: message }, { status: 400 });
     }
     return NextResponse.json({ error: 'Cover upload failed' }, { status: 500 });
