@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getRequestSession, invalidBody, readJson } from '@/lib/api-helpers';
-import { checkRateLimit, successStorySubmitRateLimitKey } from '@/lib/rate-limit';
+import { checkRateLimitAsync, getClientIp, successStorySubmitRateLimitKey } from '@/lib/rate-limit';
 import { areSuccessStoryTablesReady } from '@/lib/db/success-stories';
 import { listPublicSuccessStories, submitSuccessStory } from '@/lib/services/success-story-service';
 
@@ -17,11 +17,6 @@ import { listPublicSuccessStories, submitSuccessStory } from '@/lib/services/suc
  * { ok: true, submissionNumber, submissionId, submittedAt, status }
  * or 400/409/429/503 with { error }.
  */
-function clientIp(request: NextRequest): string {
-  const forwarded = request.headers.get('x-forwarded-for');
-  return forwarded ? forwarded.split(',')[0].trim() : 'unknown';
-}
-
 export async function GET() {
   const [stories, tablesReady] = await Promise.all([
     listPublicSuccessStories(),
@@ -31,7 +26,7 @@ export async function GET() {
 }
 
 export async function POST(request: NextRequest) {
-  const limit = checkRateLimit(successStorySubmitRateLimitKey(clientIp(request)), 5, 15 * 60 * 1000);
+  const limit = await checkRateLimitAsync(successStorySubmitRateLimitKey(getClientIp(request)), 5, 15 * 60 * 1000);
   if (!limit.allowed) {
     return NextResponse.json(
       { error: 'Too many submissions. Please try again later.' },
