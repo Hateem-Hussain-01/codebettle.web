@@ -26,8 +26,16 @@ export async function verifyPassword(password: string, hash: string): Promise<bo
   }
 }
 
-/** A bcrypt hash of a random value, used to keep login timing uniform when the email does not exist. */
-export const DUMMY_HASH = '$2b$12$KIXxQZ9v5mQ0vYvR5pQ0yO8Q0yO8Q0yO8Q0yO8Q0yO8Q0yO8Q0yO8Q0';
+/**
+ * A bcrypt hash (cost 12) of a random value, generated once with
+ * bcryptjs — used to keep login timing uniform when the email does not
+ * exist. It is a hash of an UNKNOWN random value, not a credential:
+ * no password can ever match it, and it is never used to grant access.
+ * The previous value was 62 chars (a valid bcrypt hash is 60), so
+ * bcrypt.compare threw immediately and unknown-email logins returned
+ * in ~0 ms vs ~500 ms for a real comparison (HIGH-A1 timing oracle).
+ */
+export const DUMMY_HASH = '$2b$12$HIjmbnAn678l2Sq0ErupSu/.K4iNixgblKn25IPEQBIF/v4kQEkDq';
 
 /** Validate a new password. Returns an error message or null when valid. */
 export function validatePassword(password: string): string | null {

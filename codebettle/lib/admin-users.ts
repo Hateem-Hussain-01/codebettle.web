@@ -5,4 +5,4 @@
  * (routes, tests) keep working unchanged.
  */
 export { createManagedUser, deleteManagedUser, setUserStatus, updateManagedUser } from './services/admin-service';
-export type { CreateManagedUserInput, ManagedRole, SafeUser, UpdateManagedUserInput } from './services/admin-service';
+export type { CreateManagedUserInput, ManagedRole, SafeUser, UpdateManagedUserInput, UpdateManagedUserOptions } from './services/admin-service';

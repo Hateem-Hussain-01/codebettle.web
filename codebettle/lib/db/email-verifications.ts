@@ -75,3 +75,20 @@ export async function markUserEmailVerified(userId: string): Promise<boolean> {
     .update({ emailVerifiedAt: new Date() });
   return row !== null;
 }
+
+/**
+ * Is this user's email verified? Reads User.emailVerifiedAt directly
+ * (the User type / mapUserRow do not surface the column, so login
+ * enforcement reads it here instead of through the user record).
+ * False when the user does not exist. Never throws for a missing
+ * column — callers treat false as unverified.
+ */
+export async function getUserEmailVerifiedAt(userId: string): Promise<Date | null> {
+  const row = await getDb()
+    .orm.public.User.where({ id: userId })
+    .where((u) => u.deletedAt.isNull())
+    .select('emailVerifiedAt')
+    .first();
+  if (!row) return null;
+  return (row.emailVerifiedAt as Date | null) ?? null;
+}

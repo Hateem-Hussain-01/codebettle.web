@@ -18,6 +18,17 @@ import type { SessionRecord } from './types';
 
 export const SESSION_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 days, matches the old cookie lifetime
 
+/**
+ * Idle timeout (MEDIUM-A3): a session that has not been used for this
+ * long is dead, even if its 7-day absolute lifetime has not run out.
+ * 72 hours — long enough that a student who comes back after a weekend
+ * is not logged out (the pre-existing session test validates a session
+ * after 2 idle days), short enough that a stolen cookie stops working
+ * well before the absolute expiry. Validation refreshes lastSeenAt on
+ * every request, so an actively-used session never hits this.
+ */
+export const SESSION_IDLE_TIMEOUT_MS = 3 * 24 * 60 * 60 * 1000; // 72 hours
+
 export interface CreateSessionOptions {
   now?: number;
   ttlMs?: number;
@@ -68,8 +79,10 @@ export async function createSessionRecord(
 
 /**
  * Validate a raw token. Returns the session record, or null when the token
- * is unknown, revoked, or expired. Refreshes lastSeenAt; expiry is never
- * extended beyond creation + SESSION_TTL_MS. Expired rows are deleted.
+ * is unknown, revoked, expired, or idle-timed-out. Refreshes lastSeenAt;
+ * expiry is never extended beyond creation + SESSION_TTL_MS (absolute
+ * lifetime), and a session idle for longer than SESSION_IDLE_TIMEOUT_MS
+ * is dead even inside its absolute lifetime. Expired / idle rows are deleted.
  */
 export async function validateSessionToken(
   token: string,
@@ -80,6 +93,10 @@ export async function validateSessionToken(
   if (!row) return null;
   if (row.revokedAt !== null) return null;
   if (row.expiresAt.getTime() <= now) {
+    await getDb().orm.public.Session.where({ id }).delete();
+    return null;
+  }
+  if (now - row.lastSeenAt.getTime() > SESSION_IDLE_TIMEOUT_MS) {
     await getDb().orm.public.Session.where({ id }).delete();
     return null;
   }
@@ -112,6 +129,37 @@ export async function revokeAllSessionsForUser(userId: string): Promise<number> 
     .where((s) => s.revokedAt.isNull())
     .updateAll({ revokedAt: new Date() });
   return active.length;
+}
+
+/**
+ * Revoke every session belonging to a user EXCEPT the one holding
+ * `keepToken` (MEDIUM-A3 "revoke other sessions"). The current session
+ * stays valid; every other device/browser is logged out. Returns how
+ * many sessions were revoked. Pass no token to revoke everything
+ * (same as revokeAllSessionsForUser). Each other session is revoked
+ * by id (the revokeSessionToken pattern) so the kept session is never
+ * touched.
+ */
+export async function revokeOtherSessionsForUser(
+  userId: string,
+  keepToken?: string | null,
+): Promise<number> {
+  const keepId = keepToken ? hashToken(keepToken) : null;
+  const active = await getDb()
+    .orm.public.Session.where({ userId })
+    .where((s) => s.revokedAt.isNull())
+    .select('id')
+    .all();
+  const others = keepId ? active.filter((s) => s.id !== keepId) : active;
+  let revoked = 0;
+  for (const session of others) {
+    const row = await getDb()
+      .orm.public.Session.where({ id: session.id })
+      .where((s) => s.revokedAt.isNull())
+      .update({ revokedAt: new Date() });
+    if (row !== null) revoked += 1;
+  }
+  return revoked;
 }
 
 /** Active (non-revoked, non-expired) session count — for monitoring and tests. */
