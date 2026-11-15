@@ -1,12 +1,40 @@
 /**
- * Simple in-memory fixed-window rate limiter (Phase 1).
- * Protects login / register / password-reset routes against brute force.
- * Limitation, stated honestly: state lives in one server process and is
- * lost on restart, and it is not shared across instances. Phase 2 replaces
- * it with Upstash Redis (see .env.example) without changing call sites.
- * Backed by globalThis (not a plain module-level Map) so the limiter is a
- * true single-process singleton: Next.js bundles each route separately and
- * a module-level Map would be per-bundle.
+ * Rate limiter (Phase 3) — fixed-window, keyed per IP / IP+email.
+ *
+ * Two entry points with the SAME result shape ({ allowed, remaining,
+ * resetAt }):
+ *
+ * - `checkRateLimit(key, limit, windowMs, now?)` — SYNCHRONOUS, backed
+ *   by a process-local Map. This is the ORIGINAL Phase 1 API and its
+ *   signature/behaviour are preserved exactly, so existing call sites
+ *   (including the auth routes, whose register/change-password limits
+ *   are being added by another agent) keep working unchanged. Its
+ *   limitation is honest and unchanged: state lives in one server
+ *   process, is lost on restart, and is NOT shared across Vercel
+ *   instances — so on Vercel it throttles weakly (findings U-1 /
+ *   HIGH-A3). New call sites MUST use `checkRateLimitAsync` instead.
+ *
+ * - `checkRateLimitAsync(key, limit, windowMs, now?)` — ASYNC. When
+ *   `UPSTASH_REDIS_REST_URL` + `UPSTASH_REDIS_REST_TOKEN` are set it
+ *   counts in Upstash Redis via the REST API (shared across every
+ *   Vercel instance, so the limit actually fires in production).
+ *   When they are unset — or Redis is unreachable / errors — it falls
+ *   back to the in-memory limiter and logs a warning, so the app
+ *   never fails closed because the store is down. The Redis call is a
+ *   plain HTTPS `fetch` against the Upstash REST `/pipeline`
+ *   endpoint (INCR + PEXPIRE NX + PTTL in one round trip); there is
+ *   no `@upstash/redis` dependency and no new credential is invented
+ *   here — Eman must add the two env vars in Vercel for
+ *   cross-instance enforcement to activate.
+ *
+ * `getClientIp()` (HIGH-A3 / U-2) is the single trusted-IP helper:
+ * Vercel's `x-real-ip` first, else the LAST `x-forwarded-for` entry.
+ * See its comment for why the FIRST entry must never be trusted.
+ *
+ * Backed by globalThis (not a plain module-level Map) so the
+ * in-memory limiter is a true single-process singleton: Next.js
+ * bundles each route separately and a module-level Map would be
+ * per-bundle.
  */
 
 interface Window {
@@ -25,6 +53,54 @@ export interface RateLimitResult {
   resetAt: number;
 }
 
+/** Minimal header surface: works for NextRequest and plain test objects. */
+export interface ClientIpRequest {
+  headers: { get(name: string): string | null };
+}
+
+/**
+ * Trusted client IP (HIGH-A3 / U-2).
+ *
+ * Why this order:
+ * - `x-real-ip`: Vercel's own docs
+ *   (vercel.com/docs/edge-network/headers) say this header is
+ *   identical to `x-forwarded-for`, and that Vercel OVERWRITES
+ *   `X-Forwarded-For` and "do[es] not forward external IPs … to
+ *   prevent IP spoofing". So on Vercel neither header carries a
+ *   client-supplied value: the edge sets them from the TCP peer it
+ *   actually sees. `x-real-ip` is a single IP, so it is preferred.
+ * - Otherwise the LAST `x-forwarded-for` entry, never the first.
+ *   Each proxy in the chain appends the IP it saw; the leftmost
+ *   entries are whatever the client sent (anyone can send
+ *   `X-Forwarded-For: 1.2.3.4` and get a fresh rate-limit bucket
+ *   per request), while the rightmost entry is the hop closest to
+ *   our edge — appended by infrastructure the client cannot forge.
+ *   (On Vercel itself the header holds a single, overwritten IP, so
+ *   first == last there; the last-entry rule is what keeps the
+ *   helper safe behind any extra proxy or in local dev.)
+ * - No headers at all → 'unknown' (all such requests share one
+ *   bucket, which is fail-closed for abuse and matches the old
+ *   behaviour).
+ */
+export function getClientIp(request: ClientIpRequest): string {
+  const realIp = request.headers.get('x-real-ip')?.trim();
+  if (realIp) {
+    // Single IP by definition; take the first value if a proxy ever
+    // comma-joins it.
+    return realIp.split(',')[0]?.trim() || 'unknown';
+  }
+  const forwarded = request.headers.get('x-forwarded-for');
+  if (forwarded) {
+    const hops = forwarded
+      .split(',')
+      .map((part) => part.trim())
+      .filter(Boolean);
+    const last = hops[hops.length - 1];
+    if (last) return last;
+  }
+  return 'unknown';
+}
+
 export function checkRateLimit(
   key: string,
   limit: number,
@@ -41,6 +117,146 @@ export function checkRateLimit(
   }
   existing.count += 1;
   return { allowed: true, remaining: limit - existing.count, resetAt: existing.resetAt };
+}
+
+// ---------------------------------------------------------------------------
+// Shared store: Upstash Redis via its REST API (no new dependency).
+// Env vars are read per call (not at module load) so tests can set/unset
+// them and a redeploy picks up a credential rotation without a rebuild.
+// ---------------------------------------------------------------------------
+
+interface UpstashConfig {
+  url: string;
+  token: string;
+}
+
+function getUpstashConfig(): UpstashConfig | null {
+  const url = process.env.UPSTASH_REDIS_REST_URL?.trim();
+  const token = process.env.UPSTASH_REDIS_REST_TOKEN?.trim();
+  if (!url || !token) return null;
+  return { url: url.replace(/\/+$/, ''), token };
+}
+
+/** Which store the async limiter will use. Exported for tests / ops. */
+export function getRateLimitBackend(): 'upstash' | 'memory' {
+  return getUpstashConfig() ? 'upstash' : 'memory';
+}
+
+// Warning state lives on globalThis so the "not configured" warning is
+// logged once per process, not once per rate-limited request.
+const globalForRateLimitWarnings = globalThis as unknown as {
+  __cbRateLimitWarnedMissingUpstash?: boolean;
+  __cbRateLimitLastRedisErrorWarnAt?: number;
+};
+
+function warnMissingUpstashOnce(): void {
+  if (globalForRateLimitWarnings.__cbRateLimitWarnedMissingUpstash) return;
+  globalForRateLimitWarnings.__cbRateLimitWarnedMissingUpstash = true;
+  console.warn(
+    '[rate-limit] UPSTASH_REDIS_REST_URL / UPSTASH_REDIS_REST_TOKEN are not set — ' +
+      'using the in-memory limiter, which is NOT shared across Vercel instances. ' +
+      'Set both vars in Vercel for cross-instance rate limiting.'
+  );
+}
+
+function warnRedisErrorThrottled(error: unknown): void {
+  const now = Date.now();
+  const last = globalForRateLimitWarnings.__cbRateLimitLastRedisErrorWarnAt ?? 0;
+  if (now - last < 60_000) return;
+  globalForRateLimitWarnings.__cbRateLimitLastRedisErrorWarnAt = now;
+  console.warn('[rate-limit] Upstash request failed, falling back to in-memory limiter:', error);
+}
+
+type UpstashPipelineEntry = { result?: unknown; error?: string | null };
+
+/**
+ * One fixed-window increment against Upstash, or null when Redis could
+ * not be used (config missing, network error, non-OK status, malformed
+ * response). Pipeline: INCR the key, PEXPIRE NX (set the window expiry
+ * only when the key is fresh), PTTL (remaining window for resetAt).
+ * Returns the same RateLimitResult shape as the in-memory limiter.
+ */
+async function checkRateLimitUpstash(
+  key: string,
+  limit: number,
+  windowMs: number,
+  now: number,
+  config: UpstashConfig
+): Promise<RateLimitResult | null> {
+  const redisKey = `cb:ratelimit:${key}`;
+  let res: Response;
+  try {
+    res = await fetch(`${config.url}/pipeline`, {
+      method: 'POST',
+      headers: {
+        authorization: `Bearer ${config.token}`,
+        'content-type': 'application/json',
+      },
+      body: JSON.stringify([
+        ['INCR', redisKey],
+        ['PEXPIRE', redisKey, windowMs, 'NX'],
+        ['PTTL', redisKey],
+      ]),
+      // Never let a slow store hang the request: fall back to memory.
+      signal: AbortSignal.timeout(2000),
+    });
+  } catch (error) {
+    warnRedisErrorThrottled(error);
+    return null;
+  }
+  if (!res.ok) {
+    warnRedisErrorThrottled(`HTTP ${res.status}`);
+    return null;
+  }
+  let data: unknown;
+  try {
+    data = await res.json();
+  } catch (error) {
+    warnRedisErrorThrottled(error);
+    return null;
+  }
+  const results = (data as { result?: unknown; error?: string | null } | null)?.result;
+  if (!Array.isArray(results) || results.length < 3) {
+    warnRedisErrorThrottled('malformed pipeline response');
+    return null;
+  }
+  const [incr, , pttl] = results as UpstashPipelineEntry[];
+  if (incr?.error || typeof incr?.result !== 'number') {
+    warnRedisErrorThrottled(incr?.error ?? 'malformed INCR result');
+    return null;
+  }
+  const count = incr.result;
+  const ttlMs = typeof pttl?.result === 'number' ? pttl.result : -1;
+  // PTTL -1 (no expiry — should not happen after PEXPIRE NX) or -2
+  // (key vanished mid-flight): fall back to a full window.
+  const resetAt = ttlMs >= 0 ? now + ttlMs : now + windowMs;
+  if (count > limit) {
+    return { allowed: false, remaining: 0, resetAt };
+  }
+  return { allowed: true, remaining: limit - count, resetAt };
+}
+
+/**
+ * Async rate-limit check — the one new call sites should use.
+ * Shared Upstash store when configured, in-memory fallback otherwise
+ * (same windows, same result shape as `checkRateLimit`). A Redis
+ * failure never blocks the request: it degrades to the in-memory
+ * limiter, exactly like the missing-config case.
+ */
+export async function checkRateLimitAsync(
+  key: string,
+  limit: number,
+  windowMs: number,
+  now: number = Date.now()
+): Promise<RateLimitResult> {
+  const config = getUpstashConfig();
+  if (!config) {
+    warnMissingUpstashOnce();
+    return checkRateLimit(key, limit, windowMs, now);
+  }
+  const fromRedis = await checkRateLimitUpstash(key, limit, windowMs, now, config);
+  if (fromRedis) return fromRedis;
+  return checkRateLimit(key, limit, windowMs, now);
 }
 
 /** Login attempts: 5 per 15 minutes, keyed by IP + email. */
@@ -98,7 +314,9 @@ export function successStoryUploadRateLimitKey(ip: string): string {
   return `success-story-upload:${ip}`;
 }
 
-/** Test helper: clear all windows. Never call in production code. */
+/** Test helper: clear all windows (and reset the warning flags). Never call in production code. */
 export function __clearRateLimits(): void {
   windows.clear();
+  globalForRateLimitWarnings.__cbRateLimitWarnedMissingUpstash = false;
+  globalForRateLimitWarnings.__cbRateLimitLastRedisErrorWarnAt = 0;
 }
