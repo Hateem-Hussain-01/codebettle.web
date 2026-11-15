@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
-import { checkRateLimit, contactRateLimitKey } from '@/lib/rate-limit';
+import { checkRateLimitAsync, getClientIp, contactRateLimitKey } from '@/lib/rate-limit';
 import { createContactMessage } from '@/lib/db/contact-messages';
 
 /**
@@ -19,13 +19,8 @@ const contactSchema = z.object({
   message: z.string().trim().min(1, 'Message is required').max(5000),
 });
 
-function clientIp(request: NextRequest): string {
-  const forwarded = request.headers.get('x-forwarded-for');
-  return forwarded ? forwarded.split(',')[0].trim() : 'unknown';
-}
-
 export async function POST(request: NextRequest) {
-  const limit = checkRateLimit(contactRateLimitKey(clientIp(request)), 5, 15 * 60 * 1000);
+  const limit = await checkRateLimitAsync(contactRateLimitKey(getClientIp(request)), 5, 15 * 60 * 1000);
   if (!limit.allowed) {
     return NextResponse.json(
       { error: 'Too many messages. Please try again later.' },
