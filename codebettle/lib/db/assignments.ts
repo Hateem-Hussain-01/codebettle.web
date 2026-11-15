@@ -13,6 +13,7 @@
 import { getDb } from './client';
 import { logAudit } from './audit';
 import { isValidColabUrl } from '../assignments';
+import { getEnrollmentsByStudent } from './enrollments';
 import { mapAssignmentRow, mapSubmissionRow, stripUndefined } from './mappers';
 import type {
   Assignment,
@@ -254,6 +255,31 @@ export async function listSubmissionsByStudent(studentId: string): Promise<Assig
       mapSubmissionRow(r as AssignmentSubmissionRow, dueByAssignment.get(r.assignmentId) ?? null),
     );
   }, []);
+}
+
+/**
+ * Unsubmitted-assignment count for the student sidebar badge (Eman,
+ * 15 Nov 2026) — how many of the student's VISIBLE assignments they
+ * have not submitted yet. Same visibility rule as GET
+ * /api/student/assignments: a batch-scoped assignment shows only to
+ * students enrolled in that batch; a course-wide assignment shows to
+ * every enrolled student. A submitted assignment never counts —
+ * graded or not — the badge is "work left to do", not "unread".
+ * Returns 0 when the tables are not ready (migration not run) or the
+ * student has no enrolments. No "seen" tracking, no new DB field.
+ */
+export async function countUnsubmittedVisibleAssignments(studentId: string): Promise<number> {
+  if (!(await areAssignmentTablesReady())) return 0;
+  const enrollments = await getEnrollmentsByStudent(studentId);
+  if (enrollments.length === 0) return 0;
+  const batchByCourse = new Map(enrollments.map((e) => [e.courseId, e.batchId ?? null]));
+  const all = await listAssignmentsByCourseIds([...batchByCourse.keys()]);
+  const visible = all.filter((a) => !a.batchId || batchByCourse.get(a.courseId) === a.batchId);
+  if (visible.length === 0) return 0;
+  const submittedIds = new Set(
+    (await listSubmissionsByStudent(studentId)).map((s) => s.assignmentId),
+  );
+  return visible.filter((a) => !submittedIds.has(a.id)).length;
 }
 
 async function listAssignmentsByIds(ids: string[]): Promise<Assignment[]> {

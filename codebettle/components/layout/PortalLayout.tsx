@@ -19,6 +19,14 @@ interface NavItem {
   href: string;
   label: string;
   icon: React.ReactNode;
+  /**
+   * Unsubmitted-count bubble (Eman, 15 Nov 2026): shown at the right
+   * end of the row when > 0 — e.g. the student portal's Assignments
+   * item carries the count of visible assignments the student has not
+   * submitted yet. Optional: portals that pass no badge (instructor /
+   * admin) render exactly as before.
+   */
+  badge?: number;
 }
 
 interface PortalLayoutProps {
@@ -118,7 +126,24 @@ function Sidebar({
             >
               <span className={cn('w-5 h-5 flex-shrink-0', isActive ? 'text-primary-text' : 'text-muted group-hover:text-foreground')}>{item.icon}</span>
               {item.label}
-              {isActive && <ChevronRight className="w-4 h-4 ml-auto text-primary-text" />}
+              {/* Right end of the row: the count bubble (when > 0) and,
+                  on the active item, the chevron — side by side, so a
+                  badged active row reads "Assignments ② ›" like the
+                  approved preview. Same gold pill + dark text as the
+                  top-bar NotificationBadge; 10+ caps at "9+". */}
+              {(isActive || (typeof item.badge === 'number' && item.badge > 0)) && (
+                <span className="ml-auto flex items-center gap-1.5">
+                  {typeof item.badge === 'number' && item.badge > 0 && (
+                    <span
+                      title={`${item.badge} unsubmitted assignment${item.badge === 1 ? '' : 's'}`}
+                      className="min-w-5 h-5 px-1 bg-primary text-ink text-[11px] font-bold rounded-full flex items-center justify-center"
+                    >
+                      {item.badge > 9 ? '9+' : item.badge}
+                    </span>
+                  )}
+                  {isActive && <ChevronRight className="w-4 h-4 text-primary-text" />}
+                </span>
+              )}
             </Link>
           );
         })}
