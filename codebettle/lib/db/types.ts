@@ -457,6 +457,82 @@ export interface AmbassadorApplication {
   updatedAt: string;
 }
 
+/**
+ * Ambassador referral tracking (Eman, 16 Nov 2026). One row per
+ * approved ambassador. `referralCode` is random (10 chars,
+ * crypto-secure) and unique. `userId` links to the student account
+ * when one exists with the same email; `applicationId` is set when
+ * they came through the form, null for directly-granted ambassadors.
+ * `groupLink` / `groupMemberCount` / `groupCountUpdatedAt` are the
+ * ambassador's own campus-group link + the member count they update
+ * DAILY by hand (no WhatsApp API exists to fetch it).
+ */
+export type AmbassadorStatus = 'active' | 'inactive';
+
+export interface Ambassador {
+  id: string;
+  applicationId?: string;
+  userId?: string;
+  email: string;
+  referralCode: string;
+  status: AmbassadorStatus;
+  groupLink?: string;
+  groupMemberCount?: number;
+  groupCountUpdatedAt?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/** One user who signed up through an ambassador's link. */
+export interface ReferralAttribution {
+  id: string;
+  ambassadorId: string;
+  userId: string;
+  createdAt: string;
+}
+
+/** One-way message from an ambassador to the admin (no reply thread in v1). */
+export interface AmbassadorMessage {
+  id: string;
+  ambassadorId: string;
+  message: string;
+  read: boolean;
+  createdAt: string;
+}
+
+/** The 4 referral stages (Eman, 16 Nov 2026): clicks on the link,
+ * signups via the link, course enrollments by referred users, and
+ * payments (approved payment submissions) by referred users. */
+export interface ReferralStats {
+  clicks: number;
+  signups: number;
+  enrollments: number;
+  payments: number;
+}
+
+/** One person in an ambassador's team. `stage` is their furthest
+ * stage: 'signed up' (account only), 'enrolled' (≥1 course
+ * enrollment), 'paid' (≥1 approved payment). `viaName` is set on
+ * level-2 members (who referred them). */
+export type ReferralMemberStage = 'signed up' | 'enrolled' | 'paid';
+
+export interface ReferralTeamMember {
+  id: string;
+  name: string;
+  email: string;
+  joinedAt: string;
+  stage: ReferralMemberStage;
+  enrollments: number;
+  viaName?: string;
+}
+
+/** An ambassador with their 4-stage numbers and team (admin view). */
+export interface AmbassadorWithStats extends Ambassador {
+  stats: ReferralStats;
+  teamLevel1: ReferralTeamMember[];
+  teamLevel2: ReferralTeamMember[];
+}
+
 export interface Testimonial {
   id: string;
   studentName: string;
@@ -1051,6 +1127,36 @@ export type AmbassadorApplicationRow = Pick<
   | 'status'
   | 'createdAt'
   | 'updatedAt'
+>;
+
+export type AmbassadorRow = Pick<
+  Models.public_Ambassador,
+  | 'id'
+  | 'applicationId'
+  | 'userId'
+  | 'email'
+  | 'referralCode'
+  | 'status'
+  | 'groupLink'
+  | 'groupMemberCount'
+  | 'groupCountUpdatedAt'
+  | 'createdAt'
+  | 'updatedAt'
+>;
+
+export type ReferralAttributionRow = Pick<
+  Models.public_ReferralAttribution,
+  'id' | 'ambassadorId' | 'userId' | 'createdAt'
+>;
+
+export type ReferralClickRow = Pick<
+  Models.public_ReferralClick,
+  'id' | 'ambassadorId' | 'ip' | 'day' | 'clickedAt'
+>;
+
+export type AmbassadorMessageRow = Pick<
+  Models.public_AmbassadorMessage,
+  'id' | 'ambassadorId' | 'message' | 'read' | 'createdAt'
 >;
 
 export type TestimonialRow = Pick<

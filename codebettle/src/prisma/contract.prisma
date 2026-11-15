@@ -1322,6 +1322,11 @@ enum AmbassadorApplicationStatus {
   rejected
 }
 
+enum AmbassadorStatus {
+  active
+  inactive
+}
+
 // Campus Ambassador applications (/become-ambassador). Fields are the
 // PROPOSED set — Eman will confirm the exact fields later; the model
 // is built to be adjustable (fields are nullable where a future
@@ -1343,6 +1348,79 @@ model AmbassadorApplication {
 
   @@index([status, createdAt])
   @@index([email, createdAt])
+}
+
+// Ambassador referral tracking (Eman, 16 Nov 2026): one row per
+// approved ambassador. The referral code is random (10 chars,
+// crypto-secure, unguessable — never name-based). userId links the
+// ambassador to their student account when one exists with the same
+// email (linked at approve time, or automatically on their next
+// login/register); applicationId is set when they came through the
+// form, null for directly-granted ambassadors. groupLink /
+// groupMemberCount / groupCountUpdatedAt are the ambassador's own
+// campus-group link + the member count they update DAILY by hand
+// (there is no WhatsApp API to fetch it automatically).
+model Ambassador {
+  id                  String           @id @onCreate(cuid(2))
+  applicationId       String?          @unique
+  userId              String?          @unique
+  email               String           @unique
+  referralCode        String           @unique
+  status              AmbassadorStatus @default(active)
+  groupLink           String?
+  groupMemberCount    Int?
+  groupCountUpdatedAt DateTime?
+  createdAt           DateTime         @default(now()) @onCreate(now())
+  updatedAt           temporal.UpdatedAt
+
+  @@index([status, createdAt])
+  @@index([email, createdAt])
+}
+
+// Referral attribution (Eman, 16 Nov 2026): one row per user who
+// signed up through an ambassador's link. Deliberately a SEPARATE
+// table, NOT a column on User: a new User column would be selected
+// by every user read (login included), so the whole site would 42703
+// until Eman runs the SQL — this table follows the fail-safe pattern
+// instead (reads return empty until the migration runs) and no
+// existing table is touched. Attribution is stored server-side at
+// registration only, never from a client-sent field.
+model ReferralAttribution {
+  id           String   @id @onCreate(cuid(2))
+  ambassadorId String
+  userId       String   @unique
+  createdAt    DateTime @default(now()) @onCreate(now())
+
+  @@index([ambassadorId, createdAt])
+}
+
+// One row per referral-link landing (GET /api/referral/track).
+// `day` is the UTC calendar date (YYYY-MM-DD) of the click: the
+// displayed click count is DISTINCT (ambassador, ip, day), so
+// refreshing the link or sharing it in a group cannot inflate the
+// number — raw rows are kept for audit, the count dedupes.
+model ReferralClick {
+  id           String   @id @onCreate(cuid(2))
+  ambassadorId String
+  ip           String
+  day          String
+  clickedAt    DateTime @default(now()) @onCreate(now())
+
+  @@index([ambassadorId, clickedAt])
+}
+
+// One-way messages from an ambassador to the admin (Eman, 16 Nov
+// 2026): message text only, no subject, no reply thread in v1.
+// `read` is set by the admin from /admin/ambassadors.
+model AmbassadorMessage {
+  id           String   @id @onCreate(cuid(2))
+  ambassadorId String
+  message      String
+  read         Boolean  @default(false)
+  createdAt    DateTime @default(now()) @onCreate(now())
+
+  @@index([ambassadorId, createdAt])
+  @@index([read, createdAt])
 }
 
 model AuditLog {

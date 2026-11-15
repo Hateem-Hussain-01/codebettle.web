@@ -257,6 +257,12 @@ export default function Footer() {
             <Link href="/become-ambassador">
               <Button variant="outline" size="md">Apply now</Button>
             </Link>
+            <p className="text-muted text-sm mt-3">
+              Already an ambassador?{' '}
+              <Link href="/ambassador/login?redirect=/student/ambassador" className="text-primary-text hover:underline">
+                Log in
+              </Link>
+            </p>
           </div>
         </div>
 

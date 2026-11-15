@@ -37,6 +37,7 @@ const TIMESTAMP_DEFAULTS = new Set([
   'issuedAt',
   'publishedAt',
   'submittedAt',
+  'clickedAt',
 ]);
 
 /**
@@ -103,6 +104,10 @@ const NULLABLE_FIELDS: Record<string, string[]> = {
   Subscriber: [],
   BookACall: ['phone', 'courseInterest', 'preferredContact'],
   AmbassadorApplication: [],
+  Ambassador: ['applicationId', 'userId', 'groupLink', 'groupMemberCount', 'groupCountUpdatedAt'],
+  ReferralAttribution: [],
+  ReferralClick: [],
+  AmbassadorMessage: [],
   Assignment: ['batchId', 'dueDate'],
   AssignmentSubmission: ['marks', 'feedback', 'gradedAt', 'gradedBy'],
 };

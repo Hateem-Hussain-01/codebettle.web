@@ -16,6 +16,10 @@
 import { DUMMY_HASH, hashPassword, normalizeEmail, validatePassword, verifyPassword } from '../security';
 import { createUser, getUserByEmail, getUserByIdWithHash, updateUserPassword } from '../db/users';
 import { linkUnlinkedApplicationsToUser } from '../db/applications';
+import {
+  attributeSignupToAmbassador,
+  linkAmbassadorToUserByEmail,
+} from '../db/ambassadors';
 import { createSessionRecord, revokeAllSessionsForUser } from '../db/sessions';
 import { logAudit } from '../db/audit';
 import { toSafeUser } from '../db/mappers';
@@ -106,6 +110,16 @@ export async function login(email: string, password: string): Promise<SessionUse
   if (await isEmailVerificationRequired()) {
     if (!(await isUserEmailVerified(user.id))) return null;
   }
+  // Ambassador referral (Eman, 16 Nov 2026): a user whose email
+  // matches an ambassador row gets linked to it on sign-in, so an
+  // ambassador approved before their account existed still gets
+  // their dashboard. Best-effort — a linking failure must never
+  // block sign-in.
+  try {
+    await linkAmbassadorToUserByEmail(user.email, user.id);
+  } catch (e) {
+    console.error('Failed to link ambassador account on login', e);
+  }
   return toSessionUser(user);
 }
 
@@ -114,6 +128,14 @@ export interface RegisterInput {
   email: string;
   phone?: string;
   password: string;
+  /**
+   * Ambassador referral (Eman, 16 Nov 2026): the ambassador id
+   * resolved SERVER-SIDE from the `cb_ref` cookie by the auth route
+   * — never a client-sent field. When set, the signup is attributed
+   * to that ambassador (stage 2). The route already guards
+   * self-referral (the ambassador's own email never attributes).
+   */
+  referredByAmbassadorId?: string;
 }
 
 /**
@@ -156,6 +178,23 @@ export async function registerUser(
     await linkUnlinkedApplicationsToUser(email, user.id);
   } catch (e) {
     console.error('Failed to link pre-signup instructor applications', e);
+  }
+  // Ambassador referral (Eman, 16 Nov 2026): attribute the signup to
+  // the ambassador from the `cb_ref` cookie (stage 2), and link the
+  // new account to its ambassador row when the email matches one
+  // (an ambassador who registers after being approved). Both are
+  // best-effort — neither may ever fail signup.
+  try {
+    if (input.referredByAmbassadorId) {
+      await attributeSignupToAmbassador(input.referredByAmbassadorId, user.id);
+    }
+  } catch (e) {
+    console.error('Failed to attribute signup to ambassador', e);
+  }
+  try {
+    await linkAmbassadorToUserByEmail(email, user.id);
+  } catch (e) {
+    console.error('Failed to link ambassador account on register', e);
   }
   await logAudit({ actorId: user.id, action: 'user.register', entity: 'user', entityId: user.id });
   return { user };

@@ -27,6 +27,7 @@ const STATIC_PAGES: { path: string; priority: number; changeFrequency: 'weekly' 
   { path: '/become-instructor', priority: 0.6, changeFrequency: 'monthly' },
   { path: '/book-a-call', priority: 0.6, changeFrequency: 'monthly' },
   { path: '/become-ambassador', priority: 0.6, changeFrequency: 'monthly' },
+  { path: '/ambassador/login', priority: 0.6, changeFrequency: 'monthly' },
   { path: '/contact', priority: 0.6, changeFrequency: 'monthly' },
   { path: '/privacy', priority: 0.3, changeFrequency: 'monthly' },
   { path: '/terms', priority: 0.3, changeFrequency: 'monthly' },
