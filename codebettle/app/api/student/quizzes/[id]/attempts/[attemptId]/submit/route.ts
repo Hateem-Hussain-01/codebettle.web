@@ -17,14 +17,14 @@ export async function POST(
   if ('error' in auth) return auth.error;
   const viewing = assertNotViewAs(auth.session);
   if (viewing) return viewing;
-  const { attemptId } = await params;
+  const { id, attemptId } = await params;
   const body = await readJson(request);
   if (body === null) return invalidBody();
   const parsed = quizSubmitSchema.safeParse(body);
   if (!parsed.success) {
     return NextResponse.json({ error: 'A list of answers is required' }, { status: 400 });
   }
-  const result = await submitAttempt(auth.session, attemptId, parsed.data.answers);
+  const result = await submitAttempt(auth.session, attemptId, parsed.data.answers, new Date(), id);
   if ('error' in result) return serviceError(result);
   return NextResponse.json({ result: result.result });
 }

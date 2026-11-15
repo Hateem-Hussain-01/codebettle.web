@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { assertNotViewAs, invalidBody, readJson, requireRoles } from '@/lib/api-helpers';
 import { deleteNoteForUser, updateNoteForUser } from '@/lib/db/notes';
 import { getCourseById } from '@/lib/db/courses';
+import { getEnrollmentByStudentAndCourse } from '@/lib/db/enrollments';
 
 /**
  * PATCH /api/student/notes/[id] — edit your own note. Body: any of
@@ -29,6 +30,12 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
   if (parsed.data.courseId) {
     const course = await getCourseById(parsed.data.courseId);
     if (!course) return NextResponse.json({ error: 'Course not found' }, { status: 404 });
+    // SECURITY (S-3): a note may only be (re)linked to a course the
+    // student is enrolled in. Unlinking (courseId: null) stays allowed.
+    const enrollment = await getEnrollmentByStudentAndCourse(auth.session.id, parsed.data.courseId);
+    if (!enrollment) {
+      return NextResponse.json({ error: 'You can only link a note to a course you are enrolled in' }, { status: 403 });
+    }
   }
   const note = await updateNoteForUser(auth.session.id, id, parsed.data);
   if (!note) return NextResponse.json({ error: 'Note not found' }, { status: 404 });

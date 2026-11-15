@@ -26,7 +26,8 @@ import {
 } from '../db/reviews';
 import { logAudit } from '../db/audit';
 import { hasAdminCapability } from '../rbac';
-import type { Course, Review, ReviewStatus } from '../db/types';
+import { toPublicCourse } from '../db/mappers';
+import type { Course, PublicCourse, Review, ReviewStatus } from '../db/types';
 import { badRequest, conflict, forbidden, notFound, type Actor, type ServiceError } from './errors';
 
 type Result<T> = T | ServiceError;
@@ -49,7 +50,7 @@ export interface CreateReviewServiceInput {
 export async function createReviewService(
   actor: Actor,
   input: CreateReviewServiceInput,
-): Promise<Result<{ review: Review; course: Course | null }>> {
+): Promise<Result<{ review: Review; course: PublicCourse | null }>> {
   if (actor.role !== 'student') {
     return forbidden('Only students can write reviews');
   }
@@ -97,7 +98,10 @@ export async function createReviewService(
   // but it keeps the course stats honest if the moderation columns are
   // not live yet (legacy rows read as approved).
   const updatedCourse = await recomputeCourseRating(input.courseId);
-  return { review: created.review, course: updatedCourse };
+  // SECURITY (S-2): never return the full internal Course row to a
+  // student — it carries zoomLink and the instructor-portal urlKey.
+  // The public shape keeps rating/reviewCount (what the client needs).
+  return { review: created.review, course: updatedCourse ? toPublicCourse(updatedCourse) : null };
 }
 
 export interface UpdateReviewServiceInput {
@@ -111,7 +115,7 @@ export async function updateReviewService(
   actor: Actor,
   reviewId: string,
   input: UpdateReviewServiceInput,
-): Promise<Result<{ review: Review; course: Course | null }>> {
+): Promise<Result<{ review: Review; course: PublicCourse | null }>> {
   if (actor.role !== 'student') {
     return forbidden('Only students can edit reviews');
   }
@@ -146,13 +150,14 @@ export async function updateReviewService(
     detail: `${existing.courseId} rating ${updated.rating} (back to pending)`,
   });
   const updatedCourse = await recomputeCourseRating(existing.courseId);
-  return { review: updated, course: updatedCourse };
+  // SECURITY (S-2): public shape only — see createReviewService.
+  return { review: updated, course: updatedCourse ? toPublicCourse(updatedCourse) : null };
 }
 
 export async function deleteReviewService(
   actor: Actor,
   reviewId: string,
-): Promise<Result<{ success: true; course: Course | null }>> {
+): Promise<Result<{ success: true; course: PublicCourse | null }>> {
   if (actor.role !== 'student') {
     return forbidden('Only students can delete reviews');
   }
@@ -170,7 +175,8 @@ export async function deleteReviewService(
     entityId: reviewId,
   });
   const updatedCourse = await recomputeCourseRating(existing.courseId);
-  return { success: true, course: updatedCourse };
+  // SECURITY (S-2): public shape only — see createReviewService.
+  return { success: true, course: updatedCourse ? toPublicCourse(updatedCourse) : null };
 }
 
 // ---------------------------------------------------------------------------

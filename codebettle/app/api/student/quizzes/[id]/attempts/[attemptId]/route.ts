@@ -10,7 +10,7 @@ export async function GET(
   const auth = await requireRoles(['student']);
   if ('error' in auth) return auth.error;
   const { id, attemptId } = await params;
-  const result = await getAttemptForStudent(auth.session, attemptId);
+  const result = await getAttemptForStudent(auth.session, attemptId, new Date(), id);
   if ('error' in result) return serviceError(result);
   return NextResponse.json({ attempt: result.attempt, quiz: result.quiz });
 }
