@@ -7,6 +7,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import Button from '@/components/ui/Button';
 import ThemeToggle from '@/components/theme/ThemeToggle';
 import BackButton from '@/components/layout/BackButton';
+import { useNavConfig } from '@/components/layout/NavConfigProvider';
+import { resolveNavbarInitialItems } from '@/lib/nav-config-client';
 import { primaryPortalDashboard } from '@/lib/portal-switch';
 import { portalMenuLinks } from '@/lib/user-menu';
 import UserMenu from '@/components/layout/UserMenu';
@@ -16,11 +18,17 @@ interface NavbarProps {
   // the avatar menu header shows it under the user's name.
   session?: { name: string; role: string; avatar?: string; email?: string } | null;
   /**
-   * Navbar config from the Navbar Editor (PR #32). When a server
-   * component passes these, the navbar renders them immediately (no
-   * fetch flash). When omitted, the navbar fetches GET /api/nav on
-   * mount and falls back to DEFAULT_NAV_ITEMS until it answers — the
-   * nav never breaks when the DB has no config yet.
+   * Navbar config from the Navbar Editor (PR #32). The root layout
+   * fetches it server-side and provides it through NavConfigProvider,
+   * so the navbar renders the SAVED items on its first paint (no
+   * fetch flash). When a caller passes navItems explicitly those win
+   * and no fetch happens. When neither is available, the navbar
+   * fetches GET /api/nav on mount — and until it answers it renders
+   * a skeleton, NEVER the hardcoded defaults (15 Nov 2026 flash fix:
+   * the defaults include 'Instructors', so showing them while loading
+   * flashed a deleted item on every SPA navigation). The defaults are
+   * used only when the server says there is genuinely no saved config
+   * (fromDefaults) or the fetch fails with nothing else to show.
    */
   navItems?: { label: string; href: string }[];
   logoUrl?: string;
@@ -41,9 +49,18 @@ const DEFAULT_LOGO_URL =
 export default function Navbar({ session, navItems: navItemsProp, logoUrl: logoUrlProp }: NavbarProps) {
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [navItems, setNavItems] = useState(navItemsProp ?? FALLBACK_NAV_ITEMS);
-  const [logoUrl, setLogoUrl] = useState(logoUrlProp ?? DEFAULT_LOGO_URL);
+  // Server-provided config from the root layout (null when rendered
+  // outside the layout). The first paint uses it when present — the
+  // saved items, never the hardcoded fallback (see
+  // resolveNavbarInitialItems).
+  const serverConfig = useNavConfig();
+  const [navItems, setNavItems] = useState(() => resolveNavbarInitialItems(navItemsProp, serverConfig));
+  const [logoUrl, setLogoUrl] = useState(logoUrlProp ?? serverConfig?.logoUrl ?? DEFAULT_LOGO_URL);
   const [logoFailed, setLogoFailed] = useState(false);
+  // True once the navbar has real items to show (a prop, the server
+  // config, or a resolved fetch). While false the desktop links area
+  // renders a skeleton — never the fallback items.
+  const [navReady, setNavReady] = useState(Boolean(navItemsProp || serverConfig));
 
   useEffect(() => {
     const handler = () => setScrolled(window.scrollY > 20);
@@ -51,24 +68,41 @@ export default function Navbar({ session, navItems: navItemsProp, logoUrl: logoU
     return () => window.removeEventListener('scroll', handler);
   }, []);
 
-  // Navbar Editor config (PR #32): when the caller did not pass items,
-  // fetch the stored config. The fallback above is already showing, so
-  // a failed fetch changes nothing — the nav never breaks.
+  // Navbar Editor config (PR #32), revalidation (15 Nov 2026 flash
+  // fix): an explicit navItems prop is authoritative and needs no
+  // fetch. Otherwise the navbar revalidates against GET /api/nav in
+  // the background on every mount — the first paint already showed
+  // the server-provided items, so this only swaps in NEWER saved
+  // truth (e.g. an item the admin deleted after the page loaded).
+  // The response is the resolved server truth: DB rows when a config
+  // is saved, the hardcoded defaults only when the table is empty
+  // (fromDefaults) — so swapping to it can never flash a deleted
+  // item. No-store: a cached response could resurrect a just-deleted
+  // item. On fetch failure the current items stay; the hardcoded
+  // fallback is used only when there was never anything else to show
+  // (no prop, no server config), so the nav never breaks.
   useEffect(() => {
-    if (navItemsProp || logoUrlProp) return;
+    if (navItemsProp) return;
     let cancelled = false;
-    fetch('/api/nav')
+    fetch('/api/nav', { cache: 'no-store' })
       .then((r) => (r.ok ? r.json() : null))
       .then((data) => {
         if (cancelled || !data) return;
-        if (Array.isArray(data.items) && data.items.length > 0) setNavItems(data.items);
-        if (typeof data.logoUrl === 'string' && data.logoUrl) setLogoUrl(data.logoUrl);
+        if (Array.isArray(data.items)) setNavItems(data.items);
+        // A logoUrl passed as a prop stays authoritative; the fetch
+        // only supplies the logo when no prop was given.
+        if (typeof data.logoUrl === 'string' && data.logoUrl && !logoUrlProp) setLogoUrl(data.logoUrl);
+        setNavReady(true);
       })
-      .catch(() => {});
+      .catch(() => {
+        if (cancelled) return;
+        if (!serverConfig) setNavItems(FALLBACK_NAV_ITEMS);
+        setNavReady(true);
+      });
     return () => {
       cancelled = true;
     };
-  }, [navItemsProp, logoUrlProp]);
+  }, [navItemsProp, logoUrlProp, serverConfig]);
 
   // Module 17: the public navbar points at the user's PRIMARY portal
   // (role is the primary role). A dual-role user lands on their home
@@ -122,13 +156,24 @@ export default function Navbar({ session, navItems: navItemsProp, logoUrl: logoU
             )}
           </Link>
 
-          {/* Desktop Nav */}
+          {/* Desktop Nav — while the config is still loading (no prop,
+              no server config, fetch pending) a skeleton renders here,
+              never the hardcoded fallback items: a deleted item must
+              not appear, not even briefly. */}
           <div className="hidden md:flex items-center gap-6">
-            {navItems.map((item) => (
-              <Link key={item.href} href={item.href} className="text-sm text-muted hover:text-foreground transition-colors">
-                {item.label}
-              </Link>
-            ))}
+            {!navReady ? (
+              <div className="flex items-center gap-6" aria-hidden="true">
+                {[56, 76, 40, 64, 48, 58].map((w, i) => (
+                  <span key={i} className="h-4 rounded bg-dark-border animate-pulse" style={{ width: w }} />
+                ))}
+              </div>
+            ) : (
+              navItems.map((item) => (
+                <Link key={item.href} href={item.href} className="text-sm text-muted hover:text-foreground transition-colors">
+                  {item.label}
+                </Link>
+              ))
+            )}
           </div>
 
           {/* Auth */}

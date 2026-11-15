@@ -5,8 +5,10 @@ import { Toaster } from 'react-hot-toast';
 import { MotionConfig } from 'framer-motion';
 import { ThemeProvider } from '@/components/theme/ThemeProvider';
 import { SiteSettingsProvider } from '@/components/layout/Footer';
+import { NavConfigProvider } from '@/components/layout/NavConfigProvider';
 import { THEME_COOKIE, THEME_SCRIPT, parseThemeCookie } from '@/lib/theme';
 import { getSiteSettings } from '@/lib/services/settings-service';
+import { getPublicNavConfig } from '@/lib/nav-config';
 
 /**
  * Settings fix: metadata comes from the admin-managed site settings
@@ -49,6 +51,15 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   // such as the Footer and the contact page can show them without
   // touching the database themselves (see Footer.tsx).
   const settings = await getSiteSettings();
+  // Navbar flash fix (15 Nov 2026): the public nav config is fetched
+  // server-side here and handed to every page through NavConfigProvider,
+  // so the Navbar renders the SAVED items on its first paint instead
+  // of hardcoded defaults while GET /api/nav loads. getPublicNavConfig
+  // never throws (defaults on any DB error), so this cannot 500 a page.
+  // The layout persists across SPA navigations, so the value is already
+  // there when a new page's Navbar mounts — a deleted item never
+  // flashes on tab clicks.
+  const navConfig = await getPublicNavConfig();
   // x-nonce is set by proxy.ts (one fresh nonce per request, the same
   // one in the CSP header). Without it the inline theme script would
   // be blocked by the nonce CSP (Phase 7, SEC-09). If the header is
@@ -73,7 +84,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
             preference (transform/layout animations off when preferred).
             CSS animations are handled by the media query in globals.css.
           */}
-          <MotionConfig reducedMotion="user"><SiteSettingsProvider settings={settings}>{children}</SiteSettingsProvider></MotionConfig>
+          <MotionConfig reducedMotion="user"><SiteSettingsProvider settings={settings}><NavConfigProvider value={navConfig}>{children}</NavConfigProvider></SiteSettingsProvider></MotionConfig>
         </ThemeProvider>
         <Toaster
           position="top-right"
