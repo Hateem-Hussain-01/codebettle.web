@@ -16,6 +16,7 @@
  */
 import { logAudit } from '../db/audit';
 import { getCourseById } from '../db/courses';
+import { expectedDiscountedPrice, validateCouponForCourse } from '../db/coupons';
 import { getEnrollmentById, updateEnrollment } from '../db/enrollments';
 import { getPaymentAccountById } from '../db/payment-accounts';
 import {
@@ -23,11 +24,15 @@ import {
   createPaymentSubmission,
   getPaymentSubmissionById,
   listPaymentSubmissions,
+  listPaymentSubmissionsByProofUrl,
+  listPaymentSubmissionsByTransactionRef,
   listPaymentSubmissionsForEnrollment,
   rejectPaymentSubmission,
 } from '../db/payments';
+import { getPaymentProofStorageClient, PAYMENT_PROOFS_BUCKET } from './payment-proof-storage';
+import type { SupabaseClient } from '@supabase/supabase-js';
 import { can } from '../rbac';
-import type { Enrollment, PaymentSubmission } from '../db/types';
+import type { Course, Enrollment, PaymentSubmission } from '../db/types';
 import { badRequest, conflict, forbidden, notFound, type Actor, type ServiceError } from './errors';
 import { onPaymentApproved, onPaymentRejected } from './notification-service';
 
@@ -40,12 +45,101 @@ export interface SubmitPaymentServiceInput {
   transactionRef: string;
   /** Storage path of the uploaded proof (e.g. `payment-proofs/<uuid>.png`). */
   proofPath?: string;
+  /** Test seam: inject a mock storage client instead of the real one. */
+  storageClient?: SupabaseClient;
+}
+
+/**
+ * The exact amount a student must pay for an enrolment (Phase 3,
+ * P-3 / MEDIUM-B2). Without a coupon it is the course price; with a
+ * coupon the server computes the discounted price from the coupon
+ * record (type/value, expiry, usage, course applicability) — the
+ * submitted amount must equal this, exactly, at both submit time and
+ * approval time. A coupon that is no longer valid has no expected
+ * amount, so the payment cannot proceed at all.
+ */
+async function expectedAmountForEnrollment(
+  couponUsed: string | null | undefined,
+  course: Course,
+): Promise<{ expected: number } | { error: string }> {
+  if (!couponUsed) return { expected: course.price };
+  const coupon = await validateCouponForCourse(couponUsed, course.id);
+  if (!coupon) {
+    return {
+      error:
+        'The coupon on this enrolment is no longer valid (expired, fully used, deactivated, or not for this course) — ask an admin to update the enrolment before paying',
+    };
+  }
+  return { expected: expectedDiscountedPrice(course.price, coupon) };
+}
+
+/**
+ * Is this a storage path the payment-proof upload route itself could
+ * have returned? Only paths matching this shape are ever accepted as
+ * a pre-uploaded proof — a student can never point a submission at
+ * another bucket, another file, or an arbitrary string (Phase 3,
+ * U-4). Same shape family as isSupportRequestAttachmentPath /
+ * isFormUploadPath / isApplicationFilePath.
+ *
+ * Deliberately a storage-key segment, not UUID-only: the upload route
+ * mints `<uuid>.<ext>`, but older clients/tests use short segments
+ * (e.g. `payment-proofs/abc.png`) — the segment rule still rejects
+ * traversal (`..`), slashes, other buckets, and URLs.
+ */
+export const PAYMENT_PROOF_PATH_PATTERN =
+  /^payment-proofs\/[A-Za-z0-9][A-Za-z0-9_-]{0,127}\.(png|jpg|jpeg|webp|pdf)$/;
+
+export function isPaymentProofPath(path: string): boolean {
+  return PAYMENT_PROOF_PATH_PATTERN.test(path);
+}
+
+/**
+ * Does this proof path exist in the `payment-proofs` bucket
+ * (Phase 3, U-4)? Same list-then-match pattern as
+ * verifySuccessStoryFile: list the bucket root narrowed by the file
+ * name, then match exactly.
+ *
+ * Returns 'unavailable' when no storage client can be built — i.e.
+ * the service-role key is not configured, in which case the upload
+ * route itself 503s and no legitimate proof path can exist. The
+ * caller then falls back to the shape + reuse checks and logs a
+ * warning; the admin proof viewer cannot mint a signed URL without
+ * the same key either, so a forged path still cannot be "verified"
+ * by viewing. In every deployment where proofs can actually be
+ * uploaded, the client builds and existence is enforced.
+ */
+async function checkPaymentProofExists(
+  proofPath: string,
+  storageClient?: SupabaseClient,
+): Promise<'ok' | 'missing' | 'unavailable'> {
+  let storage: SupabaseClient;
+  try {
+    storage = storageClient ?? getPaymentProofStorageClient();
+  } catch {
+    console.warn(
+      '[payment] SUPABASE_SERVICE_ROLE_KEY is not set — skipping payment-proof existence check for submit; shape and reuse checks still apply',
+    );
+    return 'unavailable';
+  }
+  const fileName = proofPath.slice('payment-proofs/'.length);
+  const { data, error } = await storage.storage
+    .from(PAYMENT_PROOFS_BUCKET)
+    .list('', { limit: 1, search: fileName });
+  if (error || !data) return 'missing';
+  return data.some((f) => f.name === fileName) ? 'ok' : 'missing';
 }
 
 /**
  * A student submits payment proof for their own pending enrolment.
  * The one-pending-per-enrolment rule lives in the repository
  * (createPaymentSubmission) and surfaces here as a 409.
+ *
+ * Phase 3 checks, in order: the amount must equal the server-computed
+ * expected amount (course price, or the coupon's discounted price —
+ * P-3); the transaction reference must never have been used by any
+ * other submission (P-2); and a proof path must match the expected
+ * shape, exist in the payment-proofs bucket, and not already be
+ * attached to another enrolment's submission (U-4).
  */
 export async function submitPaymentService(
   actor: Actor,
@@ -74,6 +168,42 @@ export async function submitPaymentService(
   if (!transactionRef) {
     return badRequest('Transaction ID / reference is required');
   }
+  // P-2: one transaction reference pays for one enrolment, ever. Any
+  // other submission already carrying this ref — any enrolment, any
+  // review status — blocks the submit. (The database unique index is
+  // the backstop for the concurrent-submit race.)
+  const refReuse = await listPaymentSubmissionsByTransactionRef(transactionRef);
+  if (refReuse.length > 0) {
+    return conflict('This transaction reference has already been used for another payment submission');
+  }
+  // P-3: the amount must equal the server-computed expected amount —
+  // exact match, no "any amount up to the price" with a coupon.
+  const expected = await expectedAmountForEnrollment(enrollment.couponUsed, course);
+  if ('error' in expected) return badRequest(expected.error);
+  if (expected.expected === 0) {
+    return badRequest(
+      'This coupon covers the full course price — no payment is needed. Ask an admin to confirm the enrolment instead of submitting a payment',
+    );
+  }
+  if (input.amountPkr !== expected.expected) {
+    return badRequest(
+      `Submitted amount (PKR ${input.amountPkr}) does not match the amount due (PKR ${expected.expected})`,
+    );
+  }
+  // U-4: a proof path must be a real uploaded payment proof.
+  if (input.proofPath !== undefined) {
+    if (!isPaymentProofPath(input.proofPath)) {
+      return badRequest('Invalid payment proof path');
+    }
+    const proofReuse = await listPaymentSubmissionsByProofUrl(input.proofPath, enrollment.id);
+    if (proofReuse.length > 0) {
+      return badRequest('This payment proof has already been used for another enrolment');
+    }
+    const exists = await checkPaymentProofExists(input.proofPath, input.storageClient);
+    if (exists === 'missing') {
+      return badRequest('Payment proof could not be found — upload it again from the payment page');
+    }
+  }
   if (input.paymentAccountId) {
     const account = await getPaymentAccountById(input.paymentAccountId);
     if (!account) return notFound('Payment account');
@@ -89,8 +219,10 @@ export async function submitPaymentService(
     proofUrl: input.proofPath,
   });
   if ('error' in created) {
-    // The repository's only error today is the duplicate-pending check.
+    // The repository's errors today are the duplicate-pending check
+    // and the duplicate transaction-ref check.
     if (created.error.includes('already awaiting review')) return conflict(created.error);
+    if (created.error.includes('already been used')) return conflict(created.error);
     return badRequest(created.error);
   }
   return { submission: created.submission };
@@ -118,19 +250,27 @@ function auditDetail(
 }
 
 /**
- * Validate the submitted amount against the course price. Without a
- * coupon the student must have paid exactly the course price; with a
- * coupon (discounted price unknown to the server) any positive amount
- * up to the full price is accepted — the admin still sees the amount
- * and the coupon on the review screen before approving.
+ * Validate the submitted amount against the course price (Phase 3,
+ * P-3 / MEDIUM-B2). The coupon is re-validated at approval time —
+ * expiry, usage, deactivation, and course applicability — and the
+ * server computes the expected discounted price from the coupon
+ * record. Without a coupon the student must have paid exactly the
+ * course price; with a coupon exactly the discounted price. The old
+ * "any positive amount up to the price with a coupon" rule is gone.
  */
-function amountMatchesCoursePrice(
+async function amountMatchesCoursePrice(
   submission: PaymentSubmission,
-  coursePrice: number,
+  course: Course,
   couponUsed: string | null | undefined,
-): boolean {
-  if (couponUsed) return submission.amountPkr > 0 && submission.amountPkr <= coursePrice;
-  return submission.amountPkr === coursePrice;
+): Promise<{ ok: true } | { error: string }> {
+  const expected = await expectedAmountForEnrollment(couponUsed, course);
+  if ('error' in expected) return { error: expected.error };
+  if (submission.amountPkr !== expected.expected) {
+    return {
+      error: `Submitted amount (PKR ${submission.amountPkr}) does not match the amount due (PKR ${expected.expected})`,
+    };
+  }
+  return { ok: true };
 }
 
 /**
@@ -144,13 +284,28 @@ function amountMatchesCoursePrice(
  * written, the student is notified with the reason, the enrolment is
  * untouched — and the pending block lifts, so the student may submit
  * again.
+ *
+ * LOW-B2 (approval atomicity): the approve step and the enrolment
+ * flip are two separate repository calls — the Prisma client does
+ * offer `db.transaction()`, but no repository function takes a
+ * transaction handle (and the flip lives in lib/db/enrollments.ts,
+ * outside this phase's file scope), and the in-memory fake db used
+ * by tests has no transaction support. So a true transaction is not
+ * feasible in this PR. The ordering is deliberate and safe:
+ * approve FIRST, then flip. If the flip fails, the submission stays
+ * approved (never the reverse — a paid enrolment with no approved
+ * payment), the admin gets a 500 naming the recovery, and the
+ * enrolment can be flipped afterwards via the admin enrolment PATCH,
+ * which accepts a flip once an approved submission exists. The
+ * double-approve race is still closed: the approve itself is a
+ * conditional UPDATE ... WHERE reviewStatus = 'submitted'.
  */
 export async function reviewPaymentService(
   actor: Actor,
   submissionId: string,
   input: ReviewPaymentServiceInput,
 ): Promise<Result<{ submission: PaymentSubmission; enrollment: Enrollment }>> {
-  if (!can(actor.role, 'verifyPayment')) {
+  if (!can(actor, 'verifyPayment')) {
     return forbidden('Only admins can verify payments');
   }
   const submission = await getPaymentSubmissionById(submissionId);
@@ -167,10 +322,22 @@ export async function reviewPaymentService(
     if (course.isFree) {
       return badRequest('This course is free — there is nothing to verify');
     }
-    if (!amountMatchesCoursePrice(submission, course.price, enrollment.couponUsed)) {
-      return badRequest(
-        `Submitted amount (PKR ${submission.amountPkr}) does not match the course price (PKR ${course.price})`,
+    // P-2: this ref must not collide with any other submission — a
+    // second enrolment paid with the same transaction can never be
+    // approved, even if it slipped past the submit-time check.
+    const refCollision = await listPaymentSubmissionsByTransactionRef(
+      submission.transactionRef,
+      submission.id,
+    );
+    if (refCollision.length > 0) {
+      return conflict(
+        'This transaction reference was already used for another payment submission — it cannot be approved twice',
       );
+    }
+    // P-3: re-validate the coupon and the amount at approval time.
+    const amountCheck = await amountMatchesCoursePrice(submission, course, enrollment.couponUsed);
+    if ('error' in amountCheck) {
+      return badRequest(amountCheck.error);
     }
     const reviewed = await approvePaymentSubmission(submission.id, actor.id, input.reviewNote);
     if (!reviewed) return conflict('This payment submission has already been reviewed');
@@ -178,7 +345,20 @@ export async function reviewPaymentService(
       paymentStatus: 'paid',
       amountPaid: reviewed.amountPkr,
     });
-    if (!updated) return notFound('Enrollment');
+    if (!updated) {
+      // LOW-B2 residual: the submission is approved but the enrolment
+      // is still pending. Never silently return 404 here — the payment
+      // IS recorded, and the admin recovers by flipping the enrolment
+      // via the admin enrolment PATCH (an approved submission exists).
+      console.error(
+        `[payment] Approved submission ${reviewed.id} but enrolment ${enrollment.id} could not be flipped to paid — admin must flip it via PATCH /api/admin/enrollments/${enrollment.id}`,
+      );
+      return {
+        error:
+          'Payment approved, but the enrolment could not be updated to paid. The approved payment is recorded — flip the enrolment to paid from the admin enrolments page (it now has an approved payment).',
+        status: 500,
+      };
+    }
     await logAudit({
       actorId: actor.id,
       action: 'payment.approve',

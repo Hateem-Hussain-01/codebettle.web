@@ -285,7 +285,7 @@ test('enrollments: admin create/list; duplicate 400; certificates issue with gen
   assert.equal(dupe.status, 400);
 
   const created = await enrollments.POST(jsonReq('http://localhost/api/admin/enrollments', 'POST', {
-    studentId: 'stu-2', courseId: 'course-1', paymentStatus: 'free', amountPaid: 0,
+    studentId: 'stu-2', courseId: 'course-1', paymentStatus: 'pending', amountPaid: 0,
   }));
   assert.equal(created.status, 201);
 

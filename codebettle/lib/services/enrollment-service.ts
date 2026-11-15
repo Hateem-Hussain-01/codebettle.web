@@ -10,8 +10,9 @@ import { getBatchById, getOpenBatchForCourse } from '../db/batches';
 import { listPaymentSubmissionsForEnrollment } from '../db/payments';
 import { getCertificateByCourseAndStudent } from '../db/certificates';
 import { getCourseById } from '../db/courses';
-import { validateCoupon } from '../db/coupons';
+import { validateCouponForCourse } from '../db/coupons';
 import { getUserById } from '../db/users';
+import { isFullAdmin } from '../admin-access';
 import { logAudit } from '../db/audit';
 import { onCertificateIssued, onCourseCompleted, onEnrollmentCreated, onEnrollmentCreatedForInstructor } from './notification-service';
 import type { Certificate, Enrollment, EnrollmentPaymentStatus } from '../db/types';
@@ -80,13 +81,33 @@ export async function createEnrollmentService(
       'Paid enrolments must go through the payment verification flow — create as pending and approve the submitted payment instead',
     );
   }
+  // Phase 3 (MEDIUM-B1): 'free' is only for free courses. A paid
+  // course must never be granted for free through this silent flip —
+  // complimentary access is a separate, audited full-admin action
+  // (compEnrollmentService). Same shape as the 'paid' guard above.
+  if (input.paymentStatus === 'free' && !course.isFree) {
+    return badRequest(
+      'A paid course cannot be granted for free here — use the complimentary enrolment action (full admin, audited) instead',
+    );
+  }
+  // Phase 3 (MEDIUM-B2): an admin-recorded coupon is validated like
+  // the student path — expiry, usage, and course applicability — and
+  // stored under its canonical code. An arbitrary string is not a coupon.
+  let couponUsed: string | undefined;
+  if (input.couponUsed?.trim()) {
+    const coupon = await validateCouponForCourse(input.couponUsed.trim(), input.courseId);
+    if (!coupon) {
+      return badRequest('Coupon code is invalid, expired, or does not apply to this course');
+    }
+    couponUsed = coupon.code;
+  }
   const created = await createEnrollment({
     studentId: input.studentId,
     courseId: input.courseId,
     batchId,
     paymentStatus: input.paymentStatus,
     amountPaid: input.amountPaid,
-    couponUsed: input.couponUsed,
+    couponUsed,
   });
   if ('error' in created) return badRequest(created.error);
   await logAudit({
@@ -177,8 +198,11 @@ export async function enrollSelfService(
   let couponUsed: string | undefined;
   const couponCode = input.couponCode?.trim();
   if (couponCode) {
-    const coupon = await validateCoupon(couponCode);
-    if (!coupon) return badRequest('Coupon code is invalid or expired');
+    // Phase 3 (P-3 / MEDIUM-B2): the coupon must apply to THIS course
+    // — a coupon meant for another course is rejected here, not just
+    // checked for expiry.
+    const coupon = await validateCouponForCourse(couponCode, input.courseId);
+    if (!coupon) return badRequest('Coupon code is invalid, expired, or does not apply to this course');
     couponUsed = coupon.code;
   }
   const paymentStatus: EnrollmentPaymentStatus = course.isFree ? 'free' : 'pending';
@@ -229,6 +253,21 @@ export async function updateEnrollmentService(
       return badRequest('This batch has ended');
     }
   }
+  // Phase 3 (MEDIUM-B1): a paid course may never be granted for free
+  // through a silent paymentStatus flip — this is the exact hole
+  // behind the live 'free' paid-course enrolments (Eman's own admin
+  // flips, §10.3 of the Phase 2 findings). Only a transition INTO
+  // 'free' is guarded: re-saving an enrolment that is already free
+  // (including ones granted before this fix) is not a new grant.
+  // Complimentary access is compEnrollmentService instead.
+  if (input.paymentStatus === 'free' && existing.paymentStatus !== 'free') {
+    const course = await getCourseById(existing.courseId);
+    if (course && !course.isFree) {
+      return badRequest(
+        'A paid course cannot be granted for free by changing the payment status — use the complimentary enrolment action (full admin, audited) instead',
+      );
+    }
+  }
   // Phase 1c gap fix: an enrolment for a PAID course may only be flipped
   // to `paid` when a linked PaymentSubmission has been approved for it —
   // flipping it with amountPaid=0 and no proof is no longer possible.
@@ -245,6 +284,15 @@ export async function updateEnrollmentService(
       if (!approved) {
         return badRequest(
           'Cannot mark this enrolment as paid without an approved payment submission — verify the student’s payment first',
+        );
+      }
+      // Phase 3 (MEDIUM-B2): the flip-to-paid amount comes from the
+      // approved submission. An admin-supplied amountPaid that DIFFERS
+      // is rejected outright — silently overriding the approved amount
+      // hid mistakes. Omit it to use the approved amount.
+      if (amountPaid !== undefined && amountPaid !== approved.amountPkr) {
+        return badRequest(
+          `Amount paid (PKR ${amountPaid}) does not match the approved payment (PKR ${approved.amountPkr}) — the approved amount is used`,
         );
       }
       if (amountPaid === undefined) amountPaid = approved.amountPkr;
@@ -275,6 +323,72 @@ export async function updateEnrollmentService(
   const certificate = await tryAutoIssueCertificate(actor, updated);
   // Notify on the transitions that matter (Phase 4 hooks — best-effort).
   if (updated.isCompleted && !existing.isCompleted) await onCourseCompleted(updated);
+  if (certificate) await onCertificateIssued(certificate);
+  return { enrollment: updated, certificate };
+}
+
+export interface CompEnrollmentServiceInput {
+  /** Why this student gets the paid course for free — recorded in the audit log. */
+  reason: string;
+}
+
+/**
+ * Complimentary access (Phase 3, MEDIUM-B1) — the ONLY way to grant a
+ * paid course for free, and the legitimate workflow the silent
+ * pending→free flip used to serve (Eman's own comping, §10.3 of the
+ * Phase 2 findings).
+ *
+ * Deliberately separate from updateEnrollmentService: it requires a
+ * FULL admin (role `admin` with no permissions restriction — the
+ * actor's record is re-read from the database, never trusted from
+ * the session alone), a required reason, and writes a distinct
+ * `enrollment.comp` audit entry carrying that reason, so a comp is
+ * always distinguishable from a normal enrolment in the audit log.
+ * Only a pending enrolment in a paid course can be comped; paid and
+ * already-free enrolments are rejected, and free courses need no comp.
+ */
+export async function compEnrollmentService(
+  actor: Actor,
+  enrollmentId: string,
+  input: CompEnrollmentServiceInput,
+): Promise<Result<{ enrollment: Enrollment; certificate: Certificate | null }>> {
+  const denied = requireAdmin(actor);
+  if (denied) return denied;
+  // Full admin only — a restricted (enrolments-area) admin must never
+  // be able to comp a paid course. Re-read the actor: a session minted
+  // before a permissions change must not keep the old access.
+  const actorUser = await getUserById(actor.id);
+  if (!actorUser || !hasAdminCapability(actorUser) || !isFullAdmin(actorUser.adminPermissions)) {
+    return forbidden('Only a full admin can grant complimentary access to a paid course');
+  }
+  const reason = input.reason?.trim();
+  if (!reason) return badRequest('A reason is required for complimentary access');
+  if (reason.length > 500) return badRequest('Reason must be 500 characters or fewer');
+  const existing = await getEnrollmentById(enrollmentId);
+  if (!existing) return notFound('Enrollment');
+  if (existing.paymentStatus !== 'pending') {
+    return badRequest('Only a pending enrolment can be granted complimentary access');
+  }
+  const course = await getCourseById(existing.courseId);
+  if (!course) return notFound('Course');
+  if (course.isFree) {
+    return badRequest('This course is free — no complimentary grant is needed');
+  }
+  const updated = await updateEnrollment(enrollmentId, {
+    paymentStatus: 'free',
+    amountPaid: 0,
+  });
+  if (!updated) return notFound('Enrollment');
+  await logAudit({
+    actorId: actor.id,
+    action: 'enrollment.comp',
+    entity: 'enrollment',
+    entityId: enrollmentId,
+    detail: `comp: ${existing.studentId} -> ${existing.courseId} (free) reason=${reason}`,
+  });
+  // Auto-issue (Phase 4): same as a normal update — a completed +
+  // eligible enrolment gets its certificate now.
+  const certificate = await tryAutoIssueCertificate(actor, updated);
   if (certificate) await onCertificateIssued(certificate);
   return { enrollment: updated, certificate };
 }

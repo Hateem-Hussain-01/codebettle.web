@@ -49,7 +49,7 @@ test.afterEach(() => {
 
 test('admin creates an enrollment; duplicate is rejected', async () => {
   const created = await createEnrollmentService(ADMIN, {
-    studentId: 'stu-2', courseId: 'course-1', paymentStatus: 'free', amountPaid: 0,
+    studentId: 'stu-2', courseId: 'course-1', paymentStatus: 'pending', amountPaid: 0,
   });
   assert.ok('enrollment' in created, JSON.stringify(created));
   assert.equal(created.enrollment.studentId, 'stu-2');
@@ -145,19 +145,19 @@ test('admin creates an enrollment in a specific batch; the batch must belong to 
     { id: 'batch-done', courseId: 'course-1', batchNumber: 2, status: 'completed', startDate: null, endDate: null, capacity: null, instructorId: null, createdAt: D('2024-04-01'), updatedAt: D('2024-04-01') },
   ]);
   const created = await createEnrollmentService(ADMIN, {
-    studentId: 'stu-2', courseId: 'course-1', batchId: 'batch-1', paymentStatus: 'free', amountPaid: 0,
+    studentId: 'stu-2', courseId: 'course-1', batchId: 'batch-1', paymentStatus: 'pending', amountPaid: 0,
   });
   assert.ok('enrollment' in created, JSON.stringify(created));
   assert.equal(created.enrollment.batchId, 'batch-1');
 
   const done = await createEnrollmentService(ADMIN, {
-    studentId: 'stu-2', courseId: 'course-1', batchId: 'batch-done', paymentStatus: 'free', amountPaid: 0,
+    studentId: 'stu-2', courseId: 'course-1', batchId: 'batch-done', paymentStatus: 'pending', amountPaid: 0,
   });
   assert.ok('error' in done && done.status === 400, JSON.stringify(done));
   assert.match(done.error, /has ended/);
 
   const missing = await createEnrollmentService(ADMIN, {
-    studentId: 'stu-2', courseId: 'course-1', batchId: 'no-such-batch', paymentStatus: 'free', amountPaid: 0,
+    studentId: 'stu-2', courseId: 'course-1', batchId: 'no-such-batch', paymentStatus: 'pending', amountPaid: 0,
   });
   assert.ok('error' in missing && missing.status === 404, JSON.stringify(missing));
 });
@@ -167,7 +167,7 @@ test('admin creates an enrollment without a batchId enrols in the open batch', a
     { id: 'batch-1', courseId: 'course-1', batchNumber: 1, status: 'ongoing', startDate: null, endDate: null, capacity: null, instructorId: null, createdAt: D('2024-04-01'), updatedAt: D('2024-04-01') },
   ]);
   const created = await createEnrollmentService(ADMIN, {
-    studentId: 'stu-2', courseId: 'course-1', paymentStatus: 'free', amountPaid: 0,
+    studentId: 'stu-2', courseId: 'course-1', paymentStatus: 'pending', amountPaid: 0,
   });
   assert.ok('enrollment' in created, JSON.stringify(created));
   assert.equal(created.enrollment.batchId, 'batch-1');

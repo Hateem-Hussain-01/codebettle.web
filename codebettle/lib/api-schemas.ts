@@ -175,6 +175,17 @@ export const enrollmentUpdateSchema = z.object({
   batchId: z.string().min(1).nullable().optional(),
 });
 
+/**
+ * Phase 3 (MEDIUM-B1): complimentary access to a paid course. The
+ * reason is required — it is recorded in the `enrollment.comp` audit
+ * entry. This is the only route to a free enrolment in a paid course;
+ * the admin enrolment create/PATCH paths reject `paymentStatus:
+ * 'free'` for paid courses server-side.
+ */
+export const enrollmentCompSchema = z.object({
+  reason: z.string().trim().min(1).max(500),
+});
+
 export const batchCreateSchema = z.object({
   courseId: z.string().min(1),
   batchNumber: z.number().int().min(1).optional(),

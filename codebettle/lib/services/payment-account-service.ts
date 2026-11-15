@@ -30,7 +30,7 @@ import { badRequest, forbidden, notFound, type Actor, type ServiceError } from '
 type Result<T> = T | ServiceError;
 
 function requireManage(actor: Actor): ServiceError | null {
-  if (!can(actor.role, 'managePaymentAccounts')) {
+  if (!can(actor, 'managePaymentAccounts')) {
     return forbidden('Only admins can manage payment accounts');
   }
   return null;

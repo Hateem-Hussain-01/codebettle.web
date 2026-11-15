@@ -11,6 +11,10 @@
  * - One pending (submitted) submission per enrolment at most — a
  *   second submit while one awaits review is rejected (the same
  *   check-then-create pattern as createReview / createEnrollment).
+ * - A transaction reference may be used by ONE submission ever
+ *   (Phase 3, P-2): the service checks for reuse, and the database
+ *   enforces it with a unique index on `transactionRef` — a
+ *   concurrent duplicate insert surfaces as the same clean error.
  * - Only a submitted row can move to approved/rejected (the where
  *   clause enforces it); the transition records reviewedBy,
  *   reviewedAt and the review note.
@@ -47,6 +51,44 @@ export function mapPaymentSubmissionRow(row: PaymentSubmissionRow): PaymentSubmi
     createdAt: dateToString(row.createdAt),
     updatedAt: dateToString(row.updatedAt),
   };
+}
+
+/**
+ * Every submission carrying this transaction reference (Phase 3, P-2).
+ * `excludeId` skips one submission (the one being reviewed) so the
+ * caller sees only *other* submissions reusing the ref.
+ */
+export async function listPaymentSubmissionsByTransactionRef(
+  transactionRef: string,
+  excludeId?: string,
+): Promise<PaymentSubmission[]> {
+  const rows = await getDb()
+    .orm.public.PaymentSubmission.where((s) => s.transactionRef.eq(transactionRef))
+    .orderBy((s) => s.submittedAt.desc())
+    .all();
+  return rows
+    .filter((row) => row.id !== excludeId)
+    .map(mapPaymentSubmissionRow);
+}
+
+/**
+ * Every submission referencing this payment-proof storage path
+ * (Phase 3, U-4). `excludeEnrollmentId` skips submissions for one
+ * enrolment, so a student re-submitting for their OWN enrolment
+ * (e.g. after a rejection) does not trip the cross-enrolment reuse
+ * check — only another enrolment's use of the same proof is a reuse.
+ */
+export async function listPaymentSubmissionsByProofUrl(
+  proofUrl: string,
+  excludeEnrollmentId?: string,
+): Promise<PaymentSubmission[]> {
+  const rows = await getDb()
+    .orm.public.PaymentSubmission.where((s) => s.proofUrl.eq(proofUrl))
+    .orderBy((s) => s.submittedAt.desc())
+    .all();
+  return rows
+    .filter((row) => row.enrollmentId !== excludeEnrollmentId)
+    .map(mapPaymentSubmissionRow);
 }
 
 export async function getPaymentSubmissionById(id: string): Promise<PaymentSubmission | null> {
@@ -136,16 +178,33 @@ export async function createPaymentSubmission(
   if (!method) return { error: 'Payment method is required' };
   if (!snapshot) return { error: 'Payment account snapshot is required' };
 
-  const row = await getDb().orm.public.PaymentSubmission.create({
-    enrollmentId: input.enrollmentId,
-    paymentAccountId: input.paymentAccountId ?? null,
-    method,
-    amountPkr: input.amountPkr,
-    transactionRef: input.transactionRef,
-    proofUrl: input.proofUrl ?? null,
-    accountSnapshot: snapshot,
-    reviewStatus: 'submitted',
-  });
+  let row;
+  try {
+    row = await getDb().orm.public.PaymentSubmission.create({
+      enrollmentId: input.enrollmentId,
+      paymentAccountId: input.paymentAccountId ?? null,
+      method,
+      amountPkr: input.amountPkr,
+      transactionRef: input.transactionRef,
+      proofUrl: input.proofUrl ?? null,
+      accountSnapshot: snapshot,
+      reviewStatus: 'submitted',
+    });
+  } catch (err) {
+    // Race backstop for the P-2 unique index: two concurrent submits
+    // with the same transaction ref can both pass the service-level
+    // check — the database rejects the second insert. Surface that as
+    // the same clean duplicate-ref error, never a raw 500.
+    if (
+      err instanceof Error &&
+      /PaymentSubmission_transactionRef_key|duplicate key value violates unique constraint/i.test(
+        err.message,
+      )
+    ) {
+      return { error: 'This transaction reference has already been used for another payment submission' };
+    }
+    throw err;
+  }
   return { submission: mapPaymentSubmissionRow(row) };
 }
 
