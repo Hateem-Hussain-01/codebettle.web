@@ -2,9 +2,10 @@ import { redirect } from 'next/navigation';
 import { getSession } from '@/lib/auth';
 import { getAdminBasePath } from '@/lib/admin-url';
 import { countUnsubmittedVisibleAssignments } from '@/lib/db/assignments';
+import { getAmbassadorByUserId } from '@/lib/db/ambassadors';
 import PortalLayout from '@/components/layout/PortalLayout';
 import TeacherMessagePopup from '@/components/notifications/TeacherMessagePopup';
-import { LayoutDashboard, BookOpen, Compass, Award, StickyNote, Heart, Star, Bell, User, FileQuestion, LifeBuoy, ClipboardList } from 'lucide-react';
+import { LayoutDashboard, BookOpen, Compass, Award, StickyNote, Heart, Star, Bell, User, FileQuestion, LifeBuoy, ClipboardList, Users } from 'lucide-react';
 
 const NAV_ITEMS = [
   { href: '/student/dashboard', label: 'Dashboard', icon: <LayoutDashboard className="w-5 h-5" /> },
@@ -60,12 +61,28 @@ export default async function StudentLayout({ children }: { children: React.Reac
           item.href === '/student/assignments' ? { ...item, badge: assignmentBadge } : item,
         );
 
+  // Ambassador Dashboard (Eman, 16 Nov 2026): the "Ambassador" nav
+  // item shows ONLY for approved ambassadors (active Ambassador row
+  // linked to this student) — everyone else never sees it. Fail-safe:
+  // if the lookup throws, the layout renders WITHOUT the item — a
+  // missing referral table must never break the sidebar.
+  let showAmbassadorNav = false;
+  try {
+    const ambassador = await getAmbassadorByUserId(session.id);
+    showAmbassadorNav = ambassador !== null && ambassador.status === 'active';
+  } catch {
+    showAmbassadorNav = false;
+  }
+  const finalNavItems = showAmbassadorNav
+    ? [...navItems, { href: '/student/ambassador', label: 'Ambassador', icon: <Users className="w-5 h-5" /> }]
+    : navItems;
+
   return (
     <>
       {/* Theme toggle lives in Profile settings for students (Eman,
           15 Nov 2026) — the top-bar toggle is hidden in this portal
           only; instructor/admin portals keep theirs. */}
-      <PortalLayout user={session} navItems={navItems} portalName="Student Portal" adminBasePath={getAdminBasePath()} hideThemeToggle>
+      <PortalLayout user={session} navItems={finalNavItems} portalName="Student Portal" adminBasePath={getAdminBasePath()} hideThemeToggle>
         {children}
       </PortalLayout>
       {/* Phase 3, Worker C: "Message from Your Teacher" popup. It shows

@@ -23,9 +23,9 @@ import type {
 } from '@prisma/orm-postgres/contract/types';
 
 export type StorageHash =
-  StorageHashBase<'3491ed93cb5a68e3d1be6befddb3943f5eb9d5c5f13cfb2965e14480c787a136'>;
+  StorageHashBase<'f7940e923f52d88e2b97366f7b9ffe1dc1372030c773f66bfbd14622a3a9d201'>;
 export type ExecutionHash =
-  ExecutionHashBase<'4b7f1f572e79a25e5364a2f57a5e317582bff4d871b8850bbe577b5f407c48b0'>;
+  ExecutionHashBase<'18eecd648646d00e54d53adc2381ff8edf236442561c2940956a776cc52cd14f'>;
 export type ProfileHash =
   ProfileHashBase<'3916f444a8a17ad749191acf9e08dad97d1a327b88c2f1d45d12f240296aa8b2'>;
 
@@ -278,6 +278,12 @@ type ParameterizedOutputTypeFunctions = PgParameterizedOutputTypes;
 type FieldTypeOverrides = {
   readonly public: {
     readonly models: {
+      readonly Ambassador: {
+        readonly status: {
+          readonly output: 'active' | 'inactive';
+          readonly input: 'active' | 'inactive';
+        };
+      };
       readonly AmbassadorApplication: {
         readonly status: {
           readonly output: 'pending' | 'approved' | 'rejected';
@@ -447,6 +453,12 @@ export type FieldInputTypes = FieldTypesFromDomain<
 >;
 type ColumnTypeOverrides = {
   readonly public: {
+    readonly Ambassador: {
+      readonly status: {
+        readonly output: 'active' | 'inactive';
+        readonly input: 'active' | 'inactive';
+      };
+    };
     readonly AmbassadorApplication: {
       readonly status: {
         readonly output: 'pending' | 'approved' | 'rejected';
@@ -613,6 +625,20 @@ export type StorageColumnInputTypes = ColumnTypesFromStorage<
 >;
 
 export namespace Models {
+  export type public_Ambassador = {
+    applicationId: FieldOutputTypes['public']['Ambassador']['applicationId'];
+    createdAt: FieldOutputTypes['public']['Ambassador']['createdAt'];
+    email: FieldOutputTypes['public']['Ambassador']['email'];
+    groupCountUpdatedAt: FieldOutputTypes['public']['Ambassador']['groupCountUpdatedAt'];
+    groupLink: FieldOutputTypes['public']['Ambassador']['groupLink'];
+    groupMemberCount: FieldOutputTypes['public']['Ambassador']['groupMemberCount'];
+    id: FieldOutputTypes['public']['Ambassador']['id'];
+    referralCode: FieldOutputTypes['public']['Ambassador']['referralCode'];
+    status: FieldOutputTypes['public']['Ambassador']['status'];
+    updatedAt: FieldOutputTypes['public']['Ambassador']['updatedAt'];
+    userId: FieldOutputTypes['public']['Ambassador']['userId'];
+    readonly [RelationKeys]?: never;
+  };
   export type public_AmbassadorApplication = {
     createdAt: FieldOutputTypes['public']['AmbassadorApplication']['createdAt'];
     departmentSemester: FieldOutputTypes['public']['AmbassadorApplication']['departmentSemester'];
@@ -626,6 +652,14 @@ export namespace Models {
     university: FieldOutputTypes['public']['AmbassadorApplication']['university'];
     updatedAt: FieldOutputTypes['public']['AmbassadorApplication']['updatedAt'];
     whatsapp: FieldOutputTypes['public']['AmbassadorApplication']['whatsapp'];
+    readonly [RelationKeys]?: never;
+  };
+  export type public_AmbassadorMessage = {
+    ambassadorId: FieldOutputTypes['public']['AmbassadorMessage']['ambassadorId'];
+    createdAt: FieldOutputTypes['public']['AmbassadorMessage']['createdAt'];
+    id: FieldOutputTypes['public']['AmbassadorMessage']['id'];
+    message: FieldOutputTypes['public']['AmbassadorMessage']['message'];
+    read: FieldOutputTypes['public']['AmbassadorMessage']['read'];
     readonly [RelationKeys]?: never;
   };
   export type public_Announcement = {
@@ -1254,6 +1288,21 @@ export namespace Models {
     quiz: public_Quiz;
     readonly [RelationKeys]?: 'answers' | 'options' | 'quiz';
   };
+  export type public_ReferralAttribution = {
+    ambassadorId: FieldOutputTypes['public']['ReferralAttribution']['ambassadorId'];
+    createdAt: FieldOutputTypes['public']['ReferralAttribution']['createdAt'];
+    id: FieldOutputTypes['public']['ReferralAttribution']['id'];
+    userId: FieldOutputTypes['public']['ReferralAttribution']['userId'];
+    readonly [RelationKeys]?: never;
+  };
+  export type public_ReferralClick = {
+    ambassadorId: FieldOutputTypes['public']['ReferralClick']['ambassadorId'];
+    clickedAt: FieldOutputTypes['public']['ReferralClick']['clickedAt'];
+    day: FieldOutputTypes['public']['ReferralClick']['day'];
+    id: FieldOutputTypes['public']['ReferralClick']['id'];
+    ip: FieldOutputTypes['public']['ReferralClick']['ip'];
+    readonly [RelationKeys]?: never;
+  };
   export type public_Review = {
     comment: FieldOutputTypes['public']['Review']['comment'];
     courseId: FieldOutputTypes['public']['Review']['courseId'];
@@ -1550,7 +1599,9 @@ export namespace Models {
 
 export declare const models: {
   public: {
+    Ambassador: Models.public_Ambassador;
     AmbassadorApplication: Models.public_AmbassadorApplication;
+    AmbassadorMessage: Models.public_AmbassadorMessage;
     Announcement: Models.public_Announcement;
     ApplicationNote: Models.public_ApplicationNote;
     ApplicationStage: Models.public_ApplicationStage;
@@ -1591,6 +1642,8 @@ export declare const models: {
     QuizAttempt: Models.public_QuizAttempt;
     QuizOption: Models.public_QuizOption;
     QuizQuestion: Models.public_QuizQuestion;
+    ReferralAttribution: Models.public_ReferralAttribution;
+    ReferralClick: Models.public_ReferralClick;
     Review: Models.public_Review;
     Session: Models.public_Session;
     SiteSetting: Models.public_SiteSetting;
@@ -1626,6 +1679,106 @@ type ContractBase = Omit<
         readonly kind: 'postgres-schema';
         readonly entries: {
           readonly table: {
+            readonly Ambassador: {
+              columns: {
+                readonly applicationId: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly createdAt: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly nullable: false;
+                  readonly default: { readonly kind: 'function'; readonly expression: 'now()' };
+                  readonly typeParams: { readonly precision: 3 };
+                  readonly many: false;
+                };
+                readonly email: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly groupCountUpdatedAt: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly nullable: true;
+                  readonly typeParams: { readonly precision: 3 };
+                  readonly many: false;
+                };
+                readonly groupLink: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly groupMemberCount: {
+                  readonly dataType: 'pg/int4';
+                  readonly codecId: 'pg/int4@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly id: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly referralCode: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly status: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'literal';
+                    readonly value: DefaultLiteralValue<'pg/text@1', 'active'>;
+                  };
+                  readonly many: false;
+                };
+                readonly updatedAt: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly nullable: false;
+                  readonly typeParams: { readonly precision: 3 };
+                  readonly many: false;
+                };
+                readonly userId: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+              };
+              primaryKey: { readonly columns: readonly ['id'] };
+              uniques: readonly [
+                { readonly columns: readonly ['applicationId'] },
+                { readonly columns: readonly ['userId'] },
+                { readonly columns: readonly ['email'] },
+                { readonly columns: readonly ['referralCode'] },
+              ];
+              indexes: readonly [
+                {
+                  readonly name: 'Ambassador_email_createdAt_idx_6e3c0d8a';
+                  readonly prefix: 'Ambassador_email_createdAt_idx';
+                  readonly columns: readonly ['email', 'createdAt'];
+                  readonly unique: false;
+                },
+                {
+                  readonly name: 'Ambassador_status_createdAt_idx_58610442';
+                  readonly prefix: 'Ambassador_status_createdAt_idx';
+                  readonly columns: readonly ['status', 'createdAt'];
+                  readonly unique: false;
+                },
+              ];
+              foreignKeys: readonly [];
+            };
             readonly AmbassadorApplication: {
               columns: {
                 readonly createdAt: {
@@ -1721,6 +1874,63 @@ type ContractBase = Omit<
                   readonly name: 'AmbassadorApplication_status_createdAt_idx_58610442';
                   readonly prefix: 'AmbassadorApplication_status_createdAt_idx';
                   readonly columns: readonly ['status', 'createdAt'];
+                  readonly unique: false;
+                },
+              ];
+              foreignKeys: readonly [];
+            };
+            readonly AmbassadorMessage: {
+              columns: {
+                readonly ambassadorId: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly createdAt: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly nullable: false;
+                  readonly default: { readonly kind: 'function'; readonly expression: 'now()' };
+                  readonly typeParams: { readonly precision: 3 };
+                  readonly many: false;
+                };
+                readonly id: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly message: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly read: {
+                  readonly dataType: 'pg/bool';
+                  readonly codecId: 'pg/bool@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'literal';
+                    readonly value: DefaultLiteralValue<'pg/bool@1', false>;
+                  };
+                  readonly many: false;
+                };
+              };
+              primaryKey: { readonly columns: readonly ['id'] };
+              uniques: readonly [];
+              indexes: readonly [
+                {
+                  readonly name: 'AmbassadorMessage_ambassadorId_createdAt_idx_5d54f454';
+                  readonly prefix: 'AmbassadorMessage_ambassadorId_createdAt_idx';
+                  readonly columns: readonly ['ambassadorId', 'createdAt'];
+                  readonly unique: false;
+                },
+                {
+                  readonly name: 'AmbassadorMessage_read_createdAt_idx_bb5ea906';
+                  readonly prefix: 'AmbassadorMessage_read_createdAt_idx';
+                  readonly columns: readonly ['read', 'createdAt'];
                   readonly unique: false;
                 },
               ];
@@ -5938,6 +6148,94 @@ type ContractBase = Omit<
                 },
               ];
             };
+            readonly ReferralAttribution: {
+              columns: {
+                readonly ambassadorId: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly createdAt: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly nullable: false;
+                  readonly default: { readonly kind: 'function'; readonly expression: 'now()' };
+                  readonly typeParams: { readonly precision: 3 };
+                  readonly many: false;
+                };
+                readonly id: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly userId: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+              };
+              primaryKey: { readonly columns: readonly ['id'] };
+              uniques: readonly [{ readonly columns: readonly ['userId'] }];
+              indexes: readonly [
+                {
+                  readonly name: 'ReferralAttribution_ambassadorId_createdAt_idx_5d54f454';
+                  readonly prefix: 'ReferralAttribution_ambassadorId_createdAt_idx';
+                  readonly columns: readonly ['ambassadorId', 'createdAt'];
+                  readonly unique: false;
+                },
+              ];
+              foreignKeys: readonly [];
+            };
+            readonly ReferralClick: {
+              columns: {
+                readonly ambassadorId: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly clickedAt: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly nullable: false;
+                  readonly default: { readonly kind: 'function'; readonly expression: 'now()' };
+                  readonly typeParams: { readonly precision: 3 };
+                  readonly many: false;
+                };
+                readonly day: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly id: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly ip: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+              };
+              primaryKey: { readonly columns: readonly ['id'] };
+              uniques: readonly [];
+              indexes: readonly [
+                {
+                  readonly name: 'ReferralClick_ambassadorId_clickedAt_idx_cc7a22ca';
+                  readonly prefix: 'ReferralClick_ambassadorId_clickedAt_idx';
+                  readonly columns: readonly ['ambassadorId', 'clickedAt'];
+                  readonly unique: false;
+                },
+              ];
+              foreignKeys: readonly [];
+            };
             readonly Review: {
               columns: {
                 readonly comment: {
@@ -7512,6 +7810,10 @@ type ContractBase = Omit<
               readonly kind: 'valueSet';
               readonly values: readonly ['pending', 'approved', 'rejected'];
             };
+            readonly AmbassadorStatus: {
+              readonly kind: 'valueSet';
+              readonly values: readonly ['active', 'inactive'];
+            };
             readonly AnnouncementType: {
               readonly kind: 'valueSet';
               readonly values: readonly ['site_wide', 'course'];
@@ -7620,9 +7922,17 @@ type ContractBase = Omit<
   readonly target: 'postgres';
   readonly targetFamily: 'sql';
   readonly roots: {
+    readonly Ambassador: {
+      readonly namespace: 'public' & NamespaceId;
+      readonly model: 'Ambassador';
+    };
     readonly AmbassadorApplication: {
       readonly namespace: 'public' & NamespaceId;
       readonly model: 'AmbassadorApplication';
+    };
+    readonly AmbassadorMessage: {
+      readonly namespace: 'public' & NamespaceId;
+      readonly model: 'AmbassadorMessage';
     };
     readonly Announcement: {
       readonly namespace: 'public' & NamespaceId;
@@ -7742,6 +8052,14 @@ type ContractBase = Omit<
       readonly namespace: 'public' & NamespaceId;
       readonly model: 'QuizQuestion';
     };
+    readonly ReferralAttribution: {
+      readonly namespace: 'public' & NamespaceId;
+      readonly model: 'ReferralAttribution';
+    };
+    readonly ReferralClick: {
+      readonly namespace: 'public' & NamespaceId;
+      readonly model: 'ReferralClick';
+    };
     readonly Review: { readonly namespace: 'public' & NamespaceId; readonly model: 'Review' };
     readonly Session: { readonly namespace: 'public' & NamespaceId; readonly model: 'Session' };
     readonly SiteSetting: {
@@ -7791,6 +8109,84 @@ type ContractBase = Omit<
     readonly namespaces: {
       readonly public: {
         readonly models: {
+          readonly Ambassador: {
+            readonly fields: {
+              readonly applicationId: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly createdAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly typeParams: { readonly precision: 3 };
+                };
+              };
+              readonly email: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly groupCountUpdatedAt: {
+                readonly nullable: true;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly typeParams: { readonly precision: 3 };
+                };
+              };
+              readonly groupLink: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly groupMemberCount: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/int4@1' };
+              };
+              readonly id: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly referralCode: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly status: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly updatedAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly typeParams: { readonly precision: 3 };
+                };
+              };
+              readonly userId: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+            };
+            readonly relations: Record<string, never>;
+            readonly storage: {
+              readonly table: 'Ambassador';
+              readonly namespaceId: 'public';
+              readonly fields: {
+                readonly applicationId: { readonly column: 'applicationId' };
+                readonly createdAt: { readonly column: 'createdAt' };
+                readonly email: { readonly column: 'email' };
+                readonly groupCountUpdatedAt: { readonly column: 'groupCountUpdatedAt' };
+                readonly groupLink: { readonly column: 'groupLink' };
+                readonly groupMemberCount: { readonly column: 'groupMemberCount' };
+                readonly id: { readonly column: 'id' };
+                readonly referralCode: { readonly column: 'referralCode' };
+                readonly status: { readonly column: 'status' };
+                readonly updatedAt: { readonly column: 'updatedAt' };
+                readonly userId: { readonly column: 'userId' };
+              };
+            };
+          };
           readonly AmbassadorApplication: {
             readonly fields: {
               readonly createdAt: {
@@ -7869,6 +8265,46 @@ type ContractBase = Omit<
                 readonly university: { readonly column: 'university' };
                 readonly updatedAt: { readonly column: 'updatedAt' };
                 readonly whatsapp: { readonly column: 'whatsapp' };
+              };
+            };
+          };
+          readonly AmbassadorMessage: {
+            readonly fields: {
+              readonly ambassadorId: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly createdAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly typeParams: { readonly precision: 3 };
+                };
+              };
+              readonly id: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly message: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly read: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/bool@1' };
+              };
+            };
+            readonly relations: Record<string, never>;
+            readonly storage: {
+              readonly table: 'AmbassadorMessage';
+              readonly namespaceId: 'public';
+              readonly fields: {
+                readonly ambassadorId: { readonly column: 'ambassadorId' };
+                readonly createdAt: { readonly column: 'createdAt' };
+                readonly id: { readonly column: 'id' };
+                readonly message: { readonly column: 'message' };
+                readonly read: { readonly column: 'read' };
               };
             };
           };
@@ -11624,6 +12060,81 @@ type ContractBase = Omit<
               };
             };
           };
+          readonly ReferralAttribution: {
+            readonly fields: {
+              readonly ambassadorId: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly createdAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly typeParams: { readonly precision: 3 };
+                };
+              };
+              readonly id: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly userId: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+            };
+            readonly relations: Record<string, never>;
+            readonly storage: {
+              readonly table: 'ReferralAttribution';
+              readonly namespaceId: 'public';
+              readonly fields: {
+                readonly ambassadorId: { readonly column: 'ambassadorId' };
+                readonly createdAt: { readonly column: 'createdAt' };
+                readonly id: { readonly column: 'id' };
+                readonly userId: { readonly column: 'userId' };
+              };
+            };
+          };
+          readonly ReferralClick: {
+            readonly fields: {
+              readonly ambassadorId: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly clickedAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly typeParams: { readonly precision: 3 };
+                };
+              };
+              readonly day: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly id: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly ip: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+            };
+            readonly relations: Record<string, never>;
+            readonly storage: {
+              readonly table: 'ReferralClick';
+              readonly namespaceId: 'public';
+              readonly fields: {
+                readonly ambassadorId: { readonly column: 'ambassadorId' };
+                readonly clickedAt: { readonly column: 'clickedAt' };
+                readonly day: { readonly column: 'day' };
+                readonly id: { readonly column: 'id' };
+                readonly ip: { readonly column: 'ip' };
+              };
+            };
+          };
           readonly Review: {
             readonly fields: {
               readonly comment: {
@@ -13282,6 +13793,13 @@ type ContractBase = Omit<
               { readonly name: 'rejected'; readonly value: 'rejected' },
             ];
           };
+          readonly AmbassadorStatus: {
+            readonly codecId: 'pg/text@1';
+            readonly members: readonly [
+              { readonly name: 'active'; readonly value: 'active' },
+              { readonly name: 'inactive'; readonly value: 'inactive' },
+            ];
+          };
           readonly AnnouncementType: {
             readonly codecId: 'pg/text@1';
             readonly members: readonly [
@@ -13461,6 +13979,10 @@ type ContractBase = Omit<
             { readonly name: 'approved'; readonly value: 'approved' },
             { readonly name: 'rejected'; readonly value: 'rejected' },
           ];
+          readonly AmbassadorStatus: readonly [
+            { readonly name: 'active'; readonly value: 'active' },
+            { readonly name: 'inactive'; readonly value: 'inactive' },
+          ];
           readonly AnnouncementType: readonly [
             { readonly name: 'site_wide'; readonly value: 'site_wide' },
             { readonly name: 'course'; readonly value: 'course' },
@@ -13614,6 +14136,43 @@ type ContractBase = Omit<
             readonly params: { readonly precision: 3 };
           };
           readonly ref: {
+            readonly entry: 'Ambassador';
+            readonly field: 'createdAt';
+            readonly namespace: 'public';
+          };
+        },
+        {
+          readonly onCreate: { readonly id: 'cuid2'; readonly kind: 'generator' };
+          readonly ref: {
+            readonly entry: 'Ambassador';
+            readonly field: 'id';
+            readonly namespace: 'public';
+          };
+        },
+        {
+          readonly onCreate: {
+            readonly id: 'timestampNow';
+            readonly kind: 'generator';
+            readonly params: { readonly precision: 3 };
+          };
+          readonly onUpdate: {
+            readonly id: 'timestampNow';
+            readonly kind: 'generator';
+            readonly params: { readonly precision: 3 };
+          };
+          readonly ref: {
+            readonly entry: 'Ambassador';
+            readonly field: 'updatedAt';
+            readonly namespace: 'public';
+          };
+        },
+        {
+          readonly onCreate: {
+            readonly id: 'timestampNow';
+            readonly kind: 'generator';
+            readonly params: { readonly precision: 3 };
+          };
+          readonly ref: {
             readonly entry: 'AmbassadorApplication';
             readonly field: 'createdAt';
             readonly namespace: 'public';
@@ -13641,6 +14200,26 @@ type ContractBase = Omit<
           readonly ref: {
             readonly entry: 'AmbassadorApplication';
             readonly field: 'updatedAt';
+            readonly namespace: 'public';
+          };
+        },
+        {
+          readonly onCreate: {
+            readonly id: 'timestampNow';
+            readonly kind: 'generator';
+            readonly params: { readonly precision: 3 };
+          };
+          readonly ref: {
+            readonly entry: 'AmbassadorMessage';
+            readonly field: 'createdAt';
+            readonly namespace: 'public';
+          };
+        },
+        {
+          readonly onCreate: { readonly id: 'cuid2'; readonly kind: 'generator' };
+          readonly ref: {
+            readonly entry: 'AmbassadorMessage';
+            readonly field: 'id';
             readonly namespace: 'public';
           };
         },
@@ -14625,6 +15204,46 @@ type ContractBase = Omit<
           readonly onCreate: { readonly id: 'cuid2'; readonly kind: 'generator' };
           readonly ref: {
             readonly entry: 'QuizQuestion';
+            readonly field: 'id';
+            readonly namespace: 'public';
+          };
+        },
+        {
+          readonly onCreate: {
+            readonly id: 'timestampNow';
+            readonly kind: 'generator';
+            readonly params: { readonly precision: 3 };
+          };
+          readonly ref: {
+            readonly entry: 'ReferralAttribution';
+            readonly field: 'createdAt';
+            readonly namespace: 'public';
+          };
+        },
+        {
+          readonly onCreate: { readonly id: 'cuid2'; readonly kind: 'generator' };
+          readonly ref: {
+            readonly entry: 'ReferralAttribution';
+            readonly field: 'id';
+            readonly namespace: 'public';
+          };
+        },
+        {
+          readonly onCreate: {
+            readonly id: 'timestampNow';
+            readonly kind: 'generator';
+            readonly params: { readonly precision: 3 };
+          };
+          readonly ref: {
+            readonly entry: 'ReferralClick';
+            readonly field: 'clickedAt';
+            readonly namespace: 'public';
+          };
+        },
+        {
+          readonly onCreate: { readonly id: 'cuid2'; readonly kind: 'generator' };
+          readonly ref: {
+            readonly entry: 'ReferralClick';
             readonly field: 'id';
             readonly namespace: 'public';
           };

@@ -113,6 +113,13 @@ export type SiteSettings = {
    * NOT depend on this flag — it is always enforced.
    */
   requireEmailVerification: boolean;
+  /**
+   * Ambassador meeting link (Eman, 16 Nov 2026): ONE recurring
+   * meeting link (Google Meet / Zoom) set by the admin from
+   * /admin/ambassadors and shown in every ambassador's dashboard.
+   * Empty = no meeting link set yet (the dashboard hides the card).
+   */
+  ambassadorMeetingLink: string;
 };
 
 export const DEFAULT_SETTINGS: SiteSettings = {
@@ -156,6 +163,9 @@ export const DEFAULT_SETTINGS: SiteSettings = {
   // MEDIUM-A2: email-verification enforcement is OFF until Resend is
   // live and existing users have verified (see the field doc above).
   requireEmailVerification: false,
+  // Ambassador meeting link: empty until an admin sets it from
+  // /admin/ambassadors.
+  ambassadorMeetingLink: '',
 };
 
 /** Storage key for each setting field. All values are strings. */
@@ -182,6 +192,7 @@ export const SETTING_KEYS: Record<keyof SiteSettings, string> = {
   linksEmail: 'linksPage.email',
   linksLocation: 'linksPage.location',
   requireEmailVerification: 'security.requireEmailVerification',
+  ambassadorMeetingLink: 'ambassador.meetingLink',
 };
 
 const STRING_FIELDS: Array<keyof SiteSettings> = [
@@ -205,6 +216,7 @@ const STRING_FIELDS: Array<keyof SiteSettings> = [
   'linksPhone',
   'linksEmail',
   'linksLocation',
+  'ambassadorMeetingLink',
 ];
 
 /** Thrown by updateSiteSettings() for invalid input (HTTP 400). */
@@ -308,6 +320,20 @@ function validatePatch(patch: Partial<SiteSettings>): Array<{ field: keyof SiteS
       cleaned.push({ field, stored: value });
       continue;
     }
+    // ambassadorMeetingLink: the recurring ambassador meeting link
+    // (Google Meet / Zoom), or empty (no meeting link set — the
+    // ambassador dashboard hides the card).
+    if (field === 'ambassadorMeetingLink') {
+      if (!value) {
+        cleaned.push({ field, stored: '' });
+        continue;
+      }
+      if (!/^https?:\/\/\S+$/.test(value)) {
+        throw new SettingsValidationError('Meeting link must be a valid http(s) URL');
+      }
+      cleaned.push({ field, stored: value });
+      continue;
+    }
     // Video layout enums: an invalid value is rejected here; a bad
     // stored value is still normalised on read (parseVideoConfig).
     if (field === 'videoLayout') {
@@ -390,6 +416,8 @@ function rowsToSettings(rows: Array<{ key: string; value: string }>): SiteSettin
     // MEDIUM-A2: missing row = false (enforcement off). A stored
     // value other than the literal 'true' is also off.
     requireEmailVerification: byKey.get(SETTING_KEYS.requireEmailVerification) === 'true',
+    // Meeting link: missing row = '' (no meeting link set).
+    ambassadorMeetingLink: byKey.get(SETTING_KEYS.ambassadorMeetingLink) ?? '',
   };
 }
 
@@ -451,5 +479,20 @@ export async function isEmailVerificationRequired(): Promise<boolean> {
     return settings.requireEmailVerification;
   } catch {
     return false;
+  }
+}
+
+/**
+ * The ambassador meeting link (Eman, 16 Nov 2026). NEVER throws: ''
+ * on any error (no link set yet — the dashboard hides the card).
+ * Read fresh from the DB on every dashboard load, so an admin change
+ * is visible to ambassadors immediately (no stale value).
+ */
+export async function getAmbassadorMeetingLink(): Promise<string> {
+  try {
+    const settings = await getSiteSettings();
+    return settings.ambassadorMeetingLink;
+  } catch {
+    return '';
   }
 }

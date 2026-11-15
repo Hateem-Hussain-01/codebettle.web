@@ -63,6 +63,11 @@ const ALLOWLIST: AllowEntry[] = [
     reason: 'Join Live Class: white text on a fixed brand-blue button, readable in both themes.',
   },
   {
+    file: 'app/student/ambassador/ambassador-dashboard-client.tsx',
+    match: 'text-white',
+    reason: 'Join Meeting: white text on a fixed brand-blue button, readable in both themes — same pattern as the course Join Live Class button.',
+  },
+  {
     file: 'app/student/courses/page.tsx',
     match: 'text-white',
     reason: 'Completed chip: white text on a fixed green-500 chip, readable in both themes.',

@@ -21,6 +21,12 @@ export default async function BecomeAmbassadorPage() {
             Love CodeBettle? Represent us at your university or college, spread the word, and help more students start
             learning. Tell us a little about yourself — our team reviews every application.
           </p>
+          <p className="text-muted text-sm mb-6">
+            Already an ambassador?{' '}
+            <a href="/ambassador/login?redirect=/student/ambassador" className="text-primary-text hover:underline">
+              Log in to your Ambassador Dashboard
+            </a>
+          </p>
           <AmbassadorForm />
         </div>
       </main>

@@ -1,0 +1,726 @@
+[
+  {
+    "id": "table.Ambassador",
+    "label": "Create table \"Ambassador\"",
+    "summary": "Creates table \"Ambassador\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "Ambassador"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"Ambassador\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"Ambassador\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "table \"Ambassador\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"Ambassador\"",
+        "sql": "CREATE TABLE \"public\".\"Ambassador\" (\n  \"applicationId\" text,\n  \"createdAt\" timestamptz(3) DEFAULT (now()) NOT NULL,\n  \"email\" text NOT NULL,\n  \"groupCountUpdatedAt\" timestamptz(3),\n  \"groupLink\" text,\n  \"groupMemberCount\" int4,\n  \"id\" text NOT NULL,\n  \"referralCode\" text NOT NULL,\n  \"status\" text DEFAULT 'active' NOT NULL,\n  \"updatedAt\" timestamptz(3) NOT NULL,\n  \"userId\" text,\n  PRIMARY KEY (\"id\"),\n  CONSTRAINT \"Ambassador_status_check_11063666\" CHECK (\"status\" IN ('active', 'inactive'))\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"Ambassador\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" WHERE (\"c\".\"oid\" = to_regclass($1) AND (\"c\".\"relkind\" = $2 OR \"c\".\"relkind\" = $3))) AS \"result\"",
+        "params": [
+          "\"public\".\"Ambassador\"",
+          "r",
+          "p"
+        ],
+        "expectation": {
+          "expects": "present",
+          "object": "table \"Ambassador\""
+        }
+      }
+    ]
+  },
+  {
+    "id": "table.AmbassadorMessage",
+    "label": "Create table \"AmbassadorMessage\"",
+    "summary": "Creates table \"AmbassadorMessage\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "AmbassadorMessage"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"AmbassadorMessage\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"AmbassadorMessage\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "table \"AmbassadorMessage\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"AmbassadorMessage\"",
+        "sql": "CREATE TABLE \"public\".\"AmbassadorMessage\" (\n  \"ambassadorId\" text NOT NULL,\n  \"createdAt\" timestamptz(3) DEFAULT (now()) NOT NULL,\n  \"id\" text NOT NULL,\n  \"message\" text NOT NULL,\n  \"read\" bool DEFAULT false NOT NULL,\n  PRIMARY KEY (\"id\")\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"AmbassadorMessage\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" WHERE (\"c\".\"oid\" = to_regclass($1) AND (\"c\".\"relkind\" = $2 OR \"c\".\"relkind\" = $3))) AS \"result\"",
+        "params": [
+          "\"public\".\"AmbassadorMessage\"",
+          "r",
+          "p"
+        ],
+        "expectation": {
+          "expects": "present",
+          "object": "table \"AmbassadorMessage\""
+        }
+      }
+    ]
+  },
+  {
+    "id": "table.ReferralAttribution",
+    "label": "Create table \"ReferralAttribution\"",
+    "summary": "Creates table \"ReferralAttribution\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "ReferralAttribution"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"ReferralAttribution\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"ReferralAttribution\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "table \"ReferralAttribution\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"ReferralAttribution\"",
+        "sql": "CREATE TABLE \"public\".\"ReferralAttribution\" (\n  \"ambassadorId\" text NOT NULL,\n  \"createdAt\" timestamptz(3) DEFAULT (now()) NOT NULL,\n  \"id\" text NOT NULL,\n  \"userId\" text NOT NULL,\n  PRIMARY KEY (\"id\")\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"ReferralAttribution\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" WHERE (\"c\".\"oid\" = to_regclass($1) AND (\"c\".\"relkind\" = $2 OR \"c\".\"relkind\" = $3))) AS \"result\"",
+        "params": [
+          "\"public\".\"ReferralAttribution\"",
+          "r",
+          "p"
+        ],
+        "expectation": {
+          "expects": "present",
+          "object": "table \"ReferralAttribution\""
+        }
+      }
+    ]
+  },
+  {
+    "id": "table.ReferralClick",
+    "label": "Create table \"ReferralClick\"",
+    "summary": "Creates table \"ReferralClick\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "ReferralClick"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"ReferralClick\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"ReferralClick\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "table \"ReferralClick\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"ReferralClick\"",
+        "sql": "CREATE TABLE \"public\".\"ReferralClick\" (\n  \"ambassadorId\" text NOT NULL,\n  \"clickedAt\" timestamptz(3) DEFAULT (now()) NOT NULL,\n  \"day\" text NOT NULL,\n  \"id\" text NOT NULL,\n  \"ip\" text NOT NULL,\n  PRIMARY KEY (\"id\")\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"ReferralClick\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" WHERE (\"c\".\"oid\" = to_regclass($1) AND (\"c\".\"relkind\" = $2 OR \"c\".\"relkind\" = $3))) AS \"result\"",
+        "params": [
+          "\"public\".\"ReferralClick\"",
+          "r",
+          "p"
+        ],
+        "expectation": {
+          "expects": "present",
+          "object": "table \"ReferralClick\""
+        }
+      }
+    ]
+  },
+  {
+    "id": "unique.Ambassador.Ambassador_applicationId_key",
+    "label": "Add unique constraint on \"Ambassador\" (applicationId)",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "unique",
+        "name": "Ambassador_applicationId_key",
+        "table": "Ambassador"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"Ambassador_applicationId_key\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "Ambassador_applicationId_key",
+          "public",
+          "\"public\".\"Ambassador\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "constraint \"Ambassador_applicationId_key\" on \"Ambassador\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "add unique constraint \"Ambassador_applicationId_key\"",
+        "sql": "ALTER TABLE \"public\".\"Ambassador\" ADD CONSTRAINT \"Ambassador_applicationId_key\" UNIQUE (\"applicationId\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify unique constraint \"Ambassador_applicationId_key\" exists on (applicationId)",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3) AND \"c\".\"contype\" = $4 AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"c\".\"conkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"c\".\"conrelid\" AND key_attribute.attnum = key_column.attnum) = ($5)::jsonb)) AS \"result\"",
+        "params": [
+          "Ambassador_applicationId_key",
+          "public",
+          "\"public\".\"Ambassador\"",
+          "u",
+          "[\"applicationId\"]"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "unique.Ambassador.Ambassador_userId_key",
+    "label": "Add unique constraint on \"Ambassador\" (userId)",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "unique",
+        "name": "Ambassador_userId_key",
+        "table": "Ambassador"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"Ambassador_userId_key\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "Ambassador_userId_key",
+          "public",
+          "\"public\".\"Ambassador\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "constraint \"Ambassador_userId_key\" on \"Ambassador\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "add unique constraint \"Ambassador_userId_key\"",
+        "sql": "ALTER TABLE \"public\".\"Ambassador\" ADD CONSTRAINT \"Ambassador_userId_key\" UNIQUE (\"userId\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify unique constraint \"Ambassador_userId_key\" exists on (userId)",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3) AND \"c\".\"contype\" = $4 AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"c\".\"conkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"c\".\"conrelid\" AND key_attribute.attnum = key_column.attnum) = ($5)::jsonb)) AS \"result\"",
+        "params": [
+          "Ambassador_userId_key",
+          "public",
+          "\"public\".\"Ambassador\"",
+          "u",
+          "[\"userId\"]"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "unique.Ambassador.Ambassador_email_key",
+    "label": "Add unique constraint on \"Ambassador\" (email)",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "unique",
+        "name": "Ambassador_email_key",
+        "table": "Ambassador"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"Ambassador_email_key\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "Ambassador_email_key",
+          "public",
+          "\"public\".\"Ambassador\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "constraint \"Ambassador_email_key\" on \"Ambassador\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "add unique constraint \"Ambassador_email_key\"",
+        "sql": "ALTER TABLE \"public\".\"Ambassador\" ADD CONSTRAINT \"Ambassador_email_key\" UNIQUE (\"email\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify unique constraint \"Ambassador_email_key\" exists on (email)",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3) AND \"c\".\"contype\" = $4 AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"c\".\"conkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"c\".\"conrelid\" AND key_attribute.attnum = key_column.attnum) = ($5)::jsonb)) AS \"result\"",
+        "params": [
+          "Ambassador_email_key",
+          "public",
+          "\"public\".\"Ambassador\"",
+          "u",
+          "[\"email\"]"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "unique.Ambassador.Ambassador_referralCode_key",
+    "label": "Add unique constraint on \"Ambassador\" (referralCode)",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "unique",
+        "name": "Ambassador_referralCode_key",
+        "table": "Ambassador"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"Ambassador_referralCode_key\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "Ambassador_referralCode_key",
+          "public",
+          "\"public\".\"Ambassador\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "constraint \"Ambassador_referralCode_key\" on \"Ambassador\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "add unique constraint \"Ambassador_referralCode_key\"",
+        "sql": "ALTER TABLE \"public\".\"Ambassador\" ADD CONSTRAINT \"Ambassador_referralCode_key\" UNIQUE (\"referralCode\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify unique constraint \"Ambassador_referralCode_key\" exists on (referralCode)",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3) AND \"c\".\"contype\" = $4 AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"c\".\"conkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"c\".\"conrelid\" AND key_attribute.attnum = key_column.attnum) = ($5)::jsonb)) AS \"result\"",
+        "params": [
+          "Ambassador_referralCode_key",
+          "public",
+          "\"public\".\"Ambassador\"",
+          "u",
+          "[\"referralCode\"]"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "unique.ReferralAttribution.ReferralAttribution_userId_key",
+    "label": "Add unique constraint on \"ReferralAttribution\" (userId)",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "unique",
+        "name": "ReferralAttribution_userId_key",
+        "table": "ReferralAttribution"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"ReferralAttribution_userId_key\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "ReferralAttribution_userId_key",
+          "public",
+          "\"public\".\"ReferralAttribution\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "constraint \"ReferralAttribution_userId_key\" on \"ReferralAttribution\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "add unique constraint \"ReferralAttribution_userId_key\"",
+        "sql": "ALTER TABLE \"public\".\"ReferralAttribution\" ADD CONSTRAINT \"ReferralAttribution_userId_key\" UNIQUE (\"userId\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify unique constraint \"ReferralAttribution_userId_key\" exists on (userId)",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3) AND \"c\".\"contype\" = $4 AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"c\".\"conkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"c\".\"conrelid\" AND key_attribute.attnum = key_column.attnum) = ($5)::jsonb)) AS \"result\"",
+        "params": [
+          "ReferralAttribution_userId_key",
+          "public",
+          "\"public\".\"ReferralAttribution\"",
+          "u",
+          "[\"userId\"]"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.Ambassador.Ambassador_email_createdAt_idx_6e3c0d8a",
+    "label": "Create index \"Ambassador_email_createdAt_idx_6e3c0d8a\" on \"Ambassador\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "Ambassador_email_createdAt_idx_6e3c0d8a",
+        "table": "Ambassador"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"Ambassador_email_createdAt_idx_6e3c0d8a\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"Ambassador_email_createdAt_idx_6e3c0d8a\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "index \"Ambassador_email_createdAt_idx_6e3c0d8a\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"Ambassador_email_createdAt_idx_6e3c0d8a\"",
+        "sql": "CREATE INDEX \"Ambassador_email_createdAt_idx_6e3c0d8a\" ON \"public\".\"Ambassador\" (\"email\", \"createdAt\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"Ambassador_email_createdAt_idx_6e3c0d8a\" exists on \"Ambassador\" with the planned definition",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" INNER JOIN \"pg_index\" AS \"i\" ON \"i\".\"indexrelid\" = \"c\".\"oid\" INNER JOIN \"pg_am\" AS \"m\" ON \"m\".\"oid\" = \"c\".\"relam\" WHERE (\"c\".\"oid\" = to_regclass($1) AND (\"c\".\"relkind\" = $2 OR \"c\".\"relkind\" = $3) AND \"i\".\"indrelid\" = to_regclass($4) AND NOT (\"i\".\"indisunique\") AND \"m\".\"amname\" = $5 AND (\"i\".\"indexprs\" IS NULL AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"i\".\"indkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"i\".\"indrelid\" AND key_attribute.attnum = key_column.attnum) = ($6)::jsonb) AND \"i\".\"indpred\" IS NULL)) AS \"result\"",
+        "params": [
+          "\"public\".\"Ambassador_email_createdAt_idx_6e3c0d8a\"",
+          "i",
+          "I",
+          "\"public\".\"Ambassador\"",
+          "btree",
+          "[\"email\",\"createdAt\"]"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.Ambassador.Ambassador_status_createdAt_idx_58610442",
+    "label": "Create index \"Ambassador_status_createdAt_idx_58610442\" on \"Ambassador\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "Ambassador_status_createdAt_idx_58610442",
+        "table": "Ambassador"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"Ambassador_status_createdAt_idx_58610442\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"Ambassador_status_createdAt_idx_58610442\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "index \"Ambassador_status_createdAt_idx_58610442\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"Ambassador_status_createdAt_idx_58610442\"",
+        "sql": "CREATE INDEX \"Ambassador_status_createdAt_idx_58610442\" ON \"public\".\"Ambassador\" (\"status\", \"createdAt\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"Ambassador_status_createdAt_idx_58610442\" exists on \"Ambassador\" with the planned definition",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" INNER JOIN \"pg_index\" AS \"i\" ON \"i\".\"indexrelid\" = \"c\".\"oid\" INNER JOIN \"pg_am\" AS \"m\" ON \"m\".\"oid\" = \"c\".\"relam\" WHERE (\"c\".\"oid\" = to_regclass($1) AND (\"c\".\"relkind\" = $2 OR \"c\".\"relkind\" = $3) AND \"i\".\"indrelid\" = to_regclass($4) AND NOT (\"i\".\"indisunique\") AND \"m\".\"amname\" = $5 AND (\"i\".\"indexprs\" IS NULL AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"i\".\"indkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"i\".\"indrelid\" AND key_attribute.attnum = key_column.attnum) = ($6)::jsonb) AND \"i\".\"indpred\" IS NULL)) AS \"result\"",
+        "params": [
+          "\"public\".\"Ambassador_status_createdAt_idx_58610442\"",
+          "i",
+          "I",
+          "\"public\".\"Ambassador\"",
+          "btree",
+          "[\"status\",\"createdAt\"]"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.AmbassadorMessage.AmbassadorMessage_ambassadorId_createdAt_idx_5d54f454",
+    "label": "Create index \"AmbassadorMessage_ambassadorId_createdAt_idx_5d54f454\" on \"AmbassadorMessage\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "AmbassadorMessage_ambassadorId_createdAt_idx_5d54f454",
+        "table": "AmbassadorMessage"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"AmbassadorMessage_ambassadorId_createdAt_idx_5d54f454\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"AmbassadorMessage_ambassadorId_createdAt_idx_5d54f454\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "index \"AmbassadorMessage_ambassadorId_createdAt_idx_5d54f454\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"AmbassadorMessage_ambassadorId_createdAt_idx_5d54f454\"",
+        "sql": "CREATE INDEX \"AmbassadorMessage_ambassadorId_createdAt_idx_5d54f454\" ON \"public\".\"AmbassadorMessage\" (\"ambassadorId\", \"createdAt\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"AmbassadorMessage_ambassadorId_createdAt_idx_5d54f454\" exists on \"AmbassadorMessage\" with the planned definition",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" INNER JOIN \"pg_index\" AS \"i\" ON \"i\".\"indexrelid\" = \"c\".\"oid\" INNER JOIN \"pg_am\" AS \"m\" ON \"m\".\"oid\" = \"c\".\"relam\" WHERE (\"c\".\"oid\" = to_regclass($1) AND (\"c\".\"relkind\" = $2 OR \"c\".\"relkind\" = $3) AND \"i\".\"indrelid\" = to_regclass($4) AND NOT (\"i\".\"indisunique\") AND \"m\".\"amname\" = $5 AND (\"i\".\"indexprs\" IS NULL AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"i\".\"indkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"i\".\"indrelid\" AND key_attribute.attnum = key_column.attnum) = ($6)::jsonb) AND \"i\".\"indpred\" IS NULL)) AS \"result\"",
+        "params": [
+          "\"public\".\"AmbassadorMessage_ambassadorId_createdAt_idx_5d54f454\"",
+          "i",
+          "I",
+          "\"public\".\"AmbassadorMessage\"",
+          "btree",
+          "[\"ambassadorId\",\"createdAt\"]"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.AmbassadorMessage.AmbassadorMessage_read_createdAt_idx_bb5ea906",
+    "label": "Create index \"AmbassadorMessage_read_createdAt_idx_bb5ea906\" on \"AmbassadorMessage\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "AmbassadorMessage_read_createdAt_idx_bb5ea906",
+        "table": "AmbassadorMessage"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"AmbassadorMessage_read_createdAt_idx_bb5ea906\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"AmbassadorMessage_read_createdAt_idx_bb5ea906\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "index \"AmbassadorMessage_read_createdAt_idx_bb5ea906\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"AmbassadorMessage_read_createdAt_idx_bb5ea906\"",
+        "sql": "CREATE INDEX \"AmbassadorMessage_read_createdAt_idx_bb5ea906\" ON \"public\".\"AmbassadorMessage\" (\"read\", \"createdAt\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"AmbassadorMessage_read_createdAt_idx_bb5ea906\" exists on \"AmbassadorMessage\" with the planned definition",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" INNER JOIN \"pg_index\" AS \"i\" ON \"i\".\"indexrelid\" = \"c\".\"oid\" INNER JOIN \"pg_am\" AS \"m\" ON \"m\".\"oid\" = \"c\".\"relam\" WHERE (\"c\".\"oid\" = to_regclass($1) AND (\"c\".\"relkind\" = $2 OR \"c\".\"relkind\" = $3) AND \"i\".\"indrelid\" = to_regclass($4) AND NOT (\"i\".\"indisunique\") AND \"m\".\"amname\" = $5 AND (\"i\".\"indexprs\" IS NULL AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"i\".\"indkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"i\".\"indrelid\" AND key_attribute.attnum = key_column.attnum) = ($6)::jsonb) AND \"i\".\"indpred\" IS NULL)) AS \"result\"",
+        "params": [
+          "\"public\".\"AmbassadorMessage_read_createdAt_idx_bb5ea906\"",
+          "i",
+          "I",
+          "\"public\".\"AmbassadorMessage\"",
+          "btree",
+          "[\"read\",\"createdAt\"]"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.ReferralAttribution.ReferralAttribution_ambassadorId_createdAt_idx_5d54f454",
+    "label": "Create index \"ReferralAttribution_ambassadorId_createdAt_idx_5d54f454\" on \"ReferralAttribution\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "ReferralAttribution_ambassadorId_createdAt_idx_5d54f454",
+        "table": "ReferralAttribution"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"ReferralAttribution_ambassadorId_createdAt_idx_5d54f454\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"ReferralAttribution_ambassadorId_createdAt_idx_5d54f454\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "index \"ReferralAttribution_ambassadorId_createdAt_idx_5d54f454\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"ReferralAttribution_ambassadorId_createdAt_idx_5d54f454\"",
+        "sql": "CREATE INDEX \"ReferralAttribution_ambassadorId_createdAt_idx_5d54f454\" ON \"public\".\"ReferralAttribution\" (\"ambassadorId\", \"createdAt\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"ReferralAttribution_ambassadorId_createdAt_idx_5d54f454\" exists on \"ReferralAttribution\" with the planned definition",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" INNER JOIN \"pg_index\" AS \"i\" ON \"i\".\"indexrelid\" = \"c\".\"oid\" INNER JOIN \"pg_am\" AS \"m\" ON \"m\".\"oid\" = \"c\".\"relam\" WHERE (\"c\".\"oid\" = to_regclass($1) AND (\"c\".\"relkind\" = $2 OR \"c\".\"relkind\" = $3) AND \"i\".\"indrelid\" = to_regclass($4) AND NOT (\"i\".\"indisunique\") AND \"m\".\"amname\" = $5 AND (\"i\".\"indexprs\" IS NULL AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"i\".\"indkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"i\".\"indrelid\" AND key_attribute.attnum = key_column.attnum) = ($6)::jsonb) AND \"i\".\"indpred\" IS NULL)) AS \"result\"",
+        "params": [
+          "\"public\".\"ReferralAttribution_ambassadorId_createdAt_idx_5d54f454\"",
+          "i",
+          "I",
+          "\"public\".\"ReferralAttribution\"",
+          "btree",
+          "[\"ambassadorId\",\"createdAt\"]"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.ReferralClick.ReferralClick_ambassadorId_clickedAt_idx_cc7a22ca",
+    "label": "Create index \"ReferralClick_ambassadorId_clickedAt_idx_cc7a22ca\" on \"ReferralClick\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "ReferralClick_ambassadorId_clickedAt_idx_cc7a22ca",
+        "table": "ReferralClick"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"ReferralClick_ambassadorId_clickedAt_idx_cc7a22ca\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"ReferralClick_ambassadorId_clickedAt_idx_cc7a22ca\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "index \"ReferralClick_ambassadorId_clickedAt_idx_cc7a22ca\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"ReferralClick_ambassadorId_clickedAt_idx_cc7a22ca\"",
+        "sql": "CREATE INDEX \"ReferralClick_ambassadorId_clickedAt_idx_cc7a22ca\" ON \"public\".\"ReferralClick\" (\"ambassadorId\", \"clickedAt\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"ReferralClick_ambassadorId_clickedAt_idx_cc7a22ca\" exists on \"ReferralClick\" with the planned definition",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" INNER JOIN \"pg_index\" AS \"i\" ON \"i\".\"indexrelid\" = \"c\".\"oid\" INNER JOIN \"pg_am\" AS \"m\" ON \"m\".\"oid\" = \"c\".\"relam\" WHERE (\"c\".\"oid\" = to_regclass($1) AND (\"c\".\"relkind\" = $2 OR \"c\".\"relkind\" = $3) AND \"i\".\"indrelid\" = to_regclass($4) AND NOT (\"i\".\"indisunique\") AND \"m\".\"amname\" = $5 AND (\"i\".\"indexprs\" IS NULL AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"i\".\"indkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"i\".\"indrelid\" AND key_attribute.attnum = key_column.attnum) = ($6)::jsonb) AND \"i\".\"indpred\" IS NULL)) AS \"result\"",
+        "params": [
+          "\"public\".\"ReferralClick_ambassadorId_clickedAt_idx_cc7a22ca\"",
+          "i",
+          "I",
+          "\"public\".\"ReferralClick\"",
+          "btree",
+          "[\"ambassadorId\",\"clickedAt\"]"
+        ]
+      }
+    ]
+  }
+]

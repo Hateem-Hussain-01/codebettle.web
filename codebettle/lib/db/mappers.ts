@@ -14,9 +14,14 @@ import type {
   Announcement,
   AnnouncementRow,
   AnnouncementType,
+  Ambassador,
   AmbassadorApplication,
   AmbassadorApplicationRow,
   AmbassadorApplicationStatus,
+  AmbassadorMessage,
+  AmbassadorMessageRow,
+  AmbassadorRow,
+  AmbassadorStatus,
   Assignment,
   AssignmentRow,
   AssignmentSubmission,
@@ -526,6 +531,37 @@ export function mapAmbassadorApplicationRow(row: AmbassadorApplicationRow): Amba
     status: ambassadorApplicationStatusFromStorage(row.status),
     createdAt: dateToString(row.createdAt),
     updatedAt: dateToString(row.updatedAt),
+  };
+}
+
+export function ambassadorStatusFromStorage(stored: string): AmbassadorStatus {
+  if (stored === 'active' || stored === 'inactive') return stored;
+  throw new Error(`Unknown ambassador status in database: ${stored}`);
+}
+
+export function mapAmbassadorRow(row: AmbassadorRow): Ambassador {
+  return {
+    id: row.id,
+    applicationId: row.applicationId ?? undefined,
+    userId: row.userId ?? undefined,
+    email: row.email,
+    referralCode: row.referralCode,
+    status: ambassadorStatusFromStorage(row.status),
+    groupLink: row.groupLink ?? undefined,
+    groupMemberCount: row.groupMemberCount ?? undefined,
+    groupCountUpdatedAt: row.groupCountUpdatedAt ? dateToString(row.groupCountUpdatedAt) : undefined,
+    createdAt: dateToString(row.createdAt),
+    updatedAt: dateToString(row.updatedAt),
+  };
+}
+
+export function mapAmbassadorMessageRow(row: AmbassadorMessageRow): AmbassadorMessage {
+  return {
+    id: row.id,
+    ambassadorId: row.ambassadorId,
+    message: row.message,
+    read: row.read,
+    createdAt: dateToString(row.createdAt),
   };
 }
 

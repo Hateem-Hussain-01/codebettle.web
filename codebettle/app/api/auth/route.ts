@@ -23,6 +23,8 @@ import { dashboardUrlForRole } from '@/lib/admin-url';
 import { recordLoginEvent } from '@/lib/db/login-events';
 import { getUserByEmail } from '@/lib/db/users';
 import { revokeOtherSessionsForUser } from '@/lib/db/sessions';
+import { resolveReferralForSignup } from '@/lib/db/ambassadors';
+import { REFERRAL_COOKIE } from '@/lib/referral';
 import { normalizeEmail } from '@/lib/security';
 import {
   getEmailVerificationStatus,
@@ -241,7 +243,24 @@ export async function POST(request: NextRequest) {
         { status: 429 },
       );
     }
-    const result = await registerUser({ name, email, phone, password });
+    const result = await registerUser({
+      name,
+      email,
+      phone,
+      password,
+      // Ambassador referral (Eman, 16 Nov 2026): the referrer comes
+      // from the `cb_ref` cookie set when the visitor landed on a
+      // referral link — resolved server-side here, never from a
+      // client-sent field. resolveReferralForSignup returns null for
+      // an unknown/inactive code and for self-referral (the
+      // ambassador's own email), so a planted cookie attributes
+      // nothing. A missing/unreadable cookie is simply no referrer.
+      referredByAmbassadorId:
+        (await resolveReferralForSignup(
+          request.cookies.get(REFERRAL_COOKIE)?.value ?? '',
+          email,
+        )) ?? undefined,
+    });
     if ('duplicate' in result) {
       // MEDIUM-A1: the same generic 201 success as a fresh signup —
       // no second account is created and nothing reveals that the
