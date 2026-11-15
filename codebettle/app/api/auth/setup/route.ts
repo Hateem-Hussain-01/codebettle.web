@@ -4,7 +4,13 @@ import { completeFirstRunSetup, getSetupStatus } from '@/lib/services/first-run'
 import { checkRateLimit } from '@/lib/rate-limit';
 
 /**
- * GET /api/auth/setup — which official admin accounts are claimed (no sensitive data).
+ * GET /api/auth/setup — whether first-run setup is complete (LOW-A3:
+ * this used to disclose, per official admin, whether their account
+ * was claimed — exactly the information an attacker needs to pick the
+ * still-claimable CEO account. It now returns only `complete`. The
+ * setup page itself still uses getSetupStatus() server-side, so the
+ * claim flow for Ahmad is unchanged, and POST still enforces
+ * already-claimed with a 400.
  * POST /api/auth/setup — claim one official admin account (first-run setup, master prompt §8).
  *
  * Only the two approved emails can be claimed (Muhammad Hateem Hussain,
@@ -12,11 +18,17 @@ import { checkRateLimit } from '@/lib/rate-limit';
  * is bcrypt-hashed before storage and never written anywhere. Once both
  * accounts exist, setup is closed and the setup page redirects to login.
  * Rate-limited (5 attempts / 15 min per IP) like login.
+ *
+ * HELD — DO NOT REMOVE THIS ROUTE YET: Ahmad Hassan has NOT claimed
+ * his account (claimed:false, verified 15 Nov 2026). Removing or
+ * disabling the setup route now would lock him out forever. The route
+ * is removed only AFTER he claims — that removal is a separate,
+ * post-claim step.
  */
 
 export async function GET() {
   const status = await getSetupStatus();
-  return NextResponse.json(status);
+  return NextResponse.json({ complete: status.complete });
 }
 
 const setupSchema = z.object({

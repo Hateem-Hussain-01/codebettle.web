@@ -30,13 +30,15 @@
  *   history) and never stored in the database. Ending the session is
  *   explicit: Exit (the exit route clears the cookie), logout, closing
  *   the browser, or the 30-minute token expiry (ADM-02).
- * - Verification is server-side only: `lib/auth.ts` re-checks the
- *   signature, that the admin in the token is the admin holding the
- *   session, and that the teacher still exists, is still a teacher
- *   (flag or legacy role) and is active. A forged or replayed token
- *   (different admin's session) verifies as null. A revoked teacher
- *   loses view-as immediately because the flag is re-checked on
- *   every request.
+ * - A token WITHOUT an expiry is rejected (LOW-A2): every token minted
+ *   since the TTL was added carries one, and a pre-TTL token must not
+ *   live forever. Verification is server-side only: `lib/auth.ts`
+ *   re-checks the signature, that the admin in the token is the admin
+ *   holding the session, and that the teacher still exists, is still
+ *   a teacher (flag or legacy role) and is active. A forged or replayed
+ *   token (different admin's session) verifies as null. A revoked
+ *   teacher loses view-as immediately because the flag is re-checked
+ *   on every request.
  * - The token carries NO password material and never creates, resets
  *   or exposes the teacher's password. It also never touches the
  *   session-revocation paths: the admin's own session stays intact
@@ -57,17 +59,24 @@ export interface ViewAsPayload {
   teacherId: string;
   /**
    * Epoch ms after which the token is dead (ADM-02: minted with
-   * VIEW_AS_TTL_MS). Tokens minted before the TTL was added omit this
-   * and are still honoured until the admin exits — they cannot be
-   * renewed without a fresh admin mint.
+   * VIEW_AS_TTL_MS). REQUIRED — a token without an expiry is rejected
+   * by verifyViewAsToken (LOW-A2); pre-TTL tokens are no longer
+   * honoured. Every token minted by mintViewAsToken carries one.
    */
-  expiresAt?: number;
+  expiresAt: number;
 }
 
 let fallbackSecret: Buffer | null = null;
 let fallbackWarned = false;
 
-/** The HMAC secret: env first, else a random per-process value. */
+/**
+ * The HMAC secret: env first, else a random per-process value.
+ * PRODUCTION REQUIREMENT (LOW-A2): set VIEW_AS_SECRET (or
+ * SESSION_SECRET) as a stable env var in Vercel. Without it the secret
+ * is random per process — tokens die on restart AND stop working
+ * across Vercel instances, so view-as breaks for the admin. The
+ * secret is never committed and never in a NEXT_PUBLIC_ variable.
+ */
 export function resolveViewAsSecret(): Buffer {
   const configured = process.env.VIEW_AS_SECRET ?? process.env.SESSION_SECRET;
   if (configured) return Buffer.from(configured, 'utf8');
@@ -148,9 +157,11 @@ export function verifyViewAsToken(
     return null;
   }
   const parsed = payload as ViewAsPayload;
-  // Tokens minted with an expiry are dead after it (ADM-02). Tokens
-  // minted before the TTL was added carry no expiry and are still
-  // honoured until the admin exits.
-  if (parsed.expiresAt !== undefined && parsed.expiresAt <= nowMs) return null;
+  // LOW-A2: a token without an expiry is dead on arrival. Tokens
+  // minted before the TTL was added carry no `e` and were previously
+  // honoured until the admin exited — that meant a pre-TTL token
+  // worked forever. Every token minted since carries an expiry.
+  if (typeof parsed.expiresAt !== 'number') return null;
+  if (parsed.expiresAt <= nowMs) return null;
   return parsed;
 }

@@ -102,6 +102,17 @@ export type SiteSettings = {
   linksPhone: string;
   linksEmail: string;
   linksLocation: string;
+  /**
+   * Security Phase 3 (MEDIUM-A2): when true, login requires a verified
+   * email (User.emailVerifiedAt set). DEFAULT FALSE — behaviour is
+   * unchanged until an admin enables it, because Resend is not
+   * configured yet and verification emails cannot be delivered.
+   * Rollout: 1) configure Resend + verify the domain, 2) have
+   * existing users verify (they can request a link from sign-in),
+   * 3) flip this on. The verification-gated EMAIL CHANGE flow does
+   * NOT depend on this flag — it is always enforced.
+   */
+  requireEmailVerification: boolean;
 };
 
 export const DEFAULT_SETTINGS: SiteSettings = {
@@ -142,6 +153,9 @@ export const DEFAULT_SETTINGS: SiteSettings = {
   linksPhone: '+92 305 5261893',
   linksEmail: 'info@codebettle.com',
   linksLocation: 'Lahore, Punjab, Pakistan',
+  // MEDIUM-A2: email-verification enforcement is OFF until Resend is
+  // live and existing users have verified (see the field doc above).
+  requireEmailVerification: false,
 };
 
 /** Storage key for each setting field. All values are strings. */
@@ -167,6 +181,7 @@ export const SETTING_KEYS: Record<keyof SiteSettings, string> = {
   linksPhone: 'linksPage.phone',
   linksEmail: 'linksPage.email',
   linksLocation: 'linksPage.location',
+  requireEmailVerification: 'security.requireEmailVerification',
 };
 
 const STRING_FIELDS: Array<keyof SiteSettings> = [
@@ -238,9 +253,9 @@ function validatePatch(patch: Partial<SiteSettings>): Array<{ field: keyof SiteS
   }
   const cleaned: Array<{ field: keyof SiteSettings; stored: string }> = [];
   for (const [field, raw] of entries) {
-    if (field === 'maintenanceMode') {
+    if (field === 'maintenanceMode' || field === 'requireEmailVerification') {
       if (typeof raw !== 'boolean') {
-        throw new SettingsValidationError('Maintenance mode must be true or false');
+        throw new SettingsValidationError(`${field} must be true or false`);
       }
       cleaned.push({ field, stored: raw ? 'true' : 'false' });
       continue;
@@ -372,6 +387,9 @@ function rowsToSettings(rows: Array<{ key: string; value: string }>): SiteSettin
     linksPhone: pickString('linksPhone'),
     linksEmail: pickString('linksEmail'),
     linksLocation: pickString('linksLocation'),
+    // MEDIUM-A2: missing row = false (enforcement off). A stored
+    // value other than the literal 'true' is also off.
+    requireEmailVerification: byKey.get(SETTING_KEYS.requireEmailVerification) === 'true',
   };
 }
 
@@ -415,6 +433,22 @@ export async function isMaintenanceMode(): Promise<boolean> {
   try {
     const settings = await getSiteSettings();
     return settings.maintenanceMode;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Whether login requires a verified email (MEDIUM-A2). NEVER throws:
+ * false on any error — fail-open, so a broken settings read can never
+ * lock every user out of sign-in. Default false (no stored row).
+ * Only read when login enforcement is being decided; the email-change
+ * flow does not use this flag.
+ */
+export async function isEmailVerificationRequired(): Promise<boolean> {
+  try {
+    const settings = await getSiteSettings();
+    return settings.requireEmailVerification;
   } catch {
     return false;
   }

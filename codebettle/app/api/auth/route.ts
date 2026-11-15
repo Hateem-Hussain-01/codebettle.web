@@ -14,7 +14,14 @@ import { checkRateLimit, loginRateLimitKey } from '@/lib/rate-limit';
 import { matchesLoginPortal, type LoginPortal } from '@/lib/rbac';
 import { dashboardUrlForRole } from '@/lib/admin-url';
 import { recordLoginEvent } from '@/lib/db/login-events';
-import { requestEmailVerification } from '@/lib/services/email-verification-service';
+import { getUserByEmail } from '@/lib/db/users';
+import { revokeOtherSessionsForUser } from '@/lib/db/sessions';
+import { normalizeEmail } from '@/lib/security';
+import {
+  getEmailVerificationStatus,
+  requestEmailVerification,
+} from '@/lib/services/email-verification-service';
+import { isEmailVerificationRequired } from '@/lib/services/settings-service';
 import { VIEW_AS_COOKIE } from '@/lib/view-as';
 
 /** Login-event recording is best-effort: it must never block a sign-in. */
@@ -27,7 +34,8 @@ async function safeRecordLoginEvent(input: Parameters<typeof recordLoginEvent>[0
 }
 
 /**
- * POST /api/auth — login / register / logout / change-password.
+ * POST /api/auth — login / register / logout / change-password /
+ * resend-verification / revoke-other-sessions.
  *
  * Security rules enforced here (not only in the UI):
  * - All inputs validated server-side with Zod; role can never be chosen
@@ -36,6 +44,14 @@ async function safeRecordLoginEvent(input: Parameters<typeof recordLoginEvent>[0
  *   password, or suspended account.
  * - Login is rate-limited (5 attempts / 15 min per IP + email, in-memory;
  *   Upstash Redis is still pending — see RUNBOOK.md).
+ * - Registration and change-password are rate-limited too (HIGH-A2):
+ *   5 attempts / 15 min per IP (register) / per user (change-password).
+ * - Duplicate registration returns the same generic 201 success as a
+ *   fresh signup (MEDIUM-A1) — no "already exists" distinction.
+ * - When email-verification enforcement is enabled
+ *   (security.requireEmailVerification, default OFF), login refuses
+ *   unverified accounts with a "verify your email" response and a
+ *   resend-verification path (MEDIUM-A2).
  * - Sessions are opaque tokens validated server-side (see lib/auth.ts).
  */
 
@@ -78,6 +94,13 @@ const registerSchema = z.object({
 });
 
 const logoutSchema = z.object({ action: z.literal('logout') });
+
+const resendVerificationSchema = z.object({
+  action: z.literal('resend-verification'),
+  email: z.string().min(1),
+});
+
+const revokeOtherSessionsSchema = z.object({ action: z.literal('revoke-other-sessions') });
 
 const changePasswordSchema = z.object({
   action: z.literal('change-password'),
@@ -122,6 +145,29 @@ export async function POST(request: NextRequest) {
 
     const user = await login(email, password);
     if (!user) {
+      // MEDIUM-A2: when verification enforcement is on, an existing
+      // but unverified account gets a distinct "verify your email"
+      // response (with the resend path) instead of the generic 401.
+      // Unknown emails still get the generic 401 — no oracle.
+      if (await isEmailVerificationRequired()) {
+        const status = await getEmailVerificationStatus(email);
+        if (status === 'unverified') {
+          await safeRecordLoginEvent({
+            email,
+            success: false,
+            ip,
+            userAgent: request.headers.get('user-agent') ?? undefined,
+          });
+          return NextResponse.json(
+            {
+              error:
+                'Please verify your email address before signing in. Check your inbox for the verification link, or request a new one.',
+              emailNotVerified: true,
+            },
+            { status: 403 },
+          );
+        }
+      }
       // Generic on purpose — never reveal whether the email exists.
       await safeRecordLoginEvent({
         email,
@@ -179,7 +225,31 @@ export async function POST(request: NextRequest) {
     if (confirmPassword !== undefined && confirmPassword !== password) {
       return NextResponse.json({ error: 'Passwords do not match' }, { status: 400 });
     }
+    // HIGH-A2: registration is rate-limited like login (5 / 15 min
+    // per IP) — without this, anyone could create unlimited accounts.
+    const registerLimit = checkRateLimit(`register:${clientIp(request)}`, 5, 15 * 60 * 1000);
+    if (!registerLimit.allowed) {
+      return NextResponse.json(
+        { error: 'Too many registration attempts. Please try again later.' },
+        { status: 429 },
+      );
+    }
     const result = await registerUser({ name, email, phone, password });
+    if ('duplicate' in result) {
+      // MEDIUM-A1: the same generic 201 success as a fresh signup —
+      // no second account is created and nothing reveals that the
+      // email is already registered. No session is minted: the caller
+      // has not proven they own the existing account.
+      return NextResponse.json(
+        {
+          success: true,
+          verificationEmailSent: false,
+          message:
+            'If this email address is new, your account has been created. Please check your inbox to verify your email.',
+        },
+        { status: 201 },
+      );
+    }
     if ('error' in result) {
       return NextResponse.json({ error: result.error }, { status: 400 });
     }
@@ -197,6 +267,19 @@ export async function POST(request: NextRequest) {
     ).sent;
     const created = await login(email, password);
     if (!created) {
+      // MEDIUM-A2: with enforcement on, a fresh (unverified) account
+      // cannot auto-log-in — the user must verify first. Without
+      // enforcement this stays the old "please sign in" fallback.
+      if (await isEmailVerificationRequired()) {
+        return NextResponse.json(
+          {
+            success: true,
+            verificationEmailSent,
+            message: 'Account created. Please verify your email address, then sign in.',
+          },
+          { status: 201 },
+        );
+      }
       return NextResponse.json(
         { error: 'Account created. Please sign in.', verificationEmailSent },
         { status: 201 },
@@ -259,6 +342,16 @@ export async function POST(request: NextRequest) {
       );
     }
     const { currentPassword, newPassword } = parsed.data;
+    // HIGH-A2: change-password is rate-limited (5 / 15 min per user)
+    // — an authenticated session must not allow unlimited guessing
+    // of the current password.
+    const changeLimit = checkRateLimit(`change-password:${session.id}`, 5, 15 * 60 * 1000);
+    if (!changeLimit.allowed) {
+      return NextResponse.json(
+        { error: 'Too many password change attempts. Please try again later.' },
+        { status: 429 },
+      );
+    }
     const result = await changePassword(session.id, currentPassword, newPassword);
     if ('error' in result) {
       return NextResponse.json({ error: result.error }, { status: 400 });
@@ -266,6 +359,62 @@ export async function POST(request: NextRequest) {
     const response = NextResponse.json({ success: true });
     response.cookies.set(SESSION_COOKIE, result.token, sessionCookieOptions());
     return response;
+  }
+
+  if (action === 'resend-verification') {
+    const parsed = resendVerificationSchema.safeParse(body);
+    if (!parsed.success) {
+      return NextResponse.json({ error: 'Email is required' }, { status: 400 });
+    }
+    const { email } = parsed.data;
+    // Rate-limited like login/reset (5 / 15 min per IP + email).
+    const limit = checkRateLimit(
+      `resend-verification:${clientIp(request)}:${email.toLowerCase()}`,
+      5,
+      15 * 60 * 1000,
+    );
+    if (!limit.allowed) {
+      return NextResponse.json(
+        { error: 'Too many verification requests. Please try again later.' },
+        { status: 429 },
+      );
+    }
+    // Generic on purpose — never reveal whether the email has an
+    // account or is already verified (no enumeration oracle). Only an
+    // existing, still-unverified account gets a new link.
+    const user = await getUserByEmail(normalizeEmail(email));
+    if (user && (await getEmailVerificationStatus(email)) === 'unverified') {
+      await requestEmailVerification(user.id, user.email, user.name, request.nextUrl.origin);
+    }
+    return NextResponse.json({
+      success: true,
+      message: 'If an account exists for this email, a verification link has been sent.',
+    });
+  }
+
+  if (action === 'revoke-other-sessions') {
+    const parsed = revokeOtherSessionsSchema.safeParse(body);
+    if (!parsed.success) {
+      return NextResponse.json({ error: 'Invalid action' }, { status: 400 });
+    }
+    const session = await getSession();
+    if (!session) {
+      return NextResponse.json({ error: 'Not signed in' }, { status: 401 });
+    }
+    // While viewing, the session is the teacher's — revoking the
+    // teacher's other sessions from the viewing session is refused.
+    if (session.viewAs) {
+      return NextResponse.json(
+        { error: 'You are viewing a teacher portal as an admin. Return to the Admin Panel first.' },
+        { status: 403 },
+      );
+    }
+    // MEDIUM-A3: revoke every session except the one making this
+    // call (identified by the session cookie). The current session
+    // stays valid; every other device/browser is logged out.
+    const currentToken = request.cookies.get(SESSION_COOKIE)?.value ?? null;
+    const revoked = await revokeOtherSessionsForUser(session.id, currentToken);
+    return NextResponse.json({ success: true, revoked });
   }
 
   return NextResponse.json({ error: 'Invalid action' }, { status: 400 });

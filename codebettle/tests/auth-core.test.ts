@@ -68,8 +68,13 @@ test('register links a pre-existing unlinked instructor application filed under 
 test('register rejects duplicates, bad emails and short passwords', async () => {
   const email = testEmail('dupe');
   assert.ok('user' in (await registerUser({ name: 'A', email, password: 'TestPass123' })));
+  // MEDIUM-A1 (Phase 3): a duplicate is NOT an error — the route
+  // returns the same generic 201 as a fresh signup, so registration
+  // cannot be used to enumerate accounts. No second account is made.
   const dupe = await registerUser({ name: 'B', email, password: 'TestPass123' });
-  assert.ok('error' in dupe);
+  assert.ok('duplicate' in dupe, `expected duplicate marker, got ${JSON.stringify(dupe)}`);
+  assert.ok(!('error' in dupe));
+  assert.equal((await getUserByEmail(email))?.name, 'A');
 
   const badEmail = await registerUser({ name: 'C', email: 'not-an-email', password: 'TestPass123' });
   assert.ok('error' in badEmail);

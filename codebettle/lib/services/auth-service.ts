@@ -20,6 +20,8 @@ import { createSessionRecord, revokeAllSessionsForUser } from '../db/sessions';
 import { logAudit } from '../db/audit';
 import { toSafeUser } from '../db/mappers';
 import type { AdminPermissions, SafeUser, User } from '../db/types';
+import { isEmailVerificationRequired } from './settings-service';
+import { isUserEmailVerified } from './email-verification-service';
 
 export interface SessionUser {
   id: string;
@@ -84,7 +86,16 @@ export function toSessionUser(user: User | SafeUser): SessionUser {
   };
 }
 
-/** Verify credentials. Returns null on any failure (unknown email, wrong password, suspended). */
+/**
+ * Verify credentials. Returns null on any failure (unknown email, wrong
+ * password, suspended, or — when email-verification enforcement is
+ * enabled — unverified email). MEDIUM-A2: enforcement is gated behind
+ * the `security.requireEmailVerification` site setting, default OFF,
+ * so behaviour is unchanged until Resend is live and existing users
+ * have verified. The route distinguishes the unverified case (via
+ * getEmailVerificationStatus) to return the "verify your email"
+ * response; this function deliberately stays generic (null).
+ */
 export async function login(email: string, password: string): Promise<SessionUser | null> {
   const user = await getUserByEmail(normalizeEmail(email));
   // Keep timing uniform when the email does not exist (no enumeration oracle).
@@ -92,6 +103,9 @@ export async function login(email: string, password: string): Promise<SessionUse
   const ok = await verifyPassword(password, hash);
   if (!user || !ok) return null;
   if (user.status === 'suspended') return null;
+  if (await isEmailVerificationRequired()) {
+    if (!(await isUserEmailVerified(user.id))) return null;
+  }
   return toSessionUser(user);
 }
 
@@ -102,10 +116,17 @@ export interface RegisterInput {
   password: string;
 }
 
-/** Register a new student. Returns the safe user, or an error message. Role is forced to student. */
+/**
+ * Register a new student. Returns the safe user, or an error message.
+ * Role is forced to student. MEDIUM-A1: when the email is already
+ * registered the caller gets `{ duplicate: true }` — NOT an error —
+ * so the route can return the same generic 201 success as a fresh
+ * signup, with no second account created and no "already exists"
+ * distinction (no enumeration oracle).
+ */
 export async function registerUser(
   input: RegisterInput,
-): Promise<{ user: SafeUser } | { error: string }> {
+): Promise<{ user: SafeUser } | { duplicate: true } | { error: string }> {
   const name = input.name.trim();
   const email = normalizeEmail(input.email);
   if (!name) return { error: 'Name is required' };
@@ -113,7 +134,7 @@ export async function registerUser(
   const passwordError = validatePassword(input.password);
   if (passwordError) return { error: passwordError };
   if (await getUserByEmail(email)) {
-    return { error: 'An account with this email already exists. Please sign in instead.' };
+    return { duplicate: true };
   }
 
   const passwordHash = await hashPassword(input.password);
@@ -143,6 +164,9 @@ export async function registerUser(
 /**
  * Change a password. Requires the current password; revokes every session
  * (including the current one) and returns a fresh token for the caller to set.
+ * LOW-A1: the new password must differ from the current one (bcrypt
+ * compare) and stay >= 8 chars (validatePassword). No complexity rules —
+ * those would break UX for no meaningful gain at bcrypt cost 12.
  */
 export async function changePassword(
   userId: string,
@@ -153,6 +177,9 @@ export async function changePassword(
   if (!user) return { error: 'Account not found' };
   const ok = await verifyPassword(currentPassword, user.passwordHash);
   if (!ok) return { error: 'Current password is incorrect' };
+  if (await verifyPassword(newPassword, user.passwordHash)) {
+    return { error: 'New password must be different from the current password' };
+  }
   const passwordError = validatePassword(newPassword);
   if (passwordError) return { error: passwordError };
 

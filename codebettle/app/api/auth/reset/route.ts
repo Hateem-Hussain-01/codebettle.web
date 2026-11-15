@@ -15,13 +15,12 @@ import { getUserByEmail } from '@/lib/db/users';
  * are single-use and expire after 60 minutes; a successful reset
  * revokes every session.
  *
- * KNOWN GAP — no forgot-password UI page exists yet
- * (app/auth/reset/page.tsx). The reset link in the email points to
- * /auth/reset?token=..., which 404s until that page is built; the API
- * and the email delivery are complete. The token is never returned in
- * a response.
+ * The reset link in the email points to /auth/reset?token=..., and the
+ * forgot-password page exists at app/auth/reset/page.tsx (LOW-A4: the
+ * old comment here claimed no such page existed — it does, and the
+ * link works). The token is never returned in a response.
  * The machinery (token hashing, expiry, single-use, session revocation)
- * is complete and unit-tested; only the reset page is missing.
+ * is complete and unit-tested.
  */
 
 const requestSchema = z.object({
