@@ -164,6 +164,39 @@ export async function validateUploadedFile(
 }
 
 // ---------------------------------------------------------------------------
+// Validation-error mapping (U-6).
+// ---------------------------------------------------------------------------
+
+/**
+ * Messages `validateUploadedBytes` / `validateUploadedFile` return when
+ * the FILE itself fails validation — the bytes are empty, unreadable,
+ * or do not match the claimed type. These are client errors (HTTP
+ * 400), not server errors: before this fix every upload route fell
+ * through to a generic 500 ("Photo upload failed") for them, because
+ * each route's catch only matched its own type/size wording.
+ *
+ * Upload routes check `isUploadValidationError(message)` in their
+ * catch block (before the generic 500) and return the validation
+ * message with status 400. The validation OUTCOME is unchanged —
+ * a mismatched file is still rejected; only the status code changes.
+ * Messages that are not validation failures (missing service-role
+ * key, missing bucket, storage errors) are unaffected.
+ */
+const UPLOAD_VALIDATION_MESSAGE_MARKERS = [
+  'The file contents do not match its type',
+  'The file is empty',
+  'The file could not be read',
+  'The file size could not be read',
+] as const;
+
+export function isUploadValidationError(message: string): boolean {
+  return (
+    typeof message === 'string' &&
+    UPLOAD_VALIDATION_MESSAGE_MARKERS.some((marker) => message.includes(marker))
+  );
+}
+
+// ---------------------------------------------------------------------------
 // Storage-key segments (NEW-9).
 // ---------------------------------------------------------------------------
 

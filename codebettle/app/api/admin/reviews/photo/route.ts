@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAdminArea } from '@/lib/api-helpers';
 import { uploadStudentReviewPhotoImage } from '@/lib/services/course-image-storage';
+import { isUploadValidationError } from '@/lib/services/file-validation';
 
 /**
  * POST /api/admin/reviews/photo — upload a review photo (admin only,
@@ -49,6 +50,11 @@ export async function POST(request: NextRequest) {
       );
     }
     if (message.includes('Only JPG, PNG or WebP') || message.includes('5 MB or smaller')) {
+      return NextResponse.json({ error: message }, { status: 400 });
+    }
+    // U-6: magic-byte mismatch / empty / unreadable file is a client
+    // error (400 with the validation message), not a generic 500.
+    if (isUploadValidationError(message)) {
       return NextResponse.json({ error: message }, { status: 400 });
     }
     return NextResponse.json({ error: 'Review photo upload failed' }, { status: 500 });

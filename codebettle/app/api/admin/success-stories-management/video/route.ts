@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { invalidBody, readJson, requireAdminArea } from '@/lib/api-helpers';
 import {
+  deleteSuccessStoryFile,
   getSuccessStoryPublicUrl,
   verifySuccessStoryFile,
+  verifySuccessStoryFileContents,
   SUCCESS_STORIES_BUCKET,
 } from '@/lib/services/success-story-storage';
 import { VIDEO_MIMES, MAX_VIDEO_BYTES } from '@/lib/success-story-validation';
@@ -55,6 +57,27 @@ export async function POST(request: NextRequest) {
   }
   if (info.size !== undefined && info.size > MAX_VIDEO_BYTES) {
     return NextResponse.json({ error: 'The video is larger than 100 MB' }, { status: 400 });
+  }
+  // U-5: verify the ACTUAL bytes server-side, exactly like the public
+  // submit path (success-story-service.ts verifyReferencedFiles). The
+  // Storage MIME above is just the Content-Type the uploader declared
+  // on the direct PUT, so it is attacker-controlled — a renamed file
+  // would pass the metadata checks. On mismatch the object is deleted
+  // (matching the public path) and the save is rejected; an
+  // unverifiable file is rejected fail-closed.
+  const contents = await verifySuccessStoryFileContents(SUCCESS_STORIES_BUCKET, v.path, info.mime);
+  if (contents === 'mismatch') {
+    await deleteSuccessStoryFile(SUCCESS_STORIES_BUCKET, v.path);
+    return NextResponse.json(
+      { error: 'The video contents do not match its file type — please upload it again' },
+      { status: 400 },
+    );
+  }
+  if (contents === 'unavailable') {
+    return NextResponse.json(
+      { error: 'The video could not be verified — please upload it again' },
+      { status: 400 },
+    );
   }
   try {
     const url = getSuccessStoryPublicUrl(v.path);

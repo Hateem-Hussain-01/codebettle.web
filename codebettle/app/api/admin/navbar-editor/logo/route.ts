@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAdminArea } from '@/lib/api-helpers';
 import { uploadNavbarLogoImage } from '@/lib/services/course-image-storage';
+import { isUploadValidationError } from '@/lib/services/file-validation';
 import { SettingsValidationError, updateSiteSettings } from '@/lib/services/settings-service';
 
 /**
@@ -56,6 +57,11 @@ export async function POST(request: NextRequest) {
       );
     }
     if (message.includes('Only JPG, PNG or WebP') || message.includes('2 MB or smaller')) {
+      return NextResponse.json({ error: message }, { status: 400 });
+    }
+    // U-6: magic-byte mismatch / empty / unreadable file is a client
+    // error (400 with the validation message), not a generic 500.
+    if (isUploadValidationError(message)) {
       return NextResponse.json({ error: message }, { status: 400 });
     }
     return NextResponse.json({ error: 'Logo upload failed' }, { status: 500 });

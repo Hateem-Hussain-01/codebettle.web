@@ -275,8 +275,9 @@ export type FileContentsCheck = 'ok' | 'mismatch' | 'unavailable';
  * 'ok' — bytes match, or the MIME has no reliable magic bytes
  * (text/plain: MIME + size is the whole check, as in form uploads).
  * 'mismatch' — the bytes contradict the claimed type.
- * 'unavailable' — the bytes could not be read (fail-closed: the caller
- * rejects the submission rather than trusting unverified content).
+ * 'unavailable' — the bytes could not be read, OR no MIME was supplied
+ * (U-7, fail-closed: a missing MIME means the byte check cannot run,
+ * so the caller rejects rather than trusting unverified content).
  */
 export async function verifySuccessStoryFileContents(
   bucket: string,
@@ -285,7 +286,7 @@ export async function verifySuccessStoryFileContents(
   client?: SupabaseClient,
   fetchImpl: typeof fetch = fetch,
 ): Promise<FileContentsCheck> {
-  if (!mime) return 'ok';
+  if (!mime) return 'unavailable';
   const head = await downloadSuccessStoryFileHead(bucket, path, client, fetchImpl);
   if (head === null) return 'unavailable';
   const match = magicBytesMatch(mime, head);

@@ -6,6 +6,7 @@ import {
   uploadApplicationFile,
   type ApplicationFileKind,
 } from '@/lib/services/application-storage';
+import { isUploadValidationError } from '@/lib/services/file-validation';
 
 /**
  * POST /api/applications/upload — upload one instructor-application file
@@ -97,6 +98,11 @@ export async function POST(request: NextRequest) {
       message.includes('5 MB or smaller') ||
       message.includes('100 MB or smaller')
     ) {
+      return NextResponse.json({ error: message }, { status: 400 });
+    }
+    // U-6: magic-byte mismatch / empty / unreadable file is a client
+    // error (400 with the validation message), not a generic 500.
+    if (isUploadValidationError(message)) {
       return NextResponse.json({ error: message }, { status: 400 });
     }
     return NextResponse.json({ error: 'File upload failed' }, { status: 500 });
