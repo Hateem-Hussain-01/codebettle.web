@@ -96,8 +96,14 @@ export function isPaymentProofPath(path: string): boolean {
 /**
  * Does this proof path exist in the `payment-proofs` bucket
  * (Phase 3, U-4)? Same list-then-match pattern as
- * verifySuccessStoryFile: list the bucket root narrowed by the file
- * name, then match exactly.
+ * verifySuccessStoryFile: list the `payment-proofs` FOLDER narrowed
+ * by the file name, then match exactly.
+ *
+ * The folder matters (Phase 4 regression): uploadPaymentProof stores
+ * objects at key `payment-proofs/<uuid>.png` — inside a folder of
+ * that name in the bucket — so listing the bucket ROOT returns only
+ * the folder entry and every real proof reads as missing. List the
+ * folder, not the root.
  *
  * Returns 'unavailable' when no storage client can be built — i.e.
  * the service-role key is not configured, in which case the upload
@@ -124,7 +130,7 @@ async function checkPaymentProofExists(
   const fileName = proofPath.slice('payment-proofs/'.length);
   const { data, error } = await storage.storage
     .from(PAYMENT_PROOFS_BUCKET)
-    .list('', { limit: 1, search: fileName });
+    .list('payment-proofs', { limit: 1, search: fileName });
   if (error || !data) return 'missing';
   return data.some((f) => f.name === fileName) ? 'ok' : 'missing';
 }

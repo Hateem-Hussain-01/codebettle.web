@@ -80,6 +80,34 @@ function mockStorageClient(existing: string[]): SupabaseClient {
   } as unknown as SupabaseClient;
 }
 
+/**
+ * Mock storage client reproducing the REAL `payment-proofs` bucket
+ * layout (Phase 4 regression): the bucket contains ONE folder named
+ * `payment-proofs` — because uploadPaymentProof stores objects at key
+ * `payment-proofs/<uuid>.png` — and the files live INSIDE that folder.
+ * A root listing therefore returns only the folder entry, never a
+ * file name; a listing of the `payment-proofs` folder returns the
+ * files. `filesInFolder` is the set of file names inside the folder.
+ * `search` narrows by substring, like real Supabase Storage.
+ */
+function mockRealLayoutStorageClient(filesInFolder: string[]): SupabaseClient {
+  return {
+    storage: {
+      from: (_bucket: string) => ({
+        list: async (dir: string, opts?: { search?: string }) => {
+          const entries = dir === 'payment-proofs' ? filesInFolder : ['payment-proofs'];
+          return {
+            data: entries
+              .filter((n) => !opts?.search || n.includes(opts.search))
+              .map((name) => ({ name })),
+            error: null,
+          };
+        },
+      }),
+    },
+  } as unknown as SupabaseClient;
+}
+
 test.beforeEach(async () => {
   fake = createFakeDb();
   __setDbClient(fake.asClient());
@@ -501,4 +529,59 @@ test('U-4: a proof already attached to another enrolment’s submission is rejec
   });
   assert.ok('error' in second && second.status === 400, JSON.stringify(second));
   assert.match(second.error, /already been used for another enrolment/);
+});
+
+// ---------------------------------------------------------------------------
+// U-4 REGRESSION (Phase 4, live 15 Nov 2026): the existence check listed
+// the bucket ROOT, but uploadPaymentProof stores objects at key
+// `payment-proofs/<uuid>.png` — inside a `payment-proofs/` FOLDER in the
+// bucket. The root listing never contains a file name, so every real
+// proof was reported missing and every upload→submit flow failed with
+// 400 "Payment proof could not be found". These tests pin the real
+// bucket layout (root holds only the folder entry) via
+// mockRealLayoutStorageClient.
+// ---------------------------------------------------------------------------
+
+test('U-4 REGRESSION: a proof that exists inside the payment-proofs folder is accepted', async () => {
+  const result = await submitPaymentService(STU, {
+    enrollmentId: 'enr-1', paymentAccountId: accountId, amountPkr: 5000, transactionRef: 'TXN-PROOF-LAYOUT-OK',
+    proofPath: 'payment-proofs/11111111-1111-1111-1111-111111111111.png',
+    storageClient: mockRealLayoutStorageClient(['11111111-1111-1111-1111-111111111111.png']),
+  });
+  assert.ok('submission' in result, JSON.stringify(result));
+  assert.equal(result.submission.proofUrl, 'payment-proofs/11111111-1111-1111-1111-111111111111.png');
+});
+
+test('U-4 REGRESSION: a proof absent from the payment-proofs folder is still rejected', async () => {
+  const result = await submitPaymentService(STU, {
+    enrollmentId: 'enr-1', paymentAccountId: accountId, amountPkr: 5000, transactionRef: 'TXN-PROOF-LAYOUT-MISSING',
+    proofPath: 'payment-proofs/22222222-2222-2222-2222-222222222222.png',
+    storageClient: mockRealLayoutStorageClient([]),
+  });
+  assert.ok('error' in result && result.status === 400, JSON.stringify(result));
+  assert.match(result.error, /could not be found/);
+});
+
+test('U-4 REGRESSION: without a service-role key the existence check is skipped, not failed', async () => {
+  const savedUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const savedUrl2 = process.env.SUPABASE_URL;
+  const savedKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  delete process.env.NEXT_PUBLIC_SUPABASE_URL;
+  delete process.env.SUPABASE_URL;
+  delete process.env.SUPABASE_SERVICE_ROLE_KEY;
+  try {
+    const result = await submitPaymentService(STU, {
+      enrollmentId: 'enr-1', paymentAccountId: accountId, amountPkr: 5000,
+      transactionRef: 'TXN-PROOF-NO-KEY',
+      proofPath: 'payment-proofs/11111111-1111-1111-1111-111111111111.png',
+      // No storageClient on purpose: forces getPaymentProofStorageClient(),
+      // which must throw (no key) so the check returns 'unavailable' and
+      // the submit proceeds on the shape + reuse checks alone.
+    });
+    assert.ok('submission' in result, JSON.stringify(result));
+  } finally {
+    if (savedUrl !== undefined) process.env.NEXT_PUBLIC_SUPABASE_URL = savedUrl;
+    if (savedUrl2 !== undefined) process.env.SUPABASE_URL = savedUrl2;
+    if (savedKey !== undefined) process.env.SUPABASE_SERVICE_ROLE_KEY = savedKey;
+  }
 });
