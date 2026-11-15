@@ -1,11 +1,12 @@
 'use client';
 import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { User, Mail, Phone, Lock, Save, Camera } from 'lucide-react';
+import { User, Mail, Phone, Lock, Save, Camera, Palette } from 'lucide-react';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
 import Textarea from '@/components/ui/Textarea';
 import Card from '@/components/ui/Card';
+import ThemeToggle from '@/components/theme/ThemeToggle';
 import toast from 'react-hot-toast';
 
 export default function StudentProfilePage() {
@@ -209,6 +210,19 @@ export default function StudentProfilePage() {
           <Input label="Phone Number" value={profile.phone} onChange={e => setProfile(p => ({ ...p, phone: e.target.value }))} icon={<Phone className="w-4 h-4" />} />
           <Textarea label="Bio" value={profile.bio} onChange={e => setProfile(p => ({ ...p, bio: e.target.value }))} rows={3} placeholder="Tell us a little about yourself..." />
           <Button onClick={handleSaveProfile} loading={saving}><Save className="w-4 h-4" />Save Changes</Button>
+        </div>
+      </Card>
+
+      {/* Appearance — the dark/light theme control lives here (Eman,
+          15 Nov 2026). Same ThemeToggle as the portal top bar had
+          (cookie preference, Dark / Light / Default-system) — only its
+          location changed, the functionality is identical. */}
+      <Card>
+        <h2 className="text-foreground font-bold mb-1 flex items-center gap-2"><Palette className="w-4 h-4 text-primary-text" />Appearance</h2>
+        <p className="text-muted text-sm mb-4">Choose how the website looks — dark, light, or follow your device.</p>
+        <div className="flex items-center gap-3">
+          <ThemeToggle />
+          <span className="text-sm text-muted">Theme — click the icon to switch between Dark, Light and Default (system)</span>
         </div>
       </Card>
 
