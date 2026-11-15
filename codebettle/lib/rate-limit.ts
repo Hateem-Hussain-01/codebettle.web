@@ -6,13 +6,14 @@
  *
  * - `checkRateLimit(key, limit, windowMs, now?)` — SYNCHRONOUS, backed
  *   by a process-local Map. This is the ORIGINAL Phase 1 API and its
- *   signature/behaviour are preserved exactly, so existing call sites
- *   (including the auth routes, whose register/change-password limits
- *   are being added by another agent) keep working unchanged. Its
- *   limitation is honest and unchanged: state lives in one server
- *   process, is lost on restart, and is NOT shared across Vercel
- *   instances — so on Vercel it throttles weakly (findings U-1 /
- *   HIGH-A3). New call sites MUST use `checkRateLimitAsync` instead.
+ *   signature/behaviour are preserved exactly: it is the in-memory
+ *   fallback inside `checkRateLimitAsync`, and the remaining direct
+ *   call sites are the per-user upload limits (avatar / payment-proof),
+ *   whose keys carry no IP at all. Its limitation is honest and
+ *   unchanged: state lives in one server process, is lost on restart,
+ *   and is NOT shared across Vercel instances — so on Vercel it
+ *   throttles weakly (findings U-1 / HIGH-A3). New call sites MUST
+ *   use `checkRateLimitAsync` instead.
  *
  * - `checkRateLimitAsync(key, limit, windowMs, now?)` — ASYNC. When
  *   `UPSTASH_REDIS_REST_URL` + `UPSTASH_REDIS_REST_TOKEN` are set it
@@ -267,6 +268,26 @@ export function loginRateLimitKey(ip: string, email: string): string {
 /** Password-reset requests: 5 per 15 minutes, keyed by IP + email. */
 export function resetRateLimitKey(ip: string, email: string): string {
   return `reset:${ip}:${email.toLowerCase()}`;
+}
+
+/** Registrations: 5 per 15 minutes, keyed by IP (HIGH-A2). */
+export function registerRateLimitKey(ip: string): string {
+  return `register:${ip}`;
+}
+
+/** Password changes: 5 per 15 minutes, keyed by user (HIGH-A2). */
+export function changePasswordRateLimitKey(userId: string): string {
+  return `change-password:${userId}`;
+}
+
+/** Verification-email resends: 5 per 15 minutes, keyed by IP + email. */
+export function resendVerificationRateLimitKey(ip: string, email: string): string {
+  return `resend-verification:${ip}:${email.toLowerCase()}`;
+}
+
+/** First-run setup claims: 5 per 15 minutes, keyed by IP. */
+export function setupRateLimitKey(ip: string): string {
+  return `setup:${ip}`;
 }
 
 /** Contact-form submissions: 5 per 15 minutes, keyed by IP (spam guard). */

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { completeFirstRunSetup, getSetupStatus } from '@/lib/services/first-run';
-import { checkRateLimit } from '@/lib/rate-limit';
+import { checkRateLimitAsync, getClientIp, setupRateLimitKey } from '@/lib/rate-limit';
 
 /**
  * GET /api/auth/setup — whether first-run setup is complete (LOW-A3:
@@ -37,11 +37,6 @@ const setupSchema = z.object({
   confirmPassword: z.string().optional(),
 });
 
-function clientIp(request: NextRequest): string {
-  const forwarded = request.headers.get('x-forwarded-for');
-  return forwarded ? forwarded.split(',')[0].trim() : 'unknown';
-}
-
 export async function POST(request: NextRequest) {
   const status = await getSetupStatus();
   if (status.complete) {
@@ -63,7 +58,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Passwords do not match' }, { status: 400 });
   }
 
-  const limit = checkRateLimit(`setup:${clientIp(request)}`, 5, 15 * 60 * 1000);
+  const limit = await checkRateLimitAsync(setupRateLimitKey(getClientIp(request)), 5, 15 * 60 * 1000);
   if (!limit.allowed) {
     return NextResponse.json(
       { error: 'Too many setup attempts. Please try again later.' },
