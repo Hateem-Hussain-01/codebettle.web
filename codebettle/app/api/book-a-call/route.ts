@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
-import { checkRateLimit, bookACallRateLimitKey } from '@/lib/rate-limit';
+import { checkRateLimitAsync, getClientIp, bookACallRateLimitKey } from '@/lib/rate-limit';
 import { createBookACall, BOOK_A_CALL_TABLE_MISSING_MESSAGE } from '@/lib/db/book-a-call';
 import { sendBookACallEmail } from '@/lib/email/resend';
 
@@ -28,13 +28,8 @@ const bookACallSchema = z.object({
   preferredContact: z.string().trim().max(200).optional(),
 });
 
-function clientIp(request: NextRequest): string {
-  const forwarded = request.headers.get('x-forwarded-for');
-  return forwarded ? forwarded.split(',')[0].trim() : 'unknown';
-}
-
 export async function POST(request: NextRequest) {
-  const limit = checkRateLimit(bookACallRateLimitKey(clientIp(request)), 5, 15 * 60 * 1000);
+  const limit = await checkRateLimitAsync(bookACallRateLimitKey(getClientIp(request)), 5, 15 * 60 * 1000);
   if (!limit.allowed) {
     return NextResponse.json(
       { error: 'Too many requests. Please try again later.' },

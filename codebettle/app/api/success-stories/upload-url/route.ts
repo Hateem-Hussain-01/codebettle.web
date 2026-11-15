@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getRequestSession, invalidBody, readJson } from '@/lib/api-helpers';
-import { checkRateLimit, successStoryUploadRateLimitKey } from '@/lib/rate-limit';
+import { checkRateLimitAsync, getClientIp, successStoryUploadRateLimitKey } from '@/lib/rate-limit';
 import { createSuccessStorySignedUpload } from '@/lib/services/success-story-storage';
 
 /**
@@ -17,13 +17,8 @@ import { createSuccessStorySignedUpload } from '@/lib/services/success-story-sto
  * re-validates every referenced file server-side (existence + MIME +
  * size), so a minted URL alone never gets a file into a submission.
  */
-function clientIp(request: NextRequest): string {
-  const forwarded = request.headers.get('x-forwarded-for');
-  return forwarded ? forwarded.split(',')[0].trim() : 'unknown';
-}
-
 export async function POST(request: NextRequest) {
-  const limit = checkRateLimit(successStoryUploadRateLimitKey(clientIp(request)), 20, 15 * 60 * 1000);
+  const limit = await checkRateLimitAsync(successStoryUploadRateLimitKey(getClientIp(request)), 20, 15 * 60 * 1000);
   if (!limit.allowed) {
     return NextResponse.json(
       { error: 'Too many upload requests. Please try again later.' },

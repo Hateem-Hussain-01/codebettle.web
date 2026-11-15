@@ -34,8 +34,14 @@ import { adminUrl, getAdminBasePath, isAdminPath, isAdminSigninPath, isLegacyAdm
  *    its own inline scripts during server rendering, so pages must be
  *    dynamically rendered — the proxy runs on every page route, which
  *    makes previously-static pages dynamic (visible in the build
- *    output as ○ → ƒ). API routes, static assets and prefetch
- *    requests are excluded from the matcher.
+ *    output as ○ → ƒ). API routes and static assets run through the
+ *    proxy too (for the NEW-5 Origin check and NEW-10 headers), and
+ *    prefetch-flagged API requests are NOT exempt (U-8): the
+ *    `/api/:path*` matcher entry carries no `missing` clause, so a
+ *    `next-router-prefetch` / `purpose: prefetch` header can never
+ *    smuggle a cross-origin API mutation past the Origin check.
+ *    Page prefetch requests still skip the proxy (first matcher
+ *    entry) — that is by design for RSC prefetch performance.
  *
  * NOTE: this function is async (the maintenance check fetches the
  * public settings route). Callers that used to call it synchronously
@@ -219,14 +225,16 @@ export const config = {
     },
     // NEW-10: API + static assets also run through the proxy so they
     // get the restrictive CSP / X-Frame-Options headers (and the
-    // NEW-5 same-origin check on API mutations). Prefetch requests
-    // still skip it.
+    // NEW-5 same-origin check on API mutations).
+    //
+    // U-8: this entry deliberately has NO `missing` clause. Prefetch
+    // headers (`next-router-prefetch` / `purpose: prefetch`) must NOT
+    // exempt /api/* mutations from the Origin check — the proxy must
+    // run for every API request, prefetch-flagged or not. (Page and
+    // static prefetch requests still skip the proxy via their own
+    // entries; that is by design for RSC prefetch performance.)
     {
       source: '/api/:path*',
-      missing: [
-        { type: 'header', key: 'next-router-prefetch' },
-        { type: 'header', key: 'purpose', value: 'prefetch' },
-      ],
     },
     {
       source: '/_next/static/:path*',

@@ -5,7 +5,7 @@ import {
   requireRoles,
   serviceError,
 } from '@/lib/api-helpers';
-import { checkRateLimit, supportRequestRateLimitKey } from '@/lib/rate-limit';
+import { checkRateLimitAsync, getClientIp, supportRequestRateLimitKey } from '@/lib/rate-limit';
 import {
   createSupportRequestService,
   isSupportRequestCategory,
@@ -28,11 +28,6 @@ import { listSupportRequestsForStudent } from '@/lib/db/support-requests';
  * same pattern as POST /api/contact. On create: persisted + audit +
  * admins notified (best-effort).
  */
-function clientIp(request: NextRequest): string {
-  const forwarded = request.headers.get('x-forwarded-for');
-  return forwarded ? forwarded.split(',')[0].trim() : 'unknown';
-}
-
 export async function GET(request: NextRequest) {
   const auth = await requireRoles(['student']);
   if ('error' in auth) return auth.error;
@@ -57,7 +52,7 @@ export async function POST(request: NextRequest) {
   if ('error' in auth) return auth.error;
   const viewing = assertNotViewAs(auth.session);
   if (viewing) return viewing;
-  const limit = checkRateLimit(supportRequestRateLimitKey(clientIp(request)), 5, 15 * 60 * 1000);
+  const limit = await checkRateLimitAsync(supportRequestRateLimitKey(getClientIp(request)), 5, 15 * 60 * 1000);
   if (!limit.allowed) {
     return NextResponse.json(
       { error: 'Too many requests. Please try again later.' },

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
-import { checkRateLimit, subscribeRateLimitKey } from '@/lib/rate-limit';
+import { checkRateLimitAsync, getClientIp, subscribeRateLimitKey } from '@/lib/rate-limit';
 import { createSubscriber, SUBSCRIBER_TABLE_MISSING_MESSAGE } from '@/lib/db/subscribers';
 
 /**
@@ -15,13 +15,8 @@ const subscribeSchema = z.object({
   email: z.string().trim().email('A valid email address is required').max(200),
 });
 
-function clientIp(request: NextRequest): string {
-  const forwarded = request.headers.get('x-forwarded-for');
-  return forwarded ? forwarded.split(',')[0].trim() : 'unknown';
-}
-
 export async function POST(request: NextRequest) {
-  const limit = checkRateLimit(subscribeRateLimitKey(clientIp(request)), 5, 15 * 60 * 1000);
+  const limit = await checkRateLimitAsync(subscribeRateLimitKey(getClientIp(request)), 5, 15 * 60 * 1000);
   if (!limit.allowed) {
     return NextResponse.json(
       { error: 'Too many subscription attempts. Please try again later.' },
