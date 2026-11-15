@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { applicationUploadRateLimitKey, checkRateLimit } from '@/lib/rate-limit';
+import { applicationUploadRateLimitKey, checkRateLimitAsync, getClientIp } from '@/lib/rate-limit';
 import {
   deleteApplicationFile,
   isApplicationFilePath,
@@ -36,13 +36,8 @@ import {
  * uploads. Best-effort by design — a delete failure never blocks the
  * form's error message.
  */
-function clientIp(request: NextRequest): string {
-  const forwarded = request.headers.get('x-forwarded-for');
-  return forwarded ? forwarded.split(',')[0].trim() : 'unknown';
-}
-
 export async function POST(request: NextRequest) {
-  const limit = checkRateLimit(applicationUploadRateLimitKey(clientIp(request)), 10, 15 * 60 * 1000);
+  const limit = await checkRateLimitAsync(applicationUploadRateLimitKey(getClientIp(request)), 10, 15 * 60 * 1000);
   if (!limit.allowed) {
     return NextResponse.json(
       { error: 'Too many uploads. Please try again later.' },
@@ -104,7 +99,7 @@ export async function POST(request: NextRequest) {
 }
 
 export async function DELETE(request: NextRequest) {
-  const limit = checkRateLimit(applicationUploadRateLimitKey(clientIp(request)), 10, 15 * 60 * 1000);
+  const limit = await checkRateLimitAsync(applicationUploadRateLimitKey(getClientIp(request)), 10, 15 * 60 * 1000);
   if (!limit.allowed) {
     return NextResponse.json(
       { error: 'Too many uploads. Please try again later.' },
