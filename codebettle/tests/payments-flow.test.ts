@@ -245,14 +245,27 @@ test('1c: approve flips the enrolment to paid, sets amountPaid, and writes a pay
   assert.ok(notes.items.some((n) => n.title.includes('Payment confirmed')));
 });
 
-test('1c: approve rejects a submitted amount that does not match the course price', async () => {
-  const created = await submitForEnr1(4000, 'TXN-LOW');
+test('1c: submit with a wrong amount is rejected at submit time; approval also rejects a wrong amount', async () => {
+  // Phase 3 (P-3): the amount must equal the server-computed expected
+  // amount at SUBMIT time, not only at approval — a wrong amount never
+  // becomes a submission.
+  const wrong = await submitForEnr1(4000, 'TXN-LOW');
+  assert.ok('error' in wrong && wrong.status === 400);
+  assert.match(wrong.error, /does not match the amount due/);
+  assert.equal(await getPendingSubmissionForEnrollment('enr-1'), null);
+
+  // The approval-time check still stands on its own: a wrong-amount
+  // submission created another way (e.g. before this fix, or by direct
+  // repo write) must not approve.
+  const created = await createPaymentSubmission({
+    enrollmentId: 'enr-1', paymentAccountId: accountId, amountPkr: 4000, transactionRef: 'TXN-LOW-REPO',
+  });
   assert.ok('submission' in created);
   if (!('submission' in created)) return;
 
   const result = await reviewPaymentService(ADMIN, created.submission.id, { decision: 'approved' });
   assert.ok('error' in result && result.status === 400);
-  assert.match(result.error, /does not match the course price/);
+  assert.match(result.error, /does not match the amount due/);
   // Nothing changed: still pending, still unpaid.
   assert.equal((await getEnrollmentById('enr-1'))?.paymentStatus, 'pending');
   assert.equal((await getEnrollmentById('enr-1'))?.amountPaid, 0);

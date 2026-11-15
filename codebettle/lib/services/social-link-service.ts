@@ -33,7 +33,7 @@ import { badRequest, forbidden, notFound, type Actor, type ServiceError } from '
 type Result<T> = T | ServiceError;
 
 function requireManage(actor: Actor): ServiceError | null {
-  if (!can(actor.role, 'manageSettings')) {
+  if (!can(actor, 'manageSettings')) {
     return forbidden('Only admins can manage footer social icons');
   }
   return null;

@@ -541,6 +541,13 @@ model PaymentSubmission {
 
   @@index([enrollmentId, reviewStatus])
   @@index([reviewStatus, submittedAt])
+  // Phase 3 (P-2): one transaction reference pays for one enrolment,
+  // ever. The service also checks for reuse at submit and approval
+  // time; this index is the backstop for the concurrent-submit race.
+  // NOTE FOR THE LIVE DB: two audit test submissions share the ref
+  // AUDIT-TEST-1PKR — delete them before applying this migration, or
+  // the index creation fails (see the SQL twin).
+  @@unique([transactionRef])
 }
 
 model Coupon {

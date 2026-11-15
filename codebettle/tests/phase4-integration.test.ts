@@ -58,7 +58,7 @@ test.afterEach(() => {
 
 test('creating an enrolment notifies the student', async () => {
   const created = await createEnrollmentService(ADMIN, {
-    studentId: 'stu-2', courseId: 'course-1', paymentStatus: 'free', amountPaid: 0,
+    studentId: 'stu-2', courseId: 'course-1', paymentStatus: 'pending', amountPaid: 0,
   });
   assert.ok('enrollment' in created, JSON.stringify(created));
   const notes = await listNotificationsForUser('stu-2');
