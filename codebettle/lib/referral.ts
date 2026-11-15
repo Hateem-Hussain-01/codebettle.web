@@ -5,15 +5,15 @@
  * unit-testable on their own.
  *
  * Codes are RANDOM and unguessable by design (Eman's explicit call):
- * 10 characters from a 32-character URL-safe alphabet that excludes
- * the ambiguous 0/O/1/I, drawn with crypto.randomInt. With 32^10
- * combinations a guessed code is worthless, and the DB unique
- * constraint + regenerate-on-collision is the backstop.
+ * 6 characters from a 32-character URL-safe alphabet that excludes
+ * the ambiguous 0/O/1/I, drawn with crypto.randomInt. With 32^6
+ * combinations (~1 billion) a guessed code is worthless, and the DB
+ * unique constraint + regenerate-on-collision is the backstop.
  */
 import { randomInt } from 'node:crypto';
 
-/** Referral codes are 10 characters (Eman's confirmed decision). */
-export const REFERRAL_CODE_LENGTH = 10;
+/** Referral codes are 6 characters (Eman's decision, 16 Nov 2026). */
+export const REFERRAL_CODE_LENGTH = 6;
 
 /** URL-safe alphanumeric, without the ambiguous 0/O/1/I. */
 export const REFERRAL_CODE_ALPHABET = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
@@ -35,7 +35,7 @@ export function generateReferralCode(
   return code;
 }
 
-/** True when the string is exactly a referral code (10 chars from the alphabet). */
+/** True when the string is exactly a referral code (6 chars from the alphabet). */
 export function isReferralCodeFormat(code: string): boolean {
   if (code.length !== REFERRAL_CODE_LENGTH) return false;
   for (const ch of code) {

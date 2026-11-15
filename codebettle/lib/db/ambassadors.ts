@@ -1,7 +1,7 @@
 /**
  * Ambassador repository — referral tracking (Eman, 16 Nov 2026).
  *
- * One row per approved ambassador (random 10-char referral code),
+ * One row per approved ambassador (random 6-char referral code),
  * referral clicks, referral attribution (who signed up via whose
  * link), the 4-stage stats, the ambassador's own group link +
  * daily member count, and one-way messages to the admin.

@@ -1,7 +1,7 @@
 /**
  * Ambassador referral tracking + Ambassador Dashboard (Eman, 16 Nov 2026).
  *
- * - Referral codes are RANDOM and unguessable: 10 chars from a
+ * - Referral codes are RANDOM and unguessable: 6 chars from a
  *   32-char alphabet (no 0/O/1/I), crypto-secure, unique in the DB.
  * - Response tracking = 4 stages, derived from source tables (no
  *   counters that can drift): clicks (distinct ip+day), signups
@@ -91,10 +91,10 @@ async function seedAmbassadorA() {
 // Referral codes: random, unguessable, unique
 // ---------------------------------------------------------------------------
 
-test('referral codes are 10 chars from the 32-char alphabet (no 0/O/1/I)', () => {
+test('referral codes are 6 chars from the 32-char alphabet (no 0/O/1/I)', () => {
   for (let i = 0; i < 100; i++) {
     const code = generateReferralCode();
-    assert.equal(code.length, 10);
+    assert.equal(code.length, 6);
     assert.ok(isReferralCodeFormat(code), code);
     assert.ok(!/[01OI]/.test(code), code);
     for (const ch of code) assert.ok(REFERRAL_CODE_ALPHABET.includes(ch), ch);
@@ -110,19 +110,19 @@ test('1000 generated codes are all unique', () => {
 test('generateUniqueReferralCode regenerates on collision', async () => {
   seedUsers();
   // A deterministic rand that first spells the existing code, then a fresh one.
-  const taken = 'AAAAAAAAAA';
+  const taken = 'AAAAAA';
   fake.seed('Ambassador', [
     { id: 'amb-1', email: 'ayesha@example.com', referralCode: taken, status: 'active', createdAt: D('2026-01-01'), updatedAt: D('2026-01-01') },
   ]);
   const alphabetIndex = (ch: string) => REFERRAL_CODE_ALPHABET.indexOf(ch);
   const scripted = [
     ...taken.split('').map((ch) => alphabetIndex(ch)),
-    ...'BBBBBBBBBB'.split('').map((ch) => alphabetIndex(ch)),
+    ...'BBBBBB'.split('').map((ch) => alphabetIndex(ch)),
   ];
   let calls = 0;
   const rand = () => scripted[calls++] ?? 1;
   const code = await generateUniqueReferralCode(rand);
-  assert.equal(code, 'BBBBBBBBBB');
+  assert.equal(code, 'BBBBBB');
   assert.ok(calls > 10, 'the taken code was tried first, then regenerated');
 });
 
@@ -141,14 +141,14 @@ test('getAmbassadorByCode normalizes case; unknown codes return null', async () 
   seedUsers();
   const created = await seedAmbassadorA();
   assert.equal((await getAmbassadorByCode(created.referralCode.toLowerCase()))?.id, created.id);
-  assert.equal(await getAmbassadorByCode('ZZZZZZZZZZ'), null);
+  assert.equal(await getAmbassadorByCode('ZZZZZZ'), null);
   assert.equal(await getAmbassadorByCode('not-a-code'), null);
 });
 
 test('buildReferralLink is the site URL + ?ref=CODE', () => {
-  assert.equal(buildReferralLink('ABCDEFGHJK', 'https://codebettle-web.vercel.app'), 'https://codebettle-web.vercel.app/?ref=ABCDEFGHJK');
-  assert.equal(buildReferralLink('ABCDEFGHJK', 'https://codebettle.com/'), 'https://codebettle.com/?ref=ABCDEFGHJK');
-  assert.equal(normalizeReferralCode('  abcdefghjk '), 'ABCDEFGHJK');
+  assert.equal(buildReferralLink('ABCDEF', 'https://codebettle-web.vercel.app'), 'https://codebettle-web.vercel.app/?ref=ABCDEF');
+  assert.equal(buildReferralLink('ABCDEF', 'https://codebettle.com/'), 'https://codebettle.com/?ref=ABCDEF');
+  assert.equal(normalizeReferralCode('  abcdef '), 'ABCDEF');
 });
 
 // ---------------------------------------------------------------------------
@@ -175,14 +175,14 @@ test('resolveReferralForSignup: valid code attributes; unknown, inactive and sel
   seedUsers();
   const ambassador = await seedAmbassadorA();
   assert.equal(await resolveReferralForSignup(ambassador.referralCode, 'bilal@example.com'), ambassador.id);
-  assert.equal(await resolveReferralForSignup('ZZZZZZZZZZ', 'bilal@example.com'), null);
+  assert.equal(await resolveReferralForSignup('ZZZZZZ', 'bilal@example.com'), null);
   assert.equal(await resolveReferralForSignup(ambassador.referralCode, 'ayesha@example.com'), null);
   assert.equal(await resolveReferralForSignup(ambassador.referralCode, 'AYESHA@EXAMPLE.COM'), null);
   // Inactive ambassador's code attributes nothing.
   fake.seed('Ambassador', [
-    { id: 'amb-off', email: 'off@example.com', referralCode: 'CCCCCCCCCC', status: 'inactive', createdAt: D('2026-01-01'), updatedAt: D('2026-01-01') },
+    { id: 'amb-off', email: 'off@example.com', referralCode: 'CCCCCC', status: 'inactive', createdAt: D('2026-01-01'), updatedAt: D('2026-01-01') },
   ]);
-  assert.equal(await resolveReferralForSignup('CCCCCCCCCC', 'bilal@example.com'), null);
+  assert.equal(await resolveReferralForSignup('CCCCCC', 'bilal@example.com'), null);
 });
 
 // ---------------------------------------------------------------------------

@@ -459,7 +459,7 @@ export interface AmbassadorApplication {
 
 /**
  * Ambassador referral tracking (Eman, 16 Nov 2026). One row per
- * approved ambassador. `referralCode` is random (10 chars,
+ * approved ambassador. `referralCode` is random (6 chars,
  * crypto-secure) and unique. `userId` links to the student account
  * when one exists with the same email; `applicationId` is set when
  * they came through the form, null for directly-granted ambassadors.
