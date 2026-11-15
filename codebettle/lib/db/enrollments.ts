@@ -155,18 +155,45 @@ export async function createEnrollment(
   return { enrollment: mapEnrollmentRow(row, []) };
 }
 
+/**
+ * Shared ownership check for lesson-progress writes (S-1 defense in
+ * depth): the enrolment must belong to the expected student (when one
+ * is given) and the lesson must belong to that enrolment's course
+ * (via its module). A future mis-wired route that passes a bare
+ * enrolment id cannot mark progress for another student or course.
+ * Returns an error string, or null when the checks pass.
+ */
+async function checkProgressOwnership(
+  enrollment: { id: string; studentId: string; courseId: string },
+  lessonId: string,
+  opts?: { studentId?: string; courseId?: string },
+): Promise<string | null> {
+  if (opts?.studentId && enrollment.studentId !== opts.studentId) {
+    return 'Enrollment does not belong to this student';
+  }
+  const lesson = await getDb().orm.public.Lesson.where({ id: lessonId }).first();
+  if (!lesson) return 'Lesson not found';
+  const expectedCourseId = opts?.courseId ?? enrollment.courseId;
+  const moduleRow = await getDb().orm.public.Module.where({ id: lesson.moduleId }).first();
+  if (!moduleRow || moduleRow.courseId !== expectedCourseId || moduleRow.courseId !== enrollment.courseId) {
+    return 'Lesson does not belong to this course';
+  }
+  return null;
+}
+
 /** Mark one lesson complete for an enrolment (idempotent). */
 export async function markLessonComplete(
   enrollmentId: string,
   lessonId: string,
+  opts?: { studentId?: string; courseId?: string },
 ): Promise<{ ok: true } | { error: string }> {
   const enrollment = await getDb()
     .orm.public.Enrollment.where({ id: enrollmentId })
     .where((e) => e.deletedAt.isNull())
     .first();
   if (!enrollment) return { error: 'Enrollment not found' };
-  const lesson = await getDb().orm.public.Lesson.where({ id: lessonId }).first();
-  if (!lesson) return { error: 'Lesson not found' };
+  const ownershipError = await checkProgressOwnership(enrollment, lessonId, opts);
+  if (ownershipError) return { error: ownershipError };
   const existing = await getDb()
     .orm.public.LessonProgress.where({ enrollmentId, lessonId })
     .first();
@@ -183,14 +210,15 @@ export async function markLessonComplete(
 export async function unmarkLessonComplete(
   enrollmentId: string,
   lessonId: string,
+  opts?: { studentId?: string; courseId?: string },
 ): Promise<{ ok: true } | { error: string }> {
   const enrollment = await getDb()
     .orm.public.Enrollment.where({ id: enrollmentId })
     .where((e) => e.deletedAt.isNull())
     .first();
   if (!enrollment) return { error: 'Enrollment not found' };
-  const lesson = await getDb().orm.public.Lesson.where({ id: lessonId }).first();
-  if (!lesson) return { error: 'Lesson not found' };
+  const ownershipError = await checkProgressOwnership(enrollment, lessonId, opts);
+  if (ownershipError) return { error: ownershipError };
   await getDb().orm.public.LessonProgress.where({ enrollmentId, lessonId }).delete();
   return { ok: true };
 }

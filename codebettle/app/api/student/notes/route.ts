@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { assertNotViewAs, invalidBody, readJson, requireRoles } from '@/lib/api-helpers';
 import { createNote, listNotesForUser } from '@/lib/db/notes';
 import { getCourseById, getCoursesByIds } from '@/lib/db/courses';
-import { getEnrollmentsByStudent } from '@/lib/db/enrollments';
+import { getEnrollmentByStudentAndCourse, getEnrollmentsByStudent } from '@/lib/db/enrollments';
 
 /**
  * GET /api/student/notes — your own notes, newest first (Phase 0d,
@@ -45,6 +45,12 @@ export async function POST(request: NextRequest) {
   if (parsed.data.courseId) {
     const course = await getCourseById(parsed.data.courseId);
     if (!course) return NextResponse.json({ error: 'Course not found' }, { status: 404 });
+    // SECURITY (S-3): a note may only be linked to a course the
+    // student is enrolled in.
+    const enrollment = await getEnrollmentByStudentAndCourse(auth.session.id, parsed.data.courseId);
+    if (!enrollment) {
+      return NextResponse.json({ error: 'You can only link a note to a course you are enrolled in' }, { status: 403 });
+    }
   }
   const note = await createNote({ userId: auth.session.id, ...parsed.data });
   return NextResponse.json({ note }, { status: 201 });

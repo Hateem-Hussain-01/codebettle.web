@@ -17,6 +17,19 @@ import { getEnrollmentsByStudent } from '@/lib/db/enrollments';
 const PRE_VERIFICATION_LESSON_LIMIT = 2;
 
 /**
+ * Known seed placeholder recording URLs (P-5). These are not real
+ * recordings — a lesson whose stored URL is one of these has no
+ * recording yet, so it must be served blank, never as if it were a
+ * real link. Narrow by design: only these exact placeholder values
+ * are blanked; every other URL passes through untouched.
+ */
+function isPlaceholderRecordingUrl(url: string): boolean {
+  const value = url.trim().toLowerCase();
+  if (value === '' || value === '#') return true;
+  return value.includes('watch?v=example');
+}
+
+/**
  * GET /api/student/courses/[id]/content — the gated course content for
  * one enrolled student (Phase 0a recording-leak fix, extended in
  * Phase 1d for pre-verification access).
@@ -63,9 +76,12 @@ export async function GET(
   const allLessons = course.modules.flatMap((mod) => mod.lessons);
   const lessons = allLessons.map((lesson, index) => {
     const unlocked = verified || index < PRE_VERIFICATION_LESSON_LIMIT;
+    const recordingUrl = lesson.driveRecordingUrl && !isPlaceholderRecordingUrl(lesson.driveRecordingUrl)
+      ? lesson.driveRecordingUrl
+      : '';
     return {
       lessonId: lesson.id,
-      recordingUrl: unlocked ? lesson.driveRecordingUrl : '',
+      recordingUrl: unlocked ? recordingUrl : '',
       materials: unlocked ? lesson.materials : [],
       locked: !unlocked,
     };

@@ -499,11 +499,17 @@ export async function getAttemptForStudent(
   actor: Actor,
   attemptId: string,
   now: Date = new Date(),
+  quizId?: string,
 ): Promise<Result<{ attempt: StudentQuizAttempt; quiz: ReturnType<typeof toPublicQuiz>; serverNow: string }>> {
   if (actor.role !== 'student') return forbidden('Only students can view attempts');
   const attempt = await getAttemptById(attemptId);
   if (!attempt) return notFound('Attempt');
   if (attempt.studentId !== actor.id) return forbidden('This attempt belongs to another student');
+  // SECURITY (S-4): the attempt must belong to the quiz in the URL —
+  // the [id] path parameter was previously ignored entirely.
+  if (quizId !== undefined && attempt.quizId !== quizId) {
+    return forbidden('This attempt does not belong to this quiz');
+  }
   const quiz = await getQuizById(attempt.quizId);
   if (!quiz) return notFound('Quiz');
   return { attempt: toStudentAttempt(attempt), quiz: toPublicQuiz(quiz), serverNow: now.toISOString() };
@@ -532,11 +538,16 @@ export async function submitAttempt(
   attemptId: string,
   answers: SubmitAnswerInput[],
   now: Date = new Date(),
+  quizId?: string,
 ): Promise<Result<{ result: SubmitResult }>> {
   if (actor.role !== 'student') return forbidden('Only students can submit a quiz');
   const attempt = await getAttemptById(attemptId);
   if (!attempt) return notFound('Attempt');
   if (attempt.studentId !== actor.id) return forbidden('This attempt belongs to another student');
+  // SECURITY (S-4): the attempt must belong to the quiz in the URL.
+  if (quizId !== undefined && attempt.quizId !== quizId) {
+    return forbidden('This attempt does not belong to this quiz');
+  }
   if (attempt.status !== 'in_progress') return badRequest('This attempt has already been submitted');
   const quiz = await getQuizById(attempt.quizId);
   if (!quiz) return notFound('Quiz');
@@ -639,6 +650,16 @@ export async function listMyAttempts(
   if (actor.role !== 'student') return forbidden('Only students can list attempts');
   const quiz = await getQuizById(quizId);
   if (!quiz) return notFound('Quiz');
+  // SECURITY (S-4): same enrollment + payment gate as
+  // listAvailableQuizzes/startAttempt — a pending-payment student
+  // lists no attempts at all.
+  const enrollment = await getEnrollmentByStudentAndCourse(actor.id, quiz.courseId);
+  if (!enrollment) {
+    return forbidden('You are not enrolled in this course');
+  }
+  if (enrollment.paymentStatus !== 'paid' && enrollment.paymentStatus !== 'free') {
+    return forbidden('Your payment for this course has not been verified yet');
+  }
   const attempts = await listAttemptsByStudent(quizId, actor.id);
   return { attempts: attempts.map(toStudentAttempt), quiz: toPublicQuiz(quiz) };
 }

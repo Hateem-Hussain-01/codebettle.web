@@ -9,6 +9,14 @@ import {
 import { summarizeCourseProgress } from '@/lib/services/progress-service';
 
 /**
+ * Same preview limit as the gated content endpoint
+ * (app/api/student/courses/[id]/content/route.ts): the first N lessons
+ * in curriculum order are accessible before payment is verified.
+ * Keep the two in sync — both are Eman's deliberate 2-lesson preview.
+ */
+const PRE_VERIFICATION_LESSON_LIMIT = 2;
+
+/**
  * GET /api/student/courses/[id]/progress — the progress state for one
  * enrolled student in one course (Student Progress Tracking).
  *
@@ -76,6 +84,13 @@ export async function GET(
  * Same checks as GET, plus: the lesson must belong to this course
  * (a lesson id from another course is rejected). Returns the updated
  * progress state (same shape as GET) so the client can update in place.
+ *
+ * SECURITY (S-1): the same verified rule as the content endpoint —
+ * a lesson may be marked complete only if the student can access it:
+ * payment verified ('paid'/'free'), or the lesson is within the
+ * first PRE_VERIFICATION_LESSON_LIMIT lessons (the deliberate
+ * 2-lesson preview). Marking a locked lesson while pending is a 403.
+ * Unmarking is always allowed (it only ever lowers progress).
  */
 export async function POST(
   request: NextRequest,
@@ -103,9 +118,19 @@ export async function POST(
   if (!enrollment) {
     return NextResponse.json({ error: 'Not enrolled in this course' }, { status: 404 });
   }
+  if (completed) {
+    const verified = enrollment.paymentStatus === 'paid' || enrollment.paymentStatus === 'free';
+    const lessonIndex = course.modules.flatMap((m) => m.lessons).findIndex((l) => l.id === lessonId);
+    if (!verified && lessonIndex >= PRE_VERIFICATION_LESSON_LIMIT) {
+      return NextResponse.json(
+        { error: 'This lesson is locked until your payment is verified' },
+        { status: 403 },
+      );
+    }
+  }
   const result = completed
-    ? await markLessonComplete(enrollment.id, lessonId)
-    : await unmarkLessonComplete(enrollment.id, lessonId);
+    ? await markLessonComplete(enrollment.id, lessonId, { studentId: auth.session.id, courseId: id })
+    : await unmarkLessonComplete(enrollment.id, lessonId, { studentId: auth.session.id, courseId: id });
   if ('error' in result) {
     return NextResponse.json({ error: result.error }, { status: 400 });
   }

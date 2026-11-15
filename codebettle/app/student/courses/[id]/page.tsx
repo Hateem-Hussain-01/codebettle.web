@@ -60,7 +60,18 @@ export default async function StudentCourseViewPage({ params }: { params: Promis
     if (author) authorNames[authorId] = author.name;
   }
   const totalSessions = course.modules.reduce((a, m) => a + m.lessons.length, 0);
-  const uploadedCount = course.modules.flatMap(m => m.lessons).filter(l => l.driveRecordingUrl).length;
+  // SECURITY (P-5): count only ACCESSIBLE recordings — lessons this
+  // student can actually watch (verified payment: all; pending: only
+  // the first 2 preview lessons), and never count a seed placeholder
+  // URL (e.g. https://www.youtube.com/watch?v=example) as a recording.
+  const verifiedPayment = enrollment.paymentStatus === 'paid' || enrollment.paymentStatus === 'free';
+  const uploadedCount = course.modules
+    .flatMap((m) => m.lessons)
+    .filter((lesson, index) => {
+      if (!verifiedPayment && index >= 2) return false;
+      const url = (lesson.driveRecordingUrl ?? '').trim();
+      return url !== '' && url !== '#' && !url.toLowerCase().includes('watch?v=example');
+    }).length;
 
   const scheduleDays = course.schedule
     ? course.schedule.scheduleType === 'custom'
