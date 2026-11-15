@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { assertNotViewAs, invalidBody, requireRoles } from '@/lib/api-helpers';
-import { checkRateLimit, supportRequestRateLimitKey } from '@/lib/rate-limit';
+import { checkRateLimitAsync, getClientIp, supportRequestRateLimitKey } from '@/lib/rate-limit';
 import { uploadSupportRequestAttachment } from '@/lib/services/support-request-service';
 
 /**
@@ -13,17 +13,12 @@ import { uploadSupportRequestAttachment } from '@/lib/services/support-request-s
  * the create route. A missing service-role key is 503 (uploads not
  * configured); a bad file is 400.
  */
-function clientIp(request: NextRequest): string {
-  const forwarded = request.headers.get('x-forwarded-for');
-  return forwarded ? forwarded.split(',')[0].trim() : 'unknown';
-}
-
 export async function POST(request: NextRequest) {
   const auth = await requireRoles(['student']);
   if ('error' in auth) return auth.error;
   const viewing = assertNotViewAs(auth.session);
   if (viewing) return viewing;
-  const limit = checkRateLimit(supportRequestRateLimitKey(clientIp(request)), 5, 15 * 60 * 1000);
+  const limit = await checkRateLimitAsync(supportRequestRateLimitKey(getClientIp(request)), 5, 15 * 60 * 1000);
   if (!limit.allowed) {
     return NextResponse.json(
       { error: 'Too many uploads. Please try again later.' },
