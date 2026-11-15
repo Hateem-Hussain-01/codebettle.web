@@ -2,11 +2,11 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { __resetDbClient, __setDbClient } from '../lib/db/client';
 import { createFakeDb, type FakeDb } from './fake-db';
+import { getPublicNavConfig } from '../lib/nav-config';
 import {
-  getPublicNavConfig,
   resolveNavbarInitialItems,
   type PublicNavConfig,
-} from '../lib/nav-config';
+} from '../lib/nav-config-client';
 import { DEFAULT_NAV_ITEMS } from '../lib/management';
 import { DEFAULT_SETTINGS } from '../lib/services/settings-service';
 
@@ -113,4 +113,23 @@ test('GET /api/nav with an empty table returns the defaults + fromDefaults true'
   const body = (await res.json()) as PublicNavConfig;
   assert.deepEqual(body.items, DEFAULT_NAV_ITEMS);
   assert.equal(body.fromDefaults, true);
+});
+
+test('client/server boundary: lib/nav-config-client.ts has zero imports (regression guard)', async () => {
+  // The Navbar is a Client Component, so everything it imports lands in
+  // the browser bundle. The first version of this fix put the pure helper
+  // in lib/nav-config.ts next to the DB fetch — importing it from the
+  // Navbar pulled Prisma/pg (Node built-ins dns/fs/net/tls) into the
+  // client bundle and broke the production build (CI run 43732441697).
+  // The client-safe module must therefore stay import-free: if it ever
+  // gains an import, this test fails loudly instead of the build.
+  const { readFileSync } = await import('node:fs');
+  const { fileURLToPath } = await import('node:url');
+  const { dirname, join } = await import('node:path');
+  const here = dirname(fileURLToPath(import.meta.url));
+  const source = readFileSync(join(here, '..', 'lib', 'nav-config-client.ts'), 'utf8');
+  const importLines = source
+    .split('\n')
+    .filter((line) => /^\s*import[\s({]/.test(line) || /^\s*export\s+.*\s+from\s+['"]/.test(line));
+  assert.deepEqual(importLines, []);
 });

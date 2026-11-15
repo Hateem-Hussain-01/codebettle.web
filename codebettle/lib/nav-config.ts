@@ -1,6 +1,14 @@
 /**
- * Public navbar config — the single server-side source of truth for
- * what the navbar shows (Navbar Editor rows + navbar logo setting).
+ * Public navbar config — SERVER-ONLY half (DB fetch).
+ *
+ * WARNING: never import this file from a Client Component. It imports
+ * lib/db/nav-items.ts, which pulls in the Prisma client and the `pg`
+ * driver — Node-only code that breaks the browser bundle (Turbopack:
+ * "Module not found: Can't resolve 'dns'"; CI run 43732441697,
+ * 15 Nov 2026). Client code (Navbar, NavConfigProvider) must import
+ * ONLY from ./nav-config-client (pure types + pure helper, zero
+ * imports). Only server code may import from here: app/layout.tsx
+ * and app/api/nav/route.ts.
  *
  * BUG (Eman, 15 Nov 2026): the navbar used to render its hardcoded
  * fallback items (including 'Instructors') on first paint and while
@@ -17,23 +25,9 @@
 import { listNavItems } from './db/nav-items';
 import { resolveNavItems, DEFAULT_NAV_ITEMS } from './management';
 import { getSiteSettings } from './services/settings-service';
+import type { PublicNavConfig } from './nav-config-client';
 
-export interface NavItemLink {
-  label: string;
-  href: string;
-}
-
-export interface PublicNavConfig {
-  items: NavItemLink[];
-  logoUrl: string | undefined;
-  /**
-   * True when no nav config is saved in the DB (empty NavItem table)
-   * — the items are the hardcoded defaults. False whenever the admin
-   * has saved anything (even if every item is disabled, in which case
-   * items is [] and the navbar correctly shows no links).
-   */
-  fromDefaults: boolean;
-}
+export type { NavItemLink, PublicNavConfig } from './nav-config-client';
 
 /**
  * Resolve the public navbar config from the saved Navbar Editor rows
@@ -54,23 +48,4 @@ export async function getPublicNavConfig(): Promise<PublicNavConfig> {
   } catch {
     return { items: [...DEFAULT_NAV_ITEMS], logoUrl: undefined, fromDefaults: true };
   }
-}
-
-/**
- * The navbar's first-paint items. Precedence: an explicit prop wins,
- * then the server-provided config, then NOTHING (still loading — the
- * Navbar renders a skeleton, not links). The hardcoded defaults are
- * NEVER returned here: returning them while loading is exactly what
- * flashed a deleted item (e.g. Instructors) on every navigation.
- * The defaults reach the screen only via a server config whose
- * fromDefaults is true, or via the fetch-failure fallback in the
- * Navbar when there was never anything else to show.
- */
-export function resolveNavbarInitialItems(
-  navItemsProp: NavItemLink[] | undefined,
-  serverConfig: PublicNavConfig | null,
-): NavItemLink[] {
-  if (navItemsProp) return navItemsProp;
-  if (serverConfig) return serverConfig.items;
-  return [];
 }

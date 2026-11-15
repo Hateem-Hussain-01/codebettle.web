@@ -8,7 +8,7 @@ import Button from '@/components/ui/Button';
 import ThemeToggle from '@/components/theme/ThemeToggle';
 import BackButton from '@/components/layout/BackButton';
 import { useNavConfig } from '@/components/layout/NavConfigProvider';
-import { resolveNavbarInitialItems } from '@/lib/nav-config';
+import { resolveNavbarInitialItems } from '@/lib/nav-config-client';
 import { primaryPortalDashboard } from '@/lib/portal-switch';
 import { portalMenuLinks } from '@/lib/user-menu';
 import UserMenu from '@/components/layout/UserMenu';

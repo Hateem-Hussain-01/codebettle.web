@@ -1,6 +1,6 @@
 'use client';
 import { createContext, useContext } from 'react';
-import type { PublicNavConfig } from '@/lib/nav-config';
+import type { PublicNavConfig } from '@/lib/nav-config-client';
 
 /**
  * Nav config context (navbar flash fix, 15 Nov 2026). The root layout
