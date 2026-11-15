@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
-import { checkRateLimit, resetRateLimitKey } from '@/lib/rate-limit';
+import { checkRateLimitAsync, getClientIp, resetRateLimitKey } from '@/lib/rate-limit';
 import { requestPasswordReset, resetPassword } from '@/lib/services/password-reset-service';
 import { sendPasswordResetEmail } from '@/lib/email/resend';
 import { getUserByEmail } from '@/lib/db/users';
@@ -35,11 +35,6 @@ const resetSchema = z.object({
   confirmPassword: z.string().optional(),
 });
 
-function clientIp(request: NextRequest): string {
-  const forwarded = request.headers.get('x-forwarded-for');
-  return forwarded ? forwarded.split(',')[0].trim() : 'unknown';
-}
-
 export async function POST(request: NextRequest) {
   let body: unknown;
   try {
@@ -59,8 +54,8 @@ export async function POST(request: NextRequest) {
     // could request resets endlessly for any email — minting tokens
     // forever and, once Resend is wired, mail-bombing the victim.
     // The 429 still returns the generic message shape (no oracle).
-    const limit = checkRateLimit(
-      resetRateLimitKey(clientIp(request), parsed.data.email),
+    const limit = await checkRateLimitAsync(
+      resetRateLimitKey(getClientIp(request), parsed.data.email),
       5,
       15 * 60 * 1000,
     );

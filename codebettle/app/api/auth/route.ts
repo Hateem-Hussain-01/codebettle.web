@@ -10,7 +10,14 @@ import {
   registerUser,
   sessionCookieOptions,
 } from '@/lib/auth';
-import { checkRateLimit, loginRateLimitKey } from '@/lib/rate-limit';
+import {
+  changePasswordRateLimitKey,
+  checkRateLimitAsync,
+  getClientIp,
+  loginRateLimitKey,
+  registerRateLimitKey,
+  resendVerificationRateLimitKey,
+} from '@/lib/rate-limit';
 import { matchesLoginPortal, type LoginPortal } from '@/lib/rbac';
 import { dashboardUrlForRole } from '@/lib/admin-url';
 import { recordLoginEvent } from '@/lib/db/login-events';
@@ -42,10 +49,12 @@ async function safeRecordLoginEvent(input: Parameters<typeof recordLoginEvent>[0
  *   by the caller (registration always creates a student).
  * - Login errors are generic: the same message for unknown email, wrong
  *   password, or suspended account.
- * - Login is rate-limited (5 attempts / 15 min per IP + email, in-memory;
- *   Upstash Redis is still pending — see RUNBOOK.md).
+ * - Login is rate-limited (5 attempts / 15 min per IP + email, via
+ *   the shared async limiter — Upstash Redis when configured, the
+ *   in-memory fallback otherwise; see lib/rate-limit.ts).
  * - Registration and change-password are rate-limited too (HIGH-A2):
- *   5 attempts / 15 min per IP (register) / per user (change-password).
+ *   5 attempts / 15 min per IP (register) / per user (change-password),
+ *   through the same async limiter.
  * - Duplicate registration returns the same generic 201 success as a
  *   fresh signup (MEDIUM-A1) — no "already exists" distinction.
  * - When email-verification enforcement is enabled
@@ -108,11 +117,6 @@ const changePasswordSchema = z.object({
   newPassword: z.string().min(1),
 });
 
-function clientIp(request: NextRequest): string {
-  const forwarded = request.headers.get('x-forwarded-for');
-  return forwarded ? forwarded.split(',')[0].trim() : 'unknown';
-}
-
 export async function POST(request: NextRequest) {
   let body: unknown;
   try {
@@ -130,8 +134,11 @@ export async function POST(request: NextRequest) {
     }
     const { email, password, requestedRole } = parsed.data;
     const portal: LoginPortal = requestedRole ?? 'student';
-    const ip = clientIp(request);
-    const limit = checkRateLimit(
+    // Trusted IP (HIGH-A3 / U-2): x-real-ip first, else the LAST
+    // X-Forwarded-For hop — the first entry is client-forged. The
+    // same value is recorded on the login event and the session.
+    const ip = getClientIp(request);
+    const limit = await checkRateLimitAsync(
       loginRateLimitKey(ip, email),
       5,
       15 * 60 * 1000
@@ -227,7 +234,7 @@ export async function POST(request: NextRequest) {
     }
     // HIGH-A2: registration is rate-limited like login (5 / 15 min
     // per IP) — without this, anyone could create unlimited accounts.
-    const registerLimit = checkRateLimit(`register:${clientIp(request)}`, 5, 15 * 60 * 1000);
+    const registerLimit = await checkRateLimitAsync(registerRateLimitKey(getClientIp(request)), 5, 15 * 60 * 1000);
     if (!registerLimit.allowed) {
       return NextResponse.json(
         { error: 'Too many registration attempts. Please try again later.' },
@@ -286,7 +293,7 @@ export async function POST(request: NextRequest) {
       );
     }
     const token = await createSession(created.id, {
-      ip: clientIp(request),
+      ip: getClientIp(request),
       userAgent: request.headers.get('user-agent') ?? undefined,
     });
     const response = NextResponse.json(
@@ -345,7 +352,7 @@ export async function POST(request: NextRequest) {
     // HIGH-A2: change-password is rate-limited (5 / 15 min per user)
     // — an authenticated session must not allow unlimited guessing
     // of the current password.
-    const changeLimit = checkRateLimit(`change-password:${session.id}`, 5, 15 * 60 * 1000);
+    const changeLimit = await checkRateLimitAsync(changePasswordRateLimitKey(session.id), 5, 15 * 60 * 1000);
     if (!changeLimit.allowed) {
       return NextResponse.json(
         { error: 'Too many password change attempts. Please try again later.' },
@@ -368,8 +375,8 @@ export async function POST(request: NextRequest) {
     }
     const { email } = parsed.data;
     // Rate-limited like login/reset (5 / 15 min per IP + email).
-    const limit = checkRateLimit(
-      `resend-verification:${clientIp(request)}:${email.toLowerCase()}`,
+    const limit = await checkRateLimitAsync(
+      resendVerificationRateLimitKey(getClientIp(request), email),
       5,
       15 * 60 * 1000,
     );
