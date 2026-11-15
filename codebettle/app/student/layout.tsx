@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation';
 import { getSession } from '@/lib/auth';
 import { getAdminBasePath } from '@/lib/admin-url';
+import { countUnsubmittedVisibleAssignments } from '@/lib/db/assignments';
 import PortalLayout from '@/components/layout/PortalLayout';
 import TeacherMessagePopup from '@/components/notifications/TeacherMessagePopup';
 import { LayoutDashboard, BookOpen, Compass, Award, StickyNote, Heart, Star, Bell, User, FileQuestion, LifeBuoy, ClipboardList } from 'lucide-react';
@@ -37,12 +38,34 @@ export default async function StudentLayout({ children }: { children: React.Reac
   // (a known limitation, flagged in the Phase 2 foundation report).
   if (!session || session.role !== 'student') redirect('/auth/login');
 
+  // Assignments notification bubble (Eman, 15 Nov 2026): the count of
+  // the student's VISIBLE assignments they have not submitted yet — a
+  // new assignment raises it, submitting one lowers it. Computed here
+  // server-side, so the sidebar shows it on first paint; it refreshes
+  // when the layout re-renders (full page load / entering the portal),
+  // not on every SPA navigation inside the portal and not in
+  // realtime. Fail-safe: if the count query throws, the layout
+  // renders WITHOUT a badge — a badge must never break the sidebar.
+  let assignmentBadge: number | undefined;
+  try {
+    const unsubmitted = await countUnsubmittedVisibleAssignments(session.id);
+    if (unsubmitted > 0) assignmentBadge = unsubmitted;
+  } catch {
+    assignmentBadge = undefined;
+  }
+  const navItems =
+    assignmentBadge === undefined
+      ? NAV_ITEMS
+      : NAV_ITEMS.map((item) =>
+          item.href === '/student/assignments' ? { ...item, badge: assignmentBadge } : item,
+        );
+
   return (
     <>
       {/* Theme toggle lives in Profile settings for students (Eman,
           15 Nov 2026) — the top-bar toggle is hidden in this portal
           only; instructor/admin portals keep theirs. */}
-      <PortalLayout user={session} navItems={NAV_ITEMS} portalName="Student Portal" adminBasePath={getAdminBasePath()} hideThemeToggle>
+      <PortalLayout user={session} navItems={navItems} portalName="Student Portal" adminBasePath={getAdminBasePath()} hideThemeToggle>
         {children}
       </PortalLayout>
       {/* Phase 3, Worker C: "Message from Your Teacher" popup. It shows
