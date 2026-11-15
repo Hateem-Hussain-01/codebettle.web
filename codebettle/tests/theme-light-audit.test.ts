@@ -68,6 +68,11 @@ const ALLOWLIST: AllowEntry[] = [
     reason: 'Completed chip: white text on a fixed green-500 chip, readable in both themes.',
   },
   {
+    file: 'app/student/explore/page.tsx',
+    match: 'text-white',
+    reason: 'Enrolled-status chips: white text on fixed green-500 (Enrolled) / amber-500 (Payment pending) chips, readable in both themes — same pattern as the My Courses Completed chip.',
+  },
+  {
     file: 'components/ui/CourseCard.tsx',
     match: 'hover:bg-black',
     reason: 'Wishlist button over a photo thumbnail: dark scrim in both themes (photo, not a theme surface).',

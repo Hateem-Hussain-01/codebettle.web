@@ -3,10 +3,15 @@ import { getSession } from '@/lib/auth';
 import { getAdminBasePath } from '@/lib/admin-url';
 import PortalLayout from '@/components/layout/PortalLayout';
 import TeacherMessagePopup from '@/components/notifications/TeacherMessagePopup';
-import { LayoutDashboard, BookOpen, Award, StickyNote, Heart, Star, Bell, User, FileQuestion, LifeBuoy, ClipboardList } from 'lucide-react';
+import { LayoutDashboard, BookOpen, Compass, Award, StickyNote, Heart, Star, Bell, User, FileQuestion, LifeBuoy, ClipboardList } from 'lucide-react';
 
 const NAV_ITEMS = [
   { href: '/student/dashboard', label: 'Dashboard', icon: <LayoutDashboard className="w-5 h-5" /> },
+  // Explore New Courses (Eman, 15 Nov 2026): a student who finished
+  // their courses had no way to enrol in another one without leaving
+  // for the landing page. This sits directly above My Courses and
+  // lists every published course in the portal.
+  { href: '/student/explore', label: 'Explore New Courses', icon: <Compass className="w-5 h-5" /> },
   { href: '/student/courses', label: 'My Courses', icon: <BookOpen className="w-5 h-5" /> },
   { href: '/student/quizzes', label: 'Quizzes', icon: <FileQuestion className="w-5 h-5" /> },
   { href: '/student/assignments', label: 'Assignments', icon: <ClipboardList className="w-5 h-5" /> },
@@ -34,7 +39,10 @@ export default async function StudentLayout({ children }: { children: React.Reac
 
   return (
     <>
-      <PortalLayout user={session} navItems={NAV_ITEMS} portalName="Student Portal" adminBasePath={getAdminBasePath()}>
+      {/* Theme toggle lives in Profile settings for students (Eman,
+          15 Nov 2026) — the top-bar toggle is hidden in this portal
+          only; instructor/admin portals keep theirs. */}
+      <PortalLayout user={session} navItems={NAV_ITEMS} portalName="Student Portal" adminBasePath={getAdminBasePath()} hideThemeToggle>
         {children}
       </PortalLayout>
       {/* Phase 3, Worker C: "Message from Your Teacher" popup. It shows

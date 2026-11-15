@@ -28,8 +28,19 @@ export default async function StudentCoursesPage() {
   return (
     <div className="space-y-6">
       <FadeIn>
-        <h1 className="text-2xl font-black text-foreground">My Courses</h1>
-        <p className="text-muted text-sm mt-1">{items.length} enrolled course{items.length !== 1 ? 's' : ''}</p>
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <h1 className="text-2xl font-black text-foreground">My Courses</h1>
+            <p className="text-muted text-sm mt-1">{items.length} enrolled course{items.length !== 1 ? 's' : ''}</p>
+          </div>
+          {/* Join New Course (Eman, 15 Nov 2026): enrol in another course
+              without leaving the portal — opens the Explore page. */}
+          <Link href="/student/explore" className="flex-shrink-0">
+            <button className="flex items-center gap-2 px-4 py-2 bg-primary text-ink rounded-lg text-sm font-bold hover:bg-primary-dark transition-all cursor-pointer">
+              <BookOpen className="w-4 h-4" /> Join New Course
+            </button>
+          </Link>
+        </div>
       </FadeIn>
 
       {items.length === 0 ? (
@@ -37,7 +48,7 @@ export default async function StudentCoursesPage() {
           <BookOpen className="w-12 h-12 text-muted mx-auto mb-4" />
           <p className="text-foreground font-semibold mb-2">No courses yet</p>
           <p className="text-muted text-sm mb-4">Start your learning journey by enrolling in a course.</p>
-          <Link href="/courses" className="text-primary-text hover:underline text-sm">Browse Courses →</Link>
+          <Link href="/student/explore" className="text-primary-text hover:underline text-sm">Explore New Courses →</Link>
         </Card>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">

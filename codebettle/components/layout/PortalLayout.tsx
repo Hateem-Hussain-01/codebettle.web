@@ -36,6 +36,12 @@ interface PortalLayoutProps {
    * use it; the other portals just pass it through.
    */
   adminBasePath?: string;
+  /**
+   * Hide the top-bar theme toggle (Eman, 15 Nov 2026): students change
+   * the theme from Profile settings instead. Defaults to false — the
+   * instructor and admin portals keep their top-bar toggle.
+   */
+  hideThemeToggle?: boolean;
 }
 
 /**
@@ -129,7 +135,7 @@ function Sidebar({
   );
 }
 
-export default function PortalLayout({ user, navItems, children, portalName, adminBasePath = 'admin' }: PortalLayoutProps) {
+export default function PortalLayout({ user, navItems, children, portalName, adminBasePath = 'admin', hideThemeToggle = false }: PortalLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const pathname = usePathname();
 
@@ -224,8 +230,11 @@ export default function PortalLayout({ user, navItems, children, portalName, adm
                 <span className="hidden sm:inline">{switchTarget.label}</span>
               </Link>
             )}
-            {/* Module 6 — light/dark theme toggle (cookie preference). */}
-            <ThemeToggle />
+            {/* Module 6 — light/dark theme toggle (cookie preference).
+                Hidden in portals that moved it into Profile settings
+                (student portal, Eman 15 Nov 2026); the Navbar keeps its
+                own toggle for public pages / logged-out visitors. */}
+            {!hideThemeToggle && <ThemeToggle />}
             {/* The bell used to be a dead button (no action at all). It is
                 now a link to the portal notifications page, with a real
                 unread-count badge (Phase 3, NotificationBadge — the fetch
