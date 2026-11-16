@@ -108,6 +108,11 @@ const NULLABLE_FIELDS: Record<string, string[]> = {
   ReferralAttribution: [],
   ReferralClick: [],
   AmbassadorMessage: [],
+  TeamAccess: ['userId', 'revokedAt'],
+  TeamTask: ['description', 'dueDate'],
+  TeamAnnouncement: [],
+  TeamMeeting: ['meetingLink', 'agenda'],
+  TeamFile: [],
   Assignment: ['batchId', 'dueDate'],
   AssignmentSubmission: ['marks', 'feedback', 'gradedAt', 'gradedBy'],
 };
