@@ -1,0 +1,631 @@
+[
+  {
+    "id": "table.TeamAccess",
+    "label": "Create table \"TeamAccess\"",
+    "summary": "Creates table \"TeamAccess\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "TeamAccess"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"TeamAccess\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"TeamAccess\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "table \"TeamAccess\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"TeamAccess\"",
+        "sql": "CREATE TABLE \"public\".\"TeamAccess\" (\n  \"createdAt\" timestamptz(3) DEFAULT (now()) NOT NULL,\n  \"email\" text NOT NULL,\n  \"grantedAt\" timestamptz(3) DEFAULT (now()) NOT NULL,\n  \"grantedBy\" text NOT NULL,\n  \"id\" text NOT NULL,\n  \"revokedAt\" timestamptz(3),\n  \"status\" text DEFAULT 'active' NOT NULL,\n  \"updatedAt\" timestamptz(3) NOT NULL,\n  \"userId\" text,\n  PRIMARY KEY (\"id\"),\n  CONSTRAINT \"TeamAccess_status_check_4cc0f702\" CHECK (\"status\" IN ('active', 'revoked'))\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"TeamAccess\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" WHERE (\"c\".\"oid\" = to_regclass($1) AND (\"c\".\"relkind\" = $2 OR \"c\".\"relkind\" = $3))) AS \"result\"",
+        "params": [
+          "\"public\".\"TeamAccess\"",
+          "r",
+          "p"
+        ],
+        "expectation": {
+          "expects": "present",
+          "object": "table \"TeamAccess\""
+        }
+      }
+    ]
+  },
+  {
+    "id": "table.TeamAnnouncement",
+    "label": "Create table \"TeamAnnouncement\"",
+    "summary": "Creates table \"TeamAnnouncement\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "TeamAnnouncement"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"TeamAnnouncement\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"TeamAnnouncement\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "table \"TeamAnnouncement\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"TeamAnnouncement\"",
+        "sql": "CREATE TABLE \"public\".\"TeamAnnouncement\" (\n  \"body\" text NOT NULL,\n  \"createdAt\" timestamptz(3) DEFAULT (now()) NOT NULL,\n  \"createdBy\" text NOT NULL,\n  \"id\" text NOT NULL,\n  \"title\" text NOT NULL,\n  \"updatedAt\" timestamptz(3) NOT NULL,\n  PRIMARY KEY (\"id\")\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"TeamAnnouncement\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" WHERE (\"c\".\"oid\" = to_regclass($1) AND (\"c\".\"relkind\" = $2 OR \"c\".\"relkind\" = $3))) AS \"result\"",
+        "params": [
+          "\"public\".\"TeamAnnouncement\"",
+          "r",
+          "p"
+        ],
+        "expectation": {
+          "expects": "present",
+          "object": "table \"TeamAnnouncement\""
+        }
+      }
+    ]
+  },
+  {
+    "id": "table.TeamFile",
+    "label": "Create table \"TeamFile\"",
+    "summary": "Creates table \"TeamFile\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "TeamFile"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"TeamFile\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"TeamFile\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "table \"TeamFile\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"TeamFile\"",
+        "sql": "CREATE TABLE \"public\".\"TeamFile\" (\n  \"createdAt\" timestamptz(3) DEFAULT (now()) NOT NULL,\n  \"fileName\" text NOT NULL,\n  \"id\" text NOT NULL,\n  \"mime\" text NOT NULL,\n  \"size\" int4 NOT NULL,\n  \"storagePath\" text NOT NULL,\n  \"updatedAt\" timestamptz(3) NOT NULL,\n  \"uploadedBy\" text NOT NULL,\n  PRIMARY KEY (\"id\")\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"TeamFile\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" WHERE (\"c\".\"oid\" = to_regclass($1) AND (\"c\".\"relkind\" = $2 OR \"c\".\"relkind\" = $3))) AS \"result\"",
+        "params": [
+          "\"public\".\"TeamFile\"",
+          "r",
+          "p"
+        ],
+        "expectation": {
+          "expects": "present",
+          "object": "table \"TeamFile\""
+        }
+      }
+    ]
+  },
+  {
+    "id": "table.TeamMeeting",
+    "label": "Create table \"TeamMeeting\"",
+    "summary": "Creates table \"TeamMeeting\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "TeamMeeting"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"TeamMeeting\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"TeamMeeting\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "table \"TeamMeeting\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"TeamMeeting\"",
+        "sql": "CREATE TABLE \"public\".\"TeamMeeting\" (\n  \"agenda\" text,\n  \"createdAt\" timestamptz(3) DEFAULT (now()) NOT NULL,\n  \"createdBy\" text NOT NULL,\n  \"id\" text NOT NULL,\n  \"meetingLink\" text,\n  \"startsAt\" timestamptz(3) NOT NULL,\n  \"title\" text NOT NULL,\n  \"updatedAt\" timestamptz(3) NOT NULL,\n  PRIMARY KEY (\"id\")\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"TeamMeeting\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" WHERE (\"c\".\"oid\" = to_regclass($1) AND (\"c\".\"relkind\" = $2 OR \"c\".\"relkind\" = $3))) AS \"result\"",
+        "params": [
+          "\"public\".\"TeamMeeting\"",
+          "r",
+          "p"
+        ],
+        "expectation": {
+          "expects": "present",
+          "object": "table \"TeamMeeting\""
+        }
+      }
+    ]
+  },
+  {
+    "id": "table.TeamTask",
+    "label": "Create table \"TeamTask\"",
+    "summary": "Creates table \"TeamTask\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "TeamTask"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"TeamTask\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"TeamTask\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "table \"TeamTask\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"TeamTask\"",
+        "sql": "CREATE TABLE \"public\".\"TeamTask\" (\n  \"assigneeEmail\" text NOT NULL,\n  \"createdAt\" timestamptz(3) DEFAULT (now()) NOT NULL,\n  \"createdBy\" text NOT NULL,\n  \"description\" text,\n  \"dueDate\" timestamptz(3),\n  \"id\" text NOT NULL,\n  \"status\" text DEFAULT 'todo' NOT NULL,\n  \"title\" text NOT NULL,\n  \"updatedAt\" timestamptz(3) NOT NULL,\n  PRIMARY KEY (\"id\"),\n  CONSTRAINT \"TeamTask_status_check_9367084e\" CHECK (\"status\" IN ('todo', 'doing', 'done'))\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"TeamTask\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" WHERE (\"c\".\"oid\" = to_regclass($1) AND (\"c\".\"relkind\" = $2 OR \"c\".\"relkind\" = $3))) AS \"result\"",
+        "params": [
+          "\"public\".\"TeamTask\"",
+          "r",
+          "p"
+        ],
+        "expectation": {
+          "expects": "present",
+          "object": "table \"TeamTask\""
+        }
+      }
+    ]
+  },
+  {
+    "id": "unique.TeamAccess.TeamAccess_email_key",
+    "label": "Add unique constraint on \"TeamAccess\" (email)",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "unique",
+        "name": "TeamAccess_email_key",
+        "table": "TeamAccess"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"TeamAccess_email_key\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "TeamAccess_email_key",
+          "public",
+          "\"public\".\"TeamAccess\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "constraint \"TeamAccess_email_key\" on \"TeamAccess\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "add unique constraint \"TeamAccess_email_key\"",
+        "sql": "ALTER TABLE \"public\".\"TeamAccess\" ADD CONSTRAINT \"TeamAccess_email_key\" UNIQUE (\"email\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify unique constraint \"TeamAccess_email_key\" exists on (email)",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3) AND \"c\".\"contype\" = $4 AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"c\".\"conkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"c\".\"conrelid\" AND key_attribute.attnum = key_column.attnum) = ($5)::jsonb)) AS \"result\"",
+        "params": [
+          "TeamAccess_email_key",
+          "public",
+          "\"public\".\"TeamAccess\"",
+          "u",
+          "[\"email\"]"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "unique.TeamAccess.TeamAccess_userId_key",
+    "label": "Add unique constraint on \"TeamAccess\" (userId)",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "unique",
+        "name": "TeamAccess_userId_key",
+        "table": "TeamAccess"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"TeamAccess_userId_key\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "TeamAccess_userId_key",
+          "public",
+          "\"public\".\"TeamAccess\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "constraint \"TeamAccess_userId_key\" on \"TeamAccess\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "add unique constraint \"TeamAccess_userId_key\"",
+        "sql": "ALTER TABLE \"public\".\"TeamAccess\" ADD CONSTRAINT \"TeamAccess_userId_key\" UNIQUE (\"userId\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify unique constraint \"TeamAccess_userId_key\" exists on (userId)",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3) AND \"c\".\"contype\" = $4 AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"c\".\"conkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"c\".\"conrelid\" AND key_attribute.attnum = key_column.attnum) = ($5)::jsonb)) AS \"result\"",
+        "params": [
+          "TeamAccess_userId_key",
+          "public",
+          "\"public\".\"TeamAccess\"",
+          "u",
+          "[\"userId\"]"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.TeamAccess.TeamAccess_status_createdAt_idx_58610442",
+    "label": "Create index \"TeamAccess_status_createdAt_idx_58610442\" on \"TeamAccess\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "TeamAccess_status_createdAt_idx_58610442",
+        "table": "TeamAccess"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"TeamAccess_status_createdAt_idx_58610442\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"TeamAccess_status_createdAt_idx_58610442\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "index \"TeamAccess_status_createdAt_idx_58610442\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"TeamAccess_status_createdAt_idx_58610442\"",
+        "sql": "CREATE INDEX \"TeamAccess_status_createdAt_idx_58610442\" ON \"public\".\"TeamAccess\" (\"status\", \"createdAt\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"TeamAccess_status_createdAt_idx_58610442\" exists on \"TeamAccess\" with the planned definition",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" INNER JOIN \"pg_index\" AS \"i\" ON \"i\".\"indexrelid\" = \"c\".\"oid\" INNER JOIN \"pg_am\" AS \"m\" ON \"m\".\"oid\" = \"c\".\"relam\" WHERE (\"c\".\"oid\" = to_regclass($1) AND (\"c\".\"relkind\" = $2 OR \"c\".\"relkind\" = $3) AND \"i\".\"indrelid\" = to_regclass($4) AND NOT (\"i\".\"indisunique\") AND \"m\".\"amname\" = $5 AND (\"i\".\"indexprs\" IS NULL AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"i\".\"indkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"i\".\"indrelid\" AND key_attribute.attnum = key_column.attnum) = ($6)::jsonb) AND \"i\".\"indpred\" IS NULL)) AS \"result\"",
+        "params": [
+          "\"public\".\"TeamAccess_status_createdAt_idx_58610442\"",
+          "i",
+          "I",
+          "\"public\".\"TeamAccess\"",
+          "btree",
+          "[\"status\",\"createdAt\"]"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.TeamAnnouncement.TeamAnnouncement_createdAt_idx_9575dbd7",
+    "label": "Create index \"TeamAnnouncement_createdAt_idx_9575dbd7\" on \"TeamAnnouncement\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "TeamAnnouncement_createdAt_idx_9575dbd7",
+        "table": "TeamAnnouncement"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"TeamAnnouncement_createdAt_idx_9575dbd7\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"TeamAnnouncement_createdAt_idx_9575dbd7\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "index \"TeamAnnouncement_createdAt_idx_9575dbd7\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"TeamAnnouncement_createdAt_idx_9575dbd7\"",
+        "sql": "CREATE INDEX \"TeamAnnouncement_createdAt_idx_9575dbd7\" ON \"public\".\"TeamAnnouncement\" (\"createdAt\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"TeamAnnouncement_createdAt_idx_9575dbd7\" exists on \"TeamAnnouncement\" with the planned definition",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" INNER JOIN \"pg_index\" AS \"i\" ON \"i\".\"indexrelid\" = \"c\".\"oid\" INNER JOIN \"pg_am\" AS \"m\" ON \"m\".\"oid\" = \"c\".\"relam\" WHERE (\"c\".\"oid\" = to_regclass($1) AND (\"c\".\"relkind\" = $2 OR \"c\".\"relkind\" = $3) AND \"i\".\"indrelid\" = to_regclass($4) AND NOT (\"i\".\"indisunique\") AND \"m\".\"amname\" = $5 AND (\"i\".\"indexprs\" IS NULL AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"i\".\"indkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"i\".\"indrelid\" AND key_attribute.attnum = key_column.attnum) = ($6)::jsonb) AND \"i\".\"indpred\" IS NULL)) AS \"result\"",
+        "params": [
+          "\"public\".\"TeamAnnouncement_createdAt_idx_9575dbd7\"",
+          "i",
+          "I",
+          "\"public\".\"TeamAnnouncement\"",
+          "btree",
+          "[\"createdAt\"]"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.TeamFile.TeamFile_createdAt_idx_9575dbd7",
+    "label": "Create index \"TeamFile_createdAt_idx_9575dbd7\" on \"TeamFile\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "TeamFile_createdAt_idx_9575dbd7",
+        "table": "TeamFile"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"TeamFile_createdAt_idx_9575dbd7\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"TeamFile_createdAt_idx_9575dbd7\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "index \"TeamFile_createdAt_idx_9575dbd7\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"TeamFile_createdAt_idx_9575dbd7\"",
+        "sql": "CREATE INDEX \"TeamFile_createdAt_idx_9575dbd7\" ON \"public\".\"TeamFile\" (\"createdAt\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"TeamFile_createdAt_idx_9575dbd7\" exists on \"TeamFile\" with the planned definition",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" INNER JOIN \"pg_index\" AS \"i\" ON \"i\".\"indexrelid\" = \"c\".\"oid\" INNER JOIN \"pg_am\" AS \"m\" ON \"m\".\"oid\" = \"c\".\"relam\" WHERE (\"c\".\"oid\" = to_regclass($1) AND (\"c\".\"relkind\" = $2 OR \"c\".\"relkind\" = $3) AND \"i\".\"indrelid\" = to_regclass($4) AND NOT (\"i\".\"indisunique\") AND \"m\".\"amname\" = $5 AND (\"i\".\"indexprs\" IS NULL AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"i\".\"indkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"i\".\"indrelid\" AND key_attribute.attnum = key_column.attnum) = ($6)::jsonb) AND \"i\".\"indpred\" IS NULL)) AS \"result\"",
+        "params": [
+          "\"public\".\"TeamFile_createdAt_idx_9575dbd7\"",
+          "i",
+          "I",
+          "\"public\".\"TeamFile\"",
+          "btree",
+          "[\"createdAt\"]"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.TeamMeeting.TeamMeeting_startsAt_idx_5ff0df68",
+    "label": "Create index \"TeamMeeting_startsAt_idx_5ff0df68\" on \"TeamMeeting\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "TeamMeeting_startsAt_idx_5ff0df68",
+        "table": "TeamMeeting"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"TeamMeeting_startsAt_idx_5ff0df68\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"TeamMeeting_startsAt_idx_5ff0df68\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "index \"TeamMeeting_startsAt_idx_5ff0df68\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"TeamMeeting_startsAt_idx_5ff0df68\"",
+        "sql": "CREATE INDEX \"TeamMeeting_startsAt_idx_5ff0df68\" ON \"public\".\"TeamMeeting\" (\"startsAt\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"TeamMeeting_startsAt_idx_5ff0df68\" exists on \"TeamMeeting\" with the planned definition",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" INNER JOIN \"pg_index\" AS \"i\" ON \"i\".\"indexrelid\" = \"c\".\"oid\" INNER JOIN \"pg_am\" AS \"m\" ON \"m\".\"oid\" = \"c\".\"relam\" WHERE (\"c\".\"oid\" = to_regclass($1) AND (\"c\".\"relkind\" = $2 OR \"c\".\"relkind\" = $3) AND \"i\".\"indrelid\" = to_regclass($4) AND NOT (\"i\".\"indisunique\") AND \"m\".\"amname\" = $5 AND (\"i\".\"indexprs\" IS NULL AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"i\".\"indkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"i\".\"indrelid\" AND key_attribute.attnum = key_column.attnum) = ($6)::jsonb) AND \"i\".\"indpred\" IS NULL)) AS \"result\"",
+        "params": [
+          "\"public\".\"TeamMeeting_startsAt_idx_5ff0df68\"",
+          "i",
+          "I",
+          "\"public\".\"TeamMeeting\"",
+          "btree",
+          "[\"startsAt\"]"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.TeamTask.TeamTask_assigneeEmail_status_idx_3c3c153b",
+    "label": "Create index \"TeamTask_assigneeEmail_status_idx_3c3c153b\" on \"TeamTask\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "TeamTask_assigneeEmail_status_idx_3c3c153b",
+        "table": "TeamTask"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"TeamTask_assigneeEmail_status_idx_3c3c153b\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"TeamTask_assigneeEmail_status_idx_3c3c153b\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "index \"TeamTask_assigneeEmail_status_idx_3c3c153b\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"TeamTask_assigneeEmail_status_idx_3c3c153b\"",
+        "sql": "CREATE INDEX \"TeamTask_assigneeEmail_status_idx_3c3c153b\" ON \"public\".\"TeamTask\" (\"assigneeEmail\", \"status\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"TeamTask_assigneeEmail_status_idx_3c3c153b\" exists on \"TeamTask\" with the planned definition",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" INNER JOIN \"pg_index\" AS \"i\" ON \"i\".\"indexrelid\" = \"c\".\"oid\" INNER JOIN \"pg_am\" AS \"m\" ON \"m\".\"oid\" = \"c\".\"relam\" WHERE (\"c\".\"oid\" = to_regclass($1) AND (\"c\".\"relkind\" = $2 OR \"c\".\"relkind\" = $3) AND \"i\".\"indrelid\" = to_regclass($4) AND NOT (\"i\".\"indisunique\") AND \"m\".\"amname\" = $5 AND (\"i\".\"indexprs\" IS NULL AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"i\".\"indkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"i\".\"indrelid\" AND key_attribute.attnum = key_column.attnum) = ($6)::jsonb) AND \"i\".\"indpred\" IS NULL)) AS \"result\"",
+        "params": [
+          "\"public\".\"TeamTask_assigneeEmail_status_idx_3c3c153b\"",
+          "i",
+          "I",
+          "\"public\".\"TeamTask\"",
+          "btree",
+          "[\"assigneeEmail\",\"status\"]"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.TeamTask.TeamTask_status_createdAt_idx_58610442",
+    "label": "Create index \"TeamTask_status_createdAt_idx_58610442\" on \"TeamTask\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "TeamTask_status_createdAt_idx_58610442",
+        "table": "TeamTask"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"TeamTask_status_createdAt_idx_58610442\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"TeamTask_status_createdAt_idx_58610442\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "index \"TeamTask_status_createdAt_idx_58610442\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"TeamTask_status_createdAt_idx_58610442\"",
+        "sql": "CREATE INDEX \"TeamTask_status_createdAt_idx_58610442\" ON \"public\".\"TeamTask\" (\"status\", \"createdAt\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"TeamTask_status_createdAt_idx_58610442\" exists on \"TeamTask\" with the planned definition",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" INNER JOIN \"pg_index\" AS \"i\" ON \"i\".\"indexrelid\" = \"c\".\"oid\" INNER JOIN \"pg_am\" AS \"m\" ON \"m\".\"oid\" = \"c\".\"relam\" WHERE (\"c\".\"oid\" = to_regclass($1) AND (\"c\".\"relkind\" = $2 OR \"c\".\"relkind\" = $3) AND \"i\".\"indrelid\" = to_regclass($4) AND NOT (\"i\".\"indisunique\") AND \"m\".\"amname\" = $5 AND (\"i\".\"indexprs\" IS NULL AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"i\".\"indkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"i\".\"indrelid\" AND key_attribute.attnum = key_column.attnum) = ($6)::jsonb) AND \"i\".\"indpred\" IS NULL)) AS \"result\"",
+        "params": [
+          "\"public\".\"TeamTask_status_createdAt_idx_58610442\"",
+          "i",
+          "I",
+          "\"public\".\"TeamTask\"",
+          "btree",
+          "[\"status\",\"createdAt\"]"
+        ]
+      }
+    ]
+  }
+]
