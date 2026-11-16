@@ -31,7 +31,7 @@ import {
   createReviewService,
 } from '../lib/services/review-service';
 import { getApprovedPublicReviewsByCourse } from '../lib/db/reviews';
-import { mintViewAsToken, verifyViewAsToken, VIEW_AS_TTL_MS } from '../lib/view-as';
+import { mintViewAsToken, verifyViewAsToken } from '../lib/view-as';
 import { startViewAs } from '../lib/services/recruitment-service';
 import nextConfig from '../next.config';
 import { PATCH as patchInstructorCourse } from '../app/api/instructor/courses/[id]/route';
@@ -335,26 +335,29 @@ test('INST-04: poweredByHeader is off, so Next.js does not send X-Powered-By', (
   assert.equal(nextConfig.poweredByHeader, false);
 });
 
-// ─── ADM-02 — view-as tokens expire after 30 minutes ───────────────────────
+// ─── ADM-02 (REMOVED 16 Nov 2026, Eman) — view-as tokens carry NO expiry ──
+// The 30-minute TTL is gone by explicit order: a minted token verifies
+// for as long as the admin's own session lives (Exit / logout /
+// browser close ends it). Forged tokens are still rejected.
 
-test('ADM-02: minted view-as tokens carry a 30-minute expiry and are rejected after it', () => {
-  assert.equal(VIEW_AS_TTL_MS, 30 * 60 * 1000);
-  const now = 1_000_000;
-  const minted = mintViewAsToken('admin-1', 'inst-1', undefined, now);
-  assert.equal(minted.expiresAt, now + VIEW_AS_TTL_MS);
+test('ADM-02 removed: minted view-as tokens carry no expiry and verify indefinitely', () => {
+  const minted = mintViewAsToken('admin-1', 'inst-1', 'teacher');
+  assert.equal(typeof minted.token, 'string');
+  assert.ok(!('expiresAt' in minted), 'a minted token carries no expiry');
 
-  const before = verifyViewAsToken(minted.token, now + VIEW_AS_TTL_MS - 1);
-  assert.ok(before !== null, 'token must still verify inside its TTL');
+  const payload = verifyViewAsToken(minted.token);
+  assert.ok(payload !== null, 'token must verify');
+  assert.equal(payload.adminId, 'admin-1');
+  assert.equal(payload.targetUserId, 'inst-1');
+  assert.equal(payload.kind, 'teacher');
 
-  const after = verifyViewAsToken(minted.token, now + VIEW_AS_TTL_MS);
-  assert.equal(after, null, 'token must be rejected at/after its TTL');
+  // Tampered payload still fails.
+  assert.equal(verifyViewAsToken(`${minted.token.slice(0, 10)}x${minted.token.slice(11)}`), null);
 });
 
-test('ADM-02: startViewAs returns a real numeric expiry within the TTL', async () => {
-  const before = Date.now();
+test('ADM-02 removed: startViewAs returns no expiry', async () => {
   const result = await startViewAs(ADMIN, 'inst-1');
   assert.ok(!('error' in result), JSON.stringify(result));
-  assert.equal(typeof result.expiresAt, 'number');
-  assert.ok(result.expiresAt >= before + VIEW_AS_TTL_MS - 1000, 'expiry must be ~30 minutes from minting');
-  assert.ok(result.expiresAt <= Date.now() + VIEW_AS_TTL_MS, 'expiry must not exceed the TTL');
+  assert.ok(!('expiresAt' in result), 'startViewAs returns no expiry');
+  assert.equal(typeof result.token, 'string');
 });

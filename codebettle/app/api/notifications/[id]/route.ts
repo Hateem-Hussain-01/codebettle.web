@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { requireSession } from '@/lib/api-helpers';
+import { assertNotViewAs, requireSession } from '@/lib/api-helpers';
 import { deleteNotification } from '@/lib/db/notifications';
 
 /**
@@ -13,6 +13,10 @@ export async function DELETE(
 ) {
   const auth = await requireSession();
   if ('error' in auth) return auth.error;
+  // View-as is view-only: a viewing admin must not delete the viewed
+  // person's notifications as them.
+  const viewOnly = assertNotViewAs(auth.session);
+  if (viewOnly) return viewOnly;
   const { id } = await params;
   const deleted = await deleteNotification(auth.session.id, id);
   if (!deleted) {

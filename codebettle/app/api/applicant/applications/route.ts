@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { invalidBody, readJson, requireSession, serviceError } from '@/lib/api-helpers';
+import { assertNotViewAs, invalidBody, readJson, requireSession, serviceError } from '@/lib/api-helpers';
 import { applicationCreateSchema } from '@/lib/api-schemas';
 import { createApplicantApplication, listMyApplications } from '@/lib/services/recruitment-service';
 
@@ -25,6 +25,14 @@ export async function GET() {
 export async function POST(request: NextRequest) {
   const auth = await requireSession();
   if ('error' in auth) return auth.error;
+  // View-as is view-only: a viewing admin must not file a
+  // recruitment application as the viewed teacher (the service
+  // requires the application email to match the account email, so
+  // without this check the viewed person's identity would be
+  // usable). GET (listing their own applications) stays open —
+  // reads are the point of viewing.
+  const viewOnly = assertNotViewAs(auth.session);
+  if (viewOnly) return viewOnly;
   const body = await readJson(request);
   if (body === null) return invalidBody();
   const parsed = applicationCreateSchema.safeParse(body);

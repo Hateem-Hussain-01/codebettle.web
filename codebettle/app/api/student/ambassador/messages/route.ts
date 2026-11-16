@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
-import { invalidBody, readJson, requireRoles } from '@/lib/api-helpers';
+import { assertNotViewAs, invalidBody, readJson, requireRoles } from '@/lib/api-helpers';
 import { createAmbassadorMessage, getAmbassadorByUserId } from '@/lib/db/ambassadors';
 
 /**
@@ -19,6 +19,10 @@ const postSchema = z.object({
 export async function POST(request: NextRequest) {
   const auth = await requireRoles(['student']);
   if ('error' in auth) return auth.error;
+  // View-as is view-only: an admin viewing this ambassador's
+  // dashboard must not send a message to the admin as them.
+  const viewOnly = assertNotViewAs(auth.session);
+  if (viewOnly) return viewOnly;
   const body = await readJson(request);
   const parsed = postSchema.safeParse(body);
   if (!parsed.success) return invalidBody('message is required (1–2000 characters)');

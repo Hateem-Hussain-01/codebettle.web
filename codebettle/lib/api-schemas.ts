@@ -269,6 +269,11 @@ export const viewAsSchema = z.object({
   teacherId: z.string().min(1),
 });
 
+/** Admin-assisted view-as: mint a token for one ambassador's dashboard. */
+export const ambassadorViewAsSchema = z.object({
+  ambassadorId: z.string().min(1),
+});
+
 // ---------------------------------------------------------------------------
 // Payments (Phase 1b/1c)
 // ---------------------------------------------------------------------------

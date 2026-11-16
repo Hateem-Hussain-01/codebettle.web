@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { invalidBody, readJson, requireRoles } from '@/lib/api-helpers';
+import { assertNotViewAs, invalidBody, readJson, requireRoles } from '@/lib/api-helpers';
 import { getCourseById } from '@/lib/db/courses';
 import {
   getEnrollmentsByStudent,
@@ -98,6 +98,10 @@ export async function POST(
 ) {
   const auth = await requireRoles(['student']);
   if ('error' in auth) return auth.error;
+  // View-as is view-only: an admin viewing an ambassador's dashboard
+  // (a student-role session) must not mark lessons complete as them.
+  const viewOnly = assertNotViewAs(auth.session);
+  if (viewOnly) return viewOnly;
   const { id } = await params;
   const body = await readJson(request);
   if (body === null || typeof body !== 'object') return invalidBody();
