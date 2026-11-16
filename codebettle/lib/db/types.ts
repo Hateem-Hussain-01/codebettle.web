@@ -533,6 +533,72 @@ export interface AmbassadorWithStats extends Ambassador {
   teamLevel2: ReferralTeamMember[];
 }
 
+/**
+ * Team Portal (Eman, 16 Nov 2026) — the 4th portal, for the CodeBettle
+ * team (About Us people EXCEPT teachers: management + department
+ * heads). Access is by email grant (TeamAccess), revocable; members
+ * sign in with their own email + password. Credits live in their own
+ * tables (PR B) and are deliberately NOT part of these types.
+ */
+export type TeamAccessStatus = 'active' | 'revoked';
+
+export interface TeamAccess {
+  id: string;
+  email: string;
+  userId?: string;
+  status: TeamAccessStatus;
+  grantedBy: string;
+  grantedAt: string;
+  revokedAt?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type TeamTaskStatus = 'todo' | 'doing' | 'done';
+
+export interface TeamTask {
+  id: string;
+  title: string;
+  description?: string;
+  assigneeEmail: string;
+  status: TeamTaskStatus;
+  dueDate?: string;
+  createdBy: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface TeamAnnouncement {
+  id: string;
+  title: string;
+  body: string;
+  createdBy: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface TeamMeeting {
+  id: string;
+  title: string;
+  startsAt: string;
+  meetingLink?: string;
+  agenda?: string;
+  createdBy: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface TeamFile {
+  id: string;
+  fileName: string;
+  storagePath: string;
+  mime: string;
+  size: number;
+  uploadedBy: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface Testimonial {
   id: string;
   studentName: string;
@@ -1157,6 +1223,61 @@ export type ReferralClickRow = Pick<
 export type AmbassadorMessageRow = Pick<
   Models.public_AmbassadorMessage,
   'id' | 'ambassadorId' | 'message' | 'read' | 'createdAt'
+>;
+
+export type TeamAccessRow = Pick<
+  Models.public_TeamAccess,
+  | 'id'
+  | 'email'
+  | 'userId'
+  | 'status'
+  | 'grantedBy'
+  | 'grantedAt'
+  | 'revokedAt'
+  | 'createdAt'
+  | 'updatedAt'
+>;
+
+export type TeamTaskRow = Pick<
+  Models.public_TeamTask,
+  | 'id'
+  | 'title'
+  | 'description'
+  | 'assigneeEmail'
+  | 'status'
+  | 'dueDate'
+  | 'createdBy'
+  | 'createdAt'
+  | 'updatedAt'
+>;
+
+export type TeamAnnouncementRow = Pick<
+  Models.public_TeamAnnouncement,
+  'id' | 'title' | 'body' | 'createdBy' | 'createdAt' | 'updatedAt'
+>;
+
+export type TeamMeetingRow = Pick<
+  Models.public_TeamMeeting,
+  | 'id'
+  | 'title'
+  | 'startsAt'
+  | 'meetingLink'
+  | 'agenda'
+  | 'createdBy'
+  | 'createdAt'
+  | 'updatedAt'
+>;
+
+export type TeamFileRow = Pick<
+  Models.public_TeamFile,
+  | 'id'
+  | 'fileName'
+  | 'storagePath'
+  | 'mime'
+  | 'size'
+  | 'uploadedBy'
+  | 'createdAt'
+  | 'updatedAt'
 >;
 
 export type TestimonialRow = Pick<

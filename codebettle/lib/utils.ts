@@ -11,6 +11,17 @@ export function formatDateShort(dateStr: string): string {
   return new Date(dateStr).toLocaleDateString('en-PK', { year: 'numeric', month: 'short', day: 'numeric' });
 }
 
+/** Date + time (e.g. "20 Nov 2026, 2:00 pm") — for meeting start times, where the hour matters. */
+export function formatDateTime(dateStr: string): string {
+  return new Date(dateStr).toLocaleString('en-PK', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+  });
+}
+
 export function cn(...classes: (string | undefined | false | null)[]): string {
   return classes.filter(Boolean).join(' ');
 }
