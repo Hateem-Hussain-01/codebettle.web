@@ -8,7 +8,7 @@ import Input from '@/components/ui/Input';
 import type { TeamMember } from '@/lib/db/types';
 import type { SuccessStorySubmission } from '@/lib/db/types';
 import type { TeamMemberLevel, VideoLayout, VideoOrientation, VideoPosition } from '@/lib/management';
-import { compareTeamMembers, teamLevelLabel } from '@/lib/management';
+import { compareTeamMembers, teamLevelLabel, parseVisibleSocials, TEAM_SOCIAL_PLATFORMS, TEAM_SOCIAL_LABELS, MAX_VISIBLE_SOCIALS } from '@/lib/management';
 import {
   AlertTriangle,
   ArrowDown,
@@ -72,6 +72,7 @@ const EMPTY_TEAM_FORM: {
   linkedinUrl: string;
   githubUrl: string;
   websiteUrl: string;
+  visibleSocials: string[];
   level: TeamMemberLevel;
   department: string;
   sortOrder: number;
@@ -84,6 +85,7 @@ const EMPTY_TEAM_FORM: {
   linkedinUrl: '',
   githubUrl: '',
   websiteUrl: '',
+  visibleSocials: [],
   level: 'management',
   department: '',
   sortOrder: 0,
@@ -669,6 +671,44 @@ export default function ManagementClient() {
               <Input label="GitHub URL" value={teamForm.githubUrl} onChange={(e) => setTeamForm({ ...teamForm, githubUrl: e.target.value })} placeholder="https://github.com/…" />
               <Input label="Website URL" value={teamForm.websiteUrl} onChange={(e) => setTeamForm({ ...teamForm, websiteUrl: e.target.value })} placeholder="https://…" />
             </div>
+            <div>
+              <p className="text-sm font-medium text-foreground/80">Show on card (pick up to {MAX_VISIBLE_SOCIALS})</p>
+              <p className="text-xs text-muted mt-0.5">
+                Only the picked links show on the About page card, at the bottom-right, in the order picked.
+                Nothing picked = the first 2 filled links (GitHub, LinkedIn, X, Website).
+              </p>
+              <div className="flex flex-wrap gap-2 mt-2">
+                {TEAM_SOCIAL_PLATFORMS.map((platform) => {
+                  const picked = teamForm.visibleSocials.includes(platform);
+                  const disabled = !picked && teamForm.visibleSocials.length >= MAX_VISIBLE_SOCIALS;
+                  return (
+                    <label
+                      key={platform}
+                      className={`inline-flex items-center gap-2 px-3 py-2 rounded-lg border text-sm font-medium ${picked ? 'bg-primary/10 border-primary/50 text-foreground' : 'bg-dark-card border-dark-border text-muted'} ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:opacity-90'}`}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={picked}
+                        disabled={disabled}
+                        onChange={(e) => {
+                          setTeamForm({
+                            ...teamForm,
+                            visibleSocials: e.target.checked
+                              ? [...teamForm.visibleSocials, platform]
+                              : teamForm.visibleSocials.filter((p) => p !== platform),
+                          });
+                        }}
+                        className="w-4 h-4 accent-primary"
+                      />
+                      {TEAM_SOCIAL_LABELS[platform]}
+                    </label>
+                  );
+                })}
+              </div>
+              {teamForm.visibleSocials.length >= MAX_VISIBLE_SOCIALS && (
+                <p className="text-xs text-muted mt-1.5">2 picked — unpick one to choose a different link.</p>
+              )}
+            </div>
             <div className="flex gap-2">
               <Button variant="primary" size="sm" loading={teamBusy} onClick={() => void saveTeamMember()}>
                 {editingTeamId ? 'Save changes' : 'Add team member'}
@@ -716,6 +756,7 @@ export default function ManagementClient() {
                       linkedinUrl: member.linkedinUrl ?? '',
                       githubUrl: member.githubUrl ?? '',
                       websiteUrl: member.websiteUrl ?? '',
+                      visibleSocials: parseVisibleSocials(member.visibleSocials),
                       level: member.level,
                       department: member.department ?? '',
                       sortOrder: member.sortOrder,

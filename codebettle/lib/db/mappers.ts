@@ -1035,6 +1035,9 @@ export function mapTeamMemberRow(row: TeamMemberRow): TeamMember {
     linkedinUrl: row.linkedinUrl ?? undefined,
     githubUrl: row.githubUrl ?? undefined,
     websiteUrl: row.websiteUrl ?? undefined,
+    // Pre-migration rows (visibleSocials column not run yet) carry no
+    // value here — the card falls back to the first 2 filled links.
+    visibleSocials: row.visibleSocials ?? undefined,
     // Stored level is a plain string: an unexpected value (e.g. a
     // pre-migration '1') falls back to 'department' so the public
     // page never breaks on a bad row.

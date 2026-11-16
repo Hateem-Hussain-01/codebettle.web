@@ -9697,6 +9697,13 @@
                   }
                 }
               },
+              "visibleSocials": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
               "websiteUrl": {
                 "nullable": true,
                 "type": {
@@ -9753,6 +9760,9 @@
                 },
                 "updatedAt": {
                   "column": "updatedAt"
+                },
+                "visibleSocials": {
+                  "column": "visibleSocials"
                 },
                 "websiteUrl": {
                   "column": "websiteUrl"
@@ -18625,6 +18635,11 @@
                     "precision": 3
                   }
                 },
+                "visibleSocials": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": true
+                },
                 "websiteUrl": {
                   "codecId": "pg/text@1",
                   "dataType": "pg/text",
@@ -19598,7 +19613,7 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "d8be1c164f74f3a1c55e61d91de477d2ab5ef1233f41a0d0c621e4a3faff7794"
+    "storageHash": "4e2766c530b45f219045ef0168d29c2a04d2500c26ecdd9ff05c1d596b4af9cc"
   },
   "execution": {
     "executionHash": "e5e1c0e0836c075fda0ecef5f3862fed9fbd7c32cdb84a9b3122ba3fe736e5aa",

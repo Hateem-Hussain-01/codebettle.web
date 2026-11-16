@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { invalidBody, readJson, requireAdminArea, requireFullAdmin } from '@/lib/api-helpers';
 import { deleteTeamMember, getTeamMemberById, updateTeamMember } from '@/lib/db/team-members';
-import { validateTeamMember } from '@/lib/management';
+import { validateTeamMember, normalizeVisibleSocials, serializeVisibleSocials } from '@/lib/management';
 import {
   deleteTeamMemberPhotoImage,
   teamMemberPhotoPathFromUrl,
@@ -36,6 +36,9 @@ export async function PATCH(
     linkedinUrl: typeof v.linkedinUrl === 'string' ? v.linkedinUrl : v.linkedinUrl === null ? null : current.linkedinUrl ?? null,
     githubUrl: typeof v.githubUrl === 'string' ? v.githubUrl : v.githubUrl === null ? null : current.githubUrl ?? null,
     websiteUrl: typeof v.websiteUrl === 'string' ? v.websiteUrl : v.websiteUrl === null ? null : current.websiteUrl ?? null,
+    // The "Show on card" choice: the body's value when the form sent
+    // one, else the stored value (validation sees the final choice).
+    visibleSocials: v.visibleSocials !== undefined ? v.visibleSocials : (current.visibleSocials ?? null),
     level: typeof v.level === 'string' ? v.level : current.level,
     department:
       typeof v.department === 'string' ? v.department : v.department === null ? null : (current.department ?? null),
@@ -46,6 +49,15 @@ export async function PATCH(
   const patch: Record<string, unknown> = { ...merged };
   // A member that leaves the department level keeps no department.
   if (merged.level !== 'department') patch.department = null;
+  // Only send the social choice when the caller actually sent one:
+  // toggle/reorder PATCHes never touch the column, so they keep working
+  // before the migration runs. A sent choice is stored normalized.
+  if (v.visibleSocials === undefined) {
+    delete patch.visibleSocials;
+  } else {
+    const { socials } = normalizeVisibleSocials(v.visibleSocials);
+    patch.visibleSocials = serializeVisibleSocials(socials);
+  }
   if (typeof v.enabled === 'boolean') patch.enabled = v.enabled;
   try {
     const member = await updateTeamMember(id, patch);

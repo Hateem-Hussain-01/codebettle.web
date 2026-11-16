@@ -844,6 +844,13 @@ export interface TeamMember {
   githubUrl?: string;
   websiteUrl?: string;
   /**
+   * Comma-separated social platforms shown on the About page card
+   * (max 2, in display order, e.g. 'github,linkedin'). Null/empty =
+   * fallback: first 2 filled links in GitHub, LinkedIn, X, Website
+   * order. Set by the admin in the Team form ("Show on card").
+   */
+  visibleSocials?: string | null;
+  /**
    * Hierarchy level: 'management' → 'department' → 'trainer'. Stored
    * (the admin form keeps it) but NO LONGER used for grouping or
    * ordering on the public About page — the page shows one flat list
@@ -1450,6 +1457,7 @@ export type TeamMemberRow = Pick<
   | 'linkedinUrl'
   | 'githubUrl'
   | 'websiteUrl'
+  | 'visibleSocials'
   | 'level'
   | 'department'
   | 'sortOrder'

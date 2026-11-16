@@ -37,6 +37,117 @@ export function compareTeamMembers(
 }
 
 // ---------------------------------------------------------------------------
+// Team card social links (Eman, 16 Nov 2026 — only 2 icons on the card,
+// bottom-right, chosen per member in admin). Stored on TeamMember as
+// `visibleSocials`: a comma-separated list of up to 2 platform keys, in
+// display order. Null/empty = fallback: the first 2 filled links in
+// GitHub, LinkedIn, X, Website order.
+// ---------------------------------------------------------------------------
+
+/** Social platforms a team member can link (X, LinkedIn, GitHub, Website). */
+export type TeamSocialPlatform = 'x' | 'linkedin' | 'github' | 'website';
+
+export const TEAM_SOCIAL_PLATFORMS: readonly TeamSocialPlatform[] = ['x', 'linkedin', 'github', 'website'];
+
+/** Display labels for the admin "Show on card" checkboxes. */
+export const TEAM_SOCIAL_LABELS: Record<TeamSocialPlatform, string> = {
+  x: 'X',
+  linkedin: 'LinkedIn',
+  github: 'GitHub',
+  website: 'Website',
+};
+
+/** Fallback display order when no choice is stored: GitHub, LinkedIn, X, Website. */
+export const TEAM_SOCIAL_FALLBACK_ORDER: readonly TeamSocialPlatform[] = ['github', 'linkedin', 'x', 'website'];
+
+/** At most this many social icons show on a team card. */
+export const MAX_VISIBLE_SOCIALS = 2;
+
+export function isTeamSocialPlatform(value: unknown): value is TeamSocialPlatform {
+  return typeof value === 'string' && (TEAM_SOCIAL_PLATFORMS as readonly string[]).includes(value);
+}
+
+/**
+ * Lenient parse of the stored comma-separated choice: valid keys only,
+ * deduped, in order, at most 2. Anything unusable is dropped — a bad
+ * stored value must never break the public card (it falls back).
+ */
+export function parseVisibleSocials(value: string | null | undefined): TeamSocialPlatform[] {
+  if (!value) return [];
+  const picked: TeamSocialPlatform[] = [];
+  for (const part of value.split(',')) {
+    const key = part.trim();
+    if (isTeamSocialPlatform(key) && !picked.includes(key)) picked.push(key);
+    if (picked.length >= MAX_VISIBLE_SOCIALS) break;
+  }
+  return picked;
+}
+
+/**
+ * Strict validation for API input (an array from the admin form, or a
+ * comma string). Returns the deduped choice, or an error string when an
+ * unknown platform is given or more than 2 are picked.
+ */
+export function normalizeVisibleSocials(value: unknown): {
+  socials: TeamSocialPlatform[];
+  error: string | null;
+} {
+  if (value === undefined || value === null) return { socials: [], error: null };
+  const raw: unknown[] = Array.isArray(value) ? value : typeof value === 'string' ? value.split(',') : [value];
+  const socials: TeamSocialPlatform[] = [];
+  for (const item of raw) {
+    const key = typeof item === 'string' ? item.trim() : item;
+    if (!isTeamSocialPlatform(key)) return { socials: [], error: `Unknown social platform: ${String(item)}` };
+    if (!socials.includes(key)) socials.push(key);
+  }
+  if (socials.length > MAX_VISIBLE_SOCIALS) {
+    return { socials: [], error: 'Pick at most 2 social links to show on the card' };
+  }
+  return { socials, error: null };
+}
+
+/** Serialize a validated choice for storage: comma-joined, or null when nothing is picked. */
+export function serializeVisibleSocials(socials: TeamSocialPlatform[]): string | null {
+  return socials.length === 0 ? null : socials.join(',');
+}
+
+export interface TeamSocialLink {
+  platform: TeamSocialPlatform;
+  url: string;
+}
+
+/**
+ * Resolve the social links a team card shows, in display order:
+ * Eman's stored choice when one exists, else the first 2 filled links
+ * in GitHub, LinkedIn, X, Website order. Only filled URLs are
+ * returned, so a member with 1 link shows 1 icon and a member with
+ * none shows none — the card then renders no icons row at all.
+ */
+export function resolveTeamSocials(member: {
+  visibleSocials?: string | null;
+  xUrl?: string | null;
+  linkedinUrl?: string | null;
+  githubUrl?: string | null;
+  websiteUrl?: string | null;
+}): TeamSocialLink[] {
+  const urls: Record<TeamSocialPlatform, string | null | undefined> = {
+    x: member.xUrl,
+    linkedin: member.linkedinUrl,
+    github: member.githubUrl,
+    website: member.websiteUrl,
+  };
+  const chosen = parseVisibleSocials(member.visibleSocials);
+  const order = chosen.length > 0 ? chosen : TEAM_SOCIAL_FALLBACK_ORDER;
+  const links: TeamSocialLink[] = [];
+  for (const platform of order) {
+    const url = urls[platform];
+    if (url && url.trim() !== '') links.push({ platform, url: url.trim() });
+    if (links.length >= MAX_VISIBLE_SOCIALS) break;
+  }
+  return links;
+}
+
+// ---------------------------------------------------------------------------
 // Video & Vision layout config (stored as SiteSetting keys, read through
 // getSiteSettings(); see lib/services/settings-service.ts).
 // ---------------------------------------------------------------------------
@@ -219,6 +330,7 @@ export function validateTeamMember(input: {
   linkedinUrl?: string | null;
   githubUrl?: string | null;
   websiteUrl?: string | null;
+  visibleSocials?: unknown;
   level?: string;
   department?: string | null;
   sortOrder?: number;
@@ -241,6 +353,11 @@ export function validateTeamMember(input: {
   }
   if (input.level !== undefined && !isTeamMemberLevel(input.level)) {
     return 'Level must be Management, Department or Trainer';
+  }
+  // The "Show on card" choice: at most 2, each one of the 4 platforms.
+  if (input.visibleSocials !== undefined) {
+    const { error } = normalizeVisibleSocials(input.visibleSocials);
+    if (error) return error;
   }
   if (input.level === 'department' && (!input.department || !input.department.trim())) {
     return 'Department name is required for department-level members';

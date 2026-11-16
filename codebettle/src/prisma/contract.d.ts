@@ -23,7 +23,7 @@ import type {
 } from '@prisma/orm-postgres/contract/types';
 
 export type StorageHash =
-  StorageHashBase<'d8be1c164f74f3a1c55e61d91de477d2ab5ef1233f41a0d0c621e4a3faff7794'>;
+  StorageHashBase<'4e2766c530b45f219045ef0168d29c2a04d2500c26ecdd9ff05c1d596b4af9cc'>;
 export type ExecutionHash =
   ExecutionHashBase<'e5e1c0e0836c075fda0ecef5f3862fed9fbd7c32cdb84a9b3122ba3fe736e5aa'>;
 export type ProfileHash =
@@ -1594,6 +1594,7 @@ export namespace Models {
     photoUrl: FieldOutputTypes['public']['TeamMember']['photoUrl'];
     sortOrder: FieldOutputTypes['public']['TeamMember']['sortOrder'];
     updatedAt: FieldOutputTypes['public']['TeamMember']['updatedAt'];
+    visibleSocials: FieldOutputTypes['public']['TeamMember']['visibleSocials'];
     websiteUrl: FieldOutputTypes['public']['TeamMember']['websiteUrl'];
     xUrl: FieldOutputTypes['public']['TeamMember']['xUrl'];
     readonly [RelationKeys]?: never;
@@ -7993,6 +7994,12 @@ type ContractBase = Omit<
                   readonly typeParams: { readonly precision: 3 };
                   readonly many: false;
                 };
+                readonly visibleSocials: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
                 readonly websiteUrl: {
                   readonly dataType: 'pg/text';
                   readonly codecId: 'pg/text@1';
@@ -14273,6 +14280,10 @@ type ContractBase = Omit<
                   readonly typeParams: { readonly precision: 3 };
                 };
               };
+              readonly visibleSocials: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
               readonly websiteUrl: {
                 readonly nullable: true;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
@@ -14300,6 +14311,7 @@ type ContractBase = Omit<
                 readonly photoUrl: { readonly column: 'photoUrl' };
                 readonly sortOrder: { readonly column: 'sortOrder' };
                 readonly updatedAt: { readonly column: 'updatedAt' };
+                readonly visibleSocials: { readonly column: 'visibleSocials' };
                 readonly websiteUrl: { readonly column: 'websiteUrl' };
                 readonly xUrl: { readonly column: 'xUrl' };
               };
