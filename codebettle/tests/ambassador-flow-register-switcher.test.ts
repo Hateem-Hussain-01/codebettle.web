@@ -426,3 +426,22 @@ test('login link: RegisterForm honours ?redirect= so the register-first flow ret
   assert.ok(src.includes("getSafeRedirect(searchParams.get('redirect'), '/student/dashboard')"));
   assert.ok(src.includes('router.push(redirectTarget)'));
 });
+
+test('register-first: AuthShell wraps the register form in Suspense (useSearchParams needs it)', () => {
+  // RegisterForm reads ?redirect= via useSearchParams(). Per the
+  // Next.js docs, a static page calling useSearchParams from a
+  // Client Component without a Suspense boundary fails the production
+  // build ("Missing Suspense boundary with useSearchParams"). The
+  // login half was already wrapped; the register half must be too.
+  assert.ok(read('components/auth/RegisterForm.tsx').includes('useSearchParams'));
+  const src = read('components/auth/AuthShell.tsx');
+  const regAt = src.indexOf('{registerForm}');
+  assert.ok(regAt > 0);
+  const openAt = src.lastIndexOf('<Suspense', regAt);
+  assert.ok(openAt > 0, 'register form must sit inside a Suspense boundary');
+  assert.ok(
+    !src.slice(openAt, regAt).includes('</Suspense>'),
+    'the boundary must still be open at the register form',
+  );
+  assert.ok(src.indexOf('</Suspense>', regAt) > regAt, 'the boundary must close after the register form');
+});
