@@ -33,6 +33,9 @@ interface AmbassadorDashboardClientProps {
   teamLevel2: ReferralTeamMember[];
   meetingLink: string;
   messages: AmbassadorMessage[];
+  /** Dashboard switcher (Eman, 16 Nov 2026): the Instructor Portal
+   * link shows only when the session holds teacher capability. */
+  showInstructorPortal: boolean;
 }
 
 const STAGE_BADGE: Record<ReferralTeamMember['stage'], 'info' | 'success' | 'muted'> = {
@@ -79,6 +82,7 @@ export default function AmbassadorDashboardClient({
   teamLevel2,
   meetingLink,
   messages: initialMessages,
+  showInstructorPortal,
 }: AmbassadorDashboardClientProps) {
   const [copied, setCopied] = useState(false);
 
@@ -177,6 +181,35 @@ export default function AmbassadorDashboardClient({
 
   return (
     <div className="space-y-8">
+      {/* Dashboard switcher (Eman, 16 Nov 2026): a student+ambassador
+          or teacher+ambassador switches between the portals they
+          have. Student Portal is always shown; Instructor Portal only
+          when the session holds teacher capability. The Ambassador
+          Dashboard itself is the current segment. */}
+      <nav aria-label="Switch dashboard" className="flex flex-wrap items-center gap-2">
+        <span className="text-muted text-sm mr-1">Switch dashboard:</span>
+        <Link
+          href="/student/dashboard"
+          className="rounded-full border border-dark-border bg-dark-card px-4 py-1.5 text-sm font-medium text-foreground hover:border-primary/50 transition-colors"
+        >
+          Student Portal
+        </Link>
+        {showInstructorPortal && (
+          <Link
+            href="/instructor/dashboard"
+            className="rounded-full border border-dark-border bg-dark-card px-4 py-1.5 text-sm font-medium text-foreground hover:border-primary/50 transition-colors"
+          >
+            Instructor Portal
+          </Link>
+        )}
+        <span
+          aria-current="page"
+          className="rounded-full border border-primary/60 bg-primary px-4 py-1.5 text-sm font-semibold text-ink"
+        >
+          Ambassador Dashboard
+        </span>
+      </nav>
+
       <FadeIn>
         <h1 className="text-2xl font-black text-foreground">Ambassador Dashboard</h1>
         <p className="text-muted text-sm mt-1">

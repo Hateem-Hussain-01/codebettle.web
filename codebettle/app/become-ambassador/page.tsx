@@ -1,6 +1,8 @@
+import { redirect } from 'next/navigation';
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
 import { getSession } from '@/lib/auth';
+import { getLatestAmbassadorApplicationByEmail } from '@/lib/db/ambassador-applications';
 import AmbassadorForm from './become-ambassador-client';
 
 export const metadata = {
@@ -9,8 +11,26 @@ export const metadata = {
     'Represent CodeBettle at your campus — help more students discover coding and learning with CodeBettle.',
 };
 
+/**
+ * Register-first apply (Eman, 16 Nov 2026): applying needs an
+ * account. A logged-out visitor is sent to register (and comes back
+ * here via ?redirect=), and a signed-in visitor sees ONLY the
+ * application form — or, when they already applied, the status of
+ * that application instead of a second blank form. Fail-safe: if the
+ * application lookup throws (e.g. the table is not set up yet), the
+ * form still shows and the API answers with its own 503.
+ */
 export default async function BecomeAmbassadorPage() {
   const session = await getSession();
+  if (!session) redirect('/auth/register?redirect=/become-ambassador');
+
+  let existingApplication = null;
+  try {
+    existingApplication = await getLatestAmbassadorApplicationByEmail(session.email);
+  } catch {
+    existingApplication = null;
+  }
+
   return (
     <>
       <Navbar session={session} />
@@ -27,7 +47,7 @@ export default async function BecomeAmbassadorPage() {
               Log in to your Ambassador Dashboard
             </a>
           </p>
-          <AmbassadorForm />
+          <AmbassadorForm email={session.email} existingApplication={existingApplication} />
         </div>
       </main>
       <Footer />

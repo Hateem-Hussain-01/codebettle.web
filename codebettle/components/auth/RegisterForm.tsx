@@ -2,10 +2,11 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Eye, EyeOff, Lock, Mail, MailCheck, Phone, User } from 'lucide-react';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
+import { getSafeRedirect } from '@/lib/security';
 import toast from 'react-hot-toast';
 
 /**
@@ -19,14 +20,29 @@ import toast from 'react-hot-toast';
  * state instead of redirecting, with buttons to Sign In or continue to
  * the dashboard. When the flag is false/absent, behaviour is unchanged
  * (toast + redirect to /student/dashboard).
+ *
+ * ?redirect= (Eman, 16 Nov 2026 — register-first apply): the
+ * register-first flow sends logged-out visitors here with
+ * ?redirect=/become-ambassador, and ambassadors register from
+ * /ambassador/login?redirect=/student/ambassador. The redirect is
+ * honoured (same getSafeRedirect guard as the login form) so the
+ * user lands back where they came from instead of the dashboard;
+ * the Sign In links below carry it too, so switching to sign-in
+ * does not drop it.
  */
 export default function RegisterForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const signInHref =
+    searchParams.get('redirect')
+      ? `/auth/login?redirect=${encodeURIComponent(searchParams.get('redirect')!)}`
+      : '/auth/login';
   const [form, setForm] = useState({ name: '', email: '', phone: '', password: '', confirmPassword: '' });
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [verificationSent, setVerificationSent] = useState(false);
+  const [continueTarget, setContinueTarget] = useState('/student/dashboard');
 
   const validate = () => {
     const e: Record<string, string> = {};
@@ -50,17 +66,21 @@ export default function RegisterForm() {
       });
       const data = await res.json();
       if (!res.ok) { toast.error(data.error); return; }
+      // Where to go after signup: an explicit ?redirect= (register-first
+      // apply, or the ambassador login) wins; otherwise the dashboardUrl
+      // from the register API (Team Portal, Eman 16 Nov 2026: a
+      // pre-granted team member lands on the team portal); otherwise
+      // the student dashboard.
+      const fallback = typeof data.dashboardUrl === 'string' ? data.dashboardUrl : '/student/dashboard';
+      const target = getSafeRedirect(searchParams.get('redirect'), fallback);
       if (data.verificationEmailSent === true) {
         toast.success('Account created! Check your inbox to verify your email.');
+        setContinueTarget(target);
         setVerificationSent(true);
         return;
       }
       toast.success('Account created successfully!');
-      // dashboardUrl comes from the register API (Team Portal, Eman
-      // 16 Nov 2026): a pre-granted team member lands on the team
-      // portal. Fall back to the student dashboard for older responses.
-      const fallback = typeof data.dashboardUrl === 'string' ? data.dashboardUrl : '/student/dashboard';
-      router.push(fallback);
+      router.push(target);
       router.refresh();
     } finally {
       setLoading(false);
@@ -92,12 +112,12 @@ export default function RegisterForm() {
             Didn&apos;t get it? Check your spam folder.
           </p>
           <div className="mt-6 space-y-3">
-            <Button type="button" fullWidth size="lg" onClick={() => router.push('/auth/login')}>
+            <Button type="button" fullWidth size="lg" onClick={() => router.push(signInHref)}>
               Sign In
             </Button>
             <button
               type="button"
-              onClick={() => router.push('/student/dashboard')}
+              onClick={() => router.push(continueTarget)}
               className="w-full cursor-pointer text-center text-sm font-medium text-primary-text hover:underline"
             >
               Continue to dashboard
@@ -132,7 +152,7 @@ export default function RegisterForm() {
       {!verificationSent && (
         <p className="mt-4 text-center text-sm text-muted">
           Already have an account?{' '}
-          <Link href="/auth/login" className="font-medium text-primary-text hover:underline">Sign in</Link>
+          <Link href={signInHref} className="font-medium text-primary-text hover:underline">Sign in</Link>
         </p>
       )}
     </div>

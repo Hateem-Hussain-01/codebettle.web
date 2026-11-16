@@ -3,6 +3,7 @@ import { getSession } from '@/lib/auth';
 import { hasTeacherCapability } from '@/lib/rbac';
 import { getAdminBasePath } from '@/lib/admin-url';
 import { hasTeamAccess } from '@/lib/db/team';
+import { getAmbassadorByUserId } from '@/lib/db/ambassadors';
 import PortalLayout from '@/components/layout/PortalLayout';
 import ViewAsBanner from '@/components/layout/ViewAsBanner';
 import { LayoutDashboard, BookOpen, Users, Bell, Star, FolderOpen, User, BarChart2, FileQuestion, ClipboardList } from 'lucide-react';
@@ -41,13 +42,31 @@ export default async function InstructorLayout({ children }: { children: React.R
     hasTeam = false;
   }
 
+  // Ambassador Dashboard (Eman, 16 Nov 2026 — dashboard switcher):
+  // the same check as the student layout — the "Ambassador" nav item
+  // shows ONLY for approved ambassadors (active Ambassador row linked
+  // to this teacher) and points at /student/ambassador, which admits
+  // teacher-capable sessions. Fail-safe: if the lookup throws, the
+  // layout renders WITHOUT the item — a missing referral table must
+  // never break the sidebar.
+  let showAmbassadorNav = false;
+  try {
+    const ambassador = await getAmbassadorByUserId(session.id);
+    showAmbassadorNav = ambassador !== null && ambassador.status === 'active';
+  } catch {
+    showAmbassadorNav = false;
+  }
+  const navItems = showAmbassadorNav
+    ? [...NAV_ITEMS, { href: '/student/ambassador', label: 'Ambassador', icon: <Users className="w-5 h-5" /> }]
+    : NAV_ITEMS;
+
   return (
     <>
       {/* Phase 2, Module 21.4: while an admin views this portal, show
           the banner (who is viewing + the way back). The session user
           is the teacher; session.viewAs names the viewing admin. */}
       {session.viewAs && <ViewAsBanner adminName={session.viewAs.adminName} adminBasePath={getAdminBasePath()} />}
-      <PortalLayout user={session} navItems={NAV_ITEMS} portalName="Instructor Portal" adminBasePath={getAdminBasePath()} hasTeamAccess={hasTeam}>
+      <PortalLayout user={session} navItems={navItems} portalName="Instructor Portal" adminBasePath={getAdminBasePath()} hasTeamAccess={hasTeam}>
         {children}
       </PortalLayout>
     </>

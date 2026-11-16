@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { getSession } from '@/lib/auth';
+import { hasTeacherCapability } from '@/lib/rbac';
 import { getAmbassadorByUserId, getAmbassadorStats, listMessagesForAmbassador } from '@/lib/db/ambassadors';
 import { getAmbassadorMeetingLink } from '@/lib/services/settings-service';
 import { buildReferralLink } from '@/lib/referral';
@@ -30,7 +31,13 @@ import AmbassadorDashboardClient from './ambassador-dashboard-client';
  */
 export default async function AmbassadorDashboardPage() {
   const session = await getSession();
-  if (!session || session.role !== 'student') redirect('/auth/login');
+  // Dashboard switcher (Eman, 16 Nov 2026): the ambassador page
+  // lives in the student portal, but a teacher+ambassador opens it
+  // from the instructor portal too — so teacher-capable sessions pass
+  // this guard as well (the student layout exempts this one path the
+  // same way). Anyone who is not an ambassador still gets the
+  // friendly message below, never a 500.
+  if (!session || (session.role !== 'student' && !hasTeacherCapability(session))) redirect('/auth/login');
 
   const ambassador = await getAmbassadorByUserId(session.id);
   if (!ambassador || ambassador.status !== 'active') {
@@ -69,6 +76,10 @@ export default async function AmbassadorDashboardPage() {
       teamLevel2={teamLevel2}
       meetingLink={meetingLink}
       messages={messages}
+      // Dashboard switcher (Eman, 16 Nov 2026): the Student Portal
+      // link is always shown; the Instructor Portal link only when
+      // the session holds teacher capability.
+      showInstructorPortal={hasTeacherCapability(session)}
     />
   );
 }
