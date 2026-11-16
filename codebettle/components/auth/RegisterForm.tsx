@@ -56,7 +56,11 @@ export default function RegisterForm() {
         return;
       }
       toast.success('Account created successfully!');
-      router.push('/student/dashboard');
+      // dashboardUrl comes from the register API (Team Portal, Eman
+      // 16 Nov 2026): a pre-granted team member lands on the team
+      // portal. Fall back to the student dashboard for older responses.
+      const fallback = typeof data.dashboardUrl === 'string' ? data.dashboardUrl : '/student/dashboard';
+      router.push(fallback);
       router.refresh();
     } finally {
       setLoading(false);

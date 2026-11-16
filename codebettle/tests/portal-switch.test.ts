@@ -254,7 +254,9 @@ test('session survives switching: the switch is plain navigation, session untouc
 
 test('wiring: PortalLayout renders the switch as a <Link> from getPortalSwitch, in the topbar', () => {
   const src = read('components/layout/PortalLayout.tsx');
-  assert.match(src, /getPortalSwitch\(user, pathname, adminBasePath\)/);
+  // Team Portal (Eman, 16 Nov 2026): the layout passes the server-checked
+  // team access as the 4th argument, so team members get a switch option.
+  assert.match(src, /getPortalSwitch\(user, pathname, adminBasePath, hasTeamAccess\)/);
   assert.match(src, /href=\{switchTarget\.href\}/);
   assert.match(src, /aria-label=\{switchTarget\.label\}/);
   // The switch link sits in the topbar <header>, next to the bell —
@@ -267,6 +269,8 @@ test('wiring: PortalLayout renders the switch as a <Link> from getPortalSwitch, 
   const helper = read('lib/portal-switch.ts');
   assert.ok(helper.includes('Switch to Teacher Portal'));
   assert.ok(helper.includes('Switch to Admin Panel'));
+  assert.ok(helper.includes('Switch to Student Portal'));
+  assert.ok(helper.includes('Switch to Team Portal'));
 });
 
 test('wiring: bell and avatar follow the CURRENT portal, not the primary role', () => {

@@ -19,6 +19,7 @@ import { hasAdminArea, hasAnyAdminArea, isFullAdmin, type AdminAreaKey } from '.
 import { hasAdminCapability, hasTeacherCapability } from './rbac';
 import { isSuperAdmin } from './super-admin';
 import { logAudit } from './db/audit';
+import { hasTeamAccess } from './db/team';
 import type { UserRole } from './db/types';
 
 /**
@@ -69,14 +70,38 @@ export async function requireAdmin(): Promise<
 }
 
 /**
+ * Team Portal gate (Eman, 16 Nov 2026). Same 401/403 shape as
+ * requireAdmin: the session must exist AND hold ACTIVE team access
+ * (TeamAccess row, by linked userId or by email grant). A missing
+ * team table reads as no access (fail-safe — the portal is inert
+ * until the SQL runs), never a 500. Admins do NOT pass this gate by
+ * virtue of being admins: team access is a separate grant.
+ */
+export async function requireTeamMember(): Promise<
+  { session: SessionUser } | { error: NextResponse }
+> {
+  const session = await getRequestSession();
+  if (!session) return { error: NextResponse.json({ error: 'Not signed in' }, { status: 401 }) };
+  let allowed = false;
+  try {
+    allowed = await hasTeamAccess(session);
+  } catch {
+    allowed = false;
+  }
+  if (!allowed) {
+    return { error: NextResponse.json({ error: 'Team access required' }, { status: 403 }) };
+  }
+  return { session };
+}
+
+/**
  * Per-area admin gate (Item G). Same 401/403 shape as requireAdmin, plus
  * the area check: a restricted admin (a permissions map on the session)
  * is denied unless that area is granted. A full admin (no restriction)
  * passes every area. The permissions ride on the session, which
  * getSession() rebuilds from the user record on every request, so a
  * change made in /admin/access takes effect on the target's next request.
- */
-export async function requireAdminArea(area: AdminAreaKey): Promise<
+ */export async function requireAdminArea(area: AdminAreaKey): Promise<
   { session: SessionUser } | { error: NextResponse }
 > {
   const session = await getRequestSession();

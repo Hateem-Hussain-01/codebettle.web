@@ -23,9 +23,9 @@ import type {
 } from '@prisma/orm-postgres/contract/types';
 
 export type StorageHash =
-  StorageHashBase<'f7940e923f52d88e2b97366f7b9ffe1dc1372030c773f66bfbd14622a3a9d201'>;
+  StorageHashBase<'67a0906ebbd6ee1c8da03ef1c100f55f104527dadb0cd7347488153040e83ac9'>;
 export type ExecutionHash =
-  ExecutionHashBase<'18eecd648646d00e54d53adc2381ff8edf236442561c2940956a776cc52cd14f'>;
+  ExecutionHashBase<'b617cf5ca018ea3aca8e600101580a3909a8c0d9286e98bdf3f044e51240465a'>;
 export type ProfileHash =
   ProfileHashBase<'3916f444a8a17ad749191acf9e08dad97d1a327b88c2f1d45d12f240296aa8b2'>;
 
@@ -422,6 +422,18 @@ type FieldTypeOverrides = {
           readonly input: 'pending' | 'under_review' | 'approved' | 'rejected';
         };
       };
+      readonly TeamAccess: {
+        readonly status: {
+          readonly output: 'active' | 'revoked';
+          readonly input: 'active' | 'revoked';
+        };
+      };
+      readonly TeamTask: {
+        readonly status: {
+          readonly output: 'todo' | 'doing' | 'done';
+          readonly input: 'todo' | 'doing' | 'done';
+        };
+      };
       readonly User: {
         readonly role: {
           readonly output: 'student' | 'instructor' | 'admin';
@@ -595,6 +607,18 @@ type ColumnTypeOverrides = {
       readonly status: {
         readonly output: 'pending' | 'under_review' | 'approved' | 'rejected';
         readonly input: 'pending' | 'under_review' | 'approved' | 'rejected';
+      };
+    };
+    readonly TeamAccess: {
+      readonly status: {
+        readonly output: 'active' | 'revoked';
+        readonly input: 'active' | 'revoked';
+      };
+    };
+    readonly TeamTask: {
+      readonly status: {
+        readonly output: 'todo' | 'doing' | 'done';
+        readonly input: 'todo' | 'doing' | 'done';
       };
     };
     readonly User: {
@@ -1470,6 +1494,49 @@ export namespace Models {
     student: public_User;
     readonly [RelationKeys]?: 'course' | 'resolver' | 'student';
   };
+  export type public_TeamAccess = {
+    createdAt: FieldOutputTypes['public']['TeamAccess']['createdAt'];
+    email: FieldOutputTypes['public']['TeamAccess']['email'];
+    grantedAt: FieldOutputTypes['public']['TeamAccess']['grantedAt'];
+    grantedBy: FieldOutputTypes['public']['TeamAccess']['grantedBy'];
+    id: FieldOutputTypes['public']['TeamAccess']['id'];
+    revokedAt: FieldOutputTypes['public']['TeamAccess']['revokedAt'];
+    status: FieldOutputTypes['public']['TeamAccess']['status'];
+    updatedAt: FieldOutputTypes['public']['TeamAccess']['updatedAt'];
+    userId: FieldOutputTypes['public']['TeamAccess']['userId'];
+    readonly [RelationKeys]?: never;
+  };
+  export type public_TeamAnnouncement = {
+    body: FieldOutputTypes['public']['TeamAnnouncement']['body'];
+    createdAt: FieldOutputTypes['public']['TeamAnnouncement']['createdAt'];
+    createdBy: FieldOutputTypes['public']['TeamAnnouncement']['createdBy'];
+    id: FieldOutputTypes['public']['TeamAnnouncement']['id'];
+    title: FieldOutputTypes['public']['TeamAnnouncement']['title'];
+    updatedAt: FieldOutputTypes['public']['TeamAnnouncement']['updatedAt'];
+    readonly [RelationKeys]?: never;
+  };
+  export type public_TeamFile = {
+    createdAt: FieldOutputTypes['public']['TeamFile']['createdAt'];
+    fileName: FieldOutputTypes['public']['TeamFile']['fileName'];
+    id: FieldOutputTypes['public']['TeamFile']['id'];
+    mime: FieldOutputTypes['public']['TeamFile']['mime'];
+    size: FieldOutputTypes['public']['TeamFile']['size'];
+    storagePath: FieldOutputTypes['public']['TeamFile']['storagePath'];
+    updatedAt: FieldOutputTypes['public']['TeamFile']['updatedAt'];
+    uploadedBy: FieldOutputTypes['public']['TeamFile']['uploadedBy'];
+    readonly [RelationKeys]?: never;
+  };
+  export type public_TeamMeeting = {
+    agenda: FieldOutputTypes['public']['TeamMeeting']['agenda'];
+    createdAt: FieldOutputTypes['public']['TeamMeeting']['createdAt'];
+    createdBy: FieldOutputTypes['public']['TeamMeeting']['createdBy'];
+    id: FieldOutputTypes['public']['TeamMeeting']['id'];
+    meetingLink: FieldOutputTypes['public']['TeamMeeting']['meetingLink'];
+    startsAt: FieldOutputTypes['public']['TeamMeeting']['startsAt'];
+    title: FieldOutputTypes['public']['TeamMeeting']['title'];
+    updatedAt: FieldOutputTypes['public']['TeamMeeting']['updatedAt'];
+    readonly [RelationKeys]?: never;
+  };
   export type public_TeamMember = {
     bio: FieldOutputTypes['public']['TeamMember']['bio'];
     createdAt: FieldOutputTypes['public']['TeamMember']['createdAt'];
@@ -1486,6 +1553,18 @@ export namespace Models {
     updatedAt: FieldOutputTypes['public']['TeamMember']['updatedAt'];
     websiteUrl: FieldOutputTypes['public']['TeamMember']['websiteUrl'];
     xUrl: FieldOutputTypes['public']['TeamMember']['xUrl'];
+    readonly [RelationKeys]?: never;
+  };
+  export type public_TeamTask = {
+    assigneeEmail: FieldOutputTypes['public']['TeamTask']['assigneeEmail'];
+    createdAt: FieldOutputTypes['public']['TeamTask']['createdAt'];
+    createdBy: FieldOutputTypes['public']['TeamTask']['createdBy'];
+    description: FieldOutputTypes['public']['TeamTask']['description'];
+    dueDate: FieldOutputTypes['public']['TeamTask']['dueDate'];
+    id: FieldOutputTypes['public']['TeamTask']['id'];
+    status: FieldOutputTypes['public']['TeamTask']['status'];
+    title: FieldOutputTypes['public']['TeamTask']['title'];
+    updatedAt: FieldOutputTypes['public']['TeamTask']['updatedAt'];
     readonly [RelationKeys]?: never;
   };
   export type public_Testimonial = {
@@ -1654,7 +1733,12 @@ export declare const models: {
     SuccessStoryEvidence: Models.public_SuccessStoryEvidence;
     SuccessStorySubmission: Models.public_SuccessStorySubmission;
     SupportRequest: Models.public_SupportRequest;
+    TeamAccess: Models.public_TeamAccess;
+    TeamAnnouncement: Models.public_TeamAnnouncement;
+    TeamFile: Models.public_TeamFile;
+    TeamMeeting: Models.public_TeamMeeting;
     TeamMember: Models.public_TeamMember;
+    TeamTask: Models.public_TeamTask;
     Testimonial: Models.public_Testimonial;
     User: Models.public_User;
     Wishlist: Models.public_Wishlist;
@@ -7403,6 +7487,275 @@ type ContractBase = Omit<
                 },
               ];
             };
+            readonly TeamAccess: {
+              columns: {
+                readonly createdAt: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly nullable: false;
+                  readonly default: { readonly kind: 'function'; readonly expression: 'now()' };
+                  readonly typeParams: { readonly precision: 3 };
+                  readonly many: false;
+                };
+                readonly email: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly grantedAt: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly nullable: false;
+                  readonly default: { readonly kind: 'function'; readonly expression: 'now()' };
+                  readonly typeParams: { readonly precision: 3 };
+                  readonly many: false;
+                };
+                readonly grantedBy: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly id: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly revokedAt: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly nullable: true;
+                  readonly typeParams: { readonly precision: 3 };
+                  readonly many: false;
+                };
+                readonly status: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'literal';
+                    readonly value: DefaultLiteralValue<'pg/text@1', 'active'>;
+                  };
+                  readonly many: false;
+                };
+                readonly updatedAt: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly nullable: false;
+                  readonly typeParams: { readonly precision: 3 };
+                  readonly many: false;
+                };
+                readonly userId: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+              };
+              primaryKey: { readonly columns: readonly ['id'] };
+              uniques: readonly [
+                { readonly columns: readonly ['email'] },
+                { readonly columns: readonly ['userId'] },
+              ];
+              indexes: readonly [
+                {
+                  readonly name: 'TeamAccess_status_createdAt_idx_58610442';
+                  readonly prefix: 'TeamAccess_status_createdAt_idx';
+                  readonly columns: readonly ['status', 'createdAt'];
+                  readonly unique: false;
+                },
+              ];
+              foreignKeys: readonly [];
+            };
+            readonly TeamAnnouncement: {
+              columns: {
+                readonly body: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly createdAt: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly nullable: false;
+                  readonly default: { readonly kind: 'function'; readonly expression: 'now()' };
+                  readonly typeParams: { readonly precision: 3 };
+                  readonly many: false;
+                };
+                readonly createdBy: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly id: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly title: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly updatedAt: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly nullable: false;
+                  readonly typeParams: { readonly precision: 3 };
+                  readonly many: false;
+                };
+              };
+              primaryKey: { readonly columns: readonly ['id'] };
+              uniques: readonly [];
+              indexes: readonly [
+                {
+                  readonly name: 'TeamAnnouncement_createdAt_idx_9575dbd7';
+                  readonly prefix: 'TeamAnnouncement_createdAt_idx';
+                  readonly columns: readonly ['createdAt'];
+                  readonly unique: false;
+                },
+              ];
+              foreignKeys: readonly [];
+            };
+            readonly TeamFile: {
+              columns: {
+                readonly createdAt: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly nullable: false;
+                  readonly default: { readonly kind: 'function'; readonly expression: 'now()' };
+                  readonly typeParams: { readonly precision: 3 };
+                  readonly many: false;
+                };
+                readonly fileName: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly id: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly mime: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly size: {
+                  readonly dataType: 'pg/int4';
+                  readonly codecId: 'pg/int4@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly storagePath: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly updatedAt: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly nullable: false;
+                  readonly typeParams: { readonly precision: 3 };
+                  readonly many: false;
+                };
+                readonly uploadedBy: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+              };
+              primaryKey: { readonly columns: readonly ['id'] };
+              uniques: readonly [];
+              indexes: readonly [
+                {
+                  readonly name: 'TeamFile_createdAt_idx_9575dbd7';
+                  readonly prefix: 'TeamFile_createdAt_idx';
+                  readonly columns: readonly ['createdAt'];
+                  readonly unique: false;
+                },
+              ];
+              foreignKeys: readonly [];
+            };
+            readonly TeamMeeting: {
+              columns: {
+                readonly agenda: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly createdAt: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly nullable: false;
+                  readonly default: { readonly kind: 'function'; readonly expression: 'now()' };
+                  readonly typeParams: { readonly precision: 3 };
+                  readonly many: false;
+                };
+                readonly createdBy: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly id: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly meetingLink: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly startsAt: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly nullable: false;
+                  readonly typeParams: { readonly precision: 3 };
+                  readonly many: false;
+                };
+                readonly title: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly updatedAt: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly nullable: false;
+                  readonly typeParams: { readonly precision: 3 };
+                  readonly many: false;
+                };
+              };
+              primaryKey: { readonly columns: readonly ['id'] };
+              uniques: readonly [];
+              indexes: readonly [
+                {
+                  readonly name: 'TeamMeeting_startsAt_idx_5ff0df68';
+                  readonly prefix: 'TeamMeeting_startsAt_idx';
+                  readonly columns: readonly ['startsAt'];
+                  readonly unique: false;
+                },
+              ];
+              foreignKeys: readonly [];
+            };
             readonly TeamMember: {
               columns: {
                 readonly bio: {
@@ -7518,6 +7871,89 @@ type ContractBase = Omit<
                   readonly name: 'TeamMember_enabled_sortOrder_idx_f5142a7d';
                   readonly prefix: 'TeamMember_enabled_sortOrder_idx';
                   readonly columns: readonly ['enabled', 'sortOrder'];
+                  readonly unique: false;
+                },
+              ];
+              foreignKeys: readonly [];
+            };
+            readonly TeamTask: {
+              columns: {
+                readonly assigneeEmail: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly createdAt: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly nullable: false;
+                  readonly default: { readonly kind: 'function'; readonly expression: 'now()' };
+                  readonly typeParams: { readonly precision: 3 };
+                  readonly many: false;
+                };
+                readonly createdBy: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly description: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly dueDate: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly nullable: true;
+                  readonly typeParams: { readonly precision: 3 };
+                  readonly many: false;
+                };
+                readonly id: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly status: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'literal';
+                    readonly value: DefaultLiteralValue<'pg/text@1', 'todo'>;
+                  };
+                  readonly many: false;
+                };
+                readonly title: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly updatedAt: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly nullable: false;
+                  readonly typeParams: { readonly precision: 3 };
+                  readonly many: false;
+                };
+              };
+              primaryKey: { readonly columns: readonly ['id'] };
+              uniques: readonly [];
+              indexes: readonly [
+                {
+                  readonly name: 'TeamTask_assigneeEmail_status_idx_3c3c153b';
+                  readonly prefix: 'TeamTask_assigneeEmail_status_idx';
+                  readonly columns: readonly ['assigneeEmail', 'status'];
+                  readonly unique: false;
+                },
+                {
+                  readonly name: 'TeamTask_status_createdAt_idx_58610442';
+                  readonly prefix: 'TeamTask_status_createdAt_idx';
+                  readonly columns: readonly ['status', 'createdAt'];
                   readonly unique: false;
                 },
               ];
@@ -7907,6 +8343,14 @@ type ContractBase = Omit<
               readonly kind: 'valueSet';
               readonly values: readonly ['pending', 'under_review', 'approved', 'rejected'];
             };
+            readonly TeamAccessStatus: {
+              readonly kind: 'valueSet';
+              readonly values: readonly ['active', 'revoked'];
+            };
+            readonly TeamTaskStatus: {
+              readonly kind: 'valueSet';
+              readonly values: readonly ['todo', 'doing', 'done'];
+            };
             readonly UserStatus: {
               readonly kind: 'valueSet';
               readonly values: readonly ['active', 'suspended'];
@@ -8094,10 +8538,24 @@ type ContractBase = Omit<
       readonly namespace: 'public' & NamespaceId;
       readonly model: 'SupportRequest';
     };
+    readonly TeamAccess: {
+      readonly namespace: 'public' & NamespaceId;
+      readonly model: 'TeamAccess';
+    };
+    readonly TeamAnnouncement: {
+      readonly namespace: 'public' & NamespaceId;
+      readonly model: 'TeamAnnouncement';
+    };
+    readonly TeamFile: { readonly namespace: 'public' & NamespaceId; readonly model: 'TeamFile' };
+    readonly TeamMeeting: {
+      readonly namespace: 'public' & NamespaceId;
+      readonly model: 'TeamMeeting';
+    };
     readonly TeamMember: {
       readonly namespace: 'public' & NamespaceId;
       readonly model: 'TeamMember';
     };
+    readonly TeamTask: { readonly namespace: 'public' & NamespaceId; readonly model: 'TeamTask' };
     readonly Testimonial: {
       readonly namespace: 'public' & NamespaceId;
       readonly model: 'Testimonial';
@@ -13098,6 +13556,249 @@ type ContractBase = Omit<
               };
             };
           };
+          readonly TeamAccess: {
+            readonly fields: {
+              readonly createdAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly typeParams: { readonly precision: 3 };
+                };
+              };
+              readonly email: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly grantedAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly typeParams: { readonly precision: 3 };
+                };
+              };
+              readonly grantedBy: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly id: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly revokedAt: {
+                readonly nullable: true;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly typeParams: { readonly precision: 3 };
+                };
+              };
+              readonly status: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly updatedAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly typeParams: { readonly precision: 3 };
+                };
+              };
+              readonly userId: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+            };
+            readonly relations: Record<string, never>;
+            readonly storage: {
+              readonly table: 'TeamAccess';
+              readonly namespaceId: 'public';
+              readonly fields: {
+                readonly createdAt: { readonly column: 'createdAt' };
+                readonly email: { readonly column: 'email' };
+                readonly grantedAt: { readonly column: 'grantedAt' };
+                readonly grantedBy: { readonly column: 'grantedBy' };
+                readonly id: { readonly column: 'id' };
+                readonly revokedAt: { readonly column: 'revokedAt' };
+                readonly status: { readonly column: 'status' };
+                readonly updatedAt: { readonly column: 'updatedAt' };
+                readonly userId: { readonly column: 'userId' };
+              };
+            };
+          };
+          readonly TeamAnnouncement: {
+            readonly fields: {
+              readonly body: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly createdAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly typeParams: { readonly precision: 3 };
+                };
+              };
+              readonly createdBy: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly id: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly title: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly updatedAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly typeParams: { readonly precision: 3 };
+                };
+              };
+            };
+            readonly relations: Record<string, never>;
+            readonly storage: {
+              readonly table: 'TeamAnnouncement';
+              readonly namespaceId: 'public';
+              readonly fields: {
+                readonly body: { readonly column: 'body' };
+                readonly createdAt: { readonly column: 'createdAt' };
+                readonly createdBy: { readonly column: 'createdBy' };
+                readonly id: { readonly column: 'id' };
+                readonly title: { readonly column: 'title' };
+                readonly updatedAt: { readonly column: 'updatedAt' };
+              };
+            };
+          };
+          readonly TeamFile: {
+            readonly fields: {
+              readonly createdAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly typeParams: { readonly precision: 3 };
+                };
+              };
+              readonly fileName: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly id: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly mime: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly size: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/int4@1' };
+              };
+              readonly storagePath: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly updatedAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly typeParams: { readonly precision: 3 };
+                };
+              };
+              readonly uploadedBy: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+            };
+            readonly relations: Record<string, never>;
+            readonly storage: {
+              readonly table: 'TeamFile';
+              readonly namespaceId: 'public';
+              readonly fields: {
+                readonly createdAt: { readonly column: 'createdAt' };
+                readonly fileName: { readonly column: 'fileName' };
+                readonly id: { readonly column: 'id' };
+                readonly mime: { readonly column: 'mime' };
+                readonly size: { readonly column: 'size' };
+                readonly storagePath: { readonly column: 'storagePath' };
+                readonly updatedAt: { readonly column: 'updatedAt' };
+                readonly uploadedBy: { readonly column: 'uploadedBy' };
+              };
+            };
+          };
+          readonly TeamMeeting: {
+            readonly fields: {
+              readonly agenda: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly createdAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly typeParams: { readonly precision: 3 };
+                };
+              };
+              readonly createdBy: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly id: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly meetingLink: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly startsAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly typeParams: { readonly precision: 3 };
+                };
+              };
+              readonly title: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly updatedAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly typeParams: { readonly precision: 3 };
+                };
+              };
+            };
+            readonly relations: Record<string, never>;
+            readonly storage: {
+              readonly table: 'TeamMeeting';
+              readonly namespaceId: 'public';
+              readonly fields: {
+                readonly agenda: { readonly column: 'agenda' };
+                readonly createdAt: { readonly column: 'createdAt' };
+                readonly createdBy: { readonly column: 'createdBy' };
+                readonly id: { readonly column: 'id' };
+                readonly meetingLink: { readonly column: 'meetingLink' };
+                readonly startsAt: { readonly column: 'startsAt' };
+                readonly title: { readonly column: 'title' };
+                readonly updatedAt: { readonly column: 'updatedAt' };
+              };
+            };
+          };
           readonly TeamMember: {
             readonly fields: {
               readonly bio: {
@@ -13189,6 +13890,74 @@ type ContractBase = Omit<
                 readonly updatedAt: { readonly column: 'updatedAt' };
                 readonly websiteUrl: { readonly column: 'websiteUrl' };
                 readonly xUrl: { readonly column: 'xUrl' };
+              };
+            };
+          };
+          readonly TeamTask: {
+            readonly fields: {
+              readonly assigneeEmail: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly createdAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly typeParams: { readonly precision: 3 };
+                };
+              };
+              readonly createdBy: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly description: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly dueDate: {
+                readonly nullable: true;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly typeParams: { readonly precision: 3 };
+                };
+              };
+              readonly id: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly status: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly title: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly updatedAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly typeParams: { readonly precision: 3 };
+                };
+              };
+            };
+            readonly relations: Record<string, never>;
+            readonly storage: {
+              readonly table: 'TeamTask';
+              readonly namespaceId: 'public';
+              readonly fields: {
+                readonly assigneeEmail: { readonly column: 'assigneeEmail' };
+                readonly createdAt: { readonly column: 'createdAt' };
+                readonly createdBy: { readonly column: 'createdBy' };
+                readonly description: { readonly column: 'description' };
+                readonly dueDate: { readonly column: 'dueDate' };
+                readonly id: { readonly column: 'id' };
+                readonly status: { readonly column: 'status' };
+                readonly title: { readonly column: 'title' };
+                readonly updatedAt: { readonly column: 'updatedAt' };
               };
             };
           };
@@ -13965,6 +14734,21 @@ type ContractBase = Omit<
               { readonly name: 'rejected'; readonly value: 'rejected' },
             ];
           };
+          readonly TeamAccessStatus: {
+            readonly codecId: 'pg/text@1';
+            readonly members: readonly [
+              { readonly name: 'active'; readonly value: 'active' },
+              { readonly name: 'revoked'; readonly value: 'revoked' },
+            ];
+          };
+          readonly TeamTaskStatus: {
+            readonly codecId: 'pg/text@1';
+            readonly members: readonly [
+              { readonly name: 'todo'; readonly value: 'todo' },
+              { readonly name: 'doing'; readonly value: 'doing' },
+              { readonly name: 'done'; readonly value: 'done' },
+            ];
+          };
           readonly UserStatus: {
             readonly codecId: 'pg/text@1';
             readonly members: readonly [
@@ -14087,6 +14871,15 @@ type ContractBase = Omit<
             { readonly name: 'under_review'; readonly value: 'under_review' },
             { readonly name: 'approved'; readonly value: 'approved' },
             { readonly name: 'rejected'; readonly value: 'rejected' },
+          ];
+          readonly TeamAccessStatus: readonly [
+            { readonly name: 'active'; readonly value: 'active' },
+            { readonly name: 'revoked'; readonly value: 'revoked' },
+          ];
+          readonly TeamTaskStatus: readonly [
+            { readonly name: 'todo'; readonly value: 'todo' },
+            { readonly name: 'doing'; readonly value: 'doing' },
+            { readonly name: 'done'; readonly value: 'done' },
           ];
           readonly UserStatus: readonly [
             { readonly name: 'active'; readonly value: 'active' },
@@ -15529,6 +16322,166 @@ type ContractBase = Omit<
             readonly params: { readonly precision: 3 };
           };
           readonly ref: {
+            readonly entry: 'TeamAccess';
+            readonly field: 'createdAt';
+            readonly namespace: 'public';
+          };
+        },
+        {
+          readonly onCreate: {
+            readonly id: 'timestampNow';
+            readonly kind: 'generator';
+            readonly params: { readonly precision: 3 };
+          };
+          readonly ref: {
+            readonly entry: 'TeamAccess';
+            readonly field: 'grantedAt';
+            readonly namespace: 'public';
+          };
+        },
+        {
+          readonly onCreate: { readonly id: 'cuid2'; readonly kind: 'generator' };
+          readonly ref: {
+            readonly entry: 'TeamAccess';
+            readonly field: 'id';
+            readonly namespace: 'public';
+          };
+        },
+        {
+          readonly onCreate: {
+            readonly id: 'timestampNow';
+            readonly kind: 'generator';
+            readonly params: { readonly precision: 3 };
+          };
+          readonly onUpdate: {
+            readonly id: 'timestampNow';
+            readonly kind: 'generator';
+            readonly params: { readonly precision: 3 };
+          };
+          readonly ref: {
+            readonly entry: 'TeamAccess';
+            readonly field: 'updatedAt';
+            readonly namespace: 'public';
+          };
+        },
+        {
+          readonly onCreate: {
+            readonly id: 'timestampNow';
+            readonly kind: 'generator';
+            readonly params: { readonly precision: 3 };
+          };
+          readonly ref: {
+            readonly entry: 'TeamAnnouncement';
+            readonly field: 'createdAt';
+            readonly namespace: 'public';
+          };
+        },
+        {
+          readonly onCreate: { readonly id: 'cuid2'; readonly kind: 'generator' };
+          readonly ref: {
+            readonly entry: 'TeamAnnouncement';
+            readonly field: 'id';
+            readonly namespace: 'public';
+          };
+        },
+        {
+          readonly onCreate: {
+            readonly id: 'timestampNow';
+            readonly kind: 'generator';
+            readonly params: { readonly precision: 3 };
+          };
+          readonly onUpdate: {
+            readonly id: 'timestampNow';
+            readonly kind: 'generator';
+            readonly params: { readonly precision: 3 };
+          };
+          readonly ref: {
+            readonly entry: 'TeamAnnouncement';
+            readonly field: 'updatedAt';
+            readonly namespace: 'public';
+          };
+        },
+        {
+          readonly onCreate: {
+            readonly id: 'timestampNow';
+            readonly kind: 'generator';
+            readonly params: { readonly precision: 3 };
+          };
+          readonly ref: {
+            readonly entry: 'TeamFile';
+            readonly field: 'createdAt';
+            readonly namespace: 'public';
+          };
+        },
+        {
+          readonly onCreate: { readonly id: 'cuid2'; readonly kind: 'generator' };
+          readonly ref: {
+            readonly entry: 'TeamFile';
+            readonly field: 'id';
+            readonly namespace: 'public';
+          };
+        },
+        {
+          readonly onCreate: {
+            readonly id: 'timestampNow';
+            readonly kind: 'generator';
+            readonly params: { readonly precision: 3 };
+          };
+          readonly onUpdate: {
+            readonly id: 'timestampNow';
+            readonly kind: 'generator';
+            readonly params: { readonly precision: 3 };
+          };
+          readonly ref: {
+            readonly entry: 'TeamFile';
+            readonly field: 'updatedAt';
+            readonly namespace: 'public';
+          };
+        },
+        {
+          readonly onCreate: {
+            readonly id: 'timestampNow';
+            readonly kind: 'generator';
+            readonly params: { readonly precision: 3 };
+          };
+          readonly ref: {
+            readonly entry: 'TeamMeeting';
+            readonly field: 'createdAt';
+            readonly namespace: 'public';
+          };
+        },
+        {
+          readonly onCreate: { readonly id: 'cuid2'; readonly kind: 'generator' };
+          readonly ref: {
+            readonly entry: 'TeamMeeting';
+            readonly field: 'id';
+            readonly namespace: 'public';
+          };
+        },
+        {
+          readonly onCreate: {
+            readonly id: 'timestampNow';
+            readonly kind: 'generator';
+            readonly params: { readonly precision: 3 };
+          };
+          readonly onUpdate: {
+            readonly id: 'timestampNow';
+            readonly kind: 'generator';
+            readonly params: { readonly precision: 3 };
+          };
+          readonly ref: {
+            readonly entry: 'TeamMeeting';
+            readonly field: 'updatedAt';
+            readonly namespace: 'public';
+          };
+        },
+        {
+          readonly onCreate: {
+            readonly id: 'timestampNow';
+            readonly kind: 'generator';
+            readonly params: { readonly precision: 3 };
+          };
+          readonly ref: {
             readonly entry: 'TeamMember';
             readonly field: 'createdAt';
             readonly namespace: 'public';
@@ -15555,6 +16508,43 @@ type ContractBase = Omit<
           };
           readonly ref: {
             readonly entry: 'TeamMember';
+            readonly field: 'updatedAt';
+            readonly namespace: 'public';
+          };
+        },
+        {
+          readonly onCreate: {
+            readonly id: 'timestampNow';
+            readonly kind: 'generator';
+            readonly params: { readonly precision: 3 };
+          };
+          readonly ref: {
+            readonly entry: 'TeamTask';
+            readonly field: 'createdAt';
+            readonly namespace: 'public';
+          };
+        },
+        {
+          readonly onCreate: { readonly id: 'cuid2'; readonly kind: 'generator' };
+          readonly ref: {
+            readonly entry: 'TeamTask';
+            readonly field: 'id';
+            readonly namespace: 'public';
+          };
+        },
+        {
+          readonly onCreate: {
+            readonly id: 'timestampNow';
+            readonly kind: 'generator';
+            readonly params: { readonly precision: 3 };
+          };
+          readonly onUpdate: {
+            readonly id: 'timestampNow';
+            readonly kind: 'generator';
+            readonly params: { readonly precision: 3 };
+          };
+          readonly ref: {
+            readonly entry: 'TeamTask';
             readonly field: 'updatedAt';
             readonly namespace: 'public';
           };

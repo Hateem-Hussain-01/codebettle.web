@@ -45,6 +45,14 @@ interface PortalLayoutProps {
    */
   adminBasePath?: string;
   /**
+   * Team Portal access (Eman, 16 Nov 2026): the server layout passes
+   * true when the user holds ACTIVE team access, so the topbar
+   * switcher can offer the team portal. Defaults to false — portals
+   * that do not check it (or check fail-safe) simply never offer the
+   * switch. UI only: the team layout guard is the enforcement.
+   */
+  hasTeamAccess?: boolean;
+  /**
    * Hide the top-bar theme toggle (Eman, 15 Nov 2026): students change
    * the theme from Profile settings instead. Defaults to false — the
    * instructor and admin portals keep their top-bar toggle.
@@ -160,7 +168,7 @@ function Sidebar({
   );
 }
 
-export default function PortalLayout({ user, navItems, children, portalName, adminBasePath = 'admin', hideThemeToggle = false }: PortalLayoutProps) {
+export default function PortalLayout({ user, navItems, children, portalName, adminBasePath = 'admin', hasTeamAccess = false, hideThemeToggle = false }: PortalLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const pathname = usePathname();
 
@@ -171,7 +179,7 @@ export default function PortalLayout({ user, navItems, children, portalName, adm
   // user out. getPortalSwitch returns null unless the user holds the
   // OTHER portal's capability — a normal teacher/admin/student sees
   // no switch option at all.
-  const switchTarget = getPortalSwitch(user, pathname, adminBasePath);
+  const switchTarget = getPortalSwitch(user, pathname, adminBasePath, hasTeamAccess);
   // Bell/avatar stay in the CURRENT portal, not the user's primary
   // role: a teacher+admin whose primary role is 'instructor' but who
   // switched into the admin panel must get /admin/notifications, not

@@ -3,6 +3,7 @@ import { headers } from 'next/headers';
 import { getSession } from '@/lib/auth';
 import { ADMIN_AREAS, areaForAdminPath, firstGrantedArea, hasAdminArea } from '@/lib/admin-access';
 import { adminUrl, getAdminBasePath, toExternalAdminPath, toInternalAdminPath } from '@/lib/admin-url';
+import { hasTeamAccess } from '@/lib/db/team';
 import { hasAdminCapability } from '@/lib/rbac';
 import { isSuperAdmin } from '@/lib/super-admin';
 import { canSeeAuditLog } from '@/components/audit/audit-helpers';
@@ -45,6 +46,8 @@ const NAV_ICONS = {
   // Footer forms sidebar icons (PR #33).
   'book-a-call': <CalendarCheck className="w-5 h-5" />,
   ambassadors: <UserPlus className="w-5 h-5" />,
+  // Team Portal sidebar icon (Eman, 16 Nov 2026).
+  team: <Users className="w-5 h-5" />,
   subscribers: <MailPlus className="w-5 h-5" />,
   // Links page sidebar icon.
   'links-page': <Link2 className="w-5 h-5" />,
@@ -179,8 +182,19 @@ export default async function AdminLayout({ children }: { children: React.ReactN
     // Unknown /admin/* paths are left alone to 404.
   }
 
+  // Team Portal switcher (Eman, 16 Nov 2026): an admin who also holds
+  // team access gets "Switch to Team Portal" in the topbar. Fail-safe:
+  // a missing team table reads as no access — the switcher must never
+  // break the admin panel.
+  let hasTeam = false;
+  try {
+    hasTeam = await hasTeamAccess(session);
+  } catch {
+    hasTeam = false;
+  }
+
   return (
-    <PortalLayout user={session} navItems={navItems} portalName="Admin Panel" adminBasePath={getAdminBasePath()}>
+    <PortalLayout user={session} navItems={navItems} portalName="Admin Panel" adminBasePath={getAdminBasePath()} hasTeamAccess={hasTeam}>
       {children}
     </PortalLayout>
   );

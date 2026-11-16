@@ -99,8 +99,20 @@ import type {
   SuccessStorySubmissionRow,
   StudentReview,
   StudentReviewRow,
+  TeamAccess,
+  TeamAccessRow,
+  TeamAccessStatus,
+  TeamAnnouncement,
+  TeamAnnouncementRow,
+  TeamFile,
+  TeamFileRow,
+  TeamMeeting,
+  TeamMeetingRow,
   TeamMember,
   TeamMemberRow,
+  TeamTask,
+  TeamTaskRow,
+  TeamTaskStatus,
   Testimonial,
   TestimonialRow,
   User,
@@ -562,6 +574,86 @@ export function mapAmbassadorMessageRow(row: AmbassadorMessageRow): AmbassadorMe
     message: row.message,
     read: row.read,
     createdAt: dateToString(row.createdAt),
+  };
+}
+
+/** Team Portal (Eman, 16 Nov 2026) — mappers for the team tables. */
+
+export function teamAccessStatusFromStorage(stored: string): TeamAccessStatus {
+  if (stored === 'active' || stored === 'revoked') return stored;
+  throw new Error(`Unknown team access status in database: ${stored}`);
+}
+
+export function teamTaskStatusFromStorage(stored: string): TeamTaskStatus {
+  if (stored === 'todo' || stored === 'doing' || stored === 'done') return stored;
+  throw new Error(`Unknown team task status in database: ${stored}`);
+}
+
+export function mapTeamAccessRow(row: TeamAccessRow): TeamAccess {
+  return {
+    id: row.id,
+    email: row.email,
+    userId: row.userId ?? undefined,
+    status: teamAccessStatusFromStorage(row.status),
+    grantedBy: row.grantedBy,
+    grantedAt: dateToString(row.grantedAt),
+    revokedAt: row.revokedAt ? dateToString(row.revokedAt) : undefined,
+    createdAt: dateToString(row.createdAt),
+    updatedAt: dateToString(row.updatedAt),
+  };
+}
+
+export function mapTeamTaskRow(row: TeamTaskRow): TeamTask {
+  return {
+    id: row.id,
+    title: row.title,
+    description: row.description ?? undefined,
+    assigneeEmail: row.assigneeEmail,
+    status: teamTaskStatusFromStorage(row.status),
+    dueDate: row.dueDate ? dateToString(row.dueDate) : undefined,
+    createdBy: row.createdBy,
+    createdAt: dateToString(row.createdAt),
+    updatedAt: dateToString(row.updatedAt),
+  };
+}
+
+export function mapTeamAnnouncementRow(row: TeamAnnouncementRow): TeamAnnouncement {
+  return {
+    id: row.id,
+    title: row.title,
+    body: row.body,
+    createdBy: row.createdBy,
+    createdAt: dateToString(row.createdAt),
+    updatedAt: dateToString(row.updatedAt),
+  };
+}
+
+export function mapTeamMeetingRow(row: TeamMeetingRow): TeamMeeting {
+  return {
+    id: row.id,
+    title: row.title,
+    // Full ISO timestamp, NOT dateToString: the meeting TIME matters
+    // (dateToString is date-only). The row value is a Date from
+    // Prisma; a string passes through unchanged.
+    startsAt: row.startsAt instanceof Date ? row.startsAt.toISOString() : String(row.startsAt),
+    meetingLink: row.meetingLink ?? undefined,
+    agenda: row.agenda ?? undefined,
+    createdBy: row.createdBy,
+    createdAt: dateToString(row.createdAt),
+    updatedAt: dateToString(row.updatedAt),
+  };
+}
+
+export function mapTeamFileRow(row: TeamFileRow): TeamFile {
+  return {
+    id: row.id,
+    fileName: row.fileName,
+    storagePath: row.storagePath,
+    mime: row.mime,
+    size: row.size,
+    uploadedBy: row.uploadedBy,
+    createdAt: dateToString(row.createdAt),
+    updatedAt: dateToString(row.updatedAt),
   };
 }
 

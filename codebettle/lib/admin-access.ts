@@ -60,6 +60,7 @@ export type AdminAreaKey =
   | 'navbar-editor'
   | 'book-a-call'
   | 'ambassadors'
+  | 'team'
   | 'subscribers'
   | 'links-page'
   | 'settings'
@@ -146,6 +147,12 @@ export const ADMIN_AREAS: readonly AdminArea[] = [
   // missing keys are denied).
   { key: 'book-a-call', label: 'Book a Call', href: '/admin/book-a-call', description: 'Free career-guidance call requests (review, mark contacted/done)' },
   { key: 'ambassadors', label: 'Ambassadors', href: '/admin/ambassadors', description: 'Campus ambassador applications (review, approve/reject)' },
+  // Team Portal (Eman, 16 Nov 2026): the 4th portal's admin surface —
+  // team access grants, tasks, announcements, meetings, files. A NEW
+  // area (not folded into 'ambassadors') because team access is a
+  // separate grant with its own content workflow. Restricted admins do
+  // NOT get it by default (secure default: missing keys are denied).
+  { key: 'team', label: 'Team', href: '/admin/team', description: 'Team portal: access grants, tasks, announcements, meetings, files' },
   { key: 'subscribers', label: 'Subscribers', href: '/admin/subscribers', description: 'Newsletter subscribers from the footer' },
   // Links page (Linktree-style public /links page): link buttons +
   // contact details, reached only by the direct link sent to clients.

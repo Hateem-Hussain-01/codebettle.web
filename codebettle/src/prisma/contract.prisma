@@ -1423,6 +1423,110 @@ model AmbassadorMessage {
   @@index([read, createdAt])
 }
 
+// ---------------------------------------------------------------------------
+// Team Portal (Eman, 16 Nov 2026) — the 4th portal, for the CodeBettle
+// team (About Us page people EXCEPT teachers: management + department
+// heads). Access is by email grant, never by a shared secret: an admin
+// grants team access by email (TeamAccess) and the member signs in with
+// their OWN email + password like any student; the grant links to their
+// account by email on login/register. Revoke keeps the row for audit.
+// Tasks, announcements, meetings and files live here; credits live in
+// their own tables (PR B) and are deliberately NOT part of this change.
+// ---------------------------------------------------------------------------
+
+enum TeamAccessStatus {
+  active
+  revoked
+}
+
+enum TeamTaskStatus {
+  todo
+  doing
+  done
+}
+
+// One row per team member's access grant. `userId` links to the member's
+// account when one exists with the same email (linked at grant time,
+// or automatically on their next login/register); null for a pending
+// grant (admin granted before the member registered). `grantedBy` is
+// the admin's user id; `revokedAt` is set on revoke, the row stays.
+model TeamAccess {
+  id        String           @id @onCreate(cuid(2))
+  email     String           @unique
+  userId    String?          @unique
+  status    TeamAccessStatus @default(active)
+  grantedBy String
+  grantedAt DateTime         @default(now()) @onCreate(now())
+  revokedAt DateTime?
+  createdAt DateTime         @default(now()) @onCreate(now())
+  updatedAt temporal.UpdatedAt
+
+  @@index([status, createdAt])
+}
+
+// A task for the team. `assigneeEmail` is the team member's email
+// (not a user id — a task can be assigned before the member has an
+// account). Members move their own tasks todo -> doing -> done; only
+// admins create/edit/assign tasks.
+model TeamTask {
+  id            String         @id @onCreate(cuid(2))
+  title         String
+  description   String?
+  assigneeEmail String
+  status        TeamTaskStatus @default(todo)
+  dueDate       DateTime?
+  createdBy     String
+  createdAt     DateTime       @default(now()) @onCreate(now())
+  updatedAt     temporal.UpdatedAt
+
+  @@index([assigneeEmail, status])
+  @@index([status, createdAt])
+}
+
+// An announcement posted by an admin, read newest-first by the team.
+model TeamAnnouncement {
+  id        String   @id @onCreate(cuid(2))
+  title     String
+  body      String
+  createdBy String
+  createdAt DateTime @default(now()) @onCreate(now())
+  updatedAt temporal.UpdatedAt
+
+  @@index([createdAt])
+}
+
+// A meeting scheduled by an admin. `meetingLink` is the call URL
+// (like the course Zoom link); `agenda` is free-form notes.
+model TeamMeeting {
+  id          String   @id @onCreate(cuid(2))
+  title       String
+  startsAt    DateTime
+  meetingLink String?
+  agenda      String?
+  createdBy   String
+  createdAt   DateTime @default(now()) @onCreate(now())
+  updatedAt   temporal.UpdatedAt
+
+  @@index([startsAt])
+}
+
+// A file shared with the team. `storagePath` is the Supabase Storage
+// path in the private `team-files` bucket (e.g.
+// `team-files/<uuid>.pdf`), never a public URL; downloads go through
+// a signed-URL route. `size` is bytes.
+model TeamFile {
+  id          String   @id @onCreate(cuid(2))
+  fileName    String
+  storagePath String
+  mime        String
+  size        Int
+  uploadedBy  String
+  createdAt   DateTime @default(now()) @onCreate(now())
+  updatedAt   temporal.UpdatedAt
+
+  @@index([createdAt])
+}
+
 model AuditLog {
   id        String   @id @onCreate(cuid(2))
   actorId   String?

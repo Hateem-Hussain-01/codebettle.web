@@ -112,3 +112,28 @@ export function dashboardUrlForRole(role: string): string {
   if (role === 'instructor' || role === 'student') return `/${role}/dashboard`;
   return '/';
 }
+
+/**
+ * Post-login landing URL (Team Portal, Eman 16 Nov 2026).
+ *
+ * ONE login for everyone; the roles decide which portal opens.
+ * Priority: admin -> admin portal; teacher capability -> instructor
+ * portal; team access -> team portal; otherwise student -> student
+ * portal. So a pure team member lands on the team portal, a
+ * teacher+team user lands on the teacher portal (and uses the
+ * in-portal switcher), and an admin always lands on the admin portal.
+ * Pure function — the caller supplies `hasTeamAccess` (checked
+ * fail-safe against the team tables by the login route).
+ */
+export function landingDashboardUrl(input: {
+  role: string;
+  isAdmin?: boolean;
+  isTeacher?: boolean;
+  hasTeamAccess?: boolean;
+}): string {
+  if (input.isAdmin === true || input.role === 'admin') return adminUrl('/dashboard');
+  if (input.isTeacher === true || input.role === 'instructor') return '/instructor/dashboard';
+  if (input.hasTeamAccess === true) return '/team/dashboard';
+  if (input.role === 'student') return '/student/dashboard';
+  return '/';
+}

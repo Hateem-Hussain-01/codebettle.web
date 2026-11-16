@@ -18,9 +18,10 @@ import {
   registerRateLimitKey,
   resendVerificationRateLimitKey,
 } from '@/lib/rate-limit';
-import { matchesLoginPortal, type LoginPortal } from '@/lib/rbac';
-import { dashboardUrlForRole } from '@/lib/admin-url';
+import { hasAdminCapability, hasTeacherCapability, matchesLoginPortal, type LoginPortal } from '@/lib/rbac';
+import { landingDashboardUrl } from '@/lib/admin-url';
 import { recordLoginEvent } from '@/lib/db/login-events';
+import { hasTeamAccess } from '@/lib/db/team';
 import { getUserByEmail } from '@/lib/db/users';
 import { revokeOtherSessionsForUser } from '@/lib/db/sessions';
 import { resolveReferralForSignup } from '@/lib/db/ambassadors';
@@ -218,7 +219,26 @@ export async function POST(request: NextRequest) {
     // dashboardUrl is computed server-side so the client never has to
     // build an admin URL: for admins it is the secret admin dashboard
     // (PR #33), which the browser cannot derive from the env var.
-    const response = NextResponse.json({ user, success: true, dashboardUrl: dashboardUrlForRole(user.role) });
+    // Team Portal (Eman, 16 Nov 2026): the landing follows the role
+    // priority admin > teacher > team > student — a pure team member
+    // lands on /team/dashboard. The team check is fail-safe (false
+    // until the team tables exist) and skipped for admins/teachers,
+    // who land on their own portal anyway.
+    let teamAccess = false;
+    if (!hasAdminCapability(user) && !hasTeacherCapability(user)) {
+      try {
+        teamAccess = await hasTeamAccess(user);
+      } catch {
+        teamAccess = false;
+      }
+    }
+    const dashboardUrl = landingDashboardUrl({
+      role: user.role,
+      isAdmin: user.isAdmin,
+      isTeacher: user.isTeacher,
+      hasTeamAccess: teamAccess,
+    });
+    const response = NextResponse.json({ user, success: true, dashboardUrl });
     response.cookies.set(SESSION_COOKIE, token, sessionCookieOptions());
     // A fresh sign-in ends any stale view-as state (Phase 2, Module 21.4).
     response.cookies.delete(VIEW_AS_COOKIE);
@@ -315,8 +335,27 @@ export async function POST(request: NextRequest) {
       ip: getClientIp(request),
       userAgent: request.headers.get('user-agent') ?? undefined,
     });
+    // Team Portal (Eman, 16 Nov 2026): a new account whose email was
+    // pre-granted team access lands on the team portal (same priority
+    // as login). Fail-safe: false until the team tables exist.
+    let registerTeamAccess = false;
+    try {
+      registerTeamAccess = await hasTeamAccess(created);
+    } catch {
+      registerTeamAccess = false;
+    }
     const response = NextResponse.json(
-      { user: created, success: true, verificationEmailSent },
+      {
+        user: created,
+        success: true,
+        verificationEmailSent,
+        dashboardUrl: landingDashboardUrl({
+          role: created.role,
+          isAdmin: created.isAdmin,
+          isTeacher: created.isTeacher,
+          hasTeamAccess: registerTeamAccess,
+        }),
+      },
       { status: 201 },
     );
     response.cookies.set(SESSION_COOKIE, token, sessionCookieOptions());
