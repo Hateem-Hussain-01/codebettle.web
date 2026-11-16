@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { invalidBody, readJson, requireSession } from '@/lib/api-helpers';
+import { assertNotViewAs, invalidBody, readJson, requireSession } from '@/lib/api-helpers';
 import { getUserNotificationPrefs, updateUserNotificationPrefs } from '@/lib/db/users';
 import {
   NOTIFICATION_EVENT_KEYS,
@@ -73,6 +73,10 @@ export async function GET() {
 export async function PUT(request: NextRequest) {
   const auth = await requireSession();
   if ('error' in auth) return auth.error;
+  // View-as is view-only: a viewing admin must not change the viewed
+  // person's notification preferences as them.
+  const viewOnly = assertNotViewAs(auth.session);
+  if (viewOnly) return viewOnly;
   const body = await readJson(request);
   if (body === null) return invalidBody();
   const current = await getUserNotificationPrefs(auth.session.id);

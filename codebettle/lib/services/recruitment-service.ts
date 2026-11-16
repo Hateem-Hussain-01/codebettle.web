@@ -50,6 +50,7 @@ import {
   updateStage,
 } from '../db/application-stages';
 import { getUserById, updateUser } from '../db/users';
+import { getAmbassadorByUserId } from '../db/ambassadors';
 import { listNotificationsForUser } from '../db/notifications';
 import { logAudit } from '../db/audit';
 import { hasAdminCapability, hasTeacherCapability } from '../rbac';
@@ -592,7 +593,7 @@ export async function startViewAs(
   actor: Actor,
   teacherId: string,
 ): Promise<
-  Result<{ token: string; expiresAt: number; teacher: { id: string; name: string; email: string; role: string } }>
+  Result<{ token: string; teacher: { id: string; name: string; email: string; role: string } }>
 > {
   if (!hasAdminCapability(actor)) return forbidden('Only admins can view a teacher portal');
   if (teacherId === actor.id) return badRequest('You cannot view your own portal as a teacher');
@@ -605,10 +606,11 @@ export async function startViewAs(
     return forbidden('Only a teacher portal can be viewed — student portals are never opened this way');
   }
   if (teacher.status !== 'active') return badRequest('Only an active teacher account can be viewed');
-  // ADM-02: the token lives 30 minutes from minting (VIEW_AS_TTL_MS) —
-  // the viewing session ends when it expires, or earlier on Exit,
-  // logout, or closing the browser.
-  const { token, expiresAt } = mintViewAsToken(actor.id, teacherId);
+  // NO TIME LIMIT (Eman, 16 Nov 2026 — the ADM-02 30-minute TTL is
+  // removed): the token carries no expiry. The viewing session ends
+  // on Exit, logout, or closing the browser, and dies with the
+  // admin's own session (72h idle / 7-day absolute).
+  const { token } = mintViewAsToken(actor.id, teacherId, 'teacher');
   await logAudit({
     actorId: actor.id,
     action: 'admin.view_as.start',
@@ -618,8 +620,49 @@ export async function startViewAs(
   });
   return {
     token,
-    expiresAt,
     teacher: { id: teacher.id, name: teacher.name, email: teacher.email, role: teacher.role },
+  };
+}
+
+/**
+ * Ambassador view-as (16 Nov 2026 extension) — mint a token for ONE
+ * approved ambassador's dashboard (/student/ambassador). Mirrors
+ * startViewAs: admin-only, never yourself, target must exist, be
+ * active, and hold an ACTIVE Ambassador row (re-checked by
+ * getSession on every request, so a deactivated ambassador loses
+ * view-as at once). The token carries no expiry (same removal of
+ * the ADM-02 TTL as teacher view-as). While viewing, write routes
+ * refuse mutations (assertNotViewAs) and the banner offers the way
+ * back (POST /api/admin/view-as/exit, return to /admin/ambassadors).
+ */
+export async function startAmbassadorViewAs(
+  actor: Actor,
+  ambassadorUserId: string,
+): Promise<
+  Result<{ token: string; ambassador: { id: string; name: string; email: string; role: string } }>
+> {
+  if (!hasAdminCapability(actor)) return forbidden('Only admins can view an ambassador dashboard');
+  if (ambassadorUserId === actor.id) return badRequest('You cannot view your own dashboard as an ambassador');
+  const user = await getUserById(ambassadorUserId);
+  if (!user) return notFound('Ambassador');
+  if (user.status !== 'active') return badRequest('Only an active ambassador account can be viewed');
+  // Ambassador dashboards ONLY — a student with no active Ambassador
+  // row is refused here (and by getSession on every request).
+  const ambassador = await getAmbassadorByUserId(ambassadorUserId);
+  if (!ambassador || ambassador.status !== 'active') {
+    return forbidden('Only an approved ambassador dashboard can be viewed');
+  }
+  const { token } = mintViewAsToken(actor.id, ambassadorUserId, 'ambassador');
+  await logAudit({
+    actorId: actor.id,
+    action: 'admin.view_as.start',
+    entity: 'user',
+    entityId: ambassadorUserId,
+    detail: `viewing ambassador ${user.email}`,
+  });
+  return {
+    token,
+    ambassador: { id: user.id, name: user.name, email: user.email, role: user.role },
   };
 }
 

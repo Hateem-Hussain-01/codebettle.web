@@ -64,14 +64,19 @@ export interface SessionUser {
   canViewAuditLog?: boolean;
   /**
    * Phase 2, Module 21.4 (admin-assisted view-as): set ONLY when an
-   * admin is viewing this teacher's portal through a valid view-as
+   * admin is viewing this person's portal through a valid view-as
    * token (see lib/auth.ts getSession). The session user is then the
-   * TEACHER, and this marker names the admin doing the viewing — so
-   * write routes can refuse mutations while viewing (see
-   * assertNotViewAs in lib/api-helpers.ts) and layouts can show the
-   * viewing banner. Absent in every normal session.
+   * VIEWED person (a teacher, or — since 16 Nov 2026 — an approved
+   * ambassador), and this marker names the admin doing the viewing
+   * plus which portal kind is open — so write routes can refuse
+   * mutations while viewing (see assertNotViewAs in
+   * lib/api-helpers.ts) and layouts can show the viewing banner and
+   * keep view-as out of portals it must not open. `kind` is absent
+   * on tokens minted before the ambassador extension (they were
+   * teacher-only); treat a missing kind as 'teacher'. Absent in
+   * every normal session.
    */
-  viewAs?: { adminId: string; adminName: string };
+  viewAs?: { adminId: string; adminName: string; kind?: 'teacher' | 'ambassador' };
 }
 
 export function toSessionUser(user: User | SafeUser): SessionUser {
@@ -121,14 +126,6 @@ export async function login(email: string, password: string): Promise<SessionUse
     await linkAmbassadorToUserByEmail(user.email, user.id);
   } catch (e) {
     console.error('Failed to link ambassador account on login', e);
-  }
-  // Team Portal (Eman, 16 Nov 2026): same email link-up as
-  // ambassadors — a member granted before their account existed gets
-  // their team access linked on sign-in. Best-effort, never blocks.
-  try {
-    await linkTeamAccessToUserByEmail(user.email, user.id);
-  } catch (e) {
-    console.error('Failed to link team access on login', e);
   }
   return toSessionUser(user);
 }

@@ -5,7 +5,7 @@ import Card from '@/components/ui/Card';
 import Badge from '@/components/ui/Badge';
 import FadeIn from '@/components/ui/FadeIn';
 import Input from '@/components/ui/Input';
-import { Trash2, Users, Link2, Video, MessageSquare, Copy, Check } from 'lucide-react';
+import { Trash2, Users, Link2, Video, MessageSquare, Copy, Check, Eye } from 'lucide-react';
 import { formatDateShort } from '@/lib/utils';
 import toast from 'react-hot-toast';
 import type {
@@ -91,6 +91,7 @@ export default function AmbassadorsClient({
   const [savingMeetingLink, setSavingMeetingLink] = useState(false);
   const [messages, setMessages] = useState(initialMessages);
   const [unread, setUnread] = useState(unreadMessages);
+  const [switchingId, setSwitchingId] = useState<string | null>(null);
 
   const shown = filter === 'all' ? list : list.filter((a) => a.status === filter);
   const pendingCount = list.filter((a) => a.status === 'pending').length;
@@ -209,6 +210,32 @@ export default function AmbassadorsClient({
   };
 
   const ambassadorName = (ambassadorId: string) => ambassadorNames[ambassadorId] ?? 'Ambassador';
+
+  /**
+   * Admin-assisted view-as: open the ambassador's actual dashboard,
+   * view-only. Same pattern as "Switch to Teacher Portal" on the
+   * Instructors page. No time limit — the session lasts until the
+   * admin clicks Exit in the banner, signs out, or closes the
+   * browser. Only ambassadors linked to a student account can be
+   * viewed (userId is null until they sign in with the granted
+   * email); inactive ambassadors never get the button (the service
+   * refuses them), so this only ever fires for active accounts.
+   */
+  const handleSwitchToAmbassadorDashboard = async (ambassadorUserId: string) => {
+    setSwitchingId(ambassadorUserId);
+    try {
+      const res = await fetch('/api/admin/view-as/ambassador', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ambassadorId: ambassadorUserId }),
+      });
+      const data = await res.json();
+      if (!res.ok) { toast.error(data.error || 'Could not open the ambassador dashboard'); return; }
+      window.location.href = '/student/ambassador';
+    } finally {
+      setSwitchingId(null);
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -471,6 +498,24 @@ export default function AmbassadorsClient({
                           </div>
                         </div>
                       </button>
+                      {/* View-as entry point: one Switch per ambassador
+                          row — only when the ambassador is linked to a
+                          student account (userId) and active. Placed
+                          outside the expand <button> above (nested
+                          buttons are invalid HTML). */}
+                      {ambassador.userId && ambassador.status === 'active' && (
+                        <div className="mt-3 pt-3 border-t border-dark-border">
+                          <Button
+                            size="sm"
+                            variant="secondary"
+                            fullWidth
+                            onClick={() => handleSwitchToAmbassadorDashboard(ambassador.userId!)}
+                            loading={switchingId === ambassador.userId}
+                          >
+                            <Eye className="w-3.5 h-3.5" /> Switch to Ambassador Dashboard
+                          </Button>
+                        </div>
+                      )}
                       {expanded && (
                         <div className="mt-4 pt-4 border-t border-dark-border space-y-4 text-sm">
                           <div>

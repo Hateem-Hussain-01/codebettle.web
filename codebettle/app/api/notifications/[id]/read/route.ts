@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { requireSession } from '@/lib/api-helpers';
+import { assertNotViewAs, requireSession } from '@/lib/api-helpers';
 import { markNotificationRead } from '@/lib/db/notifications';
 
 /**
@@ -13,6 +13,11 @@ export async function POST(
 ) {
   const auth = await requireSession();
   if ('error' in auth) return auth.error;
+  // View-as is view-only: the notification popups mounted in every
+  // portal shell mark rows read on dismiss — a viewing admin must
+  // not mark the viewed person's notifications read as them.
+  const viewOnly = assertNotViewAs(auth.session);
+  if (viewOnly) return viewOnly;
   const { id } = await params;
   const notification = await markNotificationRead(auth.session.id, id);
   if (!notification) {

@@ -59,7 +59,7 @@ import { createHmac } from 'node:crypto';
 import { listNotificationsForUser } from '../lib/db/notifications';
 import type { SessionUser } from '../lib/services/auth-service';
 
-/** Build a pre-removal-format view-as token (payload carries an expiry) to prove legacy expiry is still honoured. */
+/** Build a pre-removal-format view-as token (payload carries teacherId + expiry) to prove legacy tokens are now rejected outright. */
 function mintLegacyViewAsToken(adminId: string, teacherId: string, expiresAt: number): string {
   const encoded = Buffer.from(JSON.stringify({ adminId, teacherId, expiresAt }), 'utf8').toString('base64url');
   const signature = createHmac('sha256', resolveViewAsSecret()).update(encoded).digest('hex');
@@ -416,29 +416,22 @@ test('custom stages reject terminal names and duplicate names (case-insensitive)
 // Admin-assisted view-as
 // ---------------------------------------------------------------------------
 
-test('view-as tokens carry a 30-minute expiry (ADM-02); forged or expired tokens fail', () => {
-  const { token, expiresAt } = mintViewAsToken('admin-1', 'teacher-1', undefined, 1_000_000);
-  // New tokens expire 30 minutes after minting.
-  assert.equal(expiresAt, 1_000_000 + 30 * 60 * 1000);
-
-  const payload = verifyViewAsToken(token, 1_000_100);
+test('view-as tokens carry NO expiry (Eman, 16 Nov 2026 — ADM-02 TTL removed); forged or legacy-format tokens fail', () => {
+  const { token } = mintViewAsToken('admin-1', 'teacher-1', 'teacher');
+  // New tokens carry no expiry at all.
+  const payload = verifyViewAsToken(token);
   assert.ok(payload);
   assert.equal(payload.adminId, 'admin-1');
-  assert.equal(payload.teacherId, 'teacher-1');
-  assert.equal(payload.expiresAt, expiresAt);
-
-  // Still valid just before expiry...
-  assert.ok(verifyViewAsToken(token, expiresAt - 1));
-  // ...dead at expiry, and a year later — no year-long viewing session.
-  assert.equal(verifyViewAsToken(token, expiresAt), null);
-  assert.equal(verifyViewAsToken(token, 1_000_100 + 365 * 24 * 60 * 60 * 1000), null);
+  assert.equal(payload.targetUserId, 'teacher-1');
+  assert.equal(payload.kind, 'teacher');
+  assert.ok(!('expiresAt' in payload));
 
   // Tampered payload.
-  assert.equal(verifyViewAsToken(`${token.slice(0, 10)}x${token.slice(11)}`, 1_000_100), null);
-  // Legacy token minted WITH an expiry (pre-removal format) still expires.
+  assert.equal(verifyViewAsToken(`${token.slice(0, 10)}x${token.slice(11)}`), null);
+  // Legacy token minted in the pre-removal format (teacherId +
+  // expiresAt, no kind) is rejected outright — it never verifies.
   const legacy = mintLegacyViewAsToken('admin-1', 'teacher-1', 1_000_000);
-  assert.ok(verifyViewAsToken(legacy, 999_999));
-  assert.equal(verifyViewAsToken(legacy, 1_000_001), null);
+  assert.equal(verifyViewAsToken(legacy), null);
   // Garbage.
   assert.equal(verifyViewAsToken('not-a-token'), null);
   assert.equal(verifyViewAsToken(null), null);

@@ -5,8 +5,8 @@ import { hasTeacherCapability } from '@/lib/rbac';
 import { getAdminBasePath } from '@/lib/admin-url';
 import { countUnsubmittedVisibleAssignments } from '@/lib/db/assignments';
 import { getAmbassadorByUserId } from '@/lib/db/ambassadors';
-import { hasTeamAccess } from '@/lib/db/team';
 import PortalLayout from '@/components/layout/PortalLayout';
+import ViewAsBanner from '@/components/layout/ViewAsBanner';
 import TeacherMessagePopup from '@/components/notifications/TeacherMessagePopup';
 import { LayoutDashboard, BookOpen, Compass, Award, StickyNote, Heart, Star, Bell, User, FileQuestion, LifeBuoy, ClipboardList, Users } from 'lucide-react';
 
@@ -31,10 +31,24 @@ const NAV_ITEMS = [
 
 export default async function StudentLayout({ children }: { children: React.ReactNode }) {
   const session = await getSession();
-  // Phase 2, Module 21.4: view-as never opens a student portal. A
-  // viewing admin who navigates here by hand goes back to the teacher
-  // portal they are viewing.
-  if (session?.viewAs) redirect('/instructor/dashboard');
+  // Phase 2, Module 21.4 — view-as scope (extended 16 Nov 2026):
+  // teacher view-as NEVER opens a student portal — a viewing admin
+  // who navigates here by hand goes back to the teacher portal they
+  // are viewing. Ambassador view-as opens EXACTLY ONE student route,
+  // /student/ambassador; every other /student/* route bounces back
+  // to the ambassador dashboard (never to /instructor/dashboard —
+  // there is no teacher portal in an ambassador viewing session).
+  // The path comes from the `x-pathname` header the proxy sets —
+  // the same seam as the admin layout's per-area guard. A missing
+  // header means "cannot tell" (RSC prefetch skips the proxy) — the
+  // real navigation re-checks with the header set, so allow it,
+  // exactly like the admin layout does.
+  const isAmbassadorViewAs = session?.viewAs?.kind === 'ambassador';
+  if (session?.viewAs && !isAmbassadorViewAs) redirect('/instructor/dashboard');
+  if (isAmbassadorViewAs) {
+    const pathname = (await headers()).get('x-pathname');
+    if (pathname !== null && pathname !== '/student/ambassador') redirect('/student/ambassador');
+  }
   // Phase 2, verified from code (not assumed): the student portal still
   // requires the PRIMARY role 'student' — NOT "any authenticated user".
   // A teacher or admin cannot open /student/*; if a multi-role user
@@ -95,23 +109,30 @@ export default async function StudentLayout({ children }: { children: React.Reac
     ? [...navItems, { href: '/student/ambassador', label: 'Ambassador', icon: <Users className="w-5 h-5" /> }]
     : navItems;
 
-  // Team Portal switcher (Eman, 16 Nov 2026): a student who also
-  // holds team access gets "Switch to Team Portal" in the topbar.
-  // Fail-safe: a missing team table reads as no access — the switcher
-  // must never break the student sidebar.
-  let hasTeam = false;
-  try {
-    hasTeam = await hasTeamAccess(session);
-  } catch {
-    hasTeam = false;
-  }
+  // Ambassador view-as shows ONLY the Ambassador nav item: the
+  // viewing scope is the dashboard alone, and the other items would
+  // only bounce back here. Real students keep the full nav.
+  const navItemsForRender = isAmbassadorViewAs
+    ? finalNavItems.filter((item) => item.href === '/student/ambassador')
+    : finalNavItems;
 
   return (
     <>
+      {/* Ambassador view-as banner (same Exit as the teacher portal,
+          returning to /admin/ambassadors instead of
+          /admin/instructors). */}
+      {session?.viewAs?.kind === 'ambassador' && (
+        <ViewAsBanner
+          adminName={session.viewAs.adminName}
+          adminBasePath={getAdminBasePath()}
+          returnPath="ambassadors"
+          viewedPortal="ambassador's"
+        />
+      )}
       {/* Theme toggle lives in Profile settings for students (Eman,
           15 Nov 2026) — the top-bar toggle is hidden in this portal
           only; instructor/admin portals keep theirs. */}
-      <PortalLayout user={session} navItems={finalNavItems} portalName="Student Portal" adminBasePath={getAdminBasePath()} hasTeamAccess={hasTeam} hideThemeToggle>
+      <PortalLayout user={session} navItems={navItemsForRender} portalName="Student Portal" adminBasePath={getAdminBasePath()} hideThemeToggle>
         {children}
       </PortalLayout>
       {/* Phase 3, Worker C: "Message from Your Teacher" popup. It shows

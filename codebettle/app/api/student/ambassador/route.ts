@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
-import { invalidBody, readJson, requireRoles } from '@/lib/api-helpers';
+import { assertNotViewAs, invalidBody, readJson, requireRoles } from '@/lib/api-helpers';
 import { updateOwnAmbassadorGroup } from '@/lib/db/ambassadors';
 
 /**
@@ -26,6 +26,10 @@ const patchSchema = z.object({
 export async function PATCH(request: NextRequest) {
   const auth = await requireRoles(['student']);
   if ('error' in auth) return auth.error;
+  // View-as is view-only: an admin viewing this ambassador's
+  // dashboard must not change their group link or member count.
+  const viewOnly = assertNotViewAs(auth.session);
+  if (viewOnly) return viewOnly;
   const body = await readJson(request);
   const parsed = patchSchema.safeParse(body);
   if (!parsed.success) return invalidBody('groupLink and groupMemberCount are invalid');

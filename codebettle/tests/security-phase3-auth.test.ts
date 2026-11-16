@@ -280,19 +280,20 @@ test('LOW-A1: changePassword refuses the current password as the new one', async
 });
 
 // ---------------------------------------------------------------------------
-// LOW-A2 — view-as tokens without an expiry are dead
+// LOW-A2 removed (16 Nov 2026, Eman) — view-as tokens carry no expiry
 // ---------------------------------------------------------------------------
 
-test('LOW-A2: a view-as token without expiresAt is rejected; a normal token still works until expiry', () => {
+test('LOW-A2 removed: a view-as token carries no expiry and verifies; a pre-removal-format token is rejected', () => {
   const secret = resolveViewAsSecret();
-  const { token, expiresAt } = mintViewAsToken('admin-1', 'teacher-1', secret, 1_000_000);
-  assert.ok(verifyViewAsToken(token, 1_000_100, secret));
-  assert.equal(verifyViewAsToken(token, expiresAt, secret), null);
+  const { token } = mintViewAsToken('admin-1', 'teacher-1', 'teacher', secret);
+  assert.ok(verifyViewAsToken(token, secret));
 
-  // Pre-TTL shape: payload with no expiry at all (valid HMAC).
-  const encoded = Buffer.from(JSON.stringify({ adminId: 'admin-1', teacherId: 'teacher-1' }), 'utf8').toString('base64url');
+  // Pre-removal shape: payload with teacherId + expiry, no kind
+  // (valid HMAC) — rejected: the shape check requires targetUserId
+  // + kind.
+  const encoded = Buffer.from(JSON.stringify({ adminId: 'admin-1', teacherId: 'teacher-1', expiresAt: 1_000_000 }), 'utf8').toString('base64url');
   const signature = createHmac('sha256', secret).update(encoded).digest('hex');
-  assert.equal(verifyViewAsToken(`${encoded}.${signature}`, 1_000_100, secret), null);
+  assert.equal(verifyViewAsToken(`${encoded}.${signature}`, secret), null);
 });
 
 // ---------------------------------------------------------------------------
