@@ -277,3 +277,32 @@ body {
     animation: none;
   }
 }
+
+/* ------------------------------------------------------------------ */
+/* Premium 3D public pages (Eman, 16 Nov 2026) — ADDITIVE ONLY.       */
+/*                                                                     */
+/* New classes for the Home / About / Spotlight / Contact pages.      */
+/* Nothing above was changed: dashboards keep their exact look.        */
+/* The float animations are transform-only (GPU-friendly) and are      */
+/* collapsed by the `prefers-reduced-motion` block above, like every   */
+/* other animation on the site.                                        */
+/* ------------------------------------------------------------------ */
+
+/* Gentle vertical float for decorative chips and icon tiles. */
+@keyframes float-y {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-12px);
+  }
+}
+
+.animate-float-slow {
+  animation: float-y 6s ease-in-out infinite;
+}
+
+.animate-float-slower {
+  animation: float-y 8s ease-in-out infinite;
+}

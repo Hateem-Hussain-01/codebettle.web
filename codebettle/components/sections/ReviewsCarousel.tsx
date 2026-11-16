@@ -3,6 +3,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { ArrowUpRight, ChevronLeft, ChevronRight, Globe, Quote, X } from 'lucide-react';
 import { GithubIcon, LinkedInIcon } from '@/components/auth/BrandIcons';
 import StarRating from '@/components/ui/StarRating';
+import TiltCard from '@/components/ui/TiltCard';
 import type { StudentReview } from '@/lib/db/types';
 
 /**
@@ -155,9 +156,10 @@ export default function ReviewsCarousel({ reviews }: { reviews: StudentReview[] 
                 className="shrink-0 px-3"
                 style={{ width: `${100 / visible}%` }}
               >
+                <TiltCard max={4} className="h-full">
                 <button
                   onClick={() => setSelected(i)}
-                  className="w-full text-left bg-dark-card border border-dark-border rounded-2xl overflow-hidden hover:border-primary/40 transition-all duration-300 group"
+                  className="w-full text-left bg-dark-card border border-dark-border rounded-2xl overflow-hidden hover:border-primary/40 hover:-translate-y-1 hover:shadow-[0_16px_40px_-12px_rgba(0,0,0,0.6)] transition-all duration-300 group"
                   aria-label={`Read ${review.fullName}'s full review`}
                 >
                   <div className="relative">
@@ -183,6 +185,7 @@ export default function ReviewsCarousel({ reviews }: { reviews: StudentReview[] 
                     <p className="text-sm text-muted leading-relaxed line-clamp-3">“{review.reviewText}”</p>
                   </div>
                 </button>
+                </TiltCard>
               </article>
             ))}
           </div>

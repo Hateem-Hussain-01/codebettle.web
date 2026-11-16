@@ -2,6 +2,7 @@
 import { motion } from 'framer-motion';
 import { Quote } from 'lucide-react';
 import StarRating from '@/components/ui/StarRating';
+import TiltCard from '@/components/ui/TiltCard';
 import type { Testimonial } from '@/lib/db/types';
 
 export default function TestimonialsSection({ testimonials }: { testimonials: Testimonial[] }) {
@@ -18,13 +19,13 @@ export default function TestimonialsSection({ testimonials }: { testimonials: Te
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {testimonials.map((t, i) => (
+            <TiltCard key={t.id} max={5} className="h-full">
             <motion.div
-              key={t.id}
               initial={{ opacity: 0, y: 30 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ delay: i * 0.1 }}
-              className="bg-dark-card border border-dark-border rounded-xl p-6 hover:border-primary/30 transition-all duration-300 flex flex-col"
+              className="bg-dark-card border border-dark-border rounded-xl p-6 hover:border-primary/30 hover:-translate-y-1 hover:shadow-[0_16px_40px_-12px_rgba(0,0,0,0.6)] transition-all duration-300 flex flex-col h-full"
             >
               <Quote className="w-6 h-6 text-primary-text/40 mb-4" />
               <p className="text-muted text-sm leading-relaxed flex-1 mb-6">"{t.comment}"</p>
@@ -39,6 +40,7 @@ export default function TestimonialsSection({ testimonials }: { testimonials: Te
                 <StarRating rating={t.rating} size="sm" />
               </div>
             </motion.div>
+            </TiltCard>
           ))}
         </div>
       </div>

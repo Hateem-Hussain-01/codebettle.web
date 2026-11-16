@@ -1,6 +1,7 @@
 'use client';
 import { motion } from 'framer-motion';
 import { UserPlus, Search, BookOpen, Award } from 'lucide-react';
+import TiltCard from '@/components/ui/TiltCard';
 
 const steps = [
   { icon: <UserPlus className="w-7 h-7" />, step: '01', title: 'Create Your Account', description: 'Sign up for free and set up your student profile in under a minute.' },
@@ -33,14 +34,17 @@ export default function HowItWorks() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ delay: i * 0.15 }}
+              whileHover={{ y: -4 }}
               className="text-center"
             >
-              <div className="relative inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-primary/10 border border-primary/20 text-primary-text mb-6 group-hover:bg-primary/20 transition-colors">
-                {step.icon}
-                <span className="absolute -top-2 -right-2 w-7 h-7 rounded-full bg-primary text-ink text-xs font-black flex items-center justify-center">
-                  {step.step}
-                </span>
-              </div>
+              <TiltCard max={5} className="inline-block">
+                <div className="relative inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-primary/10 border border-primary/20 text-primary-text mb-6 shadow-[0_8px_24px_-8px_rgba(0,0,0,0.6)] transition-colors">
+                  {step.icon}
+                  <span className="absolute -top-2 -right-2 w-7 h-7 rounded-full bg-primary text-ink text-xs font-black flex items-center justify-center shadow-[0_0_16px_rgba(245,197,24,0.5)]">
+                    {step.step}
+                  </span>
+                </div>
+              </TiltCard>
               <h3 className="text-foreground font-bold mb-3">{step.title}</h3>
               <p className="text-muted text-sm leading-relaxed">{step.description}</p>
             </motion.div>

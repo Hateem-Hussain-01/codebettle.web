@@ -1,5 +1,6 @@
 'use client';
 import CourseCard from '@/components/ui/CourseCard';
+import TiltCard from '@/components/ui/TiltCard';
 import { useWishlist } from '@/hooks/use-wishlist';
 import type { PublicCourse } from '@/lib/db/types';
 
@@ -21,15 +22,16 @@ export default function FeaturedCoursesClient({ courses, instructorNames }: Feat
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
       {courses.map((course, i) => (
-        <CourseCard
-          key={course.id}
-          course={course}
-          instructorName={instructorNames[course.instructorId] ?? 'CodeBettle Instructor'}
-          index={i}
-          isWishlisted={wishlistedIds.has(course.id)}
-          onWishlist={signedIn && loaded ? toggle : undefined}
-          showPrice={false}
-        />
+        <TiltCard key={course.id} max={5} className="h-full">
+          <CourseCard
+            course={course}
+            instructorName={instructorNames[course.instructorId] ?? 'CodeBettle Instructor'}
+            index={i}
+            isWishlisted={wishlistedIds.has(course.id)}
+            onWishlist={signedIn && loaded ? toggle : undefined}
+            showPrice={false}
+          />
+        </TiltCard>
       ))}
     </div>
   );

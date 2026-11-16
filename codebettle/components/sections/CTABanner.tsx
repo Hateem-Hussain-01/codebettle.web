@@ -17,7 +17,7 @@ export default function CTABanner() {
           whileInView={{ opacity: 1, scale: 1 }}
           viewport={{ once: true }}
         >
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-primary/20 border border-primary/30 text-primary-text mb-6">
+          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-primary/20 border border-primary/30 text-primary-text mb-6 shadow-[0_0_32px_-6px_rgba(245,197,24,0.45)] animate-float-slow">
             <GraduationCap className="w-8 h-8" />
           </div>
           <h2 className="text-3xl sm:text-5xl font-black text-foreground mb-6">
@@ -27,15 +27,19 @@ export default function CTABanner() {
             Join over 1,500 students already learning at CodeBettle. Sign up today and access your first course for free.
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-            <Link href="/auth/register">
-              <Button size="lg" variant="primary" className="group">
-                Get Started Free
-                <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-              </Button>
-            </Link>
-            <Link href="/become-instructor">
-              <Button size="lg" variant="outline">Teach on CodeBettle</Button>
-            </Link>
+            <motion.span whileHover={{ y: -2 }} whileTap={{ scale: 0.97 }}>
+              <Link href="/auth/register">
+                <Button size="lg" variant="primary" className="group">
+                  Get Started Free
+                  <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                </Button>
+              </Link>
+            </motion.span>
+            <motion.span whileHover={{ y: -2 }} whileTap={{ scale: 0.97 }}>
+              <Link href="/become-instructor">
+                <Button size="lg" variant="outline">Teach on CodeBettle</Button>
+              </Link>
+            </motion.span>
           </div>
         </motion.div>
       </div>

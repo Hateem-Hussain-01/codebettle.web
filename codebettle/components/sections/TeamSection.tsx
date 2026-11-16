@@ -1,4 +1,5 @@
 import FadeIn from '@/components/ui/FadeIn';
+import TiltCard from '@/components/ui/TiltCard';
 import { GithubIcon, LinkedInIcon } from '@/components/auth/BrandIcons';
 import type { TeamMember } from '@/lib/db/types';
 import { Globe } from 'lucide-react';
@@ -24,13 +25,13 @@ export default function TeamSection({ members }: { members: TeamMember[] }) {
     <FadeIn>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
         {members.map((member) => (
+          <TiltCard key={member.id} max={5} className="h-full">
           <article
-            key={member.id}
-            className="bg-dark-card border border-dark-border rounded-2xl overflow-hidden hover:border-primary/40 transition-all duration-300"
+            className="group bg-dark-card border border-dark-border rounded-2xl overflow-hidden hover:border-primary/40 hover:-translate-y-1 hover:shadow-[0_16px_40px_-12px_rgba(0,0,0,0.6)] transition-all duration-300 h-full"
           >
             {member.photoUrl ? (
               // eslint-disable-next-line @next/next/no-img-element
-              <img src={member.photoUrl} alt={member.fullName} className="w-full aspect-[4/3] object-cover" />
+              <img src={member.photoUrl} alt={member.fullName} className="w-full aspect-[4/3] object-cover group-hover:scale-105 transition-transform duration-500" />
             ) : (
               <div className="w-full aspect-[4/3] bg-primary/10 flex items-center justify-center">
                 <span className="text-6xl font-black text-primary-text">{member.fullName.charAt(0).toUpperCase()}</span>
@@ -66,6 +67,7 @@ export default function TeamSection({ members }: { members: TeamMember[] }) {
               {member.bio && <p className="text-sm text-muted leading-relaxed mt-3 line-clamp-3">{member.bio}</p>}
             </div>
           </article>
+          </TiltCard>
         ))}
       </div>
     </FadeIn>

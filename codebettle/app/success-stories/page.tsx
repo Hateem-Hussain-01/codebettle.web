@@ -2,6 +2,8 @@ import Link from 'next/link';
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
 import FadeIn from '@/components/ui/FadeIn';
+import PremiumBackdrop from '@/components/ui/PremiumBackdrop';
+import TiltCard from '@/components/ui/TiltCard';
 import StoriesWithLoadMore from './stories-client';
 import { getSession } from '@/lib/auth';
 import { listPublicSuccessStories } from '@/lib/services/success-story-service';
@@ -91,8 +93,11 @@ export default async function SuccessStoriesPage() {
     <>
       <Navbar session={session} />
       <main className="min-h-screen bg-background pt-16">
-        <div className="py-16 bg-dark-card border-b border-dark-border text-center">
-          <FadeIn className="max-w-2xl mx-auto px-4">
+        <div className="relative py-16 bg-dark-card border-b border-dark-border text-center overflow-hidden">
+          <PremiumBackdrop variant="hero" />
+          <div aria-hidden="true" className="absolute top-8 left-[10%] w-20 h-20 rounded-full bg-primary/10 blur-2xl pointer-events-none animate-float-slow hidden md:block" />
+          <div aria-hidden="true" className="absolute bottom-6 right-[8%] w-24 h-24 rounded-full bg-primary/[0.07] blur-2xl pointer-events-none animate-float-slower hidden md:block" />
+          <FadeIn className="relative max-w-2xl mx-auto px-4">
             <span className="inline-flex items-center gap-2 text-primary-text text-sm font-semibold uppercase tracking-wider">
               <Sparkles className="w-4 h-4" /> Student Success
             </span>
@@ -108,7 +113,7 @@ export default async function SuccessStoriesPage() {
                 href="/success-stories/submit"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-primary text-ink font-bold text-sm hover:opacity-90 transition-opacity shadow-[0_0_30px_-8px_rgba(250,204,21,0.6)]"
+                className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-primary text-ink font-bold text-sm hover:opacity-90 hover:-translate-y-0.5 transition-all shadow-[0_0_30px_-8px_rgba(250,204,21,0.6)] hover:shadow-[0_0_40px_-8px_rgba(250,204,21,0.7)]"
               >
                 <Trophy className="w-4 h-4" /> Submit Your Success Story
               </Link>
@@ -118,12 +123,13 @@ export default async function SuccessStoriesPage() {
 
         {/* 1. CEO's Message — photo + message (message from Settings, placeholder fallback) */}
         <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-12">
-          <div className="rounded-2xl border border-dark-border bg-dark-card p-6 sm:p-8 flex flex-col sm:flex-row gap-6 sm:gap-8 items-start">
+          <TiltCard max={4}>
+          <div className="group rounded-2xl border border-dark-border bg-dark-card p-6 sm:p-8 flex flex-col sm:flex-row gap-6 sm:gap-8 items-start hover:border-primary/30 hover:shadow-[0_16px_40px_-12px_rgba(0,0,0,0.6)] transition-all duration-300">
             {ceoPhotoUrl ? (
               <img
                 src={ceoPhotoUrl}
                 alt="Ahmad Hassan, CEO of CodeBettle"
-                className="w-36 h-44 sm:w-44 sm:h-56 object-cover rounded-xl border border-dark-border shrink-0"
+                className="w-36 h-44 sm:w-44 sm:h-56 object-cover rounded-xl border border-dark-border shrink-0 group-hover:scale-[1.02] transition-transform duration-500"
               />
             ) : (
               <div className="w-36 h-44 sm:w-44 sm:h-56 rounded-xl border border-dashed border-dark-border bg-background shrink-0 flex flex-col items-center justify-center gap-2 text-center px-3">
@@ -138,6 +144,7 @@ export default async function SuccessStoriesPage() {
               <div className={`${RICH_TEXT_CLASS} mt-4`} dangerouslySetInnerHTML={{ __html: ceoMessageHtml }} />
             </div>
           </div>
+          </TiltCard>
         </section>
 
         {/* 2. Video + Vision — layout from Admin > Success Stories
@@ -164,7 +171,7 @@ export default async function SuccessStoriesPage() {
               <Video className="w-5 h-5 text-primary-text" /> Watch
             </h2>
             <div
-              className={`rounded-2xl overflow-hidden border border-dark-border bg-black ${videoAspectClass(videoConfig.orientation)} ${
+              className={`rounded-2xl overflow-hidden border border-dark-border bg-black shadow-[0_16px_48px_-16px_rgba(0,0,0,0.7)] hover:border-primary/30 transition-all duration-300 ${videoAspectClass(videoConfig.orientation)} ${
                 videoConfig.orientation === 'portrait' ? 'max-w-[360px] mx-auto md:mx-0 w-full' : 'w-full'
               }`}
             >
@@ -209,9 +216,9 @@ export default async function SuccessStoriesPage() {
               { icon: <Users className="w-7 h-7 text-primary-text" />, value: stats.activeStudents, label: PAGE_STAT_LABELS.activeStudents },
               { icon: <Award className="w-7 h-7 text-primary-text" />, value: stats.certificatesIssued, label: PAGE_STAT_LABELS.certificatesIssued },
               { icon: <Star className="w-7 h-7 text-primary-text" />, value: stats.averageRating, label: PAGE_STAT_LABELS.averageRating },
-            ] as const).map((stat) => (
-              <div key={stat.label} className="flex flex-col items-center gap-2 px-6 py-8 text-center">
-                <span className="shrink-0">{stat.icon}</span>
+            ] as const).map((stat, i) => (
+              <div key={stat.label} className="flex flex-col items-center gap-2 px-6 py-8 text-center hover:-translate-y-1 transition-transform duration-300">
+                <span className="shrink-0 animate-float-slow" style={{ animationDelay: `${i * 0.9}s` }}>{stat.icon}</span>
                 <span className="block text-4xl sm:text-5xl font-black text-primary-text leading-none">{stat.value}</span>
                 <span className="block text-sm text-muted">{stat.label}</span>
               </div>
@@ -235,7 +242,7 @@ export default async function SuccessStoriesPage() {
                 href="/success-stories/submit"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-primary text-ink font-bold text-sm hover:opacity-90 transition-opacity"
+                className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-primary text-ink font-bold text-sm hover:opacity-90 hover:-translate-y-0.5 transition-all"
               >
                 <Trophy className="w-4 h-4" /> Submit Your Success Story
               </Link>
