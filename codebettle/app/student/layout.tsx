@@ -3,6 +3,7 @@ import { getSession } from '@/lib/auth';
 import { getAdminBasePath } from '@/lib/admin-url';
 import { countUnsubmittedVisibleAssignments } from '@/lib/db/assignments';
 import { getAmbassadorByUserId } from '@/lib/db/ambassadors';
+import { hasTeamAccess } from '@/lib/db/team';
 import PortalLayout from '@/components/layout/PortalLayout';
 import TeacherMessagePopup from '@/components/notifications/TeacherMessagePopup';
 import { LayoutDashboard, BookOpen, Compass, Award, StickyNote, Heart, Star, Bell, User, FileQuestion, LifeBuoy, ClipboardList, Users } from 'lucide-react';
@@ -77,12 +78,23 @@ export default async function StudentLayout({ children }: { children: React.Reac
     ? [...navItems, { href: '/student/ambassador', label: 'Ambassador', icon: <Users className="w-5 h-5" /> }]
     : navItems;
 
+  // Team Portal switcher (Eman, 16 Nov 2026): a student who also
+  // holds team access gets "Switch to Team Portal" in the topbar.
+  // Fail-safe: a missing team table reads as no access — the switcher
+  // must never break the student sidebar.
+  let hasTeam = false;
+  try {
+    hasTeam = await hasTeamAccess(session);
+  } catch {
+    hasTeam = false;
+  }
+
   return (
     <>
       {/* Theme toggle lives in Profile settings for students (Eman,
           15 Nov 2026) — the top-bar toggle is hidden in this portal
           only; instructor/admin portals keep theirs. */}
-      <PortalLayout user={session} navItems={finalNavItems} portalName="Student Portal" adminBasePath={getAdminBasePath()} hideThemeToggle>
+      <PortalLayout user={session} navItems={finalNavItems} portalName="Student Portal" adminBasePath={getAdminBasePath()} hasTeamAccess={hasTeam} hideThemeToggle>
         {children}
       </PortalLayout>
       {/* Phase 3, Worker C: "Message from Your Teacher" popup. It shows
