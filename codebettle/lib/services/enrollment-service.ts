@@ -14,6 +14,7 @@ import { validateCouponForCourse } from '../db/coupons';
 import { getUserById } from '../db/users';
 import { isFullAdmin } from '../admin-access';
 import { logAudit } from '../db/audit';
+import { maybeAwardTeamCreditsForEnrollment } from '../db/team-credits';
 import { onCertificateIssued, onCourseCompleted, onEnrollmentCreated, onEnrollmentCreatedForInstructor } from './notification-service';
 import type { Certificate, Enrollment, EnrollmentPaymentStatus } from '../db/types';
 import { badRequest, conflict, forbidden, notFound, type Actor, type ServiceError } from './errors';
@@ -121,6 +122,10 @@ export async function createEnrollmentService(
   await onEnrollmentCreated(created.enrollment);
   // Notify the instructor (name only — never the fee).
   await onEnrollmentCreatedForInstructor(created.enrollment);
+  // Team credits (PR B): a referred student just enrolled — award
+  // when the admin setting says credits are earned on enrollment.
+  // Best-effort, never throws (see the function doc).
+  await maybeAwardTeamCreditsForEnrollment(created.enrollment.id, 'enrollment');
   return { enrollment: created.enrollment };
 }
 
@@ -226,6 +231,10 @@ export async function enrollSelfService(
   await onEnrollmentCreated(created.enrollment);
   // Notify the instructor (name only — never the fee).
   await onEnrollmentCreatedForInstructor(created.enrollment);
+  // Team credits (PR B): a referred student just enrolled — award
+  // when the admin setting says credits are earned on enrollment.
+  // Best-effort, never throws (see the function doc).
+  await maybeAwardTeamCreditsForEnrollment(created.enrollment.id, 'enrollment');
   return { enrollment: created.enrollment };
 }
 
@@ -324,6 +333,13 @@ export async function updateEnrollmentService(
   // Notify on the transitions that matter (Phase 4 hooks — best-effort).
   if (updated.isCompleted && !existing.isCompleted) await onCourseCompleted(updated);
   if (certificate) await onCertificateIssued(certificate);
+  // Team credits (PR B): a flip INTO paid earns credits when the admin
+  // setting says credits are earned on approved payment (the payment
+  // review flow calls the same hook after its own flip; the award is
+  // idempotent, so a flip through either path awards exactly once).
+  if (input.paymentStatus === 'paid' && existing.paymentStatus !== 'paid') {
+    await maybeAwardTeamCreditsForEnrollment(enrollmentId, 'payment');
+  }
   return { enrollment: updated, certificate };
 }
 

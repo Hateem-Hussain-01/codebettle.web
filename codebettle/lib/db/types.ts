@@ -599,6 +599,66 @@ export interface TeamFile {
   updatedAt: string;
 }
 
+// Team Credit System (PR B, Eman 16 Nov 2026) — credits live ONLY in
+// the Team Portal, earned ONLY on student referral enrollment. A
+// member's balance is SUM(TeamCreditLedger.amount); there is NO
+// balance column anywhere. See src/prisma/contract.prisma for the
+// model docs.
+export type TeamCreditLedgerKind = 'earn' | 'hold' | 'release';
+export type TeamGoody = 'bottle' | 'diary' | 'pen' | 'keychain';
+export type TeamRedemptionStatus = 'pending' | 'approved' | 'rejected';
+
+export interface TeamReferralCode {
+  id: string;
+  teamAccessId: string;
+  code: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface TeamReferralAttribution {
+  id: string;
+  teamAccessId: string;
+  userId: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface TeamCreditLedgerEntry {
+  id: string;
+  teamAccessId: string;
+  kind: TeamCreditLedgerKind;
+  amount: number;
+  referenceId?: string;
+  note?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface TeamRedemption {
+  id: string;
+  teamAccessId: string;
+  goody: TeamGoody;
+  creditsSpent: number;
+  status: TeamRedemptionStatus;
+  requestedAt: string;
+  decidedAt?: string;
+  decidedBy?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/** The four goodies, in the order the team portal shows them. */
+export const TEAM_GOODIES: readonly TeamGoody[] = ['bottle', 'diary', 'pen', 'keychain'];
+
+/** Display name for a goody (the branded item the member redeems for). */
+export const TEAM_GOODY_LABELS: Record<TeamGoody, string> = {
+  bottle: 'Branded bottle',
+  diary: 'Branded diary',
+  pen: 'Ballpoint pen',
+  keychain: 'Keychain',
+};
+
 export interface Testimonial {
   id: string;
   studentName: string;
@@ -1276,6 +1336,35 @@ export type TeamFileRow = Pick<
   | 'mime'
   | 'size'
   | 'uploadedBy'
+  | 'createdAt'
+  | 'updatedAt'
+>;
+
+export type TeamReferralCodeRow = Pick<
+  Models.public_TeamReferralCode,
+  'id' | 'teamAccessId' | 'code' | 'createdAt' | 'updatedAt'
+>;
+
+export type TeamReferralAttributionRow = Pick<
+  Models.public_TeamReferralAttribution,
+  'id' | 'teamAccessId' | 'userId' | 'createdAt' | 'updatedAt'
+>;
+
+export type TeamCreditLedgerRow = Pick<
+  Models.public_TeamCreditLedger,
+  'id' | 'teamAccessId' | 'kind' | 'amount' | 'referenceId' | 'note' | 'createdAt' | 'updatedAt'
+>;
+
+export type TeamRedemptionRow = Pick<
+  Models.public_TeamRedemption,
+  | 'id'
+  | 'teamAccessId'
+  | 'goody'
+  | 'creditsSpent'
+  | 'status'
+  | 'requestedAt'
+  | 'decidedAt'
+  | 'decidedBy'
   | 'createdAt'
   | 'updatedAt'
 >;

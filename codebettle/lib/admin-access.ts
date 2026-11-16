@@ -61,6 +61,7 @@ export type AdminAreaKey =
   | 'book-a-call'
   | 'ambassadors'
   | 'team'
+  | 'credits'
   | 'subscribers'
   | 'links-page'
   | 'settings'
@@ -153,6 +154,13 @@ export const ADMIN_AREAS: readonly AdminArea[] = [
   // separate grant with its own content workflow. Restricted admins do
   // NOT get it by default (secure default: missing keys are denied).
   { key: 'team', label: 'Team', href: '/admin/team', description: 'Team portal: access grants, tasks, announcements, meetings, files' },
+  // Credits Management (PR B, Eman 16 Nov 2026): the DEDICATED credits
+  // section — earn rate + goody prices, member balances, redemption
+  // requests, ledger. A NEW area (not folded into 'team') because
+  // credits are money-adjacent admin work with their own review
+  // workflow. Restricted admins do NOT get it by default (secure
+  // default: missing keys are denied).
+  { key: 'credits', label: 'Credits Management', href: '/admin/credits', description: 'Team credits: earn rate, goody prices, member balances, redemption requests, ledger' },
   { key: 'subscribers', label: 'Subscribers', href: '/admin/subscribers', description: 'Newsletter subscribers from the footer' },
   // Links page (Linktree-style public /links page): link buttons +
   // contact details, reached only by the direct link sent to clients.

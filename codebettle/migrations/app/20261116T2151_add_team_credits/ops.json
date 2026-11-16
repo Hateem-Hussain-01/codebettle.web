@@ -1,0 +1,582 @@
+[
+  {
+    "id": "table.TeamCreditLedger",
+    "label": "Create table \"TeamCreditLedger\"",
+    "summary": "Creates table \"TeamCreditLedger\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "TeamCreditLedger"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"TeamCreditLedger\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"TeamCreditLedger\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "table \"TeamCreditLedger\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"TeamCreditLedger\"",
+        "sql": "CREATE TABLE \"public\".\"TeamCreditLedger\" (\n  \"amount\" int4 NOT NULL,\n  \"createdAt\" timestamptz(3) DEFAULT (now()) NOT NULL,\n  \"id\" text NOT NULL,\n  \"kind\" text NOT NULL,\n  \"note\" text,\n  \"referenceId\" text,\n  \"teamAccessId\" text NOT NULL,\n  \"updatedAt\" timestamptz(3) NOT NULL,\n  PRIMARY KEY (\"id\"),\n  CONSTRAINT \"TeamCreditLedger_kind_check_604125b7\" CHECK (\"kind\" IN ('earn', 'hold', 'release'))\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"TeamCreditLedger\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" WHERE (\"c\".\"oid\" = to_regclass($1) AND (\"c\".\"relkind\" = $2 OR \"c\".\"relkind\" = $3))) AS \"result\"",
+        "params": [
+          "\"public\".\"TeamCreditLedger\"",
+          "r",
+          "p"
+        ],
+        "expectation": {
+          "expects": "present",
+          "object": "table \"TeamCreditLedger\""
+        }
+      }
+    ]
+  },
+  {
+    "id": "table.TeamRedemption",
+    "label": "Create table \"TeamRedemption\"",
+    "summary": "Creates table \"TeamRedemption\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "TeamRedemption"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"TeamRedemption\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"TeamRedemption\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "table \"TeamRedemption\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"TeamRedemption\"",
+        "sql": "CREATE TABLE \"public\".\"TeamRedemption\" (\n  \"createdAt\" timestamptz(3) DEFAULT (now()) NOT NULL,\n  \"creditsSpent\" int4 NOT NULL,\n  \"decidedAt\" timestamptz(3),\n  \"decidedBy\" text,\n  \"goody\" text NOT NULL,\n  \"id\" text NOT NULL,\n  \"requestedAt\" timestamptz(3) DEFAULT (now()) NOT NULL,\n  \"status\" text DEFAULT 'pending' NOT NULL,\n  \"teamAccessId\" text NOT NULL,\n  \"updatedAt\" timestamptz(3) NOT NULL,\n  PRIMARY KEY (\"id\"),\n  CONSTRAINT \"TeamRedemption_goody_check_667d0f96\" CHECK (\"goody\" IN ('bottle', 'diary', 'pen', 'keychain')),\n  CONSTRAINT \"TeamRedemption_status_check_19a2b525\" CHECK (\"status\" IN ('pending', 'approved', 'rejected'))\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"TeamRedemption\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" WHERE (\"c\".\"oid\" = to_regclass($1) AND (\"c\".\"relkind\" = $2 OR \"c\".\"relkind\" = $3))) AS \"result\"",
+        "params": [
+          "\"public\".\"TeamRedemption\"",
+          "r",
+          "p"
+        ],
+        "expectation": {
+          "expects": "present",
+          "object": "table \"TeamRedemption\""
+        }
+      }
+    ]
+  },
+  {
+    "id": "table.TeamReferralAttribution",
+    "label": "Create table \"TeamReferralAttribution\"",
+    "summary": "Creates table \"TeamReferralAttribution\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "TeamReferralAttribution"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"TeamReferralAttribution\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"TeamReferralAttribution\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "table \"TeamReferralAttribution\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"TeamReferralAttribution\"",
+        "sql": "CREATE TABLE \"public\".\"TeamReferralAttribution\" (\n  \"createdAt\" timestamptz(3) DEFAULT (now()) NOT NULL,\n  \"id\" text NOT NULL,\n  \"teamAccessId\" text NOT NULL,\n  \"updatedAt\" timestamptz(3) NOT NULL,\n  \"userId\" text NOT NULL,\n  PRIMARY KEY (\"id\")\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"TeamReferralAttribution\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" WHERE (\"c\".\"oid\" = to_regclass($1) AND (\"c\".\"relkind\" = $2 OR \"c\".\"relkind\" = $3))) AS \"result\"",
+        "params": [
+          "\"public\".\"TeamReferralAttribution\"",
+          "r",
+          "p"
+        ],
+        "expectation": {
+          "expects": "present",
+          "object": "table \"TeamReferralAttribution\""
+        }
+      }
+    ]
+  },
+  {
+    "id": "table.TeamReferralCode",
+    "label": "Create table \"TeamReferralCode\"",
+    "summary": "Creates table \"TeamReferralCode\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "TeamReferralCode"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"TeamReferralCode\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"TeamReferralCode\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "table \"TeamReferralCode\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"TeamReferralCode\"",
+        "sql": "CREATE TABLE \"public\".\"TeamReferralCode\" (\n  \"code\" text NOT NULL,\n  \"createdAt\" timestamptz(3) DEFAULT (now()) NOT NULL,\n  \"id\" text NOT NULL,\n  \"teamAccessId\" text NOT NULL,\n  \"updatedAt\" timestamptz(3) NOT NULL,\n  PRIMARY KEY (\"id\")\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"TeamReferralCode\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" WHERE (\"c\".\"oid\" = to_regclass($1) AND (\"c\".\"relkind\" = $2 OR \"c\".\"relkind\" = $3))) AS \"result\"",
+        "params": [
+          "\"public\".\"TeamReferralCode\"",
+          "r",
+          "p"
+        ],
+        "expectation": {
+          "expects": "present",
+          "object": "table \"TeamReferralCode\""
+        }
+      }
+    ]
+  },
+  {
+    "id": "unique.TeamCreditLedger.TeamCreditLedger_kind_referenceId_key",
+    "label": "Add unique constraint on \"TeamCreditLedger\" (kind, referenceId)",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "unique",
+        "name": "TeamCreditLedger_kind_referenceId_key",
+        "table": "TeamCreditLedger"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"TeamCreditLedger_kind_referenceId_key\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "TeamCreditLedger_kind_referenceId_key",
+          "public",
+          "\"public\".\"TeamCreditLedger\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "constraint \"TeamCreditLedger_kind_referenceId_key\" on \"TeamCreditLedger\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "add unique constraint \"TeamCreditLedger_kind_referenceId_key\"",
+        "sql": "ALTER TABLE \"public\".\"TeamCreditLedger\" ADD CONSTRAINT \"TeamCreditLedger_kind_referenceId_key\" UNIQUE (\"kind\", \"referenceId\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify unique constraint \"TeamCreditLedger_kind_referenceId_key\" exists on (kind, referenceId)",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3) AND \"c\".\"contype\" = $4 AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"c\".\"conkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"c\".\"conrelid\" AND key_attribute.attnum = key_column.attnum) = ($5)::jsonb)) AS \"result\"",
+        "params": [
+          "TeamCreditLedger_kind_referenceId_key",
+          "public",
+          "\"public\".\"TeamCreditLedger\"",
+          "u",
+          "[\"kind\",\"referenceId\"]"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "unique.TeamReferralAttribution.TeamReferralAttribution_userId_key",
+    "label": "Add unique constraint on \"TeamReferralAttribution\" (userId)",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "unique",
+        "name": "TeamReferralAttribution_userId_key",
+        "table": "TeamReferralAttribution"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"TeamReferralAttribution_userId_key\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "TeamReferralAttribution_userId_key",
+          "public",
+          "\"public\".\"TeamReferralAttribution\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "constraint \"TeamReferralAttribution_userId_key\" on \"TeamReferralAttribution\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "add unique constraint \"TeamReferralAttribution_userId_key\"",
+        "sql": "ALTER TABLE \"public\".\"TeamReferralAttribution\" ADD CONSTRAINT \"TeamReferralAttribution_userId_key\" UNIQUE (\"userId\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify unique constraint \"TeamReferralAttribution_userId_key\" exists on (userId)",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3) AND \"c\".\"contype\" = $4 AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"c\".\"conkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"c\".\"conrelid\" AND key_attribute.attnum = key_column.attnum) = ($5)::jsonb)) AS \"result\"",
+        "params": [
+          "TeamReferralAttribution_userId_key",
+          "public",
+          "\"public\".\"TeamReferralAttribution\"",
+          "u",
+          "[\"userId\"]"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "unique.TeamReferralCode.TeamReferralCode_teamAccessId_key",
+    "label": "Add unique constraint on \"TeamReferralCode\" (teamAccessId)",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "unique",
+        "name": "TeamReferralCode_teamAccessId_key",
+        "table": "TeamReferralCode"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"TeamReferralCode_teamAccessId_key\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "TeamReferralCode_teamAccessId_key",
+          "public",
+          "\"public\".\"TeamReferralCode\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "constraint \"TeamReferralCode_teamAccessId_key\" on \"TeamReferralCode\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "add unique constraint \"TeamReferralCode_teamAccessId_key\"",
+        "sql": "ALTER TABLE \"public\".\"TeamReferralCode\" ADD CONSTRAINT \"TeamReferralCode_teamAccessId_key\" UNIQUE (\"teamAccessId\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify unique constraint \"TeamReferralCode_teamAccessId_key\" exists on (teamAccessId)",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3) AND \"c\".\"contype\" = $4 AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"c\".\"conkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"c\".\"conrelid\" AND key_attribute.attnum = key_column.attnum) = ($5)::jsonb)) AS \"result\"",
+        "params": [
+          "TeamReferralCode_teamAccessId_key",
+          "public",
+          "\"public\".\"TeamReferralCode\"",
+          "u",
+          "[\"teamAccessId\"]"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "unique.TeamReferralCode.TeamReferralCode_code_key",
+    "label": "Add unique constraint on \"TeamReferralCode\" (code)",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "unique",
+        "name": "TeamReferralCode_code_key",
+        "table": "TeamReferralCode"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"TeamReferralCode_code_key\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "TeamReferralCode_code_key",
+          "public",
+          "\"public\".\"TeamReferralCode\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "constraint \"TeamReferralCode_code_key\" on \"TeamReferralCode\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "add unique constraint \"TeamReferralCode_code_key\"",
+        "sql": "ALTER TABLE \"public\".\"TeamReferralCode\" ADD CONSTRAINT \"TeamReferralCode_code_key\" UNIQUE (\"code\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify unique constraint \"TeamReferralCode_code_key\" exists on (code)",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3) AND \"c\".\"contype\" = $4 AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"c\".\"conkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"c\".\"conrelid\" AND key_attribute.attnum = key_column.attnum) = ($5)::jsonb)) AS \"result\"",
+        "params": [
+          "TeamReferralCode_code_key",
+          "public",
+          "\"public\".\"TeamReferralCode\"",
+          "u",
+          "[\"code\"]"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.TeamCreditLedger.TeamCreditLedger_teamAccessId_createdAt_idx_fa68eaf8",
+    "label": "Create index \"TeamCreditLedger_teamAccessId_createdAt_idx_fa68eaf8\" on \"TeamCreditLedger\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "TeamCreditLedger_teamAccessId_createdAt_idx_fa68eaf8",
+        "table": "TeamCreditLedger"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"TeamCreditLedger_teamAccessId_createdAt_idx_fa68eaf8\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"TeamCreditLedger_teamAccessId_createdAt_idx_fa68eaf8\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "index \"TeamCreditLedger_teamAccessId_createdAt_idx_fa68eaf8\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"TeamCreditLedger_teamAccessId_createdAt_idx_fa68eaf8\"",
+        "sql": "CREATE INDEX \"TeamCreditLedger_teamAccessId_createdAt_idx_fa68eaf8\" ON \"public\".\"TeamCreditLedger\" (\"teamAccessId\", \"createdAt\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"TeamCreditLedger_teamAccessId_createdAt_idx_fa68eaf8\" exists on \"TeamCreditLedger\" with the planned definition",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" INNER JOIN \"pg_index\" AS \"i\" ON \"i\".\"indexrelid\" = \"c\".\"oid\" INNER JOIN \"pg_am\" AS \"m\" ON \"m\".\"oid\" = \"c\".\"relam\" WHERE (\"c\".\"oid\" = to_regclass($1) AND (\"c\".\"relkind\" = $2 OR \"c\".\"relkind\" = $3) AND \"i\".\"indrelid\" = to_regclass($4) AND NOT (\"i\".\"indisunique\") AND \"m\".\"amname\" = $5 AND (\"i\".\"indexprs\" IS NULL AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"i\".\"indkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"i\".\"indrelid\" AND key_attribute.attnum = key_column.attnum) = ($6)::jsonb) AND \"i\".\"indpred\" IS NULL)) AS \"result\"",
+        "params": [
+          "\"public\".\"TeamCreditLedger_teamAccessId_createdAt_idx_fa68eaf8\"",
+          "i",
+          "I",
+          "\"public\".\"TeamCreditLedger\"",
+          "btree",
+          "[\"teamAccessId\",\"createdAt\"]"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.TeamRedemption.TeamRedemption_status_createdAt_idx_58610442",
+    "label": "Create index \"TeamRedemption_status_createdAt_idx_58610442\" on \"TeamRedemption\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "TeamRedemption_status_createdAt_idx_58610442",
+        "table": "TeamRedemption"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"TeamRedemption_status_createdAt_idx_58610442\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"TeamRedemption_status_createdAt_idx_58610442\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "index \"TeamRedemption_status_createdAt_idx_58610442\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"TeamRedemption_status_createdAt_idx_58610442\"",
+        "sql": "CREATE INDEX \"TeamRedemption_status_createdAt_idx_58610442\" ON \"public\".\"TeamRedemption\" (\"status\", \"createdAt\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"TeamRedemption_status_createdAt_idx_58610442\" exists on \"TeamRedemption\" with the planned definition",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" INNER JOIN \"pg_index\" AS \"i\" ON \"i\".\"indexrelid\" = \"c\".\"oid\" INNER JOIN \"pg_am\" AS \"m\" ON \"m\".\"oid\" = \"c\".\"relam\" WHERE (\"c\".\"oid\" = to_regclass($1) AND (\"c\".\"relkind\" = $2 OR \"c\".\"relkind\" = $3) AND \"i\".\"indrelid\" = to_regclass($4) AND NOT (\"i\".\"indisunique\") AND \"m\".\"amname\" = $5 AND (\"i\".\"indexprs\" IS NULL AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"i\".\"indkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"i\".\"indrelid\" AND key_attribute.attnum = key_column.attnum) = ($6)::jsonb) AND \"i\".\"indpred\" IS NULL)) AS \"result\"",
+        "params": [
+          "\"public\".\"TeamRedemption_status_createdAt_idx_58610442\"",
+          "i",
+          "I",
+          "\"public\".\"TeamRedemption\"",
+          "btree",
+          "[\"status\",\"createdAt\"]"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.TeamRedemption.TeamRedemption_teamAccessId_status_idx_10d0dc7e",
+    "label": "Create index \"TeamRedemption_teamAccessId_status_idx_10d0dc7e\" on \"TeamRedemption\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "TeamRedemption_teamAccessId_status_idx_10d0dc7e",
+        "table": "TeamRedemption"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"TeamRedemption_teamAccessId_status_idx_10d0dc7e\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"TeamRedemption_teamAccessId_status_idx_10d0dc7e\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "index \"TeamRedemption_teamAccessId_status_idx_10d0dc7e\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"TeamRedemption_teamAccessId_status_idx_10d0dc7e\"",
+        "sql": "CREATE INDEX \"TeamRedemption_teamAccessId_status_idx_10d0dc7e\" ON \"public\".\"TeamRedemption\" (\"teamAccessId\", \"status\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"TeamRedemption_teamAccessId_status_idx_10d0dc7e\" exists on \"TeamRedemption\" with the planned definition",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" INNER JOIN \"pg_index\" AS \"i\" ON \"i\".\"indexrelid\" = \"c\".\"oid\" INNER JOIN \"pg_am\" AS \"m\" ON \"m\".\"oid\" = \"c\".\"relam\" WHERE (\"c\".\"oid\" = to_regclass($1) AND (\"c\".\"relkind\" = $2 OR \"c\".\"relkind\" = $3) AND \"i\".\"indrelid\" = to_regclass($4) AND NOT (\"i\".\"indisunique\") AND \"m\".\"amname\" = $5 AND (\"i\".\"indexprs\" IS NULL AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"i\".\"indkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"i\".\"indrelid\" AND key_attribute.attnum = key_column.attnum) = ($6)::jsonb) AND \"i\".\"indpred\" IS NULL)) AS \"result\"",
+        "params": [
+          "\"public\".\"TeamRedemption_teamAccessId_status_idx_10d0dc7e\"",
+          "i",
+          "I",
+          "\"public\".\"TeamRedemption\"",
+          "btree",
+          "[\"teamAccessId\",\"status\"]"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.TeamReferralAttribution.TeamReferralAttribution_teamAccessId_createdAt_idx_fa68eaf8",
+    "label": "Create index \"TeamReferralAttribution_teamAccessId_createdAt_idx_fa68eaf8\" on \"TeamReferralAttribution\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "TeamReferralAttribution_teamAccessId_createdAt_idx_fa68eaf8",
+        "table": "TeamReferralAttribution"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"TeamReferralAttribution_teamAccessId_createdAt_idx_fa68eaf8\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"TeamReferralAttribution_teamAccessId_createdAt_idx_fa68eaf8\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "index \"TeamReferralAttribution_teamAccessId_createdAt_idx_fa68eaf8\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"TeamReferralAttribution_teamAccessId_createdAt_idx_fa68eaf8\"",
+        "sql": "CREATE INDEX \"TeamReferralAttribution_teamAccessId_createdAt_idx_fa68eaf8\" ON \"public\".\"TeamReferralAttribution\" (\"teamAccessId\", \"createdAt\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"TeamReferralAttribution_teamAccessId_createdAt_idx_fa68eaf8\" exists on \"TeamReferralAttribution\" with the planned definition",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" INNER JOIN \"pg_index\" AS \"i\" ON \"i\".\"indexrelid\" = \"c\".\"oid\" INNER JOIN \"pg_am\" AS \"m\" ON \"m\".\"oid\" = \"c\".\"relam\" WHERE (\"c\".\"oid\" = to_regclass($1) AND (\"c\".\"relkind\" = $2 OR \"c\".\"relkind\" = $3) AND \"i\".\"indrelid\" = to_regclass($4) AND NOT (\"i\".\"indisunique\") AND \"m\".\"amname\" = $5 AND (\"i\".\"indexprs\" IS NULL AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"i\".\"indkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"i\".\"indrelid\" AND key_attribute.attnum = key_column.attnum) = ($6)::jsonb) AND \"i\".\"indpred\" IS NULL)) AS \"result\"",
+        "params": [
+          "\"public\".\"TeamReferralAttribution_teamAccessId_createdAt_idx_fa68eaf8\"",
+          "i",
+          "I",
+          "\"public\".\"TeamReferralAttribution\"",
+          "btree",
+          "[\"teamAccessId\",\"createdAt\"]"
+        ]
+      }
+    ]
+  }
+]

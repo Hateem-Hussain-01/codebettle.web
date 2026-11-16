@@ -30,6 +30,7 @@ import {
   rejectPaymentSubmission,
 } from '../db/payments';
 import { getPaymentProofStorageClient, PAYMENT_PROOFS_BUCKET } from './payment-proof-storage';
+import { maybeAwardTeamCreditsForEnrollment } from '../db/team-credits';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { can } from '../rbac';
 import type { Course, Enrollment, PaymentSubmission } from '../db/types';
@@ -374,6 +375,10 @@ export async function reviewPaymentService(
     });
     // Notify the student (best-effort, never throws).
     await onPaymentApproved(updated, reviewed, course.title);
+    // Team credits (PR B): the enrollment just became paid — award
+    // when the admin setting says credits are earned on approved
+    // payment. Best-effort, never throws (see the function doc).
+    await maybeAwardTeamCreditsForEnrollment(updated.id, 'payment');
     return { submission: reviewed, enrollment: updated };
   }
 

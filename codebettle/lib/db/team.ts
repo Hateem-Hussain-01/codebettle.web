@@ -104,6 +104,14 @@ export async function getTeamAccessByUserId(userId: string): Promise<TeamAccess 
   }, null);
 }
 
+export async function getTeamAccessById(id: string): Promise<TeamAccess | null> {
+  return withTeamTableFallback(async () => {
+    const row = await getDb().orm.public.TeamAccess.where({ id }).first();
+    if (!row) return null;
+    return mapTeamAccessRow(row as never);
+  }, null);
+}
+
 /** All access grants, newest first (admin). Empty when the table is missing. */
 export async function listTeamAccess(): Promise<TeamAccess[]> {
   return withTeamTableFallback(async () => {

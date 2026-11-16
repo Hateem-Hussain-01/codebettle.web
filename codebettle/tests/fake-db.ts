@@ -38,6 +38,7 @@ const TIMESTAMP_DEFAULTS = new Set([
   'publishedAt',
   'submittedAt',
   'clickedAt',
+  'requestedAt',
 ]);
 
 /**
@@ -113,6 +114,10 @@ const NULLABLE_FIELDS: Record<string, string[]> = {
   TeamAnnouncement: [],
   TeamMeeting: ['meetingLink', 'agenda'],
   TeamFile: [],
+  TeamReferralCode: [],
+  TeamReferralAttribution: [],
+  TeamCreditLedger: ['referenceId', 'note'],
+  TeamRedemption: ['decidedAt', 'decidedBy'],
   Assignment: ['batchId', 'dueDate'],
   AssignmentSubmission: ['marks', 'feedback', 'gradedAt', 'gradedBy'],
 };

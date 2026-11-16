@@ -32,6 +32,7 @@
  * performs no auth check of its own.
  */
 import { listSiteSettings, upsertSiteSetting } from '../db/settings';
+import type { TeamGoody } from '../db/types';
 import { sanitizeEmailHtml } from '../sanitize';
 import { isValidThumbnailUrl } from '../thumbnail';
 
@@ -120,6 +121,22 @@ export type SiteSettings = {
    * Empty = no meeting link set yet (the dashboard hides the card).
    */
   ambassadorMeetingLink: string;
+  /**
+   * Team Credit System (PR B, Eman 16 Nov 2026): the numbers are
+   * PLACEHOLDERS — Eman sets the real ones himself from Credits
+   * Management. `teamCreditsPerEnrollment` = credits earned per
+   * referred student enrollment. `teamCreditsEarnOn` = when the
+   * credit is earned: 'enrollment' (default) or 'approved_payment'.
+   * The four goody prices are per-item credit prices. Stored as
+   * decimal strings in the SiteSetting rows (see validatePatch /
+   * rowsToSettings); the typed accessor is getTeamCreditSettings().
+   */
+  teamCreditsPerEnrollment: number;
+  teamCreditsEarnOn: string;
+  teamCreditsGoodyPriceBottle: number;
+  teamCreditsGoodyPriceDiary: number;
+  teamCreditsGoodyPricePen: number;
+  teamCreditsGoodyPriceKeychain: number;
 };
 
 export const DEFAULT_SETTINGS: SiteSettings = {
@@ -166,6 +183,14 @@ export const DEFAULT_SETTINGS: SiteSettings = {
   // Ambassador meeting link: empty until an admin sets it from
   // /admin/ambassadors.
   ambassadorMeetingLink: '',
+  // Team credits (PR B placeholders — Eman sets the real numbers
+  // himself from Credits Management).
+  teamCreditsPerEnrollment: 10,
+  teamCreditsEarnOn: 'enrollment',
+  teamCreditsGoodyPriceBottle: 80,
+  teamCreditsGoodyPriceDiary: 50,
+  teamCreditsGoodyPricePen: 30,
+  teamCreditsGoodyPriceKeychain: 20,
 };
 
 /** Storage key for each setting field. All values are strings. */
@@ -193,6 +218,12 @@ export const SETTING_KEYS: Record<keyof SiteSettings, string> = {
   linksLocation: 'linksPage.location',
   requireEmailVerification: 'security.requireEmailVerification',
   ambassadorMeetingLink: 'ambassador.meetingLink',
+  teamCreditsPerEnrollment: 'teamCredits.perEnrollment',
+  teamCreditsEarnOn: 'teamCredits.earnOn',
+  teamCreditsGoodyPriceBottle: 'teamCredits.goodyPrice.bottle',
+  teamCreditsGoodyPriceDiary: 'teamCredits.goodyPrice.diary',
+  teamCreditsGoodyPricePen: 'teamCredits.goodyPrice.pen',
+  teamCreditsGoodyPriceKeychain: 'teamCredits.goodyPrice.keychain',
 };
 
 const STRING_FIELDS: Array<keyof SiteSettings> = [
@@ -270,6 +301,24 @@ function validatePatch(patch: Partial<SiteSettings>): Array<{ field: keyof SiteS
         throw new SettingsValidationError(`${field} must be true or false`);
       }
       cleaned.push({ field, stored: raw ? 'true' : 'false' });
+      continue;
+    }
+    // Team credit numbers (PR B): stored as decimal strings; a bad
+    // value is rejected here, and a bad stored value falls back to
+    // the default on read (parseTeamCreditNumber below).
+    if (TEAM_CREDIT_NUMBER_FIELDS.includes(field)) {
+      if (typeof raw !== 'number' || !Number.isInteger(raw) || raw < 0) {
+        throw new SettingsValidationError(`${field} must be a non-negative whole number`);
+      }
+      cleaned.push({ field, stored: String(raw) });
+      continue;
+    }
+    // Team credits earn-on (PR B): only the two known values.
+    if (field === 'teamCreditsEarnOn') {
+      if (raw !== 'enrollment' && raw !== 'approved_payment') {
+        throw new SettingsValidationError('teamCreditsEarnOn must be enrollment or approved_payment');
+      }
+      cleaned.push({ field, stored: raw });
       continue;
     }
     if (!STRING_FIELDS.includes(field)) {
@@ -377,6 +426,22 @@ function validatePatch(patch: Partial<SiteSettings>): Array<{ field: keyof SiteS
   return cleaned;
 }
 
+/** Team credit number fields (PR B) — stored as decimal strings, validated as numbers. */
+const TEAM_CREDIT_NUMBER_FIELDS: Array<keyof SiteSettings> = [
+  'teamCreditsPerEnrollment',
+  'teamCreditsGoodyPriceBottle',
+  'teamCreditsGoodyPriceDiary',
+  'teamCreditsGoodyPricePen',
+  'teamCreditsGoodyPriceKeychain',
+];
+
+/** Parse a stored credit number: a bad stored value falls back to the default (never NaN, never negative). */
+function parseTeamCreditNumber(stored: string | undefined, fallback: number): number {
+  if (stored === undefined) return fallback;
+  const parsed = Number.parseInt(stored, 10);
+  return Number.isInteger(parsed) && parsed >= 0 ? parsed : fallback;
+}
+
 function rowsToSettings(rows: Array<{ key: string; value: string }>): SiteSettings {
   const byKey = new Map(rows.map((r) => [r.key, r.value]));
   const pickString = (field: keyof SiteSettings): string => {
@@ -418,6 +483,30 @@ function rowsToSettings(rows: Array<{ key: string; value: string }>): SiteSettin
     requireEmailVerification: byKey.get(SETTING_KEYS.requireEmailVerification) === 'true',
     // Meeting link: missing row = '' (no meeting link set).
     ambassadorMeetingLink: byKey.get(SETTING_KEYS.ambassadorMeetingLink) ?? '',
+    // Team credits (PR B): missing or corrupt rows fall back to the
+    // placeholder defaults; an unknown earnOn value means 'enrollment'.
+    teamCreditsPerEnrollment: parseTeamCreditNumber(
+      byKey.get(SETTING_KEYS.teamCreditsPerEnrollment),
+      DEFAULT_SETTINGS.teamCreditsPerEnrollment,
+    ),
+    teamCreditsEarnOn:
+      byKey.get(SETTING_KEYS.teamCreditsEarnOn) === 'approved_payment' ? 'approved_payment' : 'enrollment',
+    teamCreditsGoodyPriceBottle: parseTeamCreditNumber(
+      byKey.get(SETTING_KEYS.teamCreditsGoodyPriceBottle),
+      DEFAULT_SETTINGS.teamCreditsGoodyPriceBottle,
+    ),
+    teamCreditsGoodyPriceDiary: parseTeamCreditNumber(
+      byKey.get(SETTING_KEYS.teamCreditsGoodyPriceDiary),
+      DEFAULT_SETTINGS.teamCreditsGoodyPriceDiary,
+    ),
+    teamCreditsGoodyPricePen: parseTeamCreditNumber(
+      byKey.get(SETTING_KEYS.teamCreditsGoodyPricePen),
+      DEFAULT_SETTINGS.teamCreditsGoodyPricePen,
+    ),
+    teamCreditsGoodyPriceKeychain: parseTeamCreditNumber(
+      byKey.get(SETTING_KEYS.teamCreditsGoodyPriceKeychain),
+      DEFAULT_SETTINGS.teamCreditsGoodyPriceKeychain,
+    ),
   };
 }
 
@@ -494,5 +583,49 @@ export async function getAmbassadorMeetingLink(): Promise<string> {
     return settings.ambassadorMeetingLink;
   } catch {
     return '';
+  }
+}
+
+/** When a team referral credit is earned (PR B admin setting). */
+export type TeamCreditEarnOn = 'enrollment' | 'approved_payment';
+
+/** The team credit settings, typed — every credit number in the product reads from here. */
+export interface TeamCreditSettings {
+  creditsPerEnrollment: number;
+  earnOn: TeamCreditEarnOn;
+  goodyPrices: Record<TeamGoody, number>;
+}
+
+/**
+ * The team credit settings, typed. NEVER throws: on any error the
+ * placeholder defaults are returned (the team portal shows the
+ * default earn rate / prices until an admin saves real values).
+ * Read fresh from the DB on every use, so an admin change is visible
+ * immediately (no stale value).
+ */
+export async function getTeamCreditSettings(): Promise<TeamCreditSettings> {
+  try {
+    const settings = await getSiteSettings();
+    return {
+      creditsPerEnrollment: settings.teamCreditsPerEnrollment,
+      earnOn: settings.teamCreditsEarnOn === 'approved_payment' ? 'approved_payment' : 'enrollment',
+      goodyPrices: {
+        bottle: settings.teamCreditsGoodyPriceBottle,
+        diary: settings.teamCreditsGoodyPriceDiary,
+        pen: settings.teamCreditsGoodyPricePen,
+        keychain: settings.teamCreditsGoodyPriceKeychain,
+      },
+    };
+  } catch {
+    return {
+      creditsPerEnrollment: DEFAULT_SETTINGS.teamCreditsPerEnrollment,
+      earnOn: 'enrollment',
+      goodyPrices: {
+        bottle: DEFAULT_SETTINGS.teamCreditsGoodyPriceBottle,
+        diary: DEFAULT_SETTINGS.teamCreditsGoodyPriceDiary,
+        pen: DEFAULT_SETTINGS.teamCreditsGoodyPricePen,
+        keychain: DEFAULT_SETTINGS.teamCreditsGoodyPriceKeychain,
+      },
+    };
   }
 }
