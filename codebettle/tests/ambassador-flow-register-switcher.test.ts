@@ -423,8 +423,13 @@ test('login link: hidden on /ambassador/login itself, shown by default on /auth/
 
 test('login link: RegisterForm honours ?redirect= so the register-first flow returns to the page', () => {
   const src = read('components/auth/RegisterForm.tsx');
-  assert.ok(src.includes("getSafeRedirect(searchParams.get('redirect'), '/student/dashboard')"));
-  assert.ok(src.includes('router.push(redirectTarget)'));
+  // ?redirect= wins (register-first apply); the fallback is the
+  // register API's dashboardUrl (Team Portal, PR #63: a pre-granted
+  // team member lands on the team portal), else the student dashboard.
+  assert.ok(src.includes("getSafeRedirect(searchParams.get('redirect'), fallback)"));
+  assert.ok(src.includes("typeof data.dashboardUrl === 'string' ? data.dashboardUrl : '/student/dashboard'"));
+  assert.ok(src.includes('router.push(target)'));
+  assert.ok(src.includes('setContinueTarget(target)'), 'verification-sent screen continues to the same target');
 });
 
 test('register-first: AuthShell wraps the register form in Suspense (useSearchParams needs it)', () => {
