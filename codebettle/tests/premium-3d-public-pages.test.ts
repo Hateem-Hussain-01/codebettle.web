@@ -144,7 +144,24 @@ test('dashboard files are untouched by this branch', () => {
     'codebettle/components/layout/PortalLayout.tsx',
   ];
   const offending = changed.filter((f) => dashboardPrefixes.some((p) => f.startsWith(p)));
-  assert.deepEqual(offending, [], `dashboard files must not change: ${offending.join(', ')}`);
+  // Ambassador flow (Eman, 16 Nov 2026 — register-first apply,
+  // dashboard switcher, login-form link): these 5 dashboard files
+  // ARE the feature — the instructor layout gains the Ambassador nav
+  // item, the student layout exempts the ambassador page for
+  // teacher-capable sessions, the ambassador dashboard gains the
+  // switcher, and /ambassador/login hides the self-link. They are
+  // allowed here; any OTHER dashboard file in the diff is still a
+  // failure, so this guard keeps catching unintended dashboard
+  // changes from public-page work.
+  const allowedDashboardChanges = new Set([
+    'codebettle/app/ambassador/login/page.tsx',
+    'codebettle/app/instructor/layout.tsx',
+    'codebettle/app/student/ambassador/ambassador-dashboard-client.tsx',
+    'codebettle/app/student/ambassador/page.tsx',
+    'codebettle/app/student/layout.tsx',
+  ]);
+  const unexpected = offending.filter((f) => !allowedDashboardChanges.has(f));
+  assert.deepEqual(unexpected, [], `dashboard files must not change: ${unexpected.join(', ')}`);
   // The stats section itself must not be in the diff either.
   assert.ok(
     !changed.includes('codebettle/components/sections/StatsSection.tsx'),

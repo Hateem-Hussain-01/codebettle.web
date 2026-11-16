@@ -127,6 +127,28 @@ export async function getAmbassadorApplicationById(id: string): Promise<Ambassad
   }, null);
 }
 
+/**
+ * Newest application filed under an email (register-first apply,
+ * Eman, 16 Nov 2026): the /become-ambassador page shows the status
+ * of the user's existing application instead of a second blank form,
+ * and the API refuses a duplicate while one is pending/approved.
+ * Null when the user never applied (or the table is missing).
+ */
+export async function getLatestAmbassadorApplicationByEmail(
+  email: string,
+): Promise<AmbassadorApplication | null> {
+  const normalized = email.trim().toLowerCase();
+  return withAmbassadorApplicationTableFallback(async () => {
+    const rows = await getDb()
+      .orm.public.AmbassadorApplication.where({ email: normalized })
+      .orderBy((a) => a.createdAt.desc())
+      .limit(1)
+      .all();
+    if (rows.length === 0) return null;
+    return mapAmbassadorApplicationRow(rows[0] as never);
+  }, null);
+}
+
 export async function updateAmbassadorApplicationStatus(
   id: string,
   status: AmbassadorApplicationStatus,

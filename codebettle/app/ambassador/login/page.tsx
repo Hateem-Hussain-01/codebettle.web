@@ -60,5 +60,8 @@ export default async function AmbassadorLoginPage() {
       </>
     );
   }
-  return <AuthShell initialMode="login" loginForm={<LoginForm />} registerForm={<RegisterForm />} />;
+  // The ambassador link is hidden here on purpose: this IS the
+  // ambassador login page, so the link would point at itself
+  // (LoginForm's showAmbassadorLink prop, default shown elsewhere).
+  return <AuthShell initialMode="login" loginForm={<LoginForm showAmbassadorLink={false} />} registerForm={<RegisterForm />} />;
 }

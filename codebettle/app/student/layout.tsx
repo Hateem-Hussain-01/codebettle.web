@@ -1,5 +1,7 @@
 import { redirect } from 'next/navigation';
+import { headers } from 'next/headers';
 import { getSession } from '@/lib/auth';
+import { hasTeacherCapability } from '@/lib/rbac';
 import { getAdminBasePath } from '@/lib/admin-url';
 import { countUnsubmittedVisibleAssignments } from '@/lib/db/assignments';
 import { getAmbassadorByUserId } from '@/lib/db/ambassadors';
@@ -38,7 +40,22 @@ export default async function StudentLayout({ children }: { children: React.Reac
   // A teacher or admin cannot open /student/*; if a multi-role user
   // needs the student portal, their primary role must be 'student'
   // (a known limitation, flagged in the Phase 2 foundation report).
-  if (!session || session.role !== 'student') redirect('/auth/login');
+  //
+  // ONE exception — the Ambassador Dashboard (Eman, 16 Nov 2026,
+  // dashboard switcher): the page lives under /student/*, so a
+  // teacher+ambassador whose PRIMARY role is instructor would be
+  // bounced by the rule above and the instructor portal's Ambassador
+  // nav item would lead nowhere. The requested path arrives via the
+  // `x-pathname` header (proxy.ts, same pattern as the admin layout);
+  // only /student/ambassador is exempt, and only for teacher-capable
+  // users — the page itself still requires an active ambassador row.
+  // Every other /student/* page keeps the primary-role rule, and a
+  // missing header (prefetch) falls back to the strict rule.
+  const pathname = (await headers()).get('x-pathname') ?? '';
+  const isAmbassadorPage = pathname === '/student/ambassador';
+  if (!session || (session.role !== 'student' && !(isAmbassadorPage && hasTeacherCapability(session)))) {
+    redirect('/auth/login');
+  }
 
   // Assignments notification bubble (Eman, 15 Nov 2026): the count of
   // the student's VISIBLE assignments they have not submitted yet — a

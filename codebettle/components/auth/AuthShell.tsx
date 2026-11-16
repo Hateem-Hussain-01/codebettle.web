@@ -135,13 +135,20 @@ export default function AuthShell({ initialMode, loginForm, registerForm }: Auth
                 {loginForm}
               </Suspense>
             </div>
-            {/* Create Account form — right half. Hidden on mobile when login is active. */}
+            {/* Create Account form — right half. Hidden on mobile when login is active.
+                Wrapped in Suspense like the Sign In form: RegisterForm
+                reads ?redirect= via useSearchParams() (register-first
+                apply, Eman, 16 Nov 2026), and useSearchParams() must
+                sit inside a Suspense boundary or the static prerender
+                fails the build. */}
             <div
               aria-hidden={mode === 'login' || undefined}
               inert={mode === 'login' || undefined}
               className={`flex flex-col justify-center p-5 sm:p-6 ${mode === 'login' ? 'hidden md:flex' : ''}`}
             >
-              {registerForm}
+              <Suspense fallback={<div className="text-center text-muted">Loading...</div>}>
+                {registerForm}
+              </Suspense>
             </div>
           </div>
 

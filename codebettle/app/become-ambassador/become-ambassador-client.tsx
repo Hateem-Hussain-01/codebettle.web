@@ -14,6 +14,15 @@ import { Users } from 'lucide-react';
  * promotion plan (long text), prior ambassador experience (Yes/No).
  * On submit the application is saved (POST /api/become-ambassador)
  * and a confirmation replaces the form.
+ *
+ * Register-first (Eman, 16 Nov 2026): the page only renders this
+ * for signed-in users, passes the account email, and the email field
+ * is prefilled AND locked to it — the API refuses any other email.
+ * When the user already has an application, the form is replaced by
+ * its status (pending / approved / rejected) instead of a second
+ * blank form; a rejected application may be filed again (the API
+ * only 409s while one is pending or approved), so the rejected
+ * notice offers a "Submit a new application" button.
  */
 const LEADERSHIP_OPTIONS = [
   'Class Representative (CR)',
@@ -22,11 +31,22 @@ const LEADERSHIP_OPTIONS = [
   'None / General Student',
 ] as const;
 
-export default function AmbassadorForm() {
+export interface ExistingAmbassadorApplication {
+  status: 'pending' | 'approved' | 'rejected';
+  createdAt: string;
+}
+
+export default function AmbassadorForm({
+  email,
+  existingApplication,
+}: {
+  email: string;
+  existingApplication?: ExistingAmbassadorApplication | null;
+}) {
   const [form, setForm] = useState({
     fullName: '',
     whatsapp: '',
-    email: '',
+    email,
     university: '',
     departmentSemester: '',
     leadershipPosition: '',
@@ -36,6 +56,9 @@ export default function AmbassadorForm() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [done, setDone] = useState(false);
+  // A rejected applicant starts on the status notice and opts into a
+  // fresh application — pending/approved applicants never see a form.
+  const [reapplying, setReapplying] = useState(false);
 
   function set<K extends keyof typeof form>(key: K, value: string) {
     setForm((prev) => ({ ...prev, [key]: value }));
@@ -80,6 +103,52 @@ export default function AmbassadorForm() {
     );
   }
 
+  // An existing application replaces the form with its status.
+  if (existingApplication && existingApplication.status !== 'rejected' && !reapplying) {
+    const approved = existingApplication.status === 'approved';
+    return (
+      <div className="bg-dark-card border border-dark-border rounded-xl p-8 text-center" role="status">
+        <div className="w-16 h-16 mx-auto rounded-full bg-primary/15 border border-primary/40 flex items-center justify-center mb-4">
+          <Users className="w-8 h-8 text-primary-text" />
+        </div>
+        <h2 className="text-xl font-bold text-foreground mb-2">
+          {approved ? 'You are an ambassador!' : 'Application under review'}
+        </h2>
+        <p className="text-muted text-sm leading-relaxed">
+          {approved
+            ? 'Your ambassador application was approved — your referral link and dashboard are ready.'
+            : `You applied on ${new Date(existingApplication.createdAt).toLocaleDateString()}. Our team is reviewing your application and will get back to you.`}
+        </p>
+        {approved && (
+          <a
+            href="/student/ambassador"
+            className="inline-block mt-6 rounded-lg bg-primary px-6 py-2.5 text-sm font-semibold text-ink hover:bg-primary-light transition-colors"
+          >
+            Open your Ambassador Dashboard
+          </a>
+        )}
+      </div>
+    );
+  }
+
+  if (existingApplication && existingApplication.status === 'rejected' && !reapplying) {
+    return (
+      <div className="bg-dark-card border border-dark-border rounded-xl p-8 text-center" role="status">
+        <div className="w-16 h-16 mx-auto rounded-full bg-primary/15 border border-primary/40 flex items-center justify-center mb-4">
+          <Users className="w-8 h-8 text-primary-text" />
+        </div>
+        <h2 className="text-xl font-bold text-foreground mb-2">Application not approved</h2>
+        <p className="text-muted text-sm leading-relaxed">
+          Your ambassador application was not approved this time. You can submit a new application — our team reviews
+          every one.
+        </p>
+        <Button type="button" onClick={() => setReapplying(true)} className="mt-6">
+          Submit a new application
+        </Button>
+      </div>
+    );
+  }
+
   return (
     <form onSubmit={handleSubmit} className="bg-dark-card border border-dark-border rounded-xl p-6 space-y-4">
       <Input
@@ -108,8 +177,12 @@ export default function AmbassadorForm() {
           required
           maxLength={200}
           placeholder="you@example.com"
+          disabled
         />
       </div>
+      <p className="-mt-2 text-xs text-muted">
+        Your account email — applications are filed under the email you signed in with.
+      </p>
       <Input
         label="University / Institute Name *"
         value={form.university}

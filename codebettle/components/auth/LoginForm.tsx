@@ -23,8 +23,21 @@ import toast from 'react-hot-toast';
  * no Student / Instructor tabs and no tab switching, and the form
  * sends requestedRole 'admin'. The server then only lets accounts
  * with admin capability through.
+ *
+ * `showAmbassadorLink` (Eman, 16 Nov 2026): a "Login as Ambassador"
+ * link at the very bottom of the form, to /ambassador/login. Shown
+ * by default — EXCEPT on the ambassador login page itself (it would
+ * link to itself; that page passes false) and on the secret admin
+ * sign-in (adminOnly). The footer link and the /become-ambassador
+ * link are the other two surfaces; this is the third.
  */
-export default function LoginForm({ adminOnly = false }: { adminOnly?: boolean }) {
+export default function LoginForm({
+  adminOnly = false,
+  showAmbassadorLink = true,
+}: {
+  adminOnly?: boolean;
+  showAmbassadorLink?: boolean;
+}) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [role, setRole] = useState<'student' | 'instructor' | 'admin'>(adminOnly ? 'admin' : 'student');
@@ -169,8 +182,26 @@ export default function LoginForm({ adminOnly = false }: { adminOnly?: boolean }
 
       <p className="mt-3 text-center text-sm text-muted">
         Don&apos;t have an account?{' '}
-        <Link href="/auth/register" className="font-medium text-primary-text hover:underline">Sign up</Link>
+        <Link
+          href={
+            searchParams.get('redirect')
+              ? `/auth/register?redirect=${encodeURIComponent(searchParams.get('redirect')!)}`
+              : '/auth/register'
+          }
+          className="font-medium text-primary-text hover:underline"
+        >
+          Sign up
+        </Link>
       </p>
+
+      {showAmbassadorLink && !adminOnly && (
+        <p className="mt-3 text-center text-sm text-muted">
+          Are you an ambassador?{' '}
+          <Link href="/ambassador/login?redirect=/student/ambassador" className="font-medium text-primary-text hover:underline">
+            Login as Ambassador
+          </Link>
+        </p>
+      )}
     </div>
   );
 }

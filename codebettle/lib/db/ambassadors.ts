@@ -240,23 +240,63 @@ export async function linkAmbassadorToUserByEmail(email: string, userId: string)
  * Ensure an approved application has an ambassador row (with code).
  * Used on admin approve and by the backfill below. Links the user
  * account now when one exists with the same email.
+ *
+ * Healing (Eman, 16 Nov 2026 — register-first apply): an ambassador
+ * approved BEFORE their account existed (e.g. Areeba Imran, approved
+ * 16 Nov, userId null) gets linked here as soon as the account
+ * exists — the early-return path below used to return the row
+ * without ever trying the email lookup, so the backfill skipped it
+ * forever and the dashboard never opened.
  */
 export async function ensureAmbassadorForApplication(
   application: { id: string; email: string },
 ): Promise<Ambassador> {
   const byApplication = await getAmbassadorByApplicationId(application.id);
-  if (byApplication) return byApplication;
+  if (byApplication) {
+    if (!byApplication.userId) {
+      // Best-effort: a failed user lookup must never block approval.
+      let userId: string | undefined;
+      try {
+        userId = (await getUserByEmail(application.email))?.id;
+      } catch {
+        userId = undefined;
+      }
+      if (userId) {
+        try {
+          const updated = await getDb()
+            .orm.public.Ambassador.where({ id: byApplication.id })
+            .where((a) => a.userId.isNull())
+            .update({ userId });
+          if (updated) return mapAmbassadorRow(updated as never);
+        } catch (error) {
+          throwIfTableMissing(error);
+        }
+      }
+    }
+    return byApplication;
+  }
   const byEmail = await getAmbassadorByEmail(application.email);
   if (byEmail) {
     // The row exists but was granted directly (no application link) —
-    // attach the application so the admin view stays consistent.
-    try {
-      const updated = await getDb()
-        .orm.public.Ambassador.where({ id: byEmail.id })
-        .update({ applicationId: application.id });
-      if (updated) return mapAmbassadorRow(updated as never);
-    } catch (error) {
-      throwIfTableMissing(error);
+    // attach the application so the admin view stays consistent, and
+    // attach the account too when it exists and the row is unlinked.
+    const patch: Record<string, unknown> = {};
+    if (byEmail.applicationId !== application.id) patch.applicationId = application.id;
+    if (!byEmail.userId) {
+      try {
+        const user = await getUserByEmail(application.email);
+        if (user) patch.userId = user.id;
+      } catch {
+        // Best-effort only — a failed lookup must not block approval.
+      }
+    }
+    if (Object.keys(patch).length > 0) {
+      try {
+        const updated = await getDb().orm.public.Ambassador.where({ id: byEmail.id }).update(patch);
+        if (updated) return mapAmbassadorRow(updated as never);
+      } catch (error) {
+        throwIfTableMissing(error);
+      }
     }
     return byEmail;
   }
@@ -286,7 +326,14 @@ export async function backfillAmbassadorsForApprovedApplications(): Promise<numb
     if (list.items.length === 0) break;
     for (const application of list.items) {
       const before = await getAmbassadorByApplicationId(application.id);
-      if (before) continue;
+      if (before) {
+        // Heal: an ambassador approved before their account existed
+        // (userId null) gets linked now that they may have registered
+        // — ensureAmbassadorForApplication attaches the account by
+        // email. A linked row needs no call at all.
+        if (!before.userId) await ensureAmbassadorForApplication(application);
+        continue;
+      }
       const byEmail = await getAmbassadorByEmail(application.email);
       if (byEmail) continue;
       await ensureAmbassadorForApplication(application);
