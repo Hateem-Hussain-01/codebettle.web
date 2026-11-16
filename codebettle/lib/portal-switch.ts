@@ -21,9 +21,18 @@
  * - A normal teacher, a normal admin, and a pure student see no
  *   switch option anywhere. A teacher+admin sees the way over AND
  *   the way back.
- * - The student portal has no switch option: student-only flows stay
- *   keyed to the PRIMARY role (see lib/rbac.ts), and a dual-role user
- *   reaches the other portals from either of them.
+ * - The student portal shows a switch option only for dual-role
+ *   users (an admin, a teacher, or a team member whose primary role
+ *   is student): student-only flows stay keyed to the PRIMARY role
+ *   (see lib/rbac.ts), and a dual-role user reaches the other portals
+ *   from either of them.
+ *
+ * Team Portal (Eman, 16 Nov 2026): the same idea extends to the team
+ * portal — a user with team access gets a switch option in every
+ * portal they can open (admin / instructor / student / team), in the
+ * landing priority order admin > instructor > team > student. The
+ * team layout passes `hasTeamAccess` in; the other layouts compute it
+ * fail-safe (false until the team tables exist).
  *
  * Landing: the other portal's dashboard (/admin/dashboard or
  * /instructor/dashboard). Simplest and predictable — the user lands
@@ -37,20 +46,21 @@
 import { hasAdminCapability, hasTeacherCapability } from './rbac';
 import type { SessionUser } from './services/auth-service';
 
-export type PortalId = 'admin' | 'instructor' | 'student';
+export type PortalId = 'admin' | 'instructor' | 'student' | 'team';
 
 export interface PortalSwitchTarget {
   /** Portal the link leads to. */
-  target: Exclude<PortalId, 'student'>;
+  target: PortalId;
   /** Dashboard of the target portal — the landing page after switching. */
   href: string;
   /** Exact button label shown in the topbar. */
-  label: 'Switch to Teacher Portal' | 'Switch to Admin Panel';
+  label: 'Switch to Teacher Portal' | 'Switch to Admin Panel' | 'Switch to Student Portal' | 'Switch to Team Portal';
 }
 
 const PORTAL_PREFIXES: Array<[string, PortalId]> = [
   ['/instructor', 'instructor'],
   ['/student', 'student'],
+  ['/team', 'team'],
 ];
 
 /**
@@ -78,19 +88,52 @@ export function portalFromPathname(
  * belongs to, or null when there is none. The capability checks are
  * the same helpers the layout guards use — the UI mirrors the backend,
  * it never grants anything itself.
+ *
+ * Team Portal (Eman, 16 Nov 2026): a user with team access gets a
+ * switch option in every portal they can open. `hasTeamAccess` is
+ * passed in by the portal layout (which already checked it
+ * server-side); it defaults to false so existing callers keep
+ * working. Priority when several other portals are open to the user:
+ * admin > instructor > team > student — the same order as the
+ * post-login landing.
  */
 export function getPortalSwitch(
   user: Pick<SessionUser, 'role' | 'isAdmin' | 'isTeacher'> | null | undefined,
   pathname: string | null | undefined,
   adminBasePath = 'admin',
+  hasTeamAccess = false,
 ): PortalSwitchTarget | null {
   if (!user) return null;
   const current = portalFromPathname(pathname, adminBasePath);
   if (current === 'admin' && hasTeacherCapability(user)) {
     return { target: 'instructor', href: '/instructor/dashboard', label: 'Switch to Teacher Portal' };
   }
+  if (current === 'admin' && hasTeamAccess) {
+    return { target: 'team', href: '/team/dashboard', label: 'Switch to Team Portal' };
+  }
   if (current === 'instructor' && hasAdminCapability(user)) {
     return { target: 'admin', href: `/${adminBasePath}/dashboard`, label: 'Switch to Admin Panel' };
+  }
+  if (current === 'instructor' && hasTeamAccess) {
+    return { target: 'team', href: '/team/dashboard', label: 'Switch to Team Portal' };
+  }
+  if (current === 'student' && hasAdminCapability(user)) {
+    return { target: 'admin', href: `/${adminBasePath}/dashboard`, label: 'Switch to Admin Panel' };
+  }
+  if (current === 'student' && hasTeacherCapability(user)) {
+    return { target: 'instructor', href: '/instructor/dashboard', label: 'Switch to Teacher Portal' };
+  }
+  if (current === 'student' && hasTeamAccess) {
+    return { target: 'team', href: '/team/dashboard', label: 'Switch to Team Portal' };
+  }
+  if (current === 'team' && hasAdminCapability(user)) {
+    return { target: 'admin', href: `/${adminBasePath}/dashboard`, label: 'Switch to Admin Panel' };
+  }
+  if (current === 'team' && hasTeacherCapability(user)) {
+    return { target: 'instructor', href: '/instructor/dashboard', label: 'Switch to Teacher Portal' };
+  }
+  if (current === 'team') {
+    return { target: 'student', href: '/student/dashboard', label: 'Switch to Student Portal' };
   }
   return null;
 }

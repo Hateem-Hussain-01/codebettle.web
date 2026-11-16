@@ -20,6 +20,7 @@ import {
   attributeSignupToAmbassador,
   linkAmbassadorToUserByEmail,
 } from '../db/ambassadors';
+import { linkTeamAccessToUserByEmail } from '../db/team';
 import { createSessionRecord, revokeAllSessionsForUser } from '../db/sessions';
 import { logAudit } from '../db/audit';
 import { toSafeUser } from '../db/mappers';
@@ -120,6 +121,14 @@ export async function login(email: string, password: string): Promise<SessionUse
   } catch (e) {
     console.error('Failed to link ambassador account on login', e);
   }
+  // Team Portal (Eman, 16 Nov 2026): same email link-up as
+  // ambassadors — a member granted before their account existed gets
+  // their team access linked on sign-in. Best-effort, never blocks.
+  try {
+    await linkTeamAccessToUserByEmail(user.email, user.id);
+  } catch (e) {
+    console.error('Failed to link team access on login', e);
+  }
   return toSessionUser(user);
 }
 
@@ -195,6 +204,13 @@ export async function registerUser(
     await linkAmbassadorToUserByEmail(email, user.id);
   } catch (e) {
     console.error('Failed to link ambassador account on register', e);
+  }
+  // Team Portal (Eman, 16 Nov 2026): link a pre-granted team access
+  // row to the new account by email. Best-effort, never fails signup.
+  try {
+    await linkTeamAccessToUserByEmail(email, user.id);
+  } catch (e) {
+    console.error('Failed to link team access on register', e);
   }
   await logAudit({ actorId: user.id, action: 'user.register', entity: 'user', entityId: user.id });
   return { user };
