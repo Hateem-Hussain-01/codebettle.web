@@ -1431,7 +1431,8 @@ model AmbassadorMessage {
 // their OWN email + password like any student; the grant links to their
 // account by email on login/register. Revoke keeps the row for audit.
 // Tasks, announcements, meetings and files live here; credits live in
-// their own tables (PR B) and are deliberately NOT part of this change.
+// their own tables (added in PR B, below) — never a balance column on
+// TeamAccess or User.
 // ---------------------------------------------------------------------------
 
 enum TeamAccessStatus {
@@ -1525,6 +1526,110 @@ model TeamFile {
   updatedAt   temporal.UpdatedAt
 
   @@index([createdAt])
+}
+
+// ---------------------------------------------------------------------------
+// Team Credit System (PR B, Eman, 16 Nov 2026) — credits live ONLY in
+// the Team Portal, earned ONLY on student referral enrollment (never
+// for tasks/assignments/submissions), redeemable for goodies. All
+// numbers (credits per enrollment, each goody's price, when the credit
+// is earned) are admin settings — the UI never hard-codes them.
+// ---------------------------------------------------------------------------
+
+enum TeamCreditLedgerKind {
+  earn
+  hold
+  release
+}
+
+enum TeamGoody {
+  bottle
+  diary
+  pen
+  keychain
+}
+
+enum TeamRedemptionStatus {
+  pending
+  approved
+  rejected
+}
+
+// One random 6-char referral code per team member, minted from the
+// same alphabet as ambassador codes and checked against ambassador
+// codes too — a code can only ever belong to ONE referrer (ambassador
+// OR team member). The shared `?ref=` capture + `cb_ref` cookie
+// attributes a signup to whichever owns the code.
+model TeamReferralCode {
+  id           String   @id @onCreate(cuid(2))
+  teamAccessId String   @unique
+  code         String   @unique
+  createdAt    DateTime @default(now()) @onCreate(now())
+  updatedAt    temporal.UpdatedAt
+
+  @@index([teamAccessId])
+}
+
+// One row per user who signed up through a team member's link.
+// Separate table (same fail-safe reason as ReferralAttribution: no
+// new column on User). One user, one referrer: `userId` is unique,
+// and attribution is refused when the user already has an ambassador
+// attribution — the cookie holds a single code, so this is a backstop.
+model TeamReferralAttribution {
+  id           String   @id @onCreate(cuid(2))
+  teamAccessId String
+  userId       String   @unique
+  createdAt    DateTime @default(now()) @onCreate(now())
+  updatedAt    temporal.UpdatedAt
+
+  @@index([teamAccessId, createdAt])
+}
+
+// The credit ledger: append-only. A member's balance is
+// SUM(amount) — there is NO balance column anywhere, so the balance
+// can never drift from the history.
+// - earn: +N when a referred student enrolls (or pays, per the admin
+//   setting), referenceId = the enrollment id (one earn per enrollment).
+// - hold: -N when a redemption is requested, referenceId = the
+//   redemption id (pending requests hold credits — no double-spend).
+// - release: +N when a redemption is rejected, referenceId = the
+//   redemption id (the hold is released). An approved redemption needs
+//   no new entry: the hold IS the permanent deduction.
+// `note` is a human-readable line for the history view (e.g. the
+// referred student's name); the ledger never stores a price — the
+// earn amount is read from the live admin setting at award time.
+model TeamCreditLedger {
+  id           String             @id @onCreate(cuid(2))
+  teamAccessId String
+  kind         TeamCreditLedgerKind
+  amount       Int
+  referenceId  String?
+  note         String?
+  createdAt    DateTime           @default(now()) @onCreate(now())
+  updatedAt    temporal.UpdatedAt
+
+  @@unique([kind, referenceId])
+  @@index([teamAccessId, createdAt])
+}
+
+// A redemption request: a team member asks for a goody, an admin
+// approves (goody issued) or rejects (held credits released).
+// `creditsSpent` is the price AT REQUEST TIME (read from the live
+// admin setting) — a later price change never rewrites history.
+model TeamRedemption {
+  id           String               @id @onCreate(cuid(2))
+  teamAccessId String
+  goody        TeamGoody
+  creditsSpent Int
+  status       TeamRedemptionStatus @default(pending)
+  requestedAt  DateTime             @default(now()) @onCreate(now())
+  decidedAt    DateTime?
+  decidedBy    String?
+  createdAt    DateTime             @default(now()) @onCreate(now())
+  updatedAt    temporal.UpdatedAt
+
+  @@index([teamAccessId, status])
+  @@index([status, createdAt])
 }
 
 model AuditLog {

@@ -104,12 +104,23 @@ import type {
   TeamAccessStatus,
   TeamAnnouncement,
   TeamAnnouncementRow,
+  TeamCreditLedgerEntry,
+  TeamCreditLedgerKind,
+  TeamCreditLedgerRow,
   TeamFile,
   TeamFileRow,
+  TeamGoody,
   TeamMeeting,
   TeamMeetingRow,
   TeamMember,
   TeamMemberRow,
+  TeamRedemption,
+  TeamRedemptionRow,
+  TeamRedemptionStatus,
+  TeamReferralAttribution,
+  TeamReferralAttributionRow,
+  TeamReferralCode,
+  TeamReferralCodeRow,
   TeamTask,
   TeamTaskRow,
   TeamTaskStatus,
@@ -652,6 +663,71 @@ export function mapTeamFileRow(row: TeamFileRow): TeamFile {
     mime: row.mime,
     size: row.size,
     uploadedBy: row.uploadedBy,
+    createdAt: dateToString(row.createdAt),
+    updatedAt: dateToString(row.updatedAt),
+  };
+}
+
+/** Team Credit System (PR B, Eman 16 Nov 2026) — mappers for the credit tables. */
+
+export function teamCreditLedgerKindFromStorage(stored: string): TeamCreditLedgerKind {
+  if (stored === 'earn' || stored === 'hold' || stored === 'release') return stored;
+  throw new Error(`Unknown team credit ledger kind in database: ${stored}`);
+}
+
+export function teamGoodyFromStorage(stored: string): TeamGoody {
+  if (stored === 'bottle' || stored === 'diary' || stored === 'pen' || stored === 'keychain') return stored;
+  throw new Error(`Unknown team goody in database: ${stored}`);
+}
+
+export function teamRedemptionStatusFromStorage(stored: string): TeamRedemptionStatus {
+  if (stored === 'pending' || stored === 'approved' || stored === 'rejected') return stored;
+  throw new Error(`Unknown team redemption status in database: ${stored}`);
+}
+
+export function mapTeamReferralCodeRow(row: TeamReferralCodeRow): TeamReferralCode {
+  return {
+    id: row.id,
+    teamAccessId: row.teamAccessId,
+    code: row.code,
+    createdAt: dateToString(row.createdAt),
+    updatedAt: dateToString(row.updatedAt),
+  };
+}
+
+export function mapTeamReferralAttributionRow(row: TeamReferralAttributionRow): TeamReferralAttribution {
+  return {
+    id: row.id,
+    teamAccessId: row.teamAccessId,
+    userId: row.userId,
+    createdAt: dateToString(row.createdAt),
+    updatedAt: dateToString(row.updatedAt),
+  };
+}
+
+export function mapTeamCreditLedgerRow(row: TeamCreditLedgerRow): TeamCreditLedgerEntry {
+  return {
+    id: row.id,
+    teamAccessId: row.teamAccessId,
+    kind: teamCreditLedgerKindFromStorage(row.kind),
+    amount: row.amount,
+    referenceId: row.referenceId ?? undefined,
+    note: row.note ?? undefined,
+    createdAt: dateToString(row.createdAt),
+    updatedAt: dateToString(row.updatedAt),
+  };
+}
+
+export function mapTeamRedemptionRow(row: TeamRedemptionRow): TeamRedemption {
+  return {
+    id: row.id,
+    teamAccessId: row.teamAccessId,
+    goody: teamGoodyFromStorage(row.goody),
+    creditsSpent: row.creditsSpent,
+    status: teamRedemptionStatusFromStorage(row.status),
+    requestedAt: row.requestedAt instanceof Date ? row.requestedAt.toISOString() : String(row.requestedAt),
+    decidedAt: row.decidedAt ? dateToString(row.decidedAt) : undefined,
+    decidedBy: row.decidedBy ?? undefined,
     createdAt: dateToString(row.createdAt),
     updatedAt: dateToString(row.updatedAt),
   };

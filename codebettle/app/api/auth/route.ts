@@ -25,6 +25,7 @@ import { hasTeamAccess } from '@/lib/db/team';
 import { getUserByEmail } from '@/lib/db/users';
 import { revokeOtherSessionsForUser } from '@/lib/db/sessions';
 import { resolveReferralForSignup } from '@/lib/db/ambassadors';
+import { resolveTeamReferralForSignup } from '@/lib/db/team-credits';
 import { REFERRAL_COOKIE } from '@/lib/referral';
 import { normalizeEmail } from '@/lib/security';
 import {
@@ -277,6 +278,16 @@ export async function POST(request: NextRequest) {
       // nothing. A missing/unreadable cookie is simply no referrer.
       referredByAmbassadorId:
         (await resolveReferralForSignup(
+          request.cookies.get(REFERRAL_COOKIE)?.value ?? '',
+          email,
+        )) ?? undefined,
+      // Team referral (PR B, Eman 16 Nov 2026): the SAME cookie may
+      // hold a TEAM member's code instead of an ambassador's —
+      // resolved server-side the same way. Exactly one of the two
+      // can match: minting checks both namespaces, so a code belongs
+      // to one referrer only.
+      referredByTeamAccessId:
+        (await resolveTeamReferralForSignup(
           request.cookies.get(REFERRAL_COOKIE)?.value ?? '',
           email,
         )) ?? undefined,

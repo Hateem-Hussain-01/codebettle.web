@@ -21,6 +21,7 @@ import {
   linkAmbassadorToUserByEmail,
 } from '../db/ambassadors';
 import { linkTeamAccessToUserByEmail } from '../db/team';
+import { attributeSignupToTeamMember } from '../db/team-credits';
 import { createSessionRecord, revokeAllSessionsForUser } from '../db/sessions';
 import { logAudit } from '../db/audit';
 import { toSafeUser } from '../db/mappers';
@@ -145,6 +146,14 @@ export interface RegisterInput {
    * self-referral (the ambassador's own email never attributes).
    */
   referredByAmbassadorId?: string;
+  /**
+   * Team referral (PR B, Eman 16 Nov 2026): the team access id
+   * resolved SERVER-SIDE from the same `cb_ref` cookie — the cookie
+   * may hold a team member's code instead of an ambassador's. When
+   * set, the signup is attributed to that team member (so their
+   * later enrollments can earn credits). Same guards as above.
+   */
+  referredByTeamAccessId?: string;
 }
 
 /**
@@ -211,6 +220,16 @@ export async function registerUser(
     await linkTeamAccessToUserByEmail(email, user.id);
   } catch (e) {
     console.error('Failed to link team access on register', e);
+  }
+  // Team referral (PR B, Eman 16 Nov 2026): attribute the signup to
+  // the team member from the `cb_ref` cookie, so their later
+  // enrollments can earn credits. Best-effort — never fails signup.
+  try {
+    if (input.referredByTeamAccessId) {
+      await attributeSignupToTeamMember(input.referredByTeamAccessId, user.id);
+    }
+  } catch (e) {
+    console.error('Failed to attribute signup to team member', e);
   }
   await logAudit({ actorId: user.id, action: 'user.register', entity: 'user', entityId: user.id });
   return { user };

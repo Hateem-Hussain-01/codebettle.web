@@ -5,7 +5,7 @@ import { getAdminBasePath } from '@/lib/admin-url';
 import { hasTeamAccess, isTeamTableReady } from '@/lib/db/team';
 import PortalLayout from '@/components/layout/PortalLayout';
 import Link from 'next/link';
-import { LayoutDashboard, ClipboardList, Megaphone, CalendarCheck, FolderOpen, Bell } from 'lucide-react';
+import { LayoutDashboard, ClipboardList, Megaphone, CalendarCheck, FolderOpen, Bell, Coins } from 'lucide-react';
 
 /**
  * Team Portal — hidden by design (Eman, 16 Nov 2026). No link to
@@ -24,6 +24,7 @@ const NAV_ITEMS = [
   { href: '/team/announcements', label: 'Announcements', icon: <Megaphone className="w-5 h-5" /> },
   { href: '/team/meetings', label: 'Meetings', icon: <CalendarCheck className="w-5 h-5" /> },
   { href: '/team/files', label: 'Files', icon: <FolderOpen className="w-5 h-5" /> },
+  { href: '/team/credits', label: 'Credits', icon: <Coins className="w-5 h-5" /> },
   { href: '/team/notifications', label: 'Notifications', icon: <Bell className="w-5 h-5" /> },
 ];
 

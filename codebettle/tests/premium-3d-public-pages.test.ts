@@ -118,6 +118,24 @@ test('dashboard files are untouched by this branch', () => {
     // in the PR body is the backstop; do not fail the suite here.
     return;
   }
+  // PR B (17 Nov 2026): this guard was written for the PR #60 3D
+  // branch, whose scope was ONLY the four public pages. Later branches
+  // legitimately touch the portals (the credits system adds an admin
+  // Credits Management section and a team-dashboard strip), so the
+  // guard now applies ONLY to a branch that actually touches the 3D
+  // transformation's files. A 3D branch must still leave every
+  // dashboard alone.
+  const threeDFiles = [
+    'codebettle/components/sections/',
+    'codebettle/components/ui/TiltCard.tsx',
+    'codebettle/app/page.tsx',
+    'codebettle/app/about/',
+    'codebettle/app/spotlight/',
+    'codebettle/app/contact/',
+    'codebettle/app/globals.css',
+  ];
+  const touches3D = changed.some((f) => threeDFiles.some((p) => f.startsWith(p)));
+  if (!touches3D) return;
   const dashboardPrefixes = [
     'codebettle/app/student/',
     'codebettle/app/admin/',

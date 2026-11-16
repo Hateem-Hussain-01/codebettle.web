@@ -7,11 +7,18 @@ import {
   listTeamTasksForAssignee,
   listUpcomingTeamMeetings,
 } from '@/lib/db/team';
+import { getTeamAccessByEmail, getTeamAccessByUserId } from '@/lib/db/team';
+import {
+  getTeamCreditSummary,
+  getTeamReferralCodeByTeamAccessId,
+  isTeamCreditTableReady,
+} from '@/lib/db/team-credits';
+import { getTeamCreditSettings } from '@/lib/services/settings-service';
 import { formatDateShort, formatDateTime } from '@/lib/utils';
 import Card from '@/components/ui/Card';
 import Badge from '@/components/ui/Badge';
 import FadeIn from '@/components/ui/FadeIn';
-import { ClipboardList, Megaphone, CalendarCheck, FolderOpen, ArrowRight } from 'lucide-react';
+import { ClipboardList, Megaphone, CalendarCheck, FolderOpen, ArrowRight, Coins } from 'lucide-react';
 
 /**
  * Team Portal home — welcome + counts (Eman, 16 Nov 2026).
@@ -21,10 +28,11 @@ import { ClipboardList, Megaphone, CalendarCheck, FolderOpen, ArrowRight } from 
  * There is no read-tracking in v1, so the announcements count is the
  * total posted, not an "unread" count — the label says so.
  *
- * CREDITS SLOT (PR B): the credits balance widget goes in the grid
- * below (next to the stat cards) once the credit system lands — the
- * layout is deliberately not final. Do not hard-code any credit
- * numbers here; PR B reads them from admin settings.
+ * CREDITS STRIP (PR B): the member's balance + referral code sit in a
+ * full-width strip below the stat cards (the 4-card grid stays
+ * symmetrical). The code is NOT minted here — it is minted on the
+ * Credits page (or by the admin backfill); the strip just shows it
+ * when one exists. All numbers read the live admin settings.
  */
 export default async function TeamDashboard() {
   await connection();
@@ -36,6 +44,20 @@ export default async function TeamDashboard() {
     listTeamFiles(),
   ]);
   const openTasks = myTasks.filter((t) => t.status !== 'done');
+
+  // Credits strip (PR B): balance + referral code. Until the credits
+  // SQL runs, a slim "not set up yet" strip shows instead.
+  const access =
+    (await getTeamAccessByUserId(session!.id)) ?? (await getTeamAccessByEmail(session!.email));
+  const creditsReady = await isTeamCreditTableReady();
+  const credits =
+    access && creditsReady
+      ? {
+          summary: await getTeamCreditSummary(access.id),
+          code: (await getTeamReferralCodeByTeamAccessId(access.id))?.code ?? null,
+          settings: await getTeamCreditSettings(),
+        }
+      : null;
 
   const stats = [
     { label: 'My open tasks', value: openTasks.length, href: '/team/tasks', icon: <ClipboardList className="w-5 h-5" /> },
@@ -51,7 +73,7 @@ export default async function TeamDashboard() {
         <p className="text-muted">Everything the CodeBettle team needs — tasks, announcements, meetings and files — in one place.</p>
       </FadeIn>
 
-      {/* Stat cards — the credits balance widget (PR B) joins this grid. */}
+      {/* Stat cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {stats.map((s) => (
           <Link key={s.label} href={s.href}>
@@ -65,6 +87,49 @@ export default async function TeamDashboard() {
           </Link>
         ))}
       </div>
+
+      {/* Credits strip (PR B) — balance + referral code, live settings. */}
+      {access && !creditsReady ? (
+        <Card className="p-5">
+          <p className="text-sm text-muted">
+            Credits are not set up yet — an admin needs to run the team credits SQL file first.
+          </p>
+        </Card>
+      ) : credits ? (
+        <Link href="/team/credits">
+          <Card className="p-5 hover:border-primary/40 transition-colors">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <span className="text-primary-text"><Coins className="w-5 h-5" /></span>
+                <div>
+                  <p className="text-sm font-medium text-muted">My credits</p>
+                  <p className="text-xl font-black text-foreground">
+                    {credits.summary.balance} available
+                    {credits.summary.held > 0 ? (
+                      <span className="text-sm font-medium text-muted"> · {credits.summary.held} held</span>
+                    ) : (
+                      ''
+                    )}
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-3">
+                {credits.code ? (
+                  <p className="text-sm text-muted">
+                    Referral code{' '}
+                    <span className="font-mono font-black tracking-widest text-primary-text">{credits.code}</span>
+                  </p>
+                ) : (
+                  <p className="text-sm text-muted">Your referral code is on the Credits page</p>
+                )}
+                <span className="text-sm font-medium text-primary-text flex items-center gap-1">
+                  View credits <ArrowRight className="w-4 h-4" />
+                </span>
+              </div>
+            </div>
+          </Card>
+        </Link>
+      ) : null}
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* My open tasks */}
