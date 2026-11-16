@@ -101,7 +101,7 @@ export default function HeroSection() {
         ))}
       </motion.div>
 
-      <div className="relative z-10 max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center py-32">
+      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center py-32">
         <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}>
           <span className="inline-flex items-center gap-2 text-xs font-semibold px-4 py-2 rounded-full border border-primary/30 bg-primary/10 text-primary-text mb-8">
             <span className="w-2 h-2 bg-primary rounded-full animate-pulse" />
@@ -113,12 +113,22 @@ export default function HeroSection() {
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.1 }}
-          className="text-4xl sm:text-5xl lg:text-7xl font-black text-foreground leading-tight mb-6"
+          // NOTE (16 Nov 2026 — hero headline wrap): the typewriter word
+          // must stay on ONE line. whitespace-nowrap + a fluid clamp size
+          // (20px on small phones → 72px on desktop) keeps even the
+          // longest phrase ("Become a DevOps Engineer", ~1116px at 72px
+          // in a wide bold font) inside the max-w-7xl container at every
+          // viewport. Before this, the word wrapped to a second line and
+          // the whole section below (subtext, CTAs, code window) jumped
+          // down every time the word changed — a layout shift on each
+          // typewriter cycle. The cursor height is em-relative so it
+          // scales with the fluid font instead of a fixed 40px.
+          className="text-[clamp(1.25rem,5.2vw,4.5rem)] whitespace-nowrap font-black text-foreground leading-tight mb-6"
         >
           Become a{' '}
           <span className="relative">
             <span className="gradient-text">{displayed}</span>
-            <span className="inline-block w-0.5 h-10 bg-primary ml-1 animate-pulse" />
+            <span className="inline-block w-[2px] h-[0.75em] bg-primary ml-1 animate-pulse align-middle" />
           </span>
         </motion.h1>
 
