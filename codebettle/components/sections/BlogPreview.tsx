@@ -1,8 +1,17 @@
 import Link from 'next/link';
 import { ArrowRight, Clock } from 'lucide-react';
 import { getPublishedPosts } from '@/lib/db/blog';
-import { motion } from 'framer-motion';
+import FadeIn from '@/components/ui/FadeIn';
 import TiltCard from '@/components/ui/TiltCard';
+
+// NOTE (16 Nov 2026 — home page 500, PR #60 regression): this is an
+// async SERVER component, so it must never render framer-motion
+// components directly — they are client-only and rendering one here
+// throws during SSR, taking the whole landing page down (digest
+// 3155688011; the flight stream showed every other home section
+// rendering and BlogPreview as the error). The entrance animation
+// lives in <FadeIn> (a 'use client' wrapper with the same fade + rise
+// + stagger), the pattern FeaturedCourses already uses.
 
 export default async function BlogPreview() {
   const posts = (await getPublishedPosts()).slice(0, 3);
@@ -24,14 +33,7 @@ export default async function BlogPreview() {
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {posts.map((post, i) => (
-            <motion.div
-              key={post.id}
-              initial={{ opacity: 0, y: 24 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: i * 0.1 }}
-              className="h-full"
-            >
+            <FadeIn key={post.id} delay={i * 0.1} y={24} className="h-full">
             <Link href={`/blog/${post.slug}`} className="block h-full">
               <TiltCard max={5} className="h-full">
               <div className="group bg-surface border border-dark-border rounded-xl overflow-hidden hover:border-primary/30 hover:-translate-y-1 hover:shadow-[0_16px_40px_-12px_rgba(0,0,0,0.6)] transition-all duration-300 h-full flex flex-col">
@@ -50,7 +52,7 @@ export default async function BlogPreview() {
               </div>
               </TiltCard>
             </Link>
-            </motion.div>
+            </FadeIn>
           ))}
         </div>
       </div>
