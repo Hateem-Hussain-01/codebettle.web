@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { ArrowRight, Clock } from 'lucide-react';
 import { getPublishedPosts } from '@/lib/db/blog';
 import { motion } from 'framer-motion';
+import TiltCard from '@/components/ui/TiltCard';
 
 export default async function BlogPreview() {
   const posts = (await getPublishedPosts()).slice(0, 3);
@@ -23,22 +24,33 @@ export default async function BlogPreview() {
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {posts.map((post, i) => (
-            <Link key={post.id} href={`/blog/${post.slug}`}>
-              <div className="group bg-surface border border-dark-border rounded-xl overflow-hidden hover:border-primary/30 transition-all duration-300">
+            <motion.div
+              key={post.id}
+              initial={{ opacity: 0, y: 24 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: i * 0.1 }}
+              className="h-full"
+            >
+            <Link href={`/blog/${post.slug}`} className="block h-full">
+              <TiltCard max={5} className="h-full">
+              <div className="group bg-surface border border-dark-border rounded-xl overflow-hidden hover:border-primary/30 hover:-translate-y-1 hover:shadow-[0_16px_40px_-12px_rgba(0,0,0,0.6)] transition-all duration-300 h-full flex flex-col">
                 <div className="h-44 overflow-hidden">
                   <img src={post.thumbnail} alt={post.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
                 </div>
-                <div className="p-5">
+                <div className="p-5 flex-1 flex flex-col">
                   <span className="text-xs font-medium text-primary-text">{post.category}</span>
                   <h3 className="text-sm font-semibold text-foreground mt-1.5 mb-2 line-clamp-2 group-hover:text-primary-text transition-colors">{post.title}</h3>
                   <p className="text-xs text-muted line-clamp-2 mb-3">{post.excerpt}</p>
-                  <div className="flex items-center justify-between text-xs text-muted">
+                  <div className="flex items-center justify-between text-xs text-muted mt-auto">
                     <span>{post.authorName}</span>
                     <span className="flex items-center gap-1"><Clock className="w-3 h-3" />{post.readTime}</span>
                   </div>
                 </div>
               </div>
+              </TiltCard>
             </Link>
+            </motion.div>
           ))}
         </div>
       </div>

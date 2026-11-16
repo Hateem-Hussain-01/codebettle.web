@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import FadeIn from '@/components/ui/FadeIn';
+import TiltCard from '@/components/ui/TiltCard';
 import type { PublicSuccessStory } from '@/lib/db/types';
 import { SUCCESS_STORY_CATEGORIES } from '@/lib/success-story-categories';
 import { Trophy, ArrowRight, GraduationCap, MapPin, Quote } from 'lucide-react';
@@ -29,8 +30,9 @@ function StoryCard({ story, featured }: { story: PublicSuccessStory; featured?: 
   return (
     <Link href={`/success-stories/${story.id}`}>
       <FadeIn className="h-full">
+        <TiltCard max={5} className="h-full">
         <article
-          className={`group bg-dark-card border rounded-2xl overflow-hidden hover:border-primary/40 transition-all duration-300 h-full flex flex-col ${
+          className={`group bg-dark-card border rounded-2xl overflow-hidden hover:border-primary/40 hover:-translate-y-1 hover:shadow-[0_16px_40px_-12px_rgba(0,0,0,0.6)] transition-all duration-300 h-full flex flex-col ${
             featured ? 'border-primary/50 shadow-[0_0_40px_-12px_rgba(250,204,21,0.35)]' : 'border-dark-border'
           }`}
         >
@@ -101,6 +103,7 @@ function StoryCard({ story, featured }: { story: PublicSuccessStory; featured?: 
             </div>
           </div>
         </article>
+        </TiltCard>
       </FadeIn>
     </Link>
   );
@@ -146,7 +149,7 @@ export default function StoriesWithLoadMore({
             <div className="text-center mt-10">
               <button
                 onClick={() => setLoads((l) => l + 1)}
-                className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-primary text-ink font-bold text-sm hover:opacity-90 transition-opacity shadow-[0_0_30px_-8px_rgba(250,204,21,0.6)]"
+                className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-primary text-ink font-bold text-sm hover:opacity-90 hover:-translate-y-0.5 transition-all shadow-[0_0_30px_-8px_rgba(250,204,21,0.6)] hover:shadow-[0_0_40px_-8px_rgba(250,204,21,0.7)]"
               >
                 Load More Stories ({rest.length - shown} more)
               </button>

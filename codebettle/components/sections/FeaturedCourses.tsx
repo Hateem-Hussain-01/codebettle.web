@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { ArrowRight } from 'lucide-react';
 import FadeIn from '@/components/ui/FadeIn';
+import PremiumBackdrop from '@/components/ui/PremiumBackdrop';
 import FeaturedCoursesClient from './featured-courses-client';
 import { getFeaturedCourses } from '@/lib/db/courses';
 import { toPublicCourse } from '@/lib/db/mappers';
@@ -15,8 +16,9 @@ export default async function FeaturedCourses() {
   }
 
   return (
-    <section className="py-24 bg-background">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <section className="relative py-24 bg-background overflow-hidden">
+      <PremiumBackdrop variant="soft" />
+      <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <FadeIn className="flex items-end justify-between mb-12">
           <div>
             <span className="text-primary-text text-sm font-semibold uppercase tracking-wider">Featured Courses</span>

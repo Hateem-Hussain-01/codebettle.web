@@ -2,6 +2,8 @@
 import Navbar from '@/components/layout/Navbar';
 import Footer, { useSiteSettings } from '@/components/layout/Footer';
 import FadeIn from '@/components/ui/FadeIn';
+import PremiumBackdrop from '@/components/ui/PremiumBackdrop';
+import TiltCard from '@/components/ui/TiltCard';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
 import Textarea from '@/components/ui/Textarea';
@@ -57,8 +59,11 @@ export default function ContactPage() {
     <>
       <Navbar />
       <main className="min-h-screen bg-background pt-16">
-        <div className="py-16 bg-dark-card border-b border-dark-border text-center">
-          <FadeIn className="max-w-xl mx-auto px-4">
+        <div className="relative py-16 bg-dark-card border-b border-dark-border text-center overflow-hidden">
+          <PremiumBackdrop variant="hero" />
+          <div aria-hidden="true" className="absolute top-8 left-[12%] w-20 h-20 rounded-full bg-primary/10 blur-2xl pointer-events-none animate-float-slow hidden md:block" />
+          <div aria-hidden="true" className="absolute bottom-6 right-[10%] w-24 h-24 rounded-full bg-primary/[0.07] blur-2xl pointer-events-none animate-float-slower hidden md:block" />
+          <FadeIn className="relative max-w-xl mx-auto px-4">
             <span className="text-primary-text text-sm font-semibold uppercase tracking-wider">Contact Us</span>
             <h1 className="text-4xl font-black text-foreground mt-2 mb-3">Get in <span className="gradient-text">Touch</span></h1>
             <p className="text-muted">Have questions? We're here to help. Send us a message and we'll respond within 24 hours.</p>
@@ -74,28 +79,37 @@ export default function ContactPage() {
                 { icon: <Phone className="w-5 h-5" />, label: 'Phone', value: contactPhone },
                 { icon: <MapPin className="w-5 h-5" />, label: 'Address', value: contactAddress },
               ].map((item, i) => (
-                <FadeIn key={item.label} delay={i * 0.08} className="flex items-start gap-4">
-                  <div className="w-10 h-10 rounded-lg bg-primary/10 text-primary-text flex items-center justify-center flex-shrink-0">{item.icon}</div>
-                  <div>
-                    <p className="text-foreground font-medium text-sm">{item.label}</p>
-                    <p className="text-muted text-sm">{item.value}</p>
-                  </div>
+                <FadeIn key={item.label} delay={i * 0.08}>
+                  <TiltCard max={5}>
+                    <div className="flex items-start gap-4 rounded-xl border border-dark-border bg-dark-card p-4 hover:border-primary/30 hover:-translate-y-0.5 hover:shadow-[0_12px_32px_-12px_rgba(0,0,0,0.6)] transition-all duration-300">
+                      <div className="w-10 h-10 rounded-lg bg-primary/10 text-primary-text flex items-center justify-center flex-shrink-0 shadow-[0_8px_20px_-8px_rgba(0,0,0,0.6)]">{item.icon}</div>
+                      <div>
+                        <p className="text-foreground font-medium text-sm">{item.label}</p>
+                        <p className="text-muted text-sm">{item.value}</p>
+                      </div>
+                    </div>
+                  </TiltCard>
                 </FadeIn>
               ))}
             </FadeIn>
 
             <FadeIn delay={0.1} className="lg:col-span-3">
-              <form onSubmit={handleSubmit} className="bg-dark-card border border-dark-border rounded-xl p-6 space-y-4">
+              {/* Gold gradient frame + deep shadow: the form reads as a
+                  raised glass panel. No mouse tilt here — tilting a
+                  form while typing would hurt usability. */}
+              <div className="rounded-xl bg-gradient-to-b from-primary/40 via-dark-border to-dark-border p-px shadow-[0_16px_48px_-16px_rgba(0,0,0,0.7)]">
+              <form onSubmit={handleSubmit} className="bg-dark-card rounded-[11px] p-6 space-y-4">
                 <div className="grid sm:grid-cols-2 gap-4">
                   <Input label="Your Name" placeholder="Full name" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} required />
                   <Input label="Email Address" type="email" placeholder="you@example.com" value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))} required />
                 </div>
                 <Input label="Subject" placeholder="How can we help?" value={form.subject} onChange={e => setForm(f => ({ ...f, subject: e.target.value }))} required />
                 <Textarea label="Message" placeholder="Tell us more..." value={form.message} onChange={e => setForm(f => ({ ...f, message: e.target.value }))} rows={5} required />
-                <Button type="submit" size="lg" loading={loading} className="gap-2">
+                <Button type="submit" size="lg" loading={loading} className="gap-2 hover:-translate-y-0.5 hover:shadow-[0_8px_24px_-8px_rgba(245,197,24,0.5)] transition-all">
                   <Send className="w-4 h-4" /> Send Message
                 </Button>
               </form>
+              </div>
             </FadeIn>
           </div>
         </div>

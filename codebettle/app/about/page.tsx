@@ -1,6 +1,8 @@
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
 import FadeIn from '@/components/ui/FadeIn';
+import PremiumBackdrop from '@/components/ui/PremiumBackdrop';
+import TiltCard from '@/components/ui/TiltCard';
 import TeamSection from '@/components/sections/TeamSection';
 import { getSession } from '@/lib/auth';
 import { listEnabledTeamMembers } from '@/lib/db/team-members';
@@ -21,8 +23,12 @@ export default async function AboutPage() {
       <Navbar session={session} />
       <main className="min-h-screen bg-background pt-16">
         {/* Hero */}
-        <div className="py-20 bg-dark-card border-b border-dark-border text-center">
-          <FadeIn className="max-w-3xl mx-auto px-4">
+        <div className="relative py-20 bg-dark-card border-b border-dark-border text-center overflow-hidden">
+          <PremiumBackdrop variant="hero" />
+          {/* Floating gold orbs — pure decoration, slow drift. */}
+          <div aria-hidden="true" className="absolute top-10 left-[12%] w-20 h-20 rounded-full bg-primary/10 blur-2xl pointer-events-none animate-float-slow hidden md:block" />
+          <div aria-hidden="true" className="absolute bottom-8 right-[10%] w-28 h-28 rounded-full bg-primary/[0.07] blur-2xl pointer-events-none animate-float-slower hidden md:block" />
+          <FadeIn className="relative max-w-3xl mx-auto px-4">
             <span className="text-primary-text text-sm font-semibold uppercase tracking-wider">About Us</span>
             <h1 className="text-4xl sm:text-5xl font-black text-foreground mt-2 mb-4">
               Empowering <span className="gradient-text">Pakistan's</span> Tech Future
@@ -41,10 +47,14 @@ export default async function AboutPage() {
               { icon: <Eye className="w-8 h-8" />, title: 'Our Vision', desc: 'A Pakistan where every talented individual has access to the skills and knowledge needed to compete in the global tech industry.' },
               { icon: <Heart className="w-8 h-8" />, title: 'Our Values', desc: 'Excellence in education, accessibility for all, community-driven growth, and a commitment to real-world, practical learning.' },
             ].map((item, i) => (
-              <FadeIn key={item.title} delay={i * 0.08} className="bg-dark-card border border-dark-border rounded-xl p-6 text-center hover:border-primary/30 transition-all">
-                <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-primary/10 text-primary-text mb-4">{item.icon}</div>
-                <h3 className="text-foreground font-bold text-lg mb-3">{item.title}</h3>
-                <p className="text-muted text-sm leading-relaxed">{item.desc}</p>
+              <FadeIn key={item.title} delay={i * 0.08} className="h-full">
+                <TiltCard max={6} className="h-full">
+                  <div className="bg-dark-card border border-dark-border rounded-xl p-6 text-center hover:border-primary/30 hover:-translate-y-1 hover:shadow-[0_16px_40px_-12px_rgba(0,0,0,0.6)] transition-all h-full">
+                    <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-primary/10 text-primary-text mb-4 shadow-[0_8px_24px_-8px_rgba(0,0,0,0.6)]">{item.icon}</div>
+                    <h3 className="text-foreground font-bold text-lg mb-3">{item.title}</h3>
+                    <p className="text-muted text-sm leading-relaxed">{item.desc}</p>
+                  </div>
+                </TiltCard>
               </FadeIn>
             ))}
           </div>
