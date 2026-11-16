@@ -133,3 +133,40 @@ test('dashboard files are untouched by this branch', () => {
     'StatsSection.tsx must stay byte-identical',
   );
 });
+
+// ---------------------------------------------------------------- BlogPreview 500
+// (16 Nov 2026 — landing page 500, digest 3155688011, the day PR #60
+// merged): BlogPreview is an async SERVER component. PR #60 wrapped its
+// cards in framer-motion's <motion.div> directly, and motion components
+// are client-only — rendering one inside a server component throws
+// during SSR and takes the whole page down. The flight stream proved
+// it: every other home section rendered and BlogPreview was the error.
+// The animation must live in a 'use client' wrapper (<FadeIn>, the
+// pattern FeaturedCourses already uses), never as motion.* JSX in a
+// server component file.
+
+const SERVER_COMPONENT_FILES = [
+  'components/sections/BlogPreview.tsx',
+  'components/sections/FeaturedCourses.tsx',
+  'components/sections/TeamSection.tsx',
+  'app/about/page.tsx',
+  'app/success-stories/page.tsx',
+];
+
+test('server components never render framer-motion directly (BlogPreview 500 regression)', () => {
+  for (const rel of SERVER_COMPONENT_FILES) {
+    const src = read(rel);
+    assert.ok(!src.startsWith("'use client'"), `${rel} must stay a server component for this check`);
+    assert.ok(!/<motion\.[a-zA-Z]+[\s>]/.test(src), `${rel} must not render <motion.*> directly — use a 'use client' wrapper like <FadeIn>`);
+    assert.ok(!src.includes('from \'framer-motion\''), `${rel} must not import framer-motion directly`);
+  }
+});
+
+test('BlogPreview animates through FadeIn, keeping its stagger', () => {
+  const blog = read('components/sections/BlogPreview.tsx');
+  assert.ok(blog.includes('FadeIn'), 'BlogPreview must use the FadeIn client wrapper');
+  assert.ok(blog.includes('delay={i * 0.1}'), 'card stagger (0.1s per card) must stay');
+  assert.ok(blog.includes('y={24}'), 'rise offset (24px) must stay');
+  assert.ok(blog.includes('getPublishedPosts'), 'BlogPreview must still fetch its posts server-side');
+  assert.ok(blog.includes('TiltCard'), '3D tilt on the cards must stay');
+});
