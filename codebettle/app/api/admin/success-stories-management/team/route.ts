@@ -5,7 +5,7 @@ import {
   createTeamMember,
   listTeamMembers,
 } from '@/lib/db/team-members';
-import { validateTeamMember, isTeamMemberLevel } from '@/lib/management';
+import { validateTeamMember, isTeamMemberLevel, normalizeVisibleSocials, serializeVisibleSocials } from '@/lib/management';
 
 /**
  * GET /api/admin/success-stories-management/team — list all team members.
@@ -30,6 +30,9 @@ export async function POST(request: NextRequest) {
   if (levelRaw !== undefined && !isTeamMemberLevel(levelRaw)) {
     return NextResponse.json({ error: 'Level must be Management, Department or Trainer' }, { status: 400 });
   }
+  // The "Show on card" choice: at most 2, each one of the 4 platforms.
+  const { socials, error: socialsError } = normalizeVisibleSocials(v.visibleSocials);
+  if (socialsError) return NextResponse.json({ error: socialsError }, { status: 400 });
   const input = {
     fullName: typeof v.fullName === 'string' ? v.fullName : '',
     designation: typeof v.designation === 'string' ? v.designation : '',
@@ -39,6 +42,7 @@ export async function POST(request: NextRequest) {
     linkedinUrl: typeof v.linkedinUrl === 'string' ? v.linkedinUrl : null,
     githubUrl: typeof v.githubUrl === 'string' ? v.githubUrl : null,
     websiteUrl: typeof v.websiteUrl === 'string' ? v.websiteUrl : null,
+    visibleSocials: serializeVisibleSocials(socials),
     level: levelRaw ?? 'management',
     department: typeof v.department === 'string' ? v.department : null,
     sortOrder: typeof v.sortOrder === 'number' ? v.sortOrder : undefined,

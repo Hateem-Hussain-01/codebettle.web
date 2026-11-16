@@ -1210,6 +1210,11 @@ model TeamMember {
   linkedinUrl  String?
   githubUrl    String?
   websiteUrl   String?
+  // Comma-separated social platforms shown on the About page card
+  // (max 2, in display order, e.g. 'github,linkedin'). Null/empty =
+  // fallback: first 2 filled links in GitHub, LinkedIn, X, Website
+  // order. Set by the admin in the Team form ("Show on card").
+  visibleSocials String?
   level        String   @default("management")
   department   String?
   sortOrder    Int      @default(0)

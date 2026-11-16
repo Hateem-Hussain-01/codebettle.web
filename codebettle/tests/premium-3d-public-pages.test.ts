@@ -170,6 +170,11 @@ test('dashboard files are untouched by this branch', () => {
     'codebettle/app/student/ambassador/ambassador-dashboard-client.tsx',
     'codebettle/app/student/ambassador/page.tsx',
     'codebettle/app/student/layout.tsx',
+    // Team-card socials (PR #65, 16 Nov 2026): the "Show on card (pick
+    // up to 2)" picker lives in the admin Team form — it IS the feature.
+    // The branch touches codebettle/components/sections/ (TeamSection)
+    // so this guard applies; only this one admin file is allowed.
+    'codebettle/app/admin/success-stories-management/management-client.tsx',
   ]);
   const offending = changed.filter(
     (f) =>
