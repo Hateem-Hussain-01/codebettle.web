@@ -2,7 +2,7 @@ import Link from 'next/link';
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
 import FadeIn from '@/components/ui/FadeIn';
-import PremiumBackdrop from '@/components/ui/PremiumBackdrop';
+import PublicPageBackdrop from '@/components/ui/PublicPageBackdrop';
 import TiltCard from '@/components/ui/TiltCard';
 import StoriesWithLoadMore from './stories-client';
 import { getSession } from '@/lib/auth';
@@ -94,7 +94,9 @@ export default async function SuccessStoriesPage() {
       <Navbar session={session} />
       <main className="min-h-screen bg-background pt-16">
         <div className="relative py-16 bg-dark-card border-b border-dark-border text-center overflow-hidden">
-          <PremiumBackdrop variant="hero" />
+          {/* Shared public-page backdrop (Step 2): static grid + glows,
+              plus a slow gold particle field on desktop/WebGL. */}
+          <PublicPageBackdrop variant="hero" />
           <div aria-hidden="true" className="absolute top-8 left-[10%] w-20 h-20 rounded-full bg-primary/10 blur-2xl pointer-events-none animate-float-slow hidden md:block" />
           <div aria-hidden="true" className="absolute bottom-6 right-[8%] w-24 h-24 rounded-full bg-primary/[0.07] blur-2xl pointer-events-none animate-float-slower hidden md:block" />
           <FadeIn className="relative max-w-2xl mx-auto px-4">

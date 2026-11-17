@@ -1,7 +1,7 @@
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
 import FadeIn from '@/components/ui/FadeIn';
-import PremiumBackdrop from '@/components/ui/PremiumBackdrop';
+import PublicPageBackdrop from '@/components/ui/PublicPageBackdrop';
 import TiltCard from '@/components/ui/TiltCard';
 import TeamSection from '@/components/sections/TeamSection';
 import { getSession } from '@/lib/auth';
@@ -24,7 +24,9 @@ export default async function AboutPage() {
       <main className="min-h-screen bg-background pt-16">
         {/* Hero */}
         <div className="relative py-20 bg-dark-card border-b border-dark-border text-center overflow-hidden">
-          <PremiumBackdrop variant="hero" />
+          {/* Shared public-page backdrop (Step 2): static grid + glows,
+              plus a slow gold particle field on desktop/WebGL. */}
+          <PublicPageBackdrop variant="hero" />
           {/* Floating gold orbs — pure decoration, slow drift. */}
           <div aria-hidden="true" className="absolute top-10 left-[12%] w-20 h-20 rounded-full bg-primary/10 blur-2xl pointer-events-none animate-float-slow hidden md:block" />
           <div aria-hidden="true" className="absolute bottom-8 right-[10%] w-28 h-28 rounded-full bg-primary/[0.07] blur-2xl pointer-events-none animate-float-slower hidden md:block" />
