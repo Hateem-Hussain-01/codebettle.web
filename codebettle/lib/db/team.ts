@@ -153,7 +153,7 @@ export interface GrantTeamAccessInput {
  */
 export async function grantTeamAccess(input: GrantTeamAccessInput): Promise<TeamAccess> {
   const email = normalizeEmail(input.email);
-  if (!/^[^s@]+@[^s@]+\.[^s@]+$/.test(email)) {
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
     throw new Error('Valid email required');
   }
   const existing = await getTeamAccessByEmail(email);
@@ -268,7 +268,7 @@ export async function createTeamTask(input: CreateTeamTaskInput): Promise<TeamTa
   const title = input.title.trim();
   if (!title) throw new Error('Title is required');
   const assigneeEmail = normalizeEmail(input.assigneeEmail);
-  if (!/^[^s@]+@[^s@]+\.[^s@]+$/.test(assigneeEmail)) {
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(assigneeEmail)) {
     throw new Error('Valid assignee email required');
   }
   try {
@@ -347,7 +347,7 @@ export async function updateTeamTask(id: string, input: UpdateTeamTaskInput): Pr
   if (input.description !== undefined) patch.description = input.description?.trim() || null;
   if (input.assigneeEmail !== undefined) {
     const assigneeEmail = normalizeEmail(input.assigneeEmail);
-    if (!/^[^s@]+@[^s@]+\.[^s@]+$/.test(assigneeEmail)) {
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(assigneeEmail)) {
       throw new Error('Valid assignee email required');
     }
     patch.assigneeEmail = assigneeEmail;
