@@ -194,11 +194,42 @@ test('dashboard files are untouched by this branch', () => {
       !allowedDashboardChanges.has(f),
   );
   assert.deepEqual(offending, [], `dashboard files must not change: ${offending.join(', ')}`);
-  // The stats section itself must not be in the diff either.
-  assert.ok(
-    !changed.includes('codebettle/components/sections/StatsSection.tsx'),
-    'StatsSection.tsx must stay byte-identical',
-  );
+  // Stats section (Step 2, 17 Nov 2026): the stat CARDS may gain the
+  // TiltCard wrap — Eman's explicit Step 2 order — but the numbers,
+  // labels and Counter must stay untouched. The numbers are confirmed
+  // real by Eman (17 Nov), so the old byte-identical rule (written
+  // when the numbers were unverified) is now a content rule: the
+  // diff must not remove or change any stat value, label, or the
+  // Counter. The 'statistics section intact' test above is the
+  // second backstop. No other file gets this treatment.
+  const statsDiff = (() => {
+    try {
+      return execSync('git diff origin/main...HEAD -- codebettle/components/sections/StatsSection.tsx', {
+        cwd: root,
+        encoding: 'utf8',
+        stdio: ['ignore', 'pipe', 'ignore'],
+      });
+    } catch {
+      return '';
+    }
+  })();
+  const removed = statsDiff.split('\n').filter((l) => l.startsWith('-') && !l.startsWith('---'));
+  for (const needle of [
+    'value: 1500',
+    'value: 8',
+    'value: 300',
+    'value: 4.8',
+    'Active Students',
+    'Expert Courses',
+    'Certificates Issued',
+    'Average Rating',
+    'function Counter',
+  ]) {
+    assert.ok(
+      !removed.some((l) => l.includes(needle)),
+      `StatsSection diff must not remove/change: ${needle}`,
+    );
+  }
 });
 
 // ---------------------------------------------------------------- BlogPreview 500

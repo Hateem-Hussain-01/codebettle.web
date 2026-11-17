@@ -2,8 +2,10 @@
 
 import { Canvas, useFrame } from '@react-three/fiber';
 import { Float, Sparkles } from '@react-three/drei';
-import { useEffect, useRef } from 'react';
+import { useMotionValueEvent, type MotionValue } from 'framer-motion';
+import { useEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
+import { isHeroScenePaused, scrollCameraZ, scrollGroupRotationY } from '@/lib/scroll-3d';
 
 /**
  * Home hero 3D scene — fully-3D public site, Step 1 (Eman, 17 Nov
@@ -18,6 +20,12 @@ import * as THREE from 'three';
  * 0.5–0.8, particles at 0.25), the camera only leans ±0.7 / ±0.45,
  * no flashing, no fast spins. Dark + gold only (#F5C518 / #FDE68A
  * theme tokens).
+ *
+ * Step 2 (17 Nov 2026): the camera is scroll-driven — as the hero
+ * scrolls away it dollies gently into the scene (z 10 → 7.5) and
+ * the shape group turns slowly (lib/scroll-3d.ts maps the scroll
+ * progress). When the hero is fully out of view the render loop
+ * pauses (frameloop 'never') so no GPU is spent on an unseen scene.
  *
  * The canvas is pointer-transparent (the wrapper sets
  * pointer-events-none so the CTAs stay clickable), so the camera
@@ -87,19 +95,49 @@ function usePointerTarget() {
 }
 
 /** Slow camera parallax: the camera leans a little toward the cursor
- * and eases back, so the scene has depth without ever feeling busy. */
-function CameraRig({ target }: { target: React.RefObject<{ x: number; y: number }> }) {
+ * and eases back, so the scene has depth without ever feeling busy.
+ * Step 2 (17 Nov 2026): the camera also dollies gently INTO the
+ * scene as the hero scrolls away (z 10 → 7.5) and the shape group
+ * turns slowly — the scroll drives the scene, never the other way
+ * round. All targets go through THREE.MathUtils.damp so a fast
+ * scroll can never snap the camera. */
+function CameraRig({
+  target,
+  scrollYProgress,
+  sceneGroup,
+}: {
+  target: React.RefObject<{ x: number; y: number }>;
+  scrollYProgress: MotionValue<number>;
+  sceneGroup: React.RefObject<THREE.Group | null>;
+}) {
   useFrame((state, delta) => {
     const camera = state.camera;
+    const scroll = scrollYProgress.get();
     camera.position.x = THREE.MathUtils.damp(camera.position.x, target.current.x * 0.7, 2, delta);
-    camera.position.y = THREE.MathUtils.damp(camera.position.y, target.current.y * 0.45, 2, delta);
+    camera.position.y = THREE.MathUtils.damp(camera.position.y, target.current.y * 0.45 + scroll * 0.4, 2, delta);
+    camera.position.z = THREE.MathUtils.damp(camera.position.z, scrollCameraZ(scroll), 2, delta);
+    if (sceneGroup.current) {
+      sceneGroup.current.rotation.y = THREE.MathUtils.damp(
+        sceneGroup.current.rotation.y,
+        scrollGroupRotationY(scroll),
+        2,
+        delta,
+      );
+    }
     camera.lookAt(0, 0, 0);
   });
   return null;
 }
 
-export default function HeroScene() {
+export default function HeroScene({ scrollYProgress }: { scrollYProgress: MotionValue<number> }) {
   const pointerTarget = usePointerTarget();
+  const sceneGroup = useRef<THREE.Group>(null);
+  // Step 2: once the hero has scrolled fully out of view the render
+  // loop stops (Canvas frameloop 'never') — no GPU on a scene nobody
+  // can see. Scrolling back up resumes it; the subscription lives
+  // outside the canvas loop, so it still fires while paused.
+  const [paused, setPaused] = useState(false);
+  useMotionValueEvent(scrollYProgress, 'change', (v) => setPaused(isHeroScenePaused(v)));
 
   return (
     <Canvas
@@ -107,16 +145,19 @@ export default function HeroScene() {
       camera={{ position: [0, 0, 10], fov: 42 }}
       gl={{ antialias: true, alpha: true, powerPreference: 'high-performance' }}
       style={{ background: 'transparent' }}
+      frameloop={paused ? 'never' : 'always'}
     >
       <ambientLight intensity={0.7} />
       <directionalLight position={[4, 6, 6]} intensity={1.2} color="#ffffff" />
       <pointLight position={[-4, 2, 2]} intensity={20} color={GOLD_LIGHT} />
-      {/* Gold particle field across the whole hero, drifting slowly. */}
-      <Sparkles count={90} scale={[14, 7, 4]} size={2.5} speed={0.25} color={GOLD} opacity={0.55} />
-      {SHAPES.map((shape, i) => (
-        <GoldShape key={i} {...shape} />
-      ))}
-      <CameraRig target={pointerTarget} />
+      <group ref={sceneGroup}>
+        {/* Gold particle field across the whole hero, drifting slowly. */}
+        <Sparkles count={90} scale={[14, 7, 4]} size={2.5} speed={0.25} color={GOLD} opacity={0.55} />
+        {SHAPES.map((shape, i) => (
+          <GoldShape key={i} {...shape} />
+        ))}
+      </group>
+      <CameraRig target={pointerTarget} scrollYProgress={scrollYProgress} sceneGroup={sceneGroup} />
     </Canvas>
   );
 }

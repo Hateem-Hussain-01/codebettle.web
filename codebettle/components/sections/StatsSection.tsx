@@ -1,6 +1,7 @@
 'use client';
 import { motion, useInView } from 'framer-motion';
 import { useRef, useEffect, useState } from 'react';
+import TiltCard from '@/components/ui/TiltCard';
 import { Users, BookOpen, Award, Star } from 'lucide-react';
 
 const stats = [
@@ -38,20 +39,25 @@ export default function StatsSection() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-8">
           {stats.map((stat, i) => (
-            <motion.div
-              key={stat.label}
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: i * 0.1 }}
-              className="text-center"
-            >
-              <div className={`${stat.color} flex justify-center mb-4 opacity-80`}>{stat.icon}</div>
-              <p className={`text-4xl font-black ${stat.color}`}>
-                <Counter to={stat.value} decimal={stat.decimal} />{stat.suffix}
-              </p>
-              <p className="text-muted text-sm mt-2">{stat.label}</p>
-            </motion.div>
+            // Step 2 (17 Nov 2026): 3D tilt on the stat cards (max 5°,
+            // spring-smoothed, reduced-motion + touch safe via
+            // TiltCard) — the numbers, labels and Counter below are
+            // untouched; the numbers are confirmed real by Eman.
+            <TiltCard key={stat.label} max={5} className="h-full">
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: i * 0.1 }}
+                className="text-center"
+              >
+                <div className={`${stat.color} flex justify-center mb-4 opacity-80`}>{stat.icon}</div>
+                <p className={`text-4xl font-black ${stat.color}`}>
+                  <Counter to={stat.value} decimal={stat.decimal} />{stat.suffix}
+                </p>
+                <p className="text-muted text-sm mt-2">{stat.label}</p>
+              </motion.div>
+            </TiltCard>
           ))}
         </div>
       </div>

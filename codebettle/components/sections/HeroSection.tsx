@@ -1,9 +1,9 @@
 'use client';
-import { motion } from 'framer-motion';
+import { motion, useScroll } from 'framer-motion';
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Button from '@/components/ui/Button';
-import PremiumBackdrop from '@/components/ui/PremiumBackdrop';
+import PublicPageBackdrop from '@/components/ui/PublicPageBackdrop';
 import HeroSceneWrapper from '@/components/sections/HeroSceneWrapper';
 import { ArrowRight, Play } from 'lucide-react';
 
@@ -24,11 +24,21 @@ const TYPEWRITER_WORDS = ['Web Developer', 'Mobile Developer', 'Data Scientist',
  * the scroll indicator, the badge, and the Python code window
  * (static now, no tilt). The duplicate statistics row is still gone
  * — the separate StatsSection below the hero keeps those numbers.
+ *
+ * Step 2 (17 Nov 2026): scroll-driven camera — useScroll tracks
+ * this section (0 = hero top at viewport top, 1 = hero fully
+ * scrolled out) and the progress drives the scene: the camera
+ * dollies in, the shapes turn slowly, the scene fades, and the
+ * render loop pauses once out of view (see lib/scroll-3d.ts).
  */
 export default function HeroSection() {
   const [wordIndex, setWordIndex] = useState(0);
   const [displayed, setDisplayed] = useState('');
   const [typing, setTyping] = useState(true);
+  // Step 2: hero scroll progress (0 → 1 as the hero scrolls out),
+  // passed to the 3D scene wrapper.
+  const heroRef = useRef<HTMLElement>(null);
+  const { scrollYProgress } = useScroll({ target: heroRef, offset: ['start start', 'end start'] });
 
   useEffect(() => {
     const word = TYPEWRITER_WORDS[wordIndex];
@@ -53,11 +63,14 @@ export default function HeroSection() {
   }, [displayed, typing, wordIndex]);
 
   return (
-    <section className="relative min-h-screen flex items-center justify-center overflow-hidden bg-background">
-      <PremiumBackdrop variant="hero" />
+    <section ref={heroRef} className="relative min-h-screen flex items-center justify-center overflow-hidden bg-background">
+      {/* Shared public-page backdrop (static grid + glows). The hero
+          scene already carries the particle field, so no second
+          particle canvas here. */}
+      <PublicPageBackdrop variant="hero" particles={false} />
       {/* Real 3D scene (lazy, desktop + WebGL only — phones and
           reduced-motion users keep the static backdrop above). */}
-      <HeroSceneWrapper />
+      <HeroSceneWrapper scrollYProgress={scrollYProgress} />
 
       <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center py-32">
         <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}>

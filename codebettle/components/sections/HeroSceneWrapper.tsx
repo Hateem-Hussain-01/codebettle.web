@@ -1,9 +1,10 @@
 'use client';
 
 import dynamic from 'next/dynamic';
-import { useReducedMotion } from 'framer-motion';
+import { motion, useReducedMotion, useTransform, type MotionValue } from 'framer-motion';
 import { useEffect, useState } from 'react';
 import { shouldRenderScene } from '@/lib/hero-scene';
+import { scrollSceneOpacity } from '@/lib/scroll-3d';
 
 /**
  * Hero 3D scene wrapper — fully-3D public site, Step 1 (Eman, 17 Nov
@@ -21,13 +22,21 @@ import { shouldRenderScene } from '@/lib/hero-scene';
  *   for people who asked it not to.
  * - Hydration-safe: the first client render matches the server
  *   (null) — the media/WebGL checks run in useEffect after hydration.
+ * - Step 2 (17 Nov 2026): scroll-driven — the wrapper takes the
+ *   hero's scrollYProgress (from HeroSection's useScroll) and fades
+ *   the scene out as the hero scrolls away (lib/scroll-3d.ts), while
+ *   the scene itself dollies its camera and pauses its render loop
+ *   once fully out of view.
  */
 const HeroScene = dynamic(() => import('./HeroScene'), { ssr: false, loading: () => null });
 
-export default function HeroSceneWrapper() {
+export default function HeroSceneWrapper({ scrollYProgress }: { scrollYProgress: MotionValue<number> }) {
   const reduceMotion = useReducedMotion();
   const [isMobile, setIsMobile] = useState(false);
   const [webglSupported, setWebglSupported] = useState(false);
+  // Step 2: the scene dissolves as the hero scrolls away — the
+  // background recedes while the hero content stays put.
+  const sceneOpacity = useTransform(scrollYProgress, (v) => scrollSceneOpacity(v));
 
   useEffect(() => {
     setIsMobile(window.matchMedia('(max-width: 768px), (pointer: coarse)').matches);
@@ -44,8 +53,8 @@ export default function HeroSceneWrapper() {
   }
 
   return (
-    <div aria-hidden="true" className="pointer-events-none absolute inset-0 overflow-hidden">
-      <HeroScene />
-    </div>
+    <motion.div aria-hidden="true" className="pointer-events-none absolute inset-0 overflow-hidden" style={{ opacity: sceneOpacity }}>
+      <HeroScene scrollYProgress={scrollYProgress} />
+    </motion.div>
   );
 }
