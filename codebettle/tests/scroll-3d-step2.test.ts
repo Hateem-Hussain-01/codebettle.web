@@ -67,9 +67,10 @@ test('HeroSection drives the scene from its own scroll progress', () => {
     hero.includes('<HeroSceneWrapper scrollYProgress={scrollYProgress}'),
     'hero must pass its scroll progress to the scene wrapper',
   );
-  // The hero itself is untouched: typewriter, copy, CTAs, one-line headline.
-  assert.ok(hero.includes('whitespace-nowrap'), 'typewriter headline must stay one line');
-  assert.ok(hero.includes('text-[clamp(1.25rem,5.2vw,4.5rem)]'), 'headline must keep the fluid clamp size');
+  // The hero keeps its scroll wiring; the headline is the two-line
+  // typewriter (Eman, 17 Nov 2026 — screenshot redesign).
+  assert.ok(hero.includes('whitespace-nowrap'), 'headline lines must stay one line each');
+  assert.ok(hero.includes('text-[clamp(1.9rem,4.6vw,3.1rem)]'), 'headline must keep the fluid clamp size');
   assert.ok(hero.includes('TYPEWRITER_WORDS'), 'typewriter must stay');
 });
 
