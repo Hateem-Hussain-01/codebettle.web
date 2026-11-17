@@ -3,6 +3,8 @@ import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
 import FadeIn from '@/components/ui/FadeIn';
 import PublicPageBackdrop from '@/components/ui/PublicPageBackdrop';
+import PageAccentScene from '@/components/ui/PageAccentScene';
+import SectionDepth from '@/components/ui/SectionDepth';
 import TiltCard from '@/components/ui/TiltCard';
 import StoriesWithLoadMore from './stories-client';
 import { getSession } from '@/lib/auth';
@@ -99,6 +101,9 @@ export default async function SuccessStoriesPage() {
           <PublicPageBackdrop variant="hero" />
           <div aria-hidden="true" className="absolute top-8 left-[10%] w-20 h-20 rounded-full bg-primary/10 blur-2xl pointer-events-none animate-float-slow hidden md:block" />
           <div aria-hidden="true" className="absolute bottom-6 right-[8%] w-24 h-24 rounded-full bg-primary/[0.07] blur-2xl pointer-events-none animate-float-slower hidden md:block" />
+          {/* Step 3: floating gold shapes at the right edge — the
+              same world as the Home hero scene, at a whisper. */}
+          <PageAccentScene layout="right" />
           <FadeIn className="relative max-w-2xl mx-auto px-4">
             <span className="inline-flex items-center gap-2 text-primary-text text-sm font-semibold uppercase tracking-wider">
               <Sparkles className="w-4 h-4" /> Student Success
@@ -211,7 +216,12 @@ export default async function SuccessStoriesPage() {
             (1500+ Active Students, 300+ Certificates Issued, 4.8
             Average Rating), admin-editable from the management tab.
             Full-width row, 3 columns on desktop, stacked on mobile.
-            The team section moved to the About page. */}
+            The team section moved to the About page.
+            Step 3: the stat cells tilt gently on hover (same as the
+            Home stats), and the whole row leans toward the viewer as
+            it scrolls in (SectionDepth). The numbers and labels are
+            untouched — they are confirmed real by Eman. */}
+        <SectionDepth>
         <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-12">
           <div className="rounded-2xl border border-dark-border bg-dark-card overflow-hidden grid grid-cols-1 sm:grid-cols-3 sm:divide-x sm:divide-dark-border">
             {([
@@ -219,16 +229,23 @@ export default async function SuccessStoriesPage() {
               { icon: <Award className="w-7 h-7 text-primary-text" />, value: stats.certificatesIssued, label: PAGE_STAT_LABELS.certificatesIssued },
               { icon: <Star className="w-7 h-7 text-primary-text" />, value: stats.averageRating, label: PAGE_STAT_LABELS.averageRating },
             ] as const).map((stat, i) => (
-              <div key={stat.label} className="flex flex-col items-center gap-2 px-6 py-8 text-center hover:-translate-y-1 transition-transform duration-300">
+              <TiltCard key={stat.label} max={5}>
+              <div className="flex flex-col items-center gap-2 px-6 py-8 text-center hover:-translate-y-1 transition-transform duration-300">
                 <span className="shrink-0 animate-float-slow" style={{ animationDelay: `${i * 0.9}s` }}>{stat.icon}</span>
                 <span className="block text-4xl sm:text-5xl font-black text-primary-text leading-none">{stat.value}</span>
                 <span className="block text-sm text-muted">{stat.label}</span>
               </div>
+              </TiltCard>
             ))}
           </div>
         </section>
+        </SectionDepth>
 
 
+        {/* Stories grid — Step 3: the grid leans gently toward the
+            viewer as it scrolls in (SectionDepth); the cards
+            themselves already tilt on hover. */}
+        <SectionDepth>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
           {stories.length === 0 ? (
             <FadeIn className="text-center py-16">
@@ -253,6 +270,7 @@ export default async function SuccessStoriesPage() {
             <StoriesWithLoadMore featured={featured} rest={rest} />
           )}
         </div>
+        </SectionDepth>
       </main>
       <Footer />
     </>
