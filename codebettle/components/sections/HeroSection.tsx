@@ -1,54 +1,34 @@
 'use client';
-import { motion, useMotionValue, useReducedMotion, useSpring, useTransform } from 'framer-motion';
+import { motion } from 'framer-motion';
 import Link from 'next/link';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import Button from '@/components/ui/Button';
 import PremiumBackdrop from '@/components/ui/PremiumBackdrop';
-import TiltCard from '@/components/ui/TiltCard';
-import { ArrowRight, Play, Code2, Cpu, Globe, Smartphone, Video, Award } from 'lucide-react';
+import HeroSceneWrapper from '@/components/sections/HeroSceneWrapper';
+import { ArrowRight, Play } from 'lucide-react';
 
 const TYPEWRITER_WORDS = ['Web Developer', 'Mobile Developer', 'Data Scientist', 'UI/UX Designer', 'DevOps Engineer'];
 
-const FLOATING_ICONS = [
-  { icon: <Code2 className="w-5 h-5" />, style: 'top-[20%] left-[8%]', delay: 0 },
-  { icon: <Cpu className="w-5 h-5" />, style: 'top-[15%] right-[12%]', delay: 0.5 },
-  { icon: <Globe className="w-5 h-5" />, style: 'bottom-[30%] left-[5%]', delay: 1 },
-  { icon: <Smartphone className="w-5 h-5" />, style: 'bottom-[25%] right-[8%]', delay: 1.5 },
-];
-
 /**
- * Home hero — premium 3D transformation (Eman, 16 Nov 2026).
+ * Home hero — fully-3D public site, Step 1 (Eman, 17 Nov 2026).
  *
- * What changed vs before:
- * - The duplicate statistics row (1,500+ Students / 8+ Courses /
- *   5+ Instructors) is REMOVED — the separate StatsSection below the
- *   hero keeps those numbers (untouched). The space is rebalanced
- *   with a 3D-tilted glass code window + two floating chips, so the
- *   hero still feels complete.
- * - Depth backdrop (gold glows + faint grid + bottom fade) replaces
- *   the old flat gradient blobs.
- * - The floating icons now drift with the mouse (gentle parallax,
- *   transform-only, disabled under reduced motion).
- * - CTAs lift on hover and press in on tap.
+ * The hero is now a real 3D scene (React Three Fiber): floating gold
+ * shapes + a gold particle field behind the content, with a slow
+ * mouse-move camera parallax — lazy-loaded, reduced-motion safe, and
+ * static on phones. It REPLACES the old PR #60 hero motion: the
+ * framer-motion parallax layer, the floating icons, the TiltCard on
+ * the code window and the two floating chips are all gone.
  *
- * What did NOT change: the typewriter headline, the copy, the CTA
- * destinations, the scroll indicator, the badge.
+ * What did NOT change: the typewriter headline (still one line —
+ * see the PR #62 note on the h1), the copy, the CTA destinations,
+ * the scroll indicator, the badge, and the Python code window
+ * (static now, no tilt). The duplicate statistics row is still gone
+ * — the separate StatsSection below the hero keeps those numbers.
  */
 export default function HeroSection() {
   const [wordIndex, setWordIndex] = useState(0);
   const [displayed, setDisplayed] = useState('');
   const [typing, setTyping] = useState(true);
-  const reduceMotion = useReducedMotion();
-  const sectionRef = useRef<HTMLElement>(null);
-
-  // Mouse parallax (transform-only): the icon layer drifts a few px
-  // toward the cursor; the backdrop glows drift the opposite way.
-  const mx = useMotionValue(0);
-  const my = useMotionValue(0);
-  const sx = useSpring(mx, { stiffness: 60, damping: 20 });
-  const sy = useSpring(my, { stiffness: 60, damping: 20 });
-  const iconsX = useTransform(sx, (v) => v * 16);
-  const iconsY = useTransform(sy, (v) => v * 12);
 
   useEffect(() => {
     const word = TYPEWRITER_WORDS[wordIndex];
@@ -72,34 +52,12 @@ export default function HeroSection() {
     return () => clearTimeout(timeout);
   }, [displayed, typing, wordIndex]);
 
-  const handleMouseMove = (e: React.MouseEvent<HTMLElement>) => {
-    if (reduceMotion || !sectionRef.current) return;
-    const rect = sectionRef.current.getBoundingClientRect();
-    mx.set((e.clientX - rect.left) / rect.width - 0.5);
-    my.set((e.clientY - rect.top) / rect.height - 0.5);
-  };
-
   return (
-    <section
-      ref={sectionRef}
-      onMouseMove={handleMouseMove}
-      className="relative min-h-screen flex items-center justify-center overflow-hidden bg-background"
-    >
+    <section className="relative min-h-screen flex items-center justify-center overflow-hidden bg-background">
       <PremiumBackdrop variant="hero" />
-
-      {/* Floating icons — parallax layer (drifts with the mouse) */}
-      <motion.div aria-hidden="true" className="absolute inset-0 pointer-events-none" style={{ x: iconsX, y: iconsY }}>
-        {FLOATING_ICONS.map((item, i) => (
-          <motion.div
-            key={i}
-            className={`absolute ${item.style} w-12 h-12 rounded-xl glass-card flex items-center justify-center text-primary-text hidden lg:flex`}
-            animate={{ y: [0, -12, 0] }}
-            transition={{ duration: 3, repeat: Infinity, delay: item.delay, ease: 'easeInOut' }}
-          >
-            {item.icon}
-          </motion.div>
-        ))}
-      </motion.div>
+      {/* Real 3D scene (lazy, desktop + WebGL only — phones and
+          reduced-motion users keep the static backdrop above). */}
+      <HeroSceneWrapper />
 
       <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center py-32">
         <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}>
@@ -165,11 +123,9 @@ export default function HeroSection() {
           </motion.span>
         </motion.div>
 
-        {/* Hero visual — a 3D-tilted glass code window that replaces
-            the removed statistics row and keeps the hero balanced.
-            The code is the student's first Python program; the two
-            floating chips name two real CodeBettle promises (live
-            classes, verified certificates). */}
+        {/* Hero visual — the glass code window, static now (the 3D
+            scene behind it carries the motion). The code is the
+            student's first Python program. */}
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
@@ -178,7 +134,7 @@ export default function HeroSection() {
         >
           {/* Glow behind the window */}
           <div aria-hidden="true" className="absolute -inset-8 bg-primary/10 rounded-full blur-3xl pointer-events-none" />
-          <TiltCard max={5} className="relative">
+          <div className="relative">
             <div className="glass-card rounded-2xl overflow-hidden text-left shadow-[0_24px_64px_-16px_rgba(0,0,0,0.6)]">
               <div className="flex items-center gap-2 px-4 py-3 border-b border-dark-border">
                 <span className="w-3 h-3 rounded-full bg-primary" />
@@ -220,21 +176,6 @@ export default function HeroSection() {
                 </div>
               </div>
             </div>
-          </TiltCard>
-
-          {/* Floating chips — real promises, floating gently. They sit
-              fully clear of the window (above-left / below-right) so
-              they never cover the header or the code lines. */}
-          <div className="absolute -top-14 left-0 hidden lg:flex items-center gap-2 glass-card rounded-full px-4 py-2.5 text-sm font-medium text-foreground shadow-lg animate-float-slow whitespace-nowrap">
-            <Video className="w-4 h-4 text-primary-text" />
-            Live interactive classes
-          </div>
-          <div
-            className="absolute -bottom-14 right-0 hidden lg:flex items-center gap-2 glass-card rounded-full px-4 py-2.5 text-sm font-medium text-foreground shadow-lg animate-float-slower whitespace-nowrap"
-            style={{ animationDelay: '1.2s' }}
-          >
-            <Award className="w-4 h-4 text-primary-text" />
-            Verified certificates
           </div>
         </motion.div>
       </div>

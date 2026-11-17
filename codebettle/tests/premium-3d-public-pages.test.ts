@@ -33,13 +33,20 @@ test('hero has NO statistics: the duplicate stats row is gone', () => {
   assert.ok(hero.includes('TYPEWRITER_WORDS'), 'typewriter must stay');
 });
 
-test('hero is rebalanced after the stats removal: the code window is there', () => {
+test('hero is a real 3D scene: the code window stays, the old parallax/chips/tilt are gone', () => {
   const hero = read('components/sections/HeroSection.tsx');
   assert.ok(hero.includes('hello.py'), 'hero visual must be the Python code window');
   assert.ok(hero.includes('become_developer'), 'code window must show the snippet');
-  assert.ok(hero.includes('Live interactive classes'), 'live-classes chip must exist');
-  assert.ok(hero.includes('Verified certificates'), 'certificates chip must exist');
-  assert.ok(hero.includes('TiltCard'), 'hero visual must tilt in 3D');
+  assert.ok(hero.includes('HeroSceneWrapper'), 'hero must mount the real 3D scene wrapper');
+  // The old PR #60 hero motion is replaced by the scene — none of it
+  // may survive in the hero (it would fight the 3D camera parallax).
+  assert.ok(!hero.includes('FLOATING_ICONS'), 'floating icons must be gone — the scene carries the motion now');
+  assert.ok(!hero.includes('Live interactive classes'), 'live-classes chip must be gone');
+  assert.ok(!hero.includes('Verified certificates'), 'certificates chip must be gone');
+  assert.ok(!hero.includes('<TiltCard'), 'TiltCard must be gone from the hero — the code window is static now');
+  assert.ok(!hero.includes("ui/TiltCard"), 'the TiltCard import must be gone from the hero');
+  assert.ok(!hero.includes('useMotionValue'), 'mouse parallax motion values must be gone');
+  assert.ok(!hero.includes('onMouseMove'), 'the hero must not track the mouse itself — the scene does it');
 });
 
 // ---------------------------------------------------------------- stats section
