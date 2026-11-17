@@ -20,9 +20,19 @@ interface CourseCardProps {
    * on the course detail page, not on the home page.
    */
   showPrice?: boolean;
+  /**
+   * Code-editor header (Eman, 17 Nov 2026 — Mac-window design).
+   * When set, the card gains a mini editor title bar at its very
+   * top: 3 macOS traffic-light dots + this filename, exactly as the
+   * approved preview. The dots are decorative only — plain spans,
+   * no click handlers, no hover symbols. Only the home-page
+   * featured courses pass this (via courseEditorFilename); the
+   * /courses page and the student wishlist keep the plain card.
+   */
+  editorFileName?: string;
 }
 
-export default function CourseCard({ course, instructorName, isWishlisted, onWishlist, index = 0, showPrice = true }: CourseCardProps) {
+export default function CourseCard({ course, instructorName, isWishlisted, onWishlist, index = 0, showPrice = true, editorFileName }: CourseCardProps) {
   const totalLessons = course.modules.reduce((acc, m) => acc + m.lessons.length, 0);
 
   return (
@@ -34,6 +44,18 @@ export default function CourseCard({ course, instructorName, isWishlisted, onWis
     >
       <Link href={`/courses/${course.slug}`}>
         <div className="card-lift bg-dark-card border border-dark-border rounded-xl overflow-hidden hover:border-primary/40 hover:shadow-[0_0_20px_rgba(245,197,24,0.1)] h-full flex flex-col">
+          {/* Code-editor header (Mac-window design, Eman 17 Nov 2026):
+              3 macOS traffic-light dots + filename. Decorative only —
+              plain spans, no handlers. Rendered only when the caller
+              passes editorFileName (home featured courses). */}
+          {editorFileName && (
+            <div className="flex items-center gap-1.5 border-b border-dark-border bg-background px-4 py-2.5" aria-hidden="true">
+              <span className="h-2.5 w-2.5 rounded-full bg-[#ff5f57]" />
+              <span className="h-2.5 w-2.5 rounded-full bg-[#febc2e]" />
+              <span className="h-2.5 w-2.5 rounded-full bg-[#28c840]" />
+              <span className="ml-1 font-mono text-xs text-muted">{editorFileName}</span>
+            </div>
+          )}
           {/* Thumbnail */}
           <div className="relative h-44 overflow-hidden bg-dark-border flex-shrink-0">
             <CourseThumbnail

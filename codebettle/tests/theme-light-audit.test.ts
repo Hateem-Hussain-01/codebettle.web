@@ -108,6 +108,21 @@ const ALLOWLIST: AllowEntry[] = [
     match: 'linear-gradient(135deg,#FDE68A_0%,#F5C518_45%,#C9A000_100%)',
     reason: 'Gold overlay panel is intentionally fixed gold in both themes.',
   },
+  {
+    file: 'components/ui/CourseCard.tsx',
+    match: 'bg-[#ff5f57]',
+    reason: 'macOS traffic-light dots on the featured course-card editor header (Eman, 17 Nov 2026): fixed red in both themes, exactly as the approved preview — same as a real macOS window.',
+  },
+  {
+    file: 'components/ui/CourseCard.tsx',
+    match: 'bg-[#febc2e]',
+    reason: 'macOS traffic-light dots on the featured course-card editor header (Eman, 17 Nov 2026): fixed yellow in both themes, exactly as the approved preview.',
+  },
+  {
+    file: 'components/ui/CourseCard.tsx',
+    match: 'bg-[#28c840]',
+    reason: 'macOS traffic-light dots on the featured course-card editor header (Eman, 17 Nov 2026): fixed green in both themes, exactly as the approved preview.',
+  },
   // Rule 4 — hex colour literal inside an inline style prop.
   {
     file: 'app/admin/email-templates/email-template-editor-client.tsx',
