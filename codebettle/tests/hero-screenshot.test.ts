@@ -33,6 +33,20 @@ test('hero badge is the admissions pill', () => {
   assert.ok(!src.includes("Pakistan's #1 Digital Institute"), 'old badge must be gone');
 });
 
+test('hero badge background is opaque so 3D shapes cannot show through it', () => {
+  const src = hero();
+  // 17 Nov 2026 — badge legibility: the pill was bg-primary/10 and the
+  // gold 3D icosahedron drifting behind the hero showed through it on
+  // the live page, hiding the pill's left border and partly obscuring
+  // the "A" in "ADMISSIONS". The pill must be solid bg-background
+  // (opaque in both themes, matching the hero section behind it).
+  const pill = src.slice(src.lastIndexOf('<span', src.indexOf('ADMISSIONS OPEN')), src.indexOf('ADMISSIONS OPEN'));
+  assert.ok(pill.includes('bg-background'), 'badge pill must have a solid bg-background');
+  assert.ok(!pill.includes('bg-primary/10'), 'badge pill must NOT be translucent bg-primary/10');
+  assert.ok(pill.includes('border-primary/30'), 'badge pill keeps its gold border');
+  assert.ok(pill.includes('text-primary-text'), 'badge pill keeps its gold text');
+});
+
 test('hero headline is two lines: static "Become a", typewriter role — never a third', () => {
   const src = hero();
   // Line 1: static.
