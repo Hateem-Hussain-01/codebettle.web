@@ -1,6 +1,6 @@
 /**
  * Admin-assisted "view as" tokens (Phase 2, Module 21.4; extended
- * 16 Nov 2026 to ambassador portals).
+ * 16 Nov 2026 to ambassador portals, 17 Nov 2026 to team portals).
  *
  * Pure functions — no Next.js imports, unit-testable with the plain
  * Node test runner.
@@ -8,8 +8,9 @@
  * Mechanism (see also lib/auth.ts `getSession` and the
  * `/api/admin/view-as` routes):
  * - An admin mints a signed token for ONE person — a teacher
- *   (`kind: 'teacher'`) or an approved ambassador (`kind:
- *   'ambassador'`). The token is `base64url(payload).hex-hmac`,
+ *   (`kind: 'teacher'`), an approved ambassador (`kind:
+ *   'ambassador'`), or a team member with active team access
+ *   (`kind: 'team'`). The token is `base64url(payload).hex-hmac`,
  *   where the payload is `{ adminId, targetUserId, kind }`.
  * - NO TIME LIMIT (Eman, 16 Nov 2026 — this overrides ADM-02, the
  *   30-minute TTL the security remediation put on view-as tokens):
@@ -18,12 +19,12 @@
  *   closes the browser (the cookie is a browser-session cookie).
  *   The remaining bounds are the ADMIN's own session: the token is
  *   re-validated on every request (signature, admin match, target
- *   still a teacher / still an active ambassador), so it dies the
- *   moment the admin's session ends (72h idle / 7-day absolute,
- *   PR #53) or the target loses their role. A token minted before
- *   the TTL removal (payload `{ adminId, teacherId, expiresAt }`)
- *   fails the shape check below and simply yields the admin
- *   session — it is never honoured.
+ *   still a teacher / still an active ambassador / still holding
+ *   active team access), so it dies the moment the admin's session
+ *   ends (72h idle / 7-day absolute, PR #53) or the target loses
+ *   their role. A token minted before the TTL removal (payload
+ *   `{ adminId, teacherId, expiresAt }`) fails the shape check below
+ *   and simply yields the admin session — it is never honoured.
  * - The signature is HMAC-SHA256 over the payload with a server-side
  *   secret. The secret is `VIEW_AS_SECRET` (or `SESSION_SECRET` when
  *   set); when neither is configured the secret is a random value
@@ -40,11 +41,12 @@
  * - Verification is server-side only: `lib/auth.ts` re-checks the
  *   signature, that the admin in the token is the admin holding the
  *   session, and that the target still exists, is still a teacher
- *   (flag or legacy role) or still an active ambassador, and is
- *   active. A forged or replayed token (different admin's session)
- *   verifies as null. A revoked teacher / deactivated ambassador
- *   loses view-as immediately because the role is re-checked on
- *   every request.
+ *   (flag or legacy role) or still an active ambassador or still
+ *   holding active team access, and is active. A forged or replayed
+ *   token (different admin's session) verifies as null. A revoked
+ *   teacher / deactivated ambassador / revoked team member loses
+ *   view-as immediately because the role is re-checked on every
+ *   request.
  * - The token carries NO password material and never creates, resets
  *   or exposes the target's password. It also never touches the
  *   session-revocation paths: the admin's own session stays intact
@@ -56,12 +58,12 @@ import { createHmac, randomBytes, timingSafeEqual } from 'node:crypto';
 export const VIEW_AS_COOKIE = 'cb_view_as';
 
 /** Which portal a view-as token opens. */
-export type ViewAsKind = 'teacher' | 'ambassador';
+export type ViewAsKind = 'teacher' | 'ambassador' | 'team';
 
 export interface ViewAsPayload {
   /** Admin who minted the token. */
   adminId: string;
-  /** Teacher or ambassador whose portal is being viewed. */
+  /** Teacher, ambassador, or team member whose portal is being viewed. */
   targetUserId: string;
   /** Which portal the token opens. */
   kind: ViewAsKind;
@@ -158,7 +160,9 @@ export function verifyViewAsToken(
     payload === null ||
     typeof (payload as ViewAsPayload).adminId !== 'string' ||
     typeof (payload as ViewAsPayload).targetUserId !== 'string' ||
-    ((payload as ViewAsPayload).kind !== 'teacher' && (payload as ViewAsPayload).kind !== 'ambassador')
+    ((payload as ViewAsPayload).kind !== 'teacher' &&
+      (payload as ViewAsPayload).kind !== 'ambassador' &&
+      (payload as ViewAsPayload).kind !== 'team')
   ) {
     return null;
   }

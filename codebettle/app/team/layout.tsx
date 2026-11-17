@@ -4,6 +4,7 @@ import { getSession } from '@/lib/auth';
 import { getAdminBasePath } from '@/lib/admin-url';
 import { hasTeamAccess, isTeamTableReady } from '@/lib/db/team';
 import PortalLayout from '@/components/layout/PortalLayout';
+import ViewAsBanner from '@/components/layout/ViewAsBanner';
 import Link from 'next/link';
 import { LayoutDashboard, ClipboardList, Megaphone, CalendarCheck, FolderOpen, Bell, Coins } from 'lucide-react';
 
@@ -31,9 +32,20 @@ const NAV_ITEMS = [
 export default async function TeamLayout({ children }: { children: React.ReactNode }) {
   const session = await getSession();
   if (!session) redirect('/auth/login');
-  // While an admin views a teacher's portal (view-as), the team portal
-  // is unreachable — send them back to the portal they are viewing.
-  if (session.viewAs) redirect('/instructor/dashboard');
+  // View-as routing (team view-as, 17 Nov 2026): a team view-as
+  // session (kind 'team') is ADMITTED — the admin is viewing this
+  // member's portal, and getSession already re-checked the member
+  // still holds active team access. An ambassador view-as session
+  // belongs on the ambassador dashboard — the old blanket bounce to
+  // /instructor/dashboard was wrong for ambassadors (there is no
+  // teacher portal in an ambassador viewing session). A teacher
+  // view-as session keeps the existing bounce to the teacher portal
+  // it is viewing.
+  if (session.viewAs) {
+    if (session.viewAs.kind === 'ambassador') redirect('/student/ambassador');
+    if (session.viewAs.kind !== 'team') redirect('/instructor/dashboard');
+  }
+  const isTeamViewAs = session.viewAs?.kind === 'team';
 
   // Fail-safe: until Eman runs codebettle-team-portal-migration.sql,
   // the team tables do not exist. Show a friendly "not set up yet"
@@ -47,18 +59,32 @@ export default async function TeamLayout({ children }: { children: React.ReactNo
   }
   if (!ready) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center p-6">
-        <div className="max-w-md text-center border border-dark-border bg-dark-card rounded-xl p-8">
-          <h1 className="text-xl font-black text-foreground">Team Portal is not set up yet</h1>
-          <p className="mt-3 text-sm leading-relaxed text-muted">
-            The team portal tables have not been created yet. An admin needs to run the team portal SQL file in the
-            Supabase SQL Editor first — after that, this page will open automatically.
-          </p>
-          <Link href="/" className="mt-6 inline-block rounded-lg bg-primary px-4 py-2 text-sm font-bold text-ink">
-            Back to home
-          </Link>
+      <>
+        {/* Team view-as banner (same Exit as the teacher/ambassador
+            portals, returning to /admin/team instead): the banner is
+            the way back even when the portal itself is not set up
+            yet — without it a viewing admin would have no Exit. */}
+        {isTeamViewAs && (
+          <ViewAsBanner
+            adminName={session.viewAs!.adminName}
+            adminBasePath={getAdminBasePath()}
+            returnPath="team"
+            viewedPortal="team member's"
+          />
+        )}
+        <div className="min-h-screen bg-background flex items-center justify-center p-6">
+          <div className="max-w-md text-center border border-dark-border bg-dark-card rounded-xl p-8">
+            <h1 className="text-xl font-black text-foreground">Team Portal is not set up yet</h1>
+            <p className="mt-3 text-sm leading-relaxed text-muted">
+              The team portal tables have not been created yet. An admin needs to run the team portal SQL file in the
+              Supabase SQL Editor first — after that, this page will open automatically.
+            </p>
+            <Link href="/" className="mt-6 inline-block rounded-lg bg-primary px-4 py-2 text-sm font-bold text-ink">
+              Back to home
+            </Link>
+          </div>
         </div>
-      </div>
+      </>
     );
   }
 
@@ -73,8 +99,21 @@ export default async function TeamLayout({ children }: { children: React.ReactNo
   if (!allowed) redirect('/auth/login');
 
   return (
-    <PortalLayout user={session} navItems={NAV_ITEMS} portalName="Team Portal" adminBasePath={getAdminBasePath()} hasTeamAccess>
-      {children}
-    </PortalLayout>
+    <>
+      {/* Team view-as banner (same Exit as the teacher/ambassador
+          portals, returning to /admin/team instead of
+          /admin/instructors or /admin/ambassadors). */}
+      {isTeamViewAs && (
+        <ViewAsBanner
+          adminName={session.viewAs!.adminName}
+          adminBasePath={getAdminBasePath()}
+          returnPath="team"
+          viewedPortal="team member's"
+        />
+      )}
+      <PortalLayout user={session} navItems={NAV_ITEMS} portalName="Team Portal" adminBasePath={getAdminBasePath()} hasTeamAccess>
+        {children}
+      </PortalLayout>
+    </>
   );
 }

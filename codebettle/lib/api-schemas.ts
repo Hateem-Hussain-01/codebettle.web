@@ -274,6 +274,16 @@ export const ambassadorViewAsSchema = z.object({
   ambassadorId: z.string().min(1),
 });
 
+/**
+ * Admin-assisted view-as: mint a token for one team member's portal.
+ * `teamMemberId` is the linked User id (the TeamAccess row's userId)
+ * — not the TeamAccess row id. Only linked accounts can be viewed;
+ * an unlinked grant has no account yet.
+ */
+export const teamViewAsSchema = z.object({
+  teamMemberId: z.string().min(1),
+});
+
 // ---------------------------------------------------------------------------
 // Payments (Phase 1b/1c)
 // ---------------------------------------------------------------------------

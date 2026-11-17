@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { requireTeamMember } from '@/lib/api-helpers';
+import { assertNotViewAs, requireTeamMember } from '@/lib/api-helpers';
 import { createTeamFile, isMissingTeamTableError, TEAM_TABLE_MISSING_MESSAGE } from '@/lib/db/team';
 import { uploadTeamFile } from '@/lib/services/team-file-storage';
 import { isUploadValidationError } from '@/lib/services/file-validation';
@@ -9,7 +9,9 @@ import { isUploadValidationError } from '@/lib/services/file-validation';
  * multipart/form-data with a single `file` field. Images, PDF, Office
  * documents, text/CSV or ZIP, 10 MB max. Team members and admins with
  * team access may upload (the gate is requireTeamMember — an admin
- * without a team grant uses the admin upload route instead).
+ * without a team grant uses the admin upload route instead). View-as
+ * sessions are view-only (403): the guard runs before the form is
+ * parsed, so a viewing admin cannot upload as the member.
  *
  * When the Supabase service-role key or the `team-files` bucket is not
  * configured, this returns 503 with a plain message — never a stack
@@ -18,6 +20,8 @@ import { isUploadValidationError } from '@/lib/services/file-validation';
 export async function POST(request: NextRequest) {
   const auth = await requireTeamMember();
   if ('error' in auth) return auth.error;
+  const viewing = assertNotViewAs(auth.session);
+  if (viewing) return viewing;
 
   let form: FormData;
   try {

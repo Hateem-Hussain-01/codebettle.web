@@ -51,6 +51,7 @@ import {
 } from '../db/application-stages';
 import { getUserById, updateUser } from '../db/users';
 import { getAmbassadorByUserId } from '../db/ambassadors';
+import { hasTeamAccess } from '../db/team';
 import { listNotificationsForUser } from '../db/notifications';
 import { logAudit } from '../db/audit';
 import { hasAdminCapability, hasTeacherCapability } from '../rbac';
@@ -663,6 +664,49 @@ export async function startAmbassadorViewAs(
   return {
     token,
     ambassador: { id: user.id, name: user.name, email: user.email, role: user.role },
+  };
+}
+
+/**
+ * Team view-as (17 Nov 2026 follow-up) — mint a token for ONE team
+ * member's portal (/team/dashboard). Mirrors startAmbassadorViewAs:
+ * admin-only, never yourself, target must exist, be active, and hold
+ * ACTIVE team access (re-checked by getSession on every request, so
+ * a revoked member loses view-as at once). The token carries no
+ * expiry (same removal of the ADM-02 TTL as teacher/ambassador
+ * view-as). While viewing, team write routes refuse mutations
+ * (assertNotViewAs) and the banner offers the way back (POST
+ * /api/admin/view-as/exit, return to /admin/team).
+ */
+export async function startTeamViewAs(
+  actor: Actor,
+  teamMemberUserId: string,
+): Promise<
+  Result<{ token: string; member: { id: string; name: string; email: string; role: string } }>
+> {
+  if (!hasAdminCapability(actor)) return forbidden('Only admins can view a team portal');
+  if (teamMemberUserId === actor.id) return badRequest('You cannot view your own portal as a team member');
+  const user = await getUserById(teamMemberUserId);
+  if (!user) return notFound('Team member');
+  if (user.status !== 'active') return badRequest('Only an active team member account can be viewed');
+  // Team portals ONLY — a user with no ACTIVE team access is refused
+  // here (and by getSession on every request). A grant made before
+  // the member registered links by email, so a linked userId is what
+  // the admin Switch passes; an unlinked grant has no account to view.
+  if (!(await hasTeamAccess(user))) {
+    return forbidden('Only a team member portal can be viewed');
+  }
+  const { token } = mintViewAsToken(actor.id, teamMemberUserId, 'team');
+  await logAudit({
+    actorId: actor.id,
+    action: 'admin.view_as.start',
+    entity: 'user',
+    entityId: teamMemberUserId,
+    detail: `viewing team member ${user.email}`,
+  });
+  return {
+    token,
+    member: { id: user.id, name: user.name, email: user.email, role: user.role },
   };
 }
 

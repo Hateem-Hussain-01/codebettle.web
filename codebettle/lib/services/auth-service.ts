@@ -26,6 +26,7 @@ import { createSessionRecord, revokeAllSessionsForUser } from '../db/sessions';
 import { logAudit } from '../db/audit';
 import { toSafeUser } from '../db/mappers';
 import type { AdminPermissions, SafeUser, User } from '../db/types';
+import type { ViewAsKind } from '../view-as';
 import { isEmailVerificationRequired } from './settings-service';
 import { isUserEmailVerified } from './email-verification-service';
 
@@ -67,16 +68,16 @@ export interface SessionUser {
    * admin is viewing this person's portal through a valid view-as
    * token (see lib/auth.ts getSession). The session user is then the
    * VIEWED person (a teacher, or — since 16 Nov 2026 — an approved
-   * ambassador), and this marker names the admin doing the viewing
-   * plus which portal kind is open — so write routes can refuse
-   * mutations while viewing (see assertNotViewAs in
-   * lib/api-helpers.ts) and layouts can show the viewing banner and
-   * keep view-as out of portals it must not open. `kind` is absent
-   * on tokens minted before the ambassador extension (they were
-   * teacher-only); treat a missing kind as 'teacher'. Absent in
-   * every normal session.
+   * ambassador, or — since 17 Nov 2026 — a team member), and this
+   * marker names the admin doing the viewing plus which portal kind
+   * is open — so write routes can refuse mutations while viewing
+   * (see assertNotViewAs in lib/api-helpers.ts) and layouts can show
+   * the viewing banner and keep view-as out of portals it must not
+   * open. `kind` is absent on tokens minted before the ambassador
+   * extension (they were teacher-only); treat a missing kind as
+   * 'teacher'. Absent in every normal session.
    */
-  viewAs?: { adminId: string; adminName: string; kind?: 'teacher' | 'ambassador' };
+  viewAs?: { adminId: string; adminName: string; kind?: ViewAsKind };
 }
 
 export function toSessionUser(user: User | SafeUser): SessionUser {
