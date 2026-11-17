@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { requireTeamMember } from '@/lib/api-helpers';
+import { assertNotViewAs, requireTeamMember } from '@/lib/api-helpers';
 import { hasAdminCapability } from '@/lib/rbac';
 import {
   deleteTeamFile,
@@ -42,10 +42,14 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
  * DELETE /api/team/files/[id] — remove a shared team file (row +
  * storage object). The uploader or an admin. Best-effort on the
  * storage object: the row is gone even if the object delete fails.
+ * View-as sessions are view-only (403). The GET (signed-URL
+ * download) above stays open to view-as — reading is not a mutation.
  */
 export async function DELETE(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const auth = await requireTeamMember();
   if ('error' in auth) return auth.error;
+  const viewing = assertNotViewAs(auth.session);
+  if (viewing) return viewing;
   const { id } = await params;
   try {
     const file = await getTeamFileById(id);

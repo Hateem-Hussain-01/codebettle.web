@@ -34,6 +34,12 @@
  * team layout passes `hasTeamAccess` in; the other layouts compute it
  * fail-safe (false until the team tables exist).
  *
+ * View-as (17 Nov 2026): while an admin views a portal as someone
+ * (teacher / ambassador / team member), there is NO switch option at
+ * all — the banner is the only way back. The admin must not jump to
+ * another portal as the viewed user (whose capabilities may open
+ * portals the admin should not enter as them).
+ *
  * Landing: the other portal's dashboard (/admin/dashboard or
  * /instructor/dashboard). Simplest and predictable — the user lands
  * on an overview, not mid-task in a section whose counterpart may
@@ -98,12 +104,18 @@ export function portalFromPathname(
  * post-login landing.
  */
 export function getPortalSwitch(
-  user: Pick<SessionUser, 'role' | 'isAdmin' | 'isTeacher'> | null | undefined,
+  user: Pick<SessionUser, 'role' | 'isAdmin' | 'isTeacher' | 'viewAs'> | null | undefined,
   pathname: string | null | undefined,
   adminBasePath = 'admin',
   hasTeamAccess = false,
 ): PortalSwitchTarget | null {
   if (!user) return null;
+  // View-as (17 Nov 2026): a viewing session gets no switch option —
+  // the banner is the only way back. The effective session is the
+  // VIEWED person, whose capabilities could otherwise offer a portal
+  // the admin must not enter as them (e.g. a viewed teacher+admin
+  // would be offered the Admin Panel).
+  if (user.viewAs) return null;
   const current = portalFromPathname(pathname, adminBasePath);
   if (current === 'admin' && hasTeacherCapability(user)) {
     return { target: 'instructor', href: '/instructor/dashboard', label: 'Switch to Teacher Portal' };

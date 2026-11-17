@@ -3,6 +3,7 @@
 import { useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
+import { Eye } from 'lucide-react';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
 import Card from '@/components/ui/Card';
@@ -38,6 +39,7 @@ async function postJson(url: string, body: unknown, method = 'POST'): Promise<{ 
 export default function TeamAdminClient({ grants, memberNames, tasks, announcements, meetings, files }: TeamAdminClientProps) {
   const router = useRouter();
   const [busy, setBusy] = useState<string | null>(null);
+  const [switchingId, setSwitchingId] = useState<string | null>(null);
 
   const [grantEmail, setGrantEmail] = useState('');
   const [taskTitle, setTaskTitle] = useState('');
@@ -86,6 +88,35 @@ export default function TeamAdminClient({ grants, memberNames, tasks, announceme
       await refresh();
     } finally {
       setBusy(null);
+    }
+  }
+
+  /**
+   * Admin-assisted view-as: open the member's actual team portal,
+   * view-only. Same pattern as "Switch to Ambassador Dashboard" on
+   * the Ambassadors page. No time limit — the session lasts until the
+   * admin clicks Exit in the banner, signs out, or closes the
+   * browser. Only members linked to an account can be viewed
+   * (userId is null until they sign in with the granted email);
+   * revoked grants never get the button (the service refuses them),
+   * so this only ever fires for active accounts.
+   */
+  async function handleSwitchToTeamPortal(teamMemberUserId: string) {
+    setSwitchingId(teamMemberUserId);
+    try {
+      const res = await fetch('/api/admin/view-as/team', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ teamMemberId: teamMemberUserId }),
+      });
+      const data = (await res.json().catch(() => ({}))) as { error?: string };
+      if (!res.ok) {
+        toast.error(data.error ?? 'Could not open the team portal');
+        return;
+      }
+      window.location.href = '/team/dashboard';
+    } finally {
+      setSwitchingId(null);
     }
   }
 
@@ -250,6 +281,22 @@ export default function TeamAdminClient({ grants, memberNames, tasks, announceme
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
                   <Badge variant={g.status === 'active' ? 'success' : 'muted'}>{g.status === 'active' ? 'Active' : 'Revoked'}</Badge>
+                  {/* View-as entry point: one Switch per granted team
+                      member row — only when the grant is linked to an
+                      account (userId) and active. An unlinked grant
+                      has no account to view, and a revoked grant is
+                      refused by the service, so a button there would
+                      only ever error. */}
+                  {g.userId && g.status === 'active' && (
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      loading={switchingId === g.userId}
+                      onClick={() => handleSwitchToTeamPortal(g.userId!)}
+                    >
+                      <Eye className="w-3.5 h-3.5" /> Switch to Team Portal
+                    </Button>
+                  )}
                   {g.status === 'active' && (
                     <Button size="sm" variant="danger" loading={busy === `revoke:${g.email}`} onClick={() => revoke(g.email)}>
                       Revoke

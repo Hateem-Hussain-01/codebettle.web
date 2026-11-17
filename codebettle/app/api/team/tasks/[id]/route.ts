@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
-import { requireTeamMember } from '@/lib/api-helpers';
+import { assertNotViewAs, requireTeamMember } from '@/lib/api-helpers';
 import { hasAdminCapability } from '@/lib/rbac';
 import { moveTeamTaskStatus, TEAM_TABLE_MISSING_MESSAGE, isMissingTeamTableError } from '@/lib/db/team';
 
@@ -12,11 +12,14 @@ const moveSchema = z.object({
  * PATCH /api/team/tasks/[id] — move a task one step forward.
  * Team members only (assignee only, todo -> doing -> done); admins may
  * set any status. The server re-checks both — a forged request gets a
- * 403, not a silent update.
+ * 403, not a silent update. View-as sessions are view-only (403):
+ * a viewing admin must not move the member's tasks as them.
  */
 export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const auth = await requireTeamMember();
   if ('error' in auth) return auth.error;
+  const viewing = assertNotViewAs(auth.session);
+  if (viewing) return viewing;
   const { id } = await params;
   let body: unknown;
   try {

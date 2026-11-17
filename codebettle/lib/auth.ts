@@ -5,6 +5,7 @@ import { toSessionUser } from './services/auth-service';
 import { hasAdminCapability, hasTeacherCapability } from './rbac';
 import { VIEW_AS_COOKIE, verifyViewAsToken } from './view-as';
 import { getAmbassadorByUserId } from './db/ambassadors';
+import { hasTeamAccess } from './db/team';
 
 // Re-export the testable core for existing import sites (routes, pages).
 export { changePassword, login, registerUser, toSafeUser } from './services/auth-service';
@@ -48,13 +49,15 @@ export async function getSession() {
   // NO TIME LIMIT (Eman, 16 Nov 2026 — overrides the ADM-02 30-min
   // TTL): the token carries no expiry. It is re-validated on every
   // request (signature, admin match, target still a teacher / still
-  // an active ambassador), so it dies when the admin's own session
-  // ends (72h idle / 7-day absolute) or the target loses their role.
-  // View-as opens a teacher portal (kind 'teacher') or — since the
-  // 16 Nov 2026 extension — ONE student route, the ambassador
-  // dashboard (kind 'ambassador'); the student layout enforces that
-  // scope, and the token is re-checked here against the target's
-  // role on every request.
+  // an active ambassador / still holding active team access), so it
+  // dies when the admin's own session ends (72h idle / 7-day
+  // absolute) or the target loses their role.
+  // View-as opens a teacher portal (kind 'teacher'), ONE student
+  // route, the ambassador dashboard (kind 'ambassador'), or the team
+  // portal (kind 'team', 17 Nov 2026); the student layout enforces
+  // the ambassador scope, the team layout enforces the team scope,
+  // and the token is re-checked here against the target's role on
+  // every request.
   const cookieStore = await cookies();
   const token = cookieStore.get(VIEW_AS_COOKIE)?.value;
   const payload = verifyViewAsToken(token);
@@ -63,7 +66,13 @@ export async function getSession() {
   if (payload.targetUserId === real.id) return real;
   const target = await getUserById(payload.targetUserId);
   if (!target || target.status !== 'active') return real;
-  if (payload.kind === 'ambassador') {
+  if (payload.kind === 'team') {
+    // Team view-as: the target must hold ACTIVE team access (by
+    // linked userId or by a grant on their email) — re-checked on
+    // every request, so a revoked member loses view-as at once.
+    // Fail-safe: a missing team table reads as no access.
+    if (!(await hasTeamAccess(target))) return real;
+  } else if (payload.kind === 'ambassador') {
     // Ambassador view-as: the target must be an APPROVED ambassador
     // (active Ambassador row linked to this student) — re-checked on
     // every request, so a deactivated ambassador loses view-as at once.

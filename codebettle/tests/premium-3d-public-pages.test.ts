@@ -151,8 +151,12 @@ test('dashboard files are untouched by this branch', () => {
   // other dashboard file. (The guard compares committed state, so
   // it only sees these once the branch is committed — uncommitted
   // edits never trip it.)
+  // Team view-as (17 Nov 2026): the admin Team list gains the same
+  // Switch — one per granted member row — as the third view-as
+  // entry point. Same pattern, same allowlist.
   const VIEW_AS_ALLOWLIST = [
     'codebettle/app/admin/ambassadors/ambassadors-client.tsx',
+    'codebettle/app/admin/team/team-client.tsx',
     'codebettle/app/student/layout.tsx',
   ];
   // Ambassador flow (Eman, 16 Nov 2026 — register-first apply,
