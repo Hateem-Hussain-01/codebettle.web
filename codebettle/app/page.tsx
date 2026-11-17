@@ -1,5 +1,6 @@
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
+import MacWindow from '@/components/ui/MacWindow';
 import HeroSection from '@/components/sections/HeroSection';
 import StatsSection from '@/components/sections/StatsSection';
 import FeaturedCourses from '@/components/sections/FeaturedCourses';
@@ -24,9 +25,21 @@ export default async function Home() {
     <>
       <Navbar session={session} />
       <main>
-        <HeroSection />
-        <StatsSection />
-        <FeaturedCourses />
+        {/*
+          Mac-window design (Eman, 17 Nov 2026): the hero + stats +
+          featured courses sit inside ONE browser-window frame —
+          top bar with the codebettle.com address bar and NO dots.
+          The StatsSection stays between hero and courses (existing
+          order, no reordering); everything below the window
+          (reviews, How It Works, testimonials, blog, CTA) is
+          untouched. The global navbar stays outside/above the
+          window — it is not duplicated inside it.
+        */}
+        <MacWindow>
+          <HeroSection />
+          <StatsSection />
+          <FeaturedCourses />
+        </MacWindow>
         <ReviewsCarousel reviews={reviews} />
         <HowItWorks />
         <TestimonialsSection testimonials={testimonials} />

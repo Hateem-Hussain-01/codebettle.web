@@ -2,6 +2,7 @@
 import CourseCard from '@/components/ui/CourseCard';
 import TiltCard from '@/components/ui/TiltCard';
 import { useWishlist } from '@/hooks/use-wishlist';
+import { courseEditorFilename } from '@/lib/course-filename';
 import type { PublicCourse } from '@/lib/db/types';
 
 interface FeaturedCoursesClientProps {
@@ -30,6 +31,10 @@ export default function FeaturedCoursesClient({ courses, instructorNames }: Feat
             isWishlisted={wishlistedIds.has(course.id)}
             onWishlist={signedIn && loaded ? toggle : undefined}
             showPrice={false}
+            // Mac-window design (Eman, 17 Nov 2026): each featured
+            // card is a mini code-editor window — 3 dots + a filename
+            // derived from the course's own subject.
+            editorFileName={courseEditorFilename(course)}
           />
         </TiltCard>
       ))}
