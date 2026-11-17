@@ -85,11 +85,13 @@ test('HeroSceneWrapper lazy-loads the scene and gates it on motion / mobile / We
   assert.ok(wrapper.includes('return null'), 'fallback must render nothing (the static backdrop stays)');
 });
 
-test('hero mounts the scene wrapper behind the content, headline one line intact', () => {
+test('hero mounts the scene wrapper behind the content, two-line typewriter headline intact', () => {
   const hero = read('components/sections/HeroSection.tsx');
   assert.ok(hero.includes('HeroSceneWrapper'), 'hero must mount the scene wrapper');
-  assert.ok(hero.includes('whitespace-nowrap'), 'typewriter headline must stay one line');
-  assert.ok(hero.includes('text-[clamp(1.25rem,5.2vw,4.5rem)]'), 'headline must keep the fluid clamp size');
+  // Two-line headline (Eman, 17 Nov 2026): static "Become a" on line
+  // 1, typewriter role on line 2, never a third line.
+  assert.ok(hero.includes('whitespace-nowrap'), 'headline lines must stay one line each');
+  assert.ok(hero.includes('text-[clamp(1.9rem,4.6vw,3.1rem)]'), 'headline must keep the fluid clamp size (preview sizing for the left column)');
   assert.ok(hero.includes('TYPEWRITER_WORDS'), 'typewriter must stay');
   assert.ok(hero.includes('Become a'), 'hero headline must stay');
   assert.ok(hero.includes('Explore Courses'), 'hero CTA must stay');

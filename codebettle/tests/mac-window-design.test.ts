@@ -250,8 +250,9 @@ test('featured courses pass the editor filename; /courses and the wishlist do no
   assert.ok(!wishlist.includes('editorFileName'), 'student wishlist must not gain the editor header');
 });
 
-test('hero code window keeps its 3 dots (untouched by this PR)', () => {
+test('hero code window keeps its 3 dots (student.py after the screenshot redesign)', () => {
   const hero = read('components/sections/HeroSection.tsx');
-  assert.ok(hero.includes('hello.py'), 'hero code window must stay');
+  assert.ok(hero.includes('student.py'), 'hero code window must be student.py (Eman, 17 Nov 2026)');
+  assert.ok(!hero.includes('hello.py'), 'the old hello.py window must be gone');
   assert.ok(hero.includes('bg-primary'), 'hero window keeps its gold dots');
 });

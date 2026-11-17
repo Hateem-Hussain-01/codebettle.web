@@ -19,7 +19,16 @@ const read = (rel: string) => readFileSync(join(root, rel), 'utf8');
 
 // ---------------------------------------------------------------- hero stats
 
-test('hero has NO statistics: the duplicate stats row is gone', () => {
+// (17 Nov 2026 — screenshot redesign, Eman): the hero now HAS a stats
+// row again — but a NEW one, the three stats from the preview
+// screenshot (1500+ Students trained / 300+ Reviews / 4.8/5 Average
+// rating, counting up on page load). The OLD four-stat grid from
+// before PR #60 (1,500+ Students / 8+ Courses / 5+ Instructors) must
+// stay gone; the separate StatsSection below the hero keeps the four
+// real stats. The typewriter is untouched by the redesign — it still
+// cycles the role phrases on headline line 2 (Eman's 17 Nov
+// correction to the original brief).
+test('hero has the new 3-stat row (screenshot redesign) — the old 4-stat grid stays gone', () => {
   const hero = read('components/sections/HeroSection.tsx');
   // The removed block rendered this exact grid (numbers + labels).
   assert.ok(!hero.includes("['1,500+', 'Students']"), 'hero stats grid must be gone');
@@ -31,12 +40,19 @@ test('hero has NO statistics: the duplicate stats row is gone', () => {
   assert.ok(hero.includes('Become a'), 'hero headline must stay');
   assert.ok(hero.includes('Explore Courses'), 'hero CTA must stay');
   assert.ok(hero.includes('TYPEWRITER_WORDS'), 'typewriter must stay');
+  // The NEW hero stats row (Eman, 17 Nov 2026): three stats, counting
+  // up on page load — not the old grid, not the StatsSection.
+  assert.ok(hero.includes('HERO_STATS'), 'hero must define its own stats row');
+  assert.ok(hero.includes('Students trained'), '1500+ Students trained must be in the hero');
+  assert.ok(hero.includes("'Reviews'"), '300+ Reviews must be in the hero');
+  assert.ok(hero.includes('Average rating'), '4.8/5 Average rating must be in the hero');
+  assert.ok(hero.includes('HeroLoadCounter'), 'hero stats must count up on page load');
 });
 
 test('hero is a real 3D scene: the code window stays, the old parallax/chips/tilt are gone', () => {
   const hero = read('components/sections/HeroSection.tsx');
-  assert.ok(hero.includes('hello.py'), 'hero visual must be the Python code window');
-  assert.ok(hero.includes('become_developer'), 'code window must show the snippet');
+  assert.ok(hero.includes('student.py'), 'hero visual must be the student.py code window (screenshot redesign, 17 Nov 2026)');
+  assert.ok(hero.includes('Developer'), 'code window must show the Developer class snippet');
   assert.ok(hero.includes('HeroSceneWrapper'), 'hero must mount the real 3D scene wrapper');
   // The old PR #60 hero motion is replaced by the scene — none of it
   // may survive in the hero (it would fight the 3D camera parallax).
@@ -269,22 +285,34 @@ test('BlogPreview animates through FadeIn, keeping its stagger', () => {
   assert.ok(blog.includes('TiltCard'), '3D tilt on the cards must stay');
 });
 
-// ---------------------------------------------------------------- Hero headline one line
+// ---------------------------------------------------------------- Hero headline two lines
 // (16 Nov 2026 — Eman: the typewriter headline wrapped to two lines
 // for the longest words, e.g. "Become a DevOps Engineer", and every
 // wrap pushed the whole section below — subtext, CTAs, code window —
 // down, then back up on the next word. A layout shift on each
-// typewriter cycle.) The headline must stay on ONE line at every
-// viewport: whitespace-nowrap plus a fluid clamp size (20px on small
-// phones, 72px max on desktop) inside the wide max-w-7xl container.
-// The old fixed breakpoint sizes (text-4xl/5xl/7xl) wrapped because
-// the longest phrase is ~1116px wide at 72px in a wide bold font.
-
-test('hero headline stays on one line at every viewport (no wrap, no layout shift)', () => {
+// typewriter cycle.)
+// (17 Nov 2026 — screenshot redesign, Eman, with a correction the
+// same day: the headline is now TWO lines BY DESIGN — line 1 the
+// static "Become a", line 2 the typewriter role — and it must NEVER
+// wrap to a third line. The old PR #62 one-line rule is therefore
+// SUPERSEDED, not deleted: the same mechanism (whitespace-nowrap +
+// fluid clamp) now guards each line instead of the whole phrase. The
+// clamp is re-sized for the narrower left column (1.9rem floor →
+// 3.1rem cap, the preview's own sizing) because the old 4.5rem cap
+// was measured for the old centred full-width container. The
+// typewriter itself is untouched — it still cycles the same role
+// phrases with the same timing.)
+test('hero headline is two lines and never a third (no wrap, no layout shift)', () => {
   const hero = read('components/sections/HeroSection.tsx');
-  assert.ok(hero.includes('whitespace-nowrap'), 'hero h1 must be whitespace-nowrap so the typewriter word never wraps');
-  assert.ok(hero.includes('text-[clamp(1.25rem,5.2vw,4.5rem)]'), 'hero h1 must use a fluid clamp size (20px -> 72px) so the longest phrase fits one line');
-  assert.ok(hero.includes('max-w-7xl'), 'hero container must be max-w-7xl so the longest phrase fits at the 72px cap');
+  assert.ok(hero.includes('whitespace-nowrap'), 'hero h1 must be whitespace-nowrap so no line ever wraps');
+  assert.ok(hero.includes('text-[clamp(1.9rem,4.6vw,3.1rem)]'), 'hero h1 must use a fluid clamp size (1.9rem -> 3.1rem) so the longest role fits its line in the left column');
+  assert.ok(hero.includes('max-w-7xl'), 'hero container must be max-w-7xl so the longest role fits at the 3.1rem cap');
   assert.ok(!hero.includes('text-4xl sm:text-5xl lg:text-7xl'), 'old fixed breakpoint headline sizes must be gone — they wrapped on long words');
   assert.ok(hero.includes('h-[0.75em]'), 'typewriter cursor must scale with the fluid font (em-relative), not a fixed 40px');
+  // Two lines by design: line 1 is the static "Become a", line 2 is
+  // the typewriter role — exactly two block lines in the h1.
+  const h1 = hero.slice(hero.indexOf('<motion.h1'), hero.indexOf('</motion.h1>'));
+  assert.ok(h1.includes('<span className="block text-foreground">Become a</span>'), 'headline line 1 must be the static "Become a"');
+  assert.ok(h1.includes('{displayed}'), 'headline line 2 must be the typewriter role');
+  assert.equal((h1.match(/className="block/g) || []).length, 2, 'headline must have exactly two lines — never a third');
 });
