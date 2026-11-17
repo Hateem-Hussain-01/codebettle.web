@@ -3,6 +3,8 @@ import Navbar from '@/components/layout/Navbar';
 import Footer, { useSiteSettings } from '@/components/layout/Footer';
 import FadeIn from '@/components/ui/FadeIn';
 import PublicPageBackdrop from '@/components/ui/PublicPageBackdrop';
+import PageAccentScene from '@/components/ui/PageAccentScene';
+import SectionDepth from '@/components/ui/SectionDepth';
 import TiltCard from '@/components/ui/TiltCard';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
@@ -65,6 +67,9 @@ export default function ContactPage() {
           <PublicPageBackdrop variant="hero" />
           <div aria-hidden="true" className="absolute top-8 left-[12%] w-20 h-20 rounded-full bg-primary/10 blur-2xl pointer-events-none animate-float-slow hidden md:block" />
           <div aria-hidden="true" className="absolute bottom-6 right-[10%] w-24 h-24 rounded-full bg-primary/[0.07] blur-2xl pointer-events-none animate-float-slower hidden md:block" />
+          {/* Step 3: floating gold shapes at the left edge — the
+              same world as the Home hero scene, at a whisper. */}
+          <PageAccentScene layout="left" />
           <FadeIn className="relative max-w-xl mx-auto px-4">
             <span className="text-primary-text text-sm font-semibold uppercase tracking-wider">Contact Us</span>
             <h1 className="text-4xl font-black text-foreground mt-2 mb-3">Get in <span className="gradient-text">Touch</span></h1>
@@ -72,9 +77,15 @@ export default function ContactPage() {
           </FadeIn>
         </div>
 
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+        {/* Step 3: the form area sits on the shared gold particle/grid
+            backdrop — the form itself stays static (no tilt while
+            typing); only the info column beside it gets depth. */}
+        <div className="relative overflow-hidden">
+          <PublicPageBackdrop variant="hero" />
+          <div className="relative max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
           <div className="grid lg:grid-cols-5 gap-12">
-            <FadeIn className="lg:col-span-2 space-y-6">
+            <SectionDepth className="lg:col-span-2">
+            <FadeIn className="space-y-6">
               <h2 className="text-xl font-bold text-foreground">Contact Information</h2>
               {[
                 { icon: <Mail className="w-5 h-5" />, label: 'Email', value: contactEmail },
@@ -94,6 +105,7 @@ export default function ContactPage() {
                 </FadeIn>
               ))}
             </FadeIn>
+            </SectionDepth>
 
             <FadeIn delay={0.1} className="lg:col-span-3">
               {/* Gold gradient frame + deep shadow: the form reads as a
@@ -113,6 +125,7 @@ export default function ContactPage() {
               </form>
               </div>
             </FadeIn>
+          </div>
           </div>
         </div>
       </main>

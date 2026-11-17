@@ -2,6 +2,8 @@ import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
 import FadeIn from '@/components/ui/FadeIn';
 import PublicPageBackdrop from '@/components/ui/PublicPageBackdrop';
+import PageAccentScene from '@/components/ui/PageAccentScene';
+import SectionDepth from '@/components/ui/SectionDepth';
 import TiltCard from '@/components/ui/TiltCard';
 import TeamSection from '@/components/sections/TeamSection';
 import { getSession } from '@/lib/auth';
@@ -30,6 +32,9 @@ export default async function AboutPage() {
           {/* Floating gold orbs — pure decoration, slow drift. */}
           <div aria-hidden="true" className="absolute top-10 left-[12%] w-20 h-20 rounded-full bg-primary/10 blur-2xl pointer-events-none animate-float-slow hidden md:block" />
           <div aria-hidden="true" className="absolute bottom-8 right-[10%] w-28 h-28 rounded-full bg-primary/[0.07] blur-2xl pointer-events-none animate-float-slower hidden md:block" />
+          {/* Step 3: a few floating gold shapes at the hero edges —
+              the same world as the Home hero scene, at a whisper. */}
+          <PageAccentScene layout="split" />
           <FadeIn className="relative max-w-3xl mx-auto px-4">
             <span className="text-primary-text text-sm font-semibold uppercase tracking-wider">About Us</span>
             <h1 className="text-4xl sm:text-5xl font-black text-foreground mt-2 mb-4">
@@ -61,12 +66,17 @@ export default async function AboutPage() {
             ))}
           </div>
 
-          {/* Team — admin-managed (Admin > Success Stories Management) */}
-          <FadeIn className="text-center mb-12">
-            <span className="text-primary-text text-sm font-semibold uppercase tracking-wider">Meet Our Team</span>
-            <h2 className="text-3xl font-black text-foreground mt-2">Meet the Team Behind <span className="gradient-text">CodeBettle</span></h2>
-          </FadeIn>
-          <TeamSection members={teamMembers} />
+          {/* Team — admin-managed (Admin > Success Stories Management).
+              Step 3: the team block leans gently toward the viewer as
+              it scrolls in (SectionDepth) — the cards themselves
+              already tilt on hover. */}
+          <SectionDepth>
+            <FadeIn className="text-center mb-12">
+              <span className="text-primary-text text-sm font-semibold uppercase tracking-wider">Meet Our Team</span>
+              <h2 className="text-3xl font-black text-foreground mt-2">Meet the Team Behind <span className="gradient-text">CodeBettle</span></h2>
+            </FadeIn>
+            <TeamSection members={teamMembers} />
+          </SectionDepth>
         </div>
       </main>
       <Footer />
