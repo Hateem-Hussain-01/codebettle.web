@@ -120,7 +120,16 @@ export default function HeroSection() {
               text would run to the viewport edge. */}
           <div className="text-left min-w-0">
             <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}>
-              <span className="inline-flex items-center font-mono text-xs uppercase tracking-[0.16em] px-4 py-2 rounded-full border border-primary/30 bg-primary/10 text-primary-text mb-6">
+              {/* The badge background is SOLID bg-background (17 Nov 2026
+                  — badge legibility): the pill used to be bg-primary/10,
+                  and the gold 3D icosahedron drifting behind the hero
+                  showed through it, hiding the pill's left border and
+                  partly obscuring the "A" in "ADMISSIONS" on the live
+                  page. bg-background is opaque in both themes and
+                  matches the hero section behind it, so no 3D shape can
+                  ever show through again. Never make this translucent
+                  without re-checking the badge in a real browser. */}
+              <span className="inline-flex items-center font-mono text-xs uppercase tracking-[0.16em] px-4 py-2 rounded-full border border-primary/30 bg-background text-primary-text mb-6">
                 ADMISSIONS OPEN — NEW BATCHES
               </span>
             </motion.div>
