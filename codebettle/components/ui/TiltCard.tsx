@@ -76,6 +76,19 @@ export default function TiltCard({ children, className, style, max = 6 }: TiltCa
       onMouseLeave={handleLeave}
     >
       <motion.div
+        // The key is load-bearing (17 Nov 2026 — invisible stats):
+        // when TiltCard flips from the plain div to the tilt wrapper
+        // after hydration, React would otherwise REUSE the child
+        // motion.div instance as this wrapper (same type, same
+        // position) — and framer-motion keeps the child's stale
+        // `initial` values on it (opacity 0, y 20/30), so the whole
+        // card stays invisible forever even though the child's own
+        // whileInView fires (the child reaches opacity 1 behind an
+        // opacity-0 ancestor). The key forces a fresh mount of the
+        // wrapper, so the child mounts fresh inside it with its fade
+        // armed. Never remove this key without re-checking the stats
+        // strip and the testimonials in a real browser.
+        key="tilt-enabled"
         className="flex h-full flex-col [&>*]:flex-1"
         style={{ rotateX: springX, rotateY: springY, transformPerspective: 1000, transformStyle: 'preserve-3d' }}
       >
