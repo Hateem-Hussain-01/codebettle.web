@@ -339,6 +339,10 @@ const FOLLOWUP_ALLOWLIST = [
   'codebettle/tests/collapsible-sidebar.test.ts',
   'codebettle/tests/dashboard-v32.test.ts',
   'codebettle/tests/dashboard-followup.test.ts',
+  // Guard fix this PR had to make (not feature scope): the intro scope
+  // guard fired on any later branch, so it gets the same V32-style
+  // scoping (only fires when the branch touches intro files).
+  'codebettle/tests/website-intro.test.ts',
 ];
 
 function changedFiles(): string[] {
