@@ -7,6 +7,8 @@ import { ThemeProvider } from '@/components/theme/ThemeProvider';
 import { SiteSettingsProvider } from '@/components/layout/Footer';
 import { NavConfigProvider } from '@/components/layout/NavConfigProvider';
 import { THEME_COOKIE, THEME_SCRIPT, parseThemeCookie } from '@/lib/theme';
+import { INTRO_SCRIPT } from '@/lib/intro';
+import WebsiteIntro from '@/components/intro/WebsiteIntro';
 import { getSiteSettings } from '@/lib/services/settings-service';
 import { getPublicNavConfig } from '@/lib/nav-config';
 
@@ -78,13 +80,33 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           <html>. Carries the request nonce (see above).
         */}
         <script nonce={nonce} dangerouslySetInnerHTML={{ __html: THEME_SCRIPT }} />
+        {/*
+          Website intro (18 Nov 2026): pre-hydration decision script.
+          Same pattern as the theme script above — first children of
+          <body>, same nonce. Sets data-cb-intro="show" on <html> only
+          for a first full load of "/" in a fresh session (see
+          lib/intro.ts); the globals.css cover rule then paints the
+          dark cover until the WebsiteIntro overlay mounts. Runs
+          before any content paints, so the SSR hero never flashes.
+        */}
+        <script nonce={nonce} dangerouslySetInnerHTML={{ __html: INTRO_SCRIPT }} />
         <ThemeProvider>
           {/*
             Phase 6: framer-motion respects the user's reduced-motion
             preference (transform/layout animations off when preferred).
             CSS animations are handled by the media query in globals.css.
           */}
-          <MotionConfig reducedMotion="user"><SiteSettingsProvider settings={settings}><NavConfigProvider value={navConfig}>{children}</NavConfigProvider></SiteSettingsProvider></MotionConfig>
+          <MotionConfig reducedMotion="user"><SiteSettingsProvider settings={settings}><NavConfigProvider value={navConfig}>
+            {/*
+              Website intro (18 Nov 2026): the landing-page splash.
+              Mounted here (not in app/page.tsx) so the pre-hydration
+              flag and the component live in the same tree — but it
+              plays ONLY on "/" and only when the script flagged this
+              load (see components/intro/WebsiteIntro.tsx). Every
+              other route renders null, so auth and dashboards are
+              untouched and instant.
+            */}
+            <WebsiteIntro />{children}</NavConfigProvider></SiteSettingsProvider></MotionConfig>
         </ThemeProvider>
         <Toaster
           position="top-right"

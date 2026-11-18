@@ -231,6 +231,15 @@ function changedFiles(): string[] {
 test('V32 scope: only the primitives + the five dashboard pages change', () => {
   const changed = changedFiles();
   if (changed.length === 0) return; // Merged state (empty diff) passes trivially.
+  // The guard only applies to a branch that touches V32 source files.
+  // On later branches (e.g. the intro PR, based on post-V32 main) the
+  // diff vs main is unrelated work and the guard must not fire — same
+  // scoping as the premium-3D guard (PR #66). The guard's own test
+  // file does not count: editing this guard must not arm it.
+  const V32_SOURCE = V32_ALLOWLIST.filter(
+    (f) => f !== 'codebettle/tests/dashboard-v32.test.ts',
+  );
+  if (!changed.some((f) => V32_SOURCE.includes(f))) return;
   // On the branch every changed file must be in the allowlist.
   // PortalLayout, the server layouts and components/layout belong to
   // the sidebar PR — if this test fails, the V32 branch has clobbered

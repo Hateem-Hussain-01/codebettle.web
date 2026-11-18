@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from 'react';
 import Button from '@/components/ui/Button';
 import PublicPageBackdrop from '@/components/ui/PublicPageBackdrop';
 import HeroSceneWrapper from '@/components/sections/HeroSceneWrapper';
+import { INTRO_DONE_FALLBACK_MS, introAlreadyDone, onIntroDone } from '@/lib/intro';
 import { ArrowRight } from 'lucide-react';
 
 const TYPEWRITER_WORDS = ['Web Developer', 'Mobile Developer', 'Data Scientist', 'UI/UX Designer', 'DevOps Engineer'];
@@ -23,14 +24,37 @@ const HERO_STATS = [
 // Count-up that starts on mount — i.e. on page load — never gated on
 // scroll. Same ~1.8s / 60-step animation as the StatsSection Counter.
 // Reduced-motion users see the final value immediately.
+//
+// Website intro gating (18 Nov 2026): on a first visit the intro
+// covers the hero for ~4s — starting the count-up on mount would
+// finish it hidden behind the overlay, so the visitor would see
+// only final values. The count now waits for the intro-done event
+// instead. When there is no intro (returning visit, reduced-motion,
+// any page but the landing page) introAlreadyDone() is true and the
+// count starts at once, exactly as before. A 6s fallback starts it
+// anyway if the event is ever missed, so the stats can never stick
+// at 0. The component name, the stats row markup and the values
+// are unchanged (see the hero-screenshot + premium-3d guard tests).
 function HeroLoadCounter({ to, decimal = false }: { to: number; decimal?: boolean }) {
   const reduceMotion = useReducedMotion();
   const [count, setCount] = useState(0);
+  const [started, setStarted] = useState(() => introAlreadyDone());
 
   useEffect(() => {
+    if (started) return undefined;
+    const off = onIntroDone(() => setStarted(true));
+    const fallback = setTimeout(() => setStarted(true), INTRO_DONE_FALLBACK_MS);
+    return () => {
+      off();
+      clearTimeout(fallback);
+    };
+  }, [started]);
+
+  useEffect(() => {
+    if (!started) return undefined;
     if (reduceMotion) {
       setCount(to);
-      return;
+      return undefined;
     }
     const duration = 1800;
     const steps = 60;
@@ -42,7 +66,7 @@ function HeroLoadCounter({ to, decimal = false }: { to: number; decimal?: boolea
       if (current >= to) clearInterval(interval);
     }, duration / steps);
     return () => clearInterval(interval);
-  }, [to, decimal, reduceMotion]);
+  }, [started, to, decimal, reduceMotion]);
 
   return <span>{decimal ? count.toFixed(1) : count.toLocaleString()}</span>;
 }
