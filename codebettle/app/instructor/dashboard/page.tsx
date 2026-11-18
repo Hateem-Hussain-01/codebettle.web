@@ -38,17 +38,21 @@ export default async function InstructorDashboard() {
         <p className="text-muted text-sm mt-1">Here's your teaching overview</p>
       </FadeIn>
 
+      {/* Stats — canonical StatCard (V32): count-up values, staggered
+          entrance via delay, glass surface. Avg. Rating passes the
+          number (not the toFixed string) with decimal, so it counts
+          up to the same "4.5" it showed before. */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard title="Total Students" value={myEnrollments.length} icon={<Users className="w-6 h-6" />} color="blue" />
-        <StatCard title="Active Courses" value={published} icon={<BookOpen className="w-6 h-6" />} color="yellow" />
-        <StatCard title="Avg. Rating" value={avgRating} icon={<Star className="w-6 h-6" />} color="yellow" />
-        <StatCard title="Total Reviews" value={myReviews.length} icon={<TrendingUp className="w-6 h-6" />} color="green" />
+        <StatCard title="Total Students" value={myEnrollments.length} icon={<Users className="w-6 h-6" />} color="blue" delay={0.05} glass />
+        <StatCard title="Active Courses" value={published} icon={<BookOpen className="w-6 h-6" />} color="yellow" delay={0.11} glass />
+        <StatCard title="Avg. Rating" value={parseFloat(avgRating)} decimal icon={<Star className="w-6 h-6" />} color="yellow" delay={0.17} glass />
+        <StatCard title="Total Reviews" value={myReviews.length} icon={<TrendingUp className="w-6 h-6" />} color="green" delay={0.23} glass />
       </div>
 
       <div className="grid lg:grid-cols-2 gap-6">
         {/* Recent Enrollments */}
         <FadeIn delay={0.1}>
-        <Card>
+        <Card glass>
           <h2 className="text-foreground font-bold mb-4">Recent Enrollments</h2>
           {myEnrollments.length === 0 ? (
             <p className="text-muted text-sm text-center py-8">No enrollments yet</p>
@@ -75,7 +79,7 @@ export default async function InstructorDashboard() {
 
         {/* Recent Reviews */}
         <FadeIn delay={0.15}>
-        <Card>
+        <Card glass>
           <h2 className="text-foreground font-bold mb-4">Recent Reviews</h2>
           {myReviews.length === 0 ? (
             <p className="text-muted text-sm text-center py-8">No reviews yet</p>

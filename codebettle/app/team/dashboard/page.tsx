@@ -16,6 +16,8 @@ import {
 import { getTeamCreditSettings } from '@/lib/services/settings-service';
 import { formatDateShort, formatDateTime } from '@/lib/utils';
 import Card from '@/components/ui/Card';
+import StatCard from '@/components/ui/StatCard';
+import CountUp from '@/components/ui/CountUp';
 import Badge from '@/components/ui/Badge';
 import FadeIn from '@/components/ui/FadeIn';
 import { ClipboardList, Megaphone, CalendarCheck, FolderOpen, ArrowRight, Coins } from 'lucide-react';
@@ -73,38 +75,35 @@ export default async function TeamDashboard() {
         <p className="text-muted">Everything the CodeBettle team needs — tasks, announcements, meetings and files — in one place.</p>
       </FadeIn>
 
-      {/* Stat cards */}
+      {/* Stat cards — the canonical StatCard (V32): count-up values,
+          staggered entrance, glass surface. Same real counts and the
+          same links as before; the whole card still navigates. */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {stats.map((s) => (
+        {stats.map((s, i) => (
           <Link key={s.label} href={s.href}>
-            <Card className="p-5 hover:border-primary/40 transition-colors">
-              <div className="flex items-center justify-between">
-                <span className="text-primary-text">{s.icon}</span>
-                <span className="text-3xl font-black text-foreground">{s.value}</span>
-              </div>
-              <p className="mt-3 text-sm font-medium text-muted">{s.label}</p>
-            </Card>
+            <StatCard title={s.label} value={s.value} icon={s.icon} color="yellow" delay={0.05 + i * 0.06} glass />
           </Link>
         ))}
       </div>
 
       {/* Credits strip (PR B) — balance + referral code, live settings. */}
+      <FadeIn delay={0.29}>
       {access && !creditsReady ? (
-        <Card className="p-5">
+        <Card glass className="p-5">
           <p className="text-sm text-muted">
             Credits are not set up yet — an admin needs to run the team credits SQL file first.
           </p>
         </Card>
       ) : credits ? (
         <Link href="/team/credits">
-          <Card className="p-5 hover:border-primary/40 transition-colors">
+          <Card glass className="p-5 hover:border-primary/40 transition-colors">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div className="flex items-center gap-3">
                 <span className="text-primary-text"><Coins className="w-5 h-5" /></span>
                 <div>
                   <p className="text-sm font-medium text-muted">My credits</p>
                   <p className="text-xl font-black text-foreground">
-                    {credits.summary.balance} available
+                    <CountUp to={credits.summary.balance} /> available
                     {credits.summary.held > 0 ? (
                       <span className="text-sm font-medium text-muted"> · {credits.summary.held} held</span>
                     ) : (
@@ -130,10 +129,12 @@ export default async function TeamDashboard() {
           </Card>
         </Link>
       ) : null}
+      </FadeIn>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* My open tasks */}
-        <Card className="p-6">
+        <FadeIn delay={0.33}>
+        <Card glass className="p-6">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg font-bold text-foreground">My open tasks</h2>
             <Link href="/team/tasks" className="text-sm font-medium text-primary-text hover:underline flex items-center gap-1">
@@ -156,9 +157,11 @@ export default async function TeamDashboard() {
             </ul>
           )}
         </Card>
+        </FadeIn>
 
         {/* Latest announcements */}
-        <Card className="p-6">
+        <FadeIn delay={0.37}>
+        <Card glass className="p-6">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg font-bold text-foreground">Latest announcements</h2>
             <Link href="/team/announcements" className="text-sm font-medium text-primary-text hover:underline flex items-center gap-1">
@@ -179,9 +182,11 @@ export default async function TeamDashboard() {
             </ul>
           )}
         </Card>
+        </FadeIn>
 
         {/* Upcoming meetings */}
-        <Card className="p-6">
+        <FadeIn delay={0.41}>
+        <Card glass className="p-6">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg font-bold text-foreground">Upcoming meetings</h2>
             <Link href="/team/meetings" className="text-sm font-medium text-primary-text hover:underline flex items-center gap-1">
@@ -208,9 +213,11 @@ export default async function TeamDashboard() {
             </ul>
           )}
         </Card>
+        </FadeIn>
 
         {/* Recent files */}
-        <Card className="p-6">
+        <FadeIn delay={0.45}>
+        <Card glass className="p-6">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg font-bold text-foreground">Recent files</h2>
             <Link href="/team/files" className="text-sm font-medium text-primary-text hover:underline flex items-center gap-1">
@@ -233,6 +240,7 @@ export default async function TeamDashboard() {
             </ul>
           )}
         </Card>
+        </FadeIn>
       </div>
     </div>
   );

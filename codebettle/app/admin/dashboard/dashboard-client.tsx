@@ -48,18 +48,21 @@ export default function DashboardClient({ users, students, instructors, courses,
         <p className="text-muted text-sm mt-1">Platform overview and analytics</p>
       </FadeIn>
 
-      {/* Stats */}
+      {/* Stats — canonical StatCard (V32): count-up values, staggered
+          entrance, glass surface. Total Revenue passes the number
+          (not the pre-formatted string) with prefix/suffix, so it
+          counts up to the same "PKR 12K" it showed before. */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard title="Total Students" value={students.length} icon={<Users className="w-6 h-6" />} color="blue" trend={{ value: 12, label: 'this month' }} />
-        <StatCard title="Total Courses" value={publishedCount} icon={<BookOpen className="w-6 h-6" />} color="yellow" />
-        <StatCard title="Instructors" value={instructors.length} icon={<GraduationCap className="w-6 h-6" />} color="green" />
-        <StatCard title="Total Revenue" value={`PKR ${(totalRevenue / 1000).toFixed(0)}K`} icon={<DollarSign className="w-6 h-6" />} color="purple" trend={{ value: 8, label: 'this month' }} />
+        <StatCard title="Total Students" value={students.length} icon={<Users className="w-6 h-6" />} color="blue" trend={{ value: 12, label: 'this month' }} delay={0.05} glass />
+        <StatCard title="Total Courses" value={publishedCount} icon={<BookOpen className="w-6 h-6" />} color="yellow" delay={0.11} glass />
+        <StatCard title="Instructors" value={instructors.length} icon={<GraduationCap className="w-6 h-6" />} color="green" delay={0.17} glass />
+        <StatCard title="Total Revenue" value={Math.round(totalRevenue / 1000)} prefix="PKR " suffix="K" icon={<DollarSign className="w-6 h-6" />} color="purple" trend={{ value: 8, label: 'this month' }} delay={0.23} glass />
       </div>
 
       {/* Charts */}
       <div className="grid lg:grid-cols-3 gap-6">
         <FadeIn delay={0.08} className="lg:col-span-2">
-        <Card>
+        <Card glass>
           <h3 className="text-foreground font-bold mb-4 flex items-center gap-2"><TrendingUp className="w-4 h-4 text-primary-text" />Enrollments (2024)</h3>
           <ResponsiveContainer width="100%" height={220}>
             <BarChart data={MONTH_DATA}>
@@ -73,7 +76,7 @@ export default function DashboardClient({ users, students, instructors, courses,
         </FadeIn>
 
         <FadeIn delay={0.12}>
-        <Card>
+        <Card glass>
           <h3 className="text-foreground font-bold mb-4">Course Categories</h3>
           <ResponsiveContainer width="100%" height={180}>
             <PieChart>
@@ -97,7 +100,7 @@ export default function DashboardClient({ users, students, instructors, courses,
 
       {/* Recent Activity */}
       <FadeIn delay={0.15}>
-      <Card>
+      <Card glass>
         <h3 className="text-foreground font-bold mb-4 flex items-center gap-2"><Clock className="w-4 h-4 text-primary-text" />Recent Enrollments</h3>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">

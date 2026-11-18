@@ -9,6 +9,7 @@ import { formatDateShort } from '@/lib/utils';
 import Link from 'next/link';
 import { BookOpen, Award, Bell, ArrowRight, CheckCircle } from 'lucide-react';
 import Card from '@/components/ui/Card';
+import StatCard from '@/components/ui/StatCard';
 import Badge from '@/components/ui/Badge';
 import FadeIn from '@/components/ui/FadeIn';
 import CourseThumbnail from '@/components/ui/CourseThumbnail';
@@ -46,49 +47,52 @@ export default async function StudentDashboard() {
         <p className="text-muted">Ready to continue your learning journey?</p>
       </FadeIn>
 
-      {/* Stats */}
+      {/* Stats — the canonical StatCard (V32): muted label, big
+          count-up value, tinted icon square. Same real values as
+          before (enrolment / completion / certificate counts); the
+          stagger comes from StatCard's own entrance delay, so no
+          FadeIn wrapper is needed around each card (that would fade
+          the card twice). */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         {[
-          { label: 'Enrolled Courses', value: enrollments.length, icon: <BookOpen className="w-5 h-5" />, color: 'text-blue-400 bg-blue-400/10' },
-          { label: 'Completed', value: completed, icon: <CheckCircle className="w-5 h-5" />, color: 'text-green-400 bg-green-400/10' },
-          { label: 'Certificates', value: certificates.length, icon: <Award className="w-5 h-5" />, color: 'text-primary-text bg-primary/10' },
+          { label: 'Enrolled Courses', value: enrollments.length, icon: <BookOpen className="w-5 h-5" />, color: 'blue' as const },
+          { label: 'Completed', value: completed, icon: <CheckCircle className="w-5 h-5" />, color: 'green' as const },
+          { label: 'Certificates', value: certificates.length, icon: <Award className="w-5 h-5" />, color: 'yellow' as const },
         ].map((stat, i) => (
-          <FadeIn key={stat.label} delay={0.05 + i * 0.06}>
-          <Card hover>
-            <div className="flex items-center gap-4">
-              <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${stat.color}`}>{stat.icon}</div>
-              <div>
-                <p className="text-2xl font-black text-foreground">{stat.value}</p>
-                <p className="text-muted text-sm">{stat.label}</p>
-              </div>
-            </div>
-          </Card>
-          </FadeIn>
+          <StatCard key={stat.label} title={stat.label} value={stat.value} icon={stat.icon} color={stat.color} delay={0.05 + i * 0.06} glass />
         ))}
       </div>
 
       <div className="grid lg:grid-cols-3 gap-6">
-        {/* My Courses */}
-        <FadeIn delay={0.1} className="lg:col-span-2">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-bold text-foreground">My Courses</h2>
-            <Link href="/student/courses" className="text-primary-text text-sm hover:underline flex items-center gap-1">View All <ArrowRight className="w-3.5 h-3.5" /></Link>
-          </div>
+        {/* My Courses — heading fades in, then each course row fills
+            in one by one (V32 staggered entrance). The outer FadeIn
+            is gone: it used to fade the whole section AND the rows
+            would have faded a second time. */}
+        <div className="lg:col-span-2">
+          <FadeIn delay={0.1}>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-bold text-foreground">My Courses</h2>
+              <Link href="/student/courses" className="text-primary-text text-sm hover:underline flex items-center gap-1">View All <ArrowRight className="w-3.5 h-3.5" /></Link>
+            </div>
+          </FadeIn>
           {enrolledCourses.length === 0 ? (
-            <Card>
-              <p className="text-muted text-sm text-center py-8">No courses enrolled yet. <Link href="/courses" className="text-primary-text hover:underline">Browse courses</Link></p>
-            </Card>
+            <FadeIn delay={0.14}>
+              <Card glass>
+                <p className="text-muted text-sm text-center py-8">No courses enrolled yet. <Link href="/courses" className="text-primary-text hover:underline">Browse courses</Link></p>
+              </Card>
+            </FadeIn>
           ) : (
             <div className="space-y-3">
-              {enrolledCourses.slice(0, 4).map(({ enrollment, course }) => {
+              {enrolledCourses.slice(0, 4).map(({ enrollment, course }, i) => {
                 const batch = enrollment.batchId ? batchById.get(enrollment.batchId) : null;
                 // Student Progress Tracking: % complete + next lesson for
                 // this enrolment (completed lessons come from the
                 // LessonProgress table via the enrolment).
                 const progress = summarizeCourseProgress(course!.modules, enrollment.completedLessons);
                 return (
-                <Link key={enrollment.id} href={`/student/courses/${enrollment.courseId}`}>
-                  <Card hover glow className="p-4">
+                <FadeIn key={enrollment.id} delay={0.14 + i * 0.05}>
+                <Link href={`/student/courses/${enrollment.courseId}`}>
+                  <Card hover glow glass className="p-4">
                     <div className="flex items-center gap-4">
                       <CourseThumbnail src={course!.thumbnail} alt={course!.title} className="w-16 h-16 rounded-lg object-cover flex-shrink-0" />
                       <div className="flex-1 min-w-0">
@@ -117,28 +121,33 @@ export default async function StudentDashboard() {
                     </div>
                   </Card>
                 </Link>
+                </FadeIn>
                 );
               })}
             </div>
           )}
-        </FadeIn>
+        </div>
 
-        {/* Announcements */}
-        <FadeIn delay={0.15}>
-          <div className="flex items-center gap-2 mb-4">
-            <Bell className="w-4 h-4 text-primary-text" />
-            <h2 className="text-lg font-bold text-foreground">Announcements</h2>
-          </div>
+        {/* Announcements — same staggered pattern as My Courses. */}
+        <div>
+          <FadeIn delay={0.15}>
+            <div className="flex items-center gap-2 mb-4">
+              <Bell className="w-4 h-4 text-primary-text" />
+              <h2 className="text-lg font-bold text-foreground">Announcements</h2>
+            </div>
+          </FadeIn>
           <div className="space-y-3">
-            {announcements.slice(0, 4).map(ann => (
-              <Card key={ann.id} className="p-4">
-                <p className="text-foreground text-sm font-medium mb-1">{ann.title}</p>
-                <p className="text-muted text-xs line-clamp-2 mb-2">{ann.content}</p>
-                <p className="text-muted text-xs">{formatDateShort(ann.createdAt)}</p>
-              </Card>
+            {announcements.slice(0, 4).map((ann, i) => (
+              <FadeIn key={ann.id} delay={0.19 + i * 0.05}>
+                <Card glass className="p-4">
+                  <p className="text-foreground text-sm font-medium mb-1">{ann.title}</p>
+                  <p className="text-muted text-xs line-clamp-2 mb-2">{ann.content}</p>
+                  <p className="text-muted text-xs">{formatDateShort(ann.createdAt)}</p>
+                </Card>
+              </FadeIn>
             ))}
           </div>
-        </FadeIn>
+        </div>
       </div>
     </div>
   );
