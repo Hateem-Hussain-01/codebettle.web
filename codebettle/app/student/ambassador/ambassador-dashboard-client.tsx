@@ -17,6 +17,7 @@ import {
   MessageSquare,
 } from 'lucide-react';
 import Card from '@/components/ui/Card';
+import StatCard from '@/components/ui/StatCard';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
 import Badge from '@/components/ui/Badge';
@@ -172,11 +173,11 @@ export default function AmbassadorDashboardClient({
     }
   };
 
-  const statCards = [
-    { label: 'Link Clicks', value: stats.clicks, icon: <MousePointerClick className="w-5 h-5" />, color: 'text-blue-400 bg-blue-400/10' },
-    { label: 'Signups', value: stats.signups, icon: <UserPlus className="w-5 h-5" />, color: 'text-green-400 bg-green-400/10' },
-    { label: 'Enrollments', value: stats.enrollments, icon: <BookOpen className="w-5 h-5" />, color: 'text-primary-text bg-primary/10' },
-    { label: 'Payments', value: stats.payments, icon: <BadgeCheck className="w-5 h-5" />, color: 'text-primary-text bg-primary/10' },
+  const statCards: { label: string; value: number; icon: React.ReactNode; color: 'blue' | 'green' | 'yellow' }[] = [
+    { label: 'Link Clicks', value: stats.clicks, icon: <MousePointerClick className="w-5 h-5" />, color: 'blue' },
+    { label: 'Signups', value: stats.signups, icon: <UserPlus className="w-5 h-5" />, color: 'green' },
+    { label: 'Enrollments', value: stats.enrollments, icon: <BookOpen className="w-5 h-5" />, color: 'yellow' },
+    { label: 'Payments', value: stats.payments, icon: <BadgeCheck className="w-5 h-5" />, color: 'yellow' },
   ];
 
   return (
@@ -219,7 +220,7 @@ export default function AmbassadorDashboardClient({
 
       {/* Referral code + link */}
       <FadeIn>
-        <Card>
+        <Card glass>
           <p className="text-foreground font-semibold mb-1">Your referral link</p>
           <p className="text-muted text-sm mb-4">
             Your code is <span className="text-primary-text font-mono font-bold">{ambassador.referralCode}</span> —
@@ -241,20 +242,14 @@ export default function AmbassadorDashboardClient({
         </Card>
       </FadeIn>
 
-      {/* 4-stage stats */}
+      {/* 4-stage stats — the canonical StatCard (V32): count-up values,
+          staggered entrance, glass surface. Same real stage numbers;
+          the stagger comes from StatCard's own entrance delay, so no
+          FadeIn wrapper is needed around each card (that would fade
+          the card twice). */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {statCards.map((stat, i) => (
-          <FadeIn key={stat.label} delay={0.05 + i * 0.06}>
-            <Card hover>
-              <div className="flex items-center gap-4">
-                <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${stat.color}`}>{stat.icon}</div>
-                <div>
-                  <p className="text-2xl font-black text-foreground">{stat.value}</p>
-                  <p className="text-muted text-sm">{stat.label}</p>
-                </div>
-              </div>
-            </Card>
-          </FadeIn>
+          <StatCard key={stat.label} title={stat.label} value={stat.value} icon={stat.icon} color={stat.color} delay={0.05 + i * 0.06} glass />
         ))}
       </div>
 
@@ -281,7 +276,7 @@ export default function AmbassadorDashboardClient({
 
       {/* My Team */}
       <FadeIn>
-        <Card>
+        <Card glass>
           <h2 className="text-lg font-bold text-foreground mb-1">My Team</h2>
           <p className="text-muted text-sm mb-4">
             People who joined through your link (level 1), and people who joined through their links (level 2).
@@ -295,7 +290,7 @@ export default function AmbassadorDashboardClient({
 
       {/* Campus group link + daily member count */}
       <FadeIn>
-        <Card>
+        <Card glass>
           <h2 className="text-lg font-bold text-foreground mb-1 flex items-center gap-2">
             <Link2 className="w-5 h-5 text-primary-text" /> My Campus Group
           </h2>
@@ -335,7 +330,7 @@ export default function AmbassadorDashboardClient({
 
       {/* Message to the admin */}
       <FadeIn>
-        <Card>
+        <Card glass>
           <h2 className="text-lg font-bold text-foreground mb-1 flex items-center gap-2">
             <MessageSquare className="w-5 h-5 text-primary-text" /> Message the Admin
           </h2>
