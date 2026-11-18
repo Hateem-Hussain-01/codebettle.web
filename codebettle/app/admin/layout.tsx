@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation';
-import { headers } from 'next/headers';
+import { cookies, headers } from 'next/headers';
 import { getSession } from '@/lib/auth';
+import { parseSidebarCollapsed, SIDEBAR_COLLAPSED_COOKIE } from '@/lib/sidebar';
 import { ADMIN_AREAS, areaForAdminPath, firstGrantedArea, hasAdminArea } from '@/lib/admin-access';
 import { adminUrl, getAdminBasePath, toExternalAdminPath, toInternalAdminPath } from '@/lib/admin-url';
 import { hasTeamAccess } from '@/lib/db/team';
@@ -115,6 +116,10 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   }
 
   const session = await getSession();
+  // Collapsed sidebar (Eman, 18 Nov 2026): read the persisted
+  // preference from the cookie so the rail renders collapsed on the
+  // first paint — no flash or width jump.
+  const defaultCollapsed = parseSidebarCollapsed((await cookies()).get(SIDEBAR_COLLAPSED_COOKIE)?.value);
   // Phase 2, Module 21.4: while an admin is viewing a teacher's
   // portal (view-as), the admin panel is unreachable — the session
   // is the teacher's until they return via the banner. Send them
@@ -196,7 +201,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   }
 
   return (
-    <PortalLayout user={session} navItems={navItems} portalName="Admin Panel" adminBasePath={getAdminBasePath()} hasTeamAccess={hasTeam}>
+    <PortalLayout user={session} navItems={navItems} portalName="Admin Panel" adminBasePath={getAdminBasePath()} hasTeamAccess={hasTeam} defaultCollapsed={defaultCollapsed}>
       {children}
     </PortalLayout>
   );

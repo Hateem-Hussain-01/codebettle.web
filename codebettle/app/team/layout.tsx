@@ -1,6 +1,8 @@
 import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
+import { cookies } from 'next/headers';
 import { getSession } from '@/lib/auth';
+import { parseSidebarCollapsed, SIDEBAR_COLLAPSED_COOKIE } from '@/lib/sidebar';
 import { getAdminBasePath } from '@/lib/admin-url';
 import { hasTeamAccess, isTeamTableReady } from '@/lib/db/team';
 import PortalLayout from '@/components/layout/PortalLayout';
@@ -31,6 +33,10 @@ const NAV_ITEMS = [
 
 export default async function TeamLayout({ children }: { children: React.ReactNode }) {
   const session = await getSession();
+  // Collapsed sidebar (Eman, 18 Nov 2026): read the persisted
+  // preference from the cookie so the rail renders collapsed on the
+  // first paint — no flash or width jump.
+  const defaultCollapsed = parseSidebarCollapsed((await cookies()).get(SIDEBAR_COLLAPSED_COOKIE)?.value);
   if (!session) redirect('/auth/login');
   // View-as routing (team view-as, 17 Nov 2026): a team view-as
   // session (kind 'team') is ADMITTED — the admin is viewing this
@@ -111,7 +117,7 @@ export default async function TeamLayout({ children }: { children: React.ReactNo
           viewedPortal="team member's"
         />
       )}
-      <PortalLayout user={session} navItems={NAV_ITEMS} portalName="Team Portal" adminBasePath={getAdminBasePath()} hasTeamAccess>
+      <PortalLayout user={session} navItems={NAV_ITEMS} portalName="Team Portal" adminBasePath={getAdminBasePath()} hasTeamAccess defaultCollapsed={defaultCollapsed}>
         {children}
       </PortalLayout>
     </>

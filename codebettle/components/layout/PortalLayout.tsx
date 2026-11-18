@@ -2,11 +2,14 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Menu, X, LogOut, Bell, ChevronRight, ArrowLeftRight } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { Menu, Bell, ArrowLeftRight } from 'lucide-react';
+import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { getPortalSwitch, portalFromPathname } from '@/lib/portal-switch';
 import { portalMenuLinks } from '@/lib/user-menu';
+import { sidebarCollapsedCookieString } from '@/lib/sidebar';
+import CollapsibleSidebar from '@/components/layout/CollapsibleSidebar';
+import type { NavItem } from '@/components/layout/CollapsibleSidebar';
 import UserMenu from '@/components/layout/UserMenu';
 import BackButton from '@/components/layout/BackButton';
 import LoginNotificationPopup from '@/components/notifications/LoginNotificationPopup';
@@ -15,19 +18,7 @@ import ThemeToggle from '@/components/theme/ThemeToggle';
 import { AdminBasePathProvider } from '@/components/admin/AdminBasePathContext';
 import type { SessionUser } from '@/lib/auth';
 
-interface NavItem {
-  href: string;
-  label: string;
-  icon: React.ReactNode;
-  /**
-   * Unsubmitted-count bubble (Eman, 15 Nov 2026): shown at the right
-   * end of the row when > 0 — e.g. the student portal's Assignments
-   * item carries the count of visible assignments the student has not
-   * submitted yet. Optional: portals that pass no badge (instructor /
-   * admin) render exactly as before.
-   */
-  badge?: number;
-}
+export type { NavItem } from '@/components/layout/CollapsibleSidebar';
 
 interface PortalLayoutProps {
   user: SessionUser;
@@ -58,6 +49,13 @@ interface PortalLayoutProps {
    * instructor and admin portals keep their top-bar toggle.
    */
   hideThemeToggle?: boolean;
+  /**
+   * Initial collapsed state of the desktop sidebar (Eman, 18 Nov
+   * 2026): read from the cb-sidebar-collapsed cookie by the server
+   * layout, so a user who prefers the collapsed rail never sees a
+   * first-paint flash or width jump. Defaults to false (expanded).
+   */
+  defaultCollapsed?: boolean;
 }
 
 /**
@@ -74,103 +72,34 @@ async function handleLogout() {
 }
 
 /**
- * Sidebar navigation (module-level, Phase 7 fix CB-15).
- * It used to be defined INSIDE PortalLayout, so React saw a new
- * component type on every render and remounted the whole sidebar —
- * losing focus/scroll state on every navigation. Hoisted out with its
- * data as props, it keeps its identity across renders.
+ * Sidebar navigation lives in components/layout/CollapsibleSidebar.tsx
+ * (Eman, 18 Nov 2026 — premium animated collapsible sidebar): one
+ * shared client component for every portal. It stays a module-level
+ * component imported here (Phase 7 fix CB-15) — never inline it in
+ * PortalLayout or it remounts on every render and loses focus/scroll
+ * state. The four server layouts pass their own permission-filtered
+ * navItems; this layout only forwards them.
  */
-function Sidebar({
-  user,
-  navItems,
-  pathname,
-  portalName,
-  mobile = false,
-  onClose,
-}: {
-  user: SessionUser;
-  navItems: NavItem[];
-  pathname: string;
-  portalName: string;
-  mobile?: boolean;
-  onClose: () => void;
-}) {
-  return (
-    <div className={cn('flex flex-col h-full', mobile ? 'p-4' : '')}>
-      {/* Logo */}
-      <div className="px-4 py-5 border-b border-dark-border flex items-center justify-between">
-        <Link href="/" className="text-xl font-black gradient-text">CodeBettle</Link>
-        {mobile && (
-          <button onClick={onClose} aria-label="Close menu" className="text-muted hover:text-foreground">
-            <X className="w-5 h-5" />
-          </button>
-        )}
-      </div>
 
-      {/* User info */}
-      <div className="px-4 py-4 border-b border-dark-border">
-        <div className="flex items-center gap-3">
-          <img src={user.avatar || `https://api.dicebear.com/7.x/initials/svg?seed=${user.name}`} alt={user.name} className="w-9 h-9 rounded-full object-cover border-2 border-primary/40" />
-          <div className="min-w-0">
-            <p className="text-sm font-medium text-foreground truncate">{user.name}</p>
-            <p className="text-xs text-muted capitalize">{portalName}</p>
-          </div>
-        </div>
-      </div>
-
-      {/* Nav items */}
-      <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
-        {navItems.map(item => {
-          const isActive = pathname === item.href || pathname.startsWith(item.href + '/');
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              onClick={() => mobile && onClose()}
-              className={cn(
-                'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all group',
-                isActive ? 'bg-primary/10 text-primary-text border border-primary/20' : 'text-muted hover:text-foreground hover:bg-dark-border'
-              )}
-            >
-              <span className={cn('w-5 h-5 flex-shrink-0', isActive ? 'text-primary-text' : 'text-muted group-hover:text-foreground')}>{item.icon}</span>
-              {item.label}
-              {/* Right end of the row: the count bubble (when > 0) and,
-                  on the active item, the chevron — side by side, so a
-                  badged active row reads "Assignments ② ›" like the
-                  approved preview. Same gold pill + dark text as the
-                  top-bar NotificationBadge; 10+ caps at "9+". */}
-              {(isActive || (typeof item.badge === 'number' && item.badge > 0)) && (
-                <span className="ml-auto flex items-center gap-1.5">
-                  {typeof item.badge === 'number' && item.badge > 0 && (
-                    <span
-                      title={`${item.badge} unsubmitted assignment${item.badge === 1 ? '' : 's'}`}
-                      className="min-w-5 h-5 px-1 bg-primary text-ink text-[11px] font-bold rounded-full flex items-center justify-center"
-                    >
-                      {item.badge > 9 ? '9+' : item.badge}
-                    </span>
-                  )}
-                  {isActive && <ChevronRight className="w-4 h-4 text-primary-text" />}
-                </span>
-              )}
-            </Link>
-          );
-        })}
-      </nav>
-
-      {/* Logout */}
-      <div className="px-3 py-4 border-t border-dark-border">
-        <button onClick={handleLogout} className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-muted hover:text-red-400 hover:bg-red-500/10 transition-all w-full cursor-pointer">
-          <LogOut className="w-5 h-5" />
-          Sign Out
-        </button>
-      </div>
-    </div>
-  );
-}
-
-export default function PortalLayout({ user, navItems, children, portalName, adminBasePath = 'admin', hasTeamAccess = false, hideThemeToggle = false }: PortalLayoutProps) {
+export default function PortalLayout({ user, navItems, children, portalName, adminBasePath = 'admin', hasTeamAccess = false, hideThemeToggle = false, defaultCollapsed = false }: PortalLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  // Collapsed rail state (Eman, 18 Nov 2026): seeded from the cookie
+  // the server layout read, so there is no first-paint flash for
+  // users who prefer the collapsed rail. The toggle writes the cookie
+  // back (lib/sidebar.ts) so the choice persists across navigation
+  // and reloads. The sidebar component sequences its label fade
+  // around this flip; this state only owns the width.
+  const [collapsed, setCollapsed] = useState(defaultCollapsed);
+  const reduceMotion = useReducedMotion();
   const pathname = usePathname();
+
+  const toggleCollapsed = () => {
+    setCollapsed((c) => {
+      const next = !c;
+      document.cookie = sidebarCollapsedCookieString(next);
+      return next;
+    });
+  };
 
   // Module 17 — dual-role portal switching. The switch link is plain
   // navigation to the other portal's dashboard: the target portal's
@@ -204,9 +133,21 @@ export default function PortalLayout({ user, navItems, children, portalName, adm
           admin) and never on public/auth pages. It fetches its own
           pending notifications and renders nothing on failure. */}
       <LoginNotificationPopup />
-      {/* Desktop Sidebar */}
-      <aside className="hidden lg:flex flex-col w-64 bg-dark-card border-r border-dark-border flex-shrink-0">
-        <Sidebar user={user} navItems={navItems} pathname={pathname} portalName={portalName} onClose={() => setSidebarOpen(false)} />
+      {/* Desktop Sidebar — subtle glass (Eman, 18 Nov 2026): the
+          dark-card surface at 85% + backdrop blur, so the content
+          area's edge reads through faintly without hurting
+          readability. Width animates 256px ↔ 80px over 0.45s ease-out
+          (FadeIn's house timing — Eman, 18 Nov 2026 motion
+          correction: slow, elegant, damped, not the video's fast
+          expo glide); the flex content area follows it. */}
+      <aside
+        className={cn(
+          'hidden shrink-0 flex-col overflow-hidden border-r border-dark-border bg-dark-card/85 shadow-[0_8px_30px_rgba(0,0,0,0.15)] backdrop-blur-xl lg:flex',
+          collapsed ? 'w-20' : 'w-64',
+          !reduceMotion && 'transition-[width] duration-450 ease-out',
+        )}
+      >
+        <CollapsibleSidebar user={user} navItems={navItems} pathname={pathname} portalName={portalName} collapsed={collapsed} onToggleCollapsed={toggleCollapsed} onLogout={handleLogout} onClose={() => setSidebarOpen(false)} />
       </aside>
 
       {/* Mobile Sidebar Overlay */}
@@ -215,8 +156,8 @@ export default function PortalLayout({ user, navItems, children, portalName, adm
           <>
             {/* Theme audit: dark scrim over the page behind the mobile sidebar — stays dark in both themes. */}
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 lg:hidden" onClick={() => setSidebarOpen(false)} />
-            <motion.aside initial={{ x: -280 }} animate={{ x: 0 }} exit={{ x: -280 }} transition={{ type: 'spring', damping: 30 }} className="fixed left-0 top-0 h-full w-72 bg-dark-card border-r border-dark-border z-50 lg:hidden">
-              <Sidebar user={user} navItems={navItems} pathname={pathname} portalName={portalName} mobile onClose={() => setSidebarOpen(false)} />
+            <motion.aside initial={{ x: -280 }} animate={{ x: 0 }} exit={{ x: -280 }} transition={reduceMotion ? { duration: 0 } : { type: 'spring', damping: 30 }} className="fixed left-0 top-0 h-full w-72 bg-dark-card/90 border-r border-dark-border backdrop-blur-xl z-50 lg:hidden">
+              <CollapsibleSidebar user={user} navItems={navItems} pathname={pathname} portalName={portalName} collapsed={false} onToggleCollapsed={toggleCollapsed} onLogout={handleLogout} mobile onClose={() => setSidebarOpen(false)} />
             </motion.aside>
           </>
         )}

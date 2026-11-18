@@ -36,7 +36,7 @@ const COLAB = 'https://colab.research.google.com/drive/1AbC2dEf3GhI4jKl5MnOp';
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const read = (rel: string) => readFileSync(join(root, rel), 'utf8');
 
-const portalLayout = read('components/layout/PortalLayout.tsx');
+const collapsibleSidebar = read('components/layout/CollapsibleSidebar.tsx');
 const studentLayout = read('app/student/layout.tsx');
 const instructorLayout = read('app/instructor/layout.tsx');
 const adminLayout = read('app/admin/layout.tsx');
@@ -176,28 +176,38 @@ test('count is 0 when the assignment tables are not ready (migration not run)', 
 // 2. Render: gold pill at the right end of the nav row, "9+" cap
 // ---------------------------------------------------------------------------
 
-test('PortalLayout NavItem carries an optional badge and renders the pill only when > 0', () => {
+// The badge renders in CollapsibleSidebar (Eman, 18 Nov 2026 — the
+// sidebar was extracted from PortalLayout into its own component;
+// PortalLayout only forwards the navItems). The pill contract is
+// unchanged: gold pill, dark text, "9+" cap, right end of the row.
+test('CollapsibleSidebar NavItem carries an optional badge and renders the pill only when > 0', () => {
   assert.ok(
-    portalLayout.includes('badge?: number'),
+    collapsibleSidebar.includes('badge?: number'),
     'NavItem must have an optional badge field',
   );
   // Rendered at the right end of the row, gold pill + dark text (same
   // as the top-bar NotificationBadge), capped at "9+".
-  assert.ok(portalLayout.includes("item.badge > 0"), 'pill must render only when the count is above 0');
-  assert.ok(portalLayout.includes("item.badge > 9 ? '9+' : item.badge"), 'counts of 10+ must cap at "9+"');
+  assert.ok(collapsibleSidebar.includes("item.badge > 0"), 'pill must render only when the count is above 0');
+  assert.ok(collapsibleSidebar.includes("item.badge > 9 ? '9+' : item.badge"), 'counts of 10+ must cap at "9+"');
   assert.ok(
-    portalLayout.includes('bg-primary text-ink text-[11px] font-bold rounded-full'),
+    collapsibleSidebar.includes('bg-primary text-ink text-[11px] font-bold rounded-full'),
     'pill must use the gold-pill + dark-text style',
   );
   // The pill and the active chevron sit side by side at the right end
   // (one ml-auto group), never two competing ml-auto elements.
   assert.ok(
-    portalLayout.includes('ml-auto flex items-center gap-1.5'),
+    collapsibleSidebar.includes('ml-auto flex items-center gap-1.5'),
     'badge + chevron must share one right-aligned group',
   );
   assert.ok(
-    !portalLayout.includes('<ChevronRight className="w-4 h-4 ml-auto'),
+    !collapsibleSidebar.includes('<ChevronRight className="w-4 h-4 ml-auto'),
     'the chevron must no longer carry its own ml-auto',
+  );
+  // Collapsed rail: the count becomes a dot on the icon (video
+  // pattern) instead of disappearing with the label.
+  assert.ok(
+    collapsibleSidebar.includes('rounded-full bg-primary ring-2 ring-dark-card'),
+    'collapsed rail must show the badge as a dot on the icon',
   );
 });
 
