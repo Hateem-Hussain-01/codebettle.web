@@ -186,8 +186,13 @@ test('intro touches only landing-page, layout, hero and intro files (no dashboar
     'codebettle/tests/dashboard-v32.test.ts',
     'codebettle/tests/theme-light-audit.test.ts',
   ]);
+  // Merged state (19 Nov 2026 — the old `files.length > 0` assertion
+  // below failed CI on main right after PR #79 merged): on main the
+  // diff vs merge-base is empty, so there is nothing to guard. Same
+  // vacuous-pass pattern as the V32 scope guard. The guard still fires
+  // on any branch that actually changes files.
+  if (files.length === 0) return;
   for (const f of files) {
     assert.ok(allowed.has(f), `intro PR must not touch ${f} (outside its landing-page scope)`);
   }
-  assert.ok(files.length > 0, 'diff must not be empty');
 });
