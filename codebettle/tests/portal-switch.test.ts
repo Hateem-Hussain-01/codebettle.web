@@ -301,7 +301,15 @@ test('wiring: Navbar points at the primary portal via the shared helper', () => 
 
 test('wiring: no client-side role trust — no cookie read, no client-sent role decides access', () => {
   const layout = read('components/layout/PortalLayout.tsx');
-  assert.doesNotMatch(layout, /document\.cookie/);
+  // The ONE exception (Eman, 18 Nov 2026 — collapsible sidebar): the
+  // toggle WRITES the UI-preference cookie cb-sidebar-collapsed
+  // ('1'/'0'). It is never read client-side, carries no role or
+  // identity, and decides no access — the server layouts read it
+  // only to seed the rail width, strictly parsed (only '1' collapses).
+  const cookieUses = layout.match(/document\.cookie/g) ?? [];
+  assert.equal(cookieUses.length, 1, 'PortalLayout must touch document.cookie only for the sidebar preference write');
+  assert.match(layout, /document\.cookie = sidebarCollapsedCookieString\(next\)/);
+  assert.doesNotMatch(layout, /document\.cookie\.split|document\.cookie\.match|document\.cookie\.indexOf/);
   assert.doesNotMatch(layout, /localStorage|sessionStorage/);
   const helper = read('lib/portal-switch.ts');
   assert.doesNotMatch(helper, /document\.cookie/);

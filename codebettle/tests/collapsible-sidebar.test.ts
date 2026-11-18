@@ -1,0 +1,295 @@
+/**
+ * Premium animated collapsible sidebar (Eman, 18 Nov 2026 — "Glassy
+ * SideBar V5" video). One shared component
+ * (components/layout/CollapsibleSidebar.tsx) renders every portal's
+ * sidebar; the four server layouts pass their own permission-filtered
+ * navItems and the persisted collapsed state (cookie). PortalLayout
+ * only owns the width + the toggle's cookie write.
+ *
+ * The interaction is asserted by source inspection (the component
+ * needs a browser session to render — see the PR's screenshots);
+ * the cookie helpers are unit-tested directly. The no-nav-mixing
+ * tests pin the rule that each portal's sidebar shows only its own
+ * routes: a student nav never contains an admin href and vice versa.
+ */
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import { join, dirname } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import {
+  parseSidebarCollapsed,
+  sidebarCollapsedCookieString,
+  SIDEBAR_COLLAPSED_COOKIE,
+} from '../lib/sidebar';
+
+const root = join(dirname(fileURLToPath(import.meta.url)), '..');
+const read = (rel: string) => readFileSync(join(root, rel), 'utf8');
+
+const sidebar = read('components/layout/CollapsibleSidebar.tsx');
+const portalLayout = read('components/layout/PortalLayout.tsx');
+const studentLayout = read('app/student/layout.tsx');
+const instructorLayout = read('app/instructor/layout.tsx');
+const teamLayout = read('app/team/layout.tsx');
+const adminLayout = read('app/admin/layout.tsx');
+
+// ---------------------------------------------------------------------------
+// 1. Cookie persistence (lib/sidebar.ts) — unit tests
+// ---------------------------------------------------------------------------
+
+test('cookie: only the exact value "1" means collapsed', () => {
+  assert.equal(parseSidebarCollapsed('1'), true);
+  for (const notCollapsed of ['0', 'true', 'yes', '', ' 1', '2', null, undefined]) {
+    assert.equal(parseSidebarCollapsed(notCollapsed), false, JSON.stringify(notCollapsed));
+  }
+});
+
+test('cookie: the toggle writes a named, long-lived, SameSite cookie', () => {
+  assert.equal(SIDEBAR_COLLAPSED_COOKIE, 'cb-sidebar-collapsed');
+  const collapsed = sidebarCollapsedCookieString(true);
+  assert.match(collapsed, /^cb-sidebar-collapsed=1; /);
+  assert.match(collapsed, /Max-Age=31536000/);
+  assert.match(collapsed, /Path=\//);
+  assert.match(collapsed, /SameSite=Lax/);
+  const expanded = sidebarCollapsedCookieString(false);
+  assert.match(expanded, /^cb-sidebar-collapsed=0; /);
+  assert.match(expanded, /Max-Age=31536000/);
+});
+
+// ---------------------------------------------------------------------------
+// 2. Collapse / expand — both states render, labels fade, rail widths
+// ---------------------------------------------------------------------------
+
+test('toggle: a dedicated button at the top flips the arrow and reports aria-expanded', () => {
+  assert.match(sidebar, /aria-label="Collapse sidebar"/);
+  assert.match(sidebar, /aria-label="Expand sidebar"/);
+  assert.match(sidebar, /aria-expanded=\{true\}/);
+  assert.match(sidebar, /aria-expanded=\{false\}/);
+  // The arrow rotates 180° on collapse (video: ›/‹ flip), 300ms ease.
+  assert.match(sidebar, /animate=\{\{ rotate: 180 \}\}/);
+  assert.match(sidebar, /animate=\{\{ rotate: 0 \}\}/);
+  // Collapsed header shows the compact mark + toggle, side by side.
+  assert.match(sidebar, /Expand sidebar/);
+});
+
+test('widths: expanded rail is w-64, collapsed rail is w-20, width transitions', () => {
+  assert.match(portalLayout, /collapsed \? 'w-20' : 'w-64'/);
+  // CodeBettle motion (Eman, 18 Nov 2026 — motion correction): the
+  // width moves on FadeIn's house timing (0.45s ease-out), not the
+  // video's fast expo glide.
+  assert.match(portalLayout, /transition-\[width\] duration-450 ease-out/);
+  // The flex content area follows the rail — no fixed margin that
+  // would leave a gap or overlap when the rail shrinks.
+  assert.doesNotMatch(portalLayout, /ml-64/);
+  assert.doesNotMatch(portalLayout, /pl-64/);
+});
+
+test('labels: fade with a stagger on expand, disappear before the rail shrinks', () => {
+  // Sequenced toggle: labels fade out (300ms) before the width flips
+  // on collapse; the rail grows first and labels fade in after on expand.
+  assert.match(sidebar, /COLLAPSE_LABEL_DELAY_MS = 300/);
+  assert.match(sidebar, /EXPAND_LABEL_DELAY_MS = 150/);
+  assert.match(sidebar, /transition-opacity duration-300/);
+  // Stagger: each label fades in 30ms after the previous, capped.
+  assert.match(sidebar, /Math\.min\(index \* 30, 240\)/);
+  // While collapsed the label is out of flow (absolute) so the icon
+  // centres instead of the invisible label holding the row's width.
+  assert.match(sidebar, /absolute left-11 top-1\/2 w-0 -translate-y-1\/2 opacity-0/);
+});
+
+test('persistence: the toggle writes the cookie; the server layouts seed from it', () => {
+  assert.match(portalLayout, /document\.cookie = sidebarCollapsedCookieString\(next\)/);
+  assert.match(portalLayout, /defaultCollapsed = false/);
+  assert.match(portalLayout, /useState\(defaultCollapsed\)/);
+  for (const [name, layout] of [
+    ['student', studentLayout],
+    ['instructor', instructorLayout],
+    ['team', teamLayout],
+    ['admin', adminLayout],
+  ] as const) {
+    assert.ok(
+      layout.includes('parseSidebarCollapsed((await cookies()).get(SIDEBAR_COLLAPSED_COOKIE)?.value)'),
+      `${name} layout must read the collapsed cookie`,
+    );
+    assert.match(layout, /defaultCollapsed=\{defaultCollapsed\}/, `${name} layout must pass it to PortalLayout`);
+  }
+});
+
+// ---------------------------------------------------------------------------
+// 3. Search — filters the passed navItems, keyboard, collapsed icon
+// ---------------------------------------------------------------------------
+
+test('search: filters the passed navItems (real routes only), with an empty state', () => {
+  assert.match(sidebar, /placeholder="Search pages"/);
+  // The scope is the navItems prop — the permission-filtered routes
+  // the server layout passed — never a hardcoded dummy list.
+  assert.match(sidebar, /navItems\.filter\(\(item\) => matchesQuery\(item, query\)\)/);
+  assert.match(sidebar, /item\.label\.toLowerCase\(\)\.includes\(q\)/);
+  assert.match(sidebar, /No pages found/);
+  assert.match(sidebar, /No pages match/);
+  // Search sits immediately below the profile/name section.
+  assert.ok(
+    sidebar.indexOf('Global sidebar search') < sidebar.indexOf('Navigation: the passed navItems only'),
+    'search must render between the profile section and the nav list',
+  );
+});
+
+test('search: keyboard — arrows move, Enter navigates, Esc clears/closes, ⌘K focuses', () => {
+  assert.match(sidebar, /e\.key === 'ArrowDown'/);
+  assert.match(sidebar, /e\.key === 'ArrowUp'/);
+  assert.match(sidebar, /e\.key === 'Enter'/);
+  assert.match(sidebar, /router\.push\(target\.href\)/);
+  assert.match(sidebar, /e\.key === 'Escape'/);
+  assert.match(sidebar, /⌘K/);
+  assert.match(sidebar, /\(e\.metaKey \|\| e\.ctrlKey\) && e\.key\.toLowerCase\(\) === 'k'/);
+  assert.match(sidebar, /aria-activedescendant/);
+});
+
+test('search: the collapsed search icon expands the rail and focuses the input', () => {
+  assert.match(sidebar, /aria-label="Search pages"/);
+  assert.match(sidebar, /handleSearchIconClick/);
+  assert.match(sidebar, /setFocusSearchAfterExpand\(true\)/);
+  assert.match(sidebar, /searchInputRef\.current\?\.focus\(\)/);
+});
+
+// ---------------------------------------------------------------------------
+// 4. Effects — gliding highlight, tooltips, badges, reduced motion
+// ---------------------------------------------------------------------------
+
+test('highlight: a single layoutId pill rests on the active row and glides to the hovered row', () => {
+  assert.match(sidebar, /layoutId="sidebar-nav-highlight"/);
+  assert.match(sidebar, /highlightedHref/);
+  // Active row when idle, hovered row on hover, keyboard-selected
+  // result while searching.
+  assert.match(sidebar, /hoveredHref \?\? \(isSearching/);
+  assert.match(sidebar, /activeItem\?\.href/);
+  // CodeBettle motion (Eman, 18 Nov 2026 — motion correction): the
+  // glide is TiltCard's critically damped spring (stiffness 200,
+  // damping 22), settling without overshoot — not a snappy bounce.
+  assert.match(sidebar, /stiffness: 200, damping: 22, mass: 0\.6/);
+});
+
+test('motion character: house 0.45s ease-out everywhere, never the video expo curve', () => {
+  assert.match(sidebar, /const MOTION_DURATION = 0\.45/);
+  assert.match(sidebar, /const EASE_OUT = 'easeOut'/);
+  assert.match(sidebar, /duration: MOTION_DURATION, ease: EASE_OUT/);
+  assert.doesNotMatch(sidebar, /0\.22, 1, 0\.36, 1/);
+  assert.doesNotMatch(portalLayout, /cubic-bezier\(0\.22,1,0\.36,1\)/);
+});
+
+test('tooltips: portaled to document.body on collapsed hover, with an accessible name', () => {
+  assert.match(sidebar, /createPortal\(/);
+  assert.match(sidebar, /role="tooltip"/);
+  assert.match(sidebar, /getBoundingClientRect\(\)/);
+  // Tooltips only exist in the collapsed rail; expanded rows already
+  // show their label.
+  assert.match(sidebar, /if \(!effectiveCollapsed\) return;/);
+});
+
+test('badges: count pill expanded, dot on the icon collapsed (9+ cap kept)', () => {
+  assert.match(sidebar, /rounded-full bg-primary ring-2 ring-dark-card/);
+  assert.match(sidebar, /bg-primary text-ink text-\[11px\] font-bold rounded-full/);
+});
+
+test('reduced motion: width, stagger, highlight and arrow all go instant', () => {
+  assert.match(sidebar, /useReducedMotion\(\)/);
+  assert.match(portalLayout, /useReducedMotion\(\)/);
+  assert.match(portalLayout, /!reduceMotion && 'transition-\[width\]/);
+  assert.match(sidebar, /reduceMotion \? \{ duration: 0 \} : \{ duration: MOTION_DURATION, ease: EASE_OUT \}/);
+});
+
+test('glass: subtle dark-card translucency + blur on the aside, no new colour scheme', () => {
+  assert.match(portalLayout, /bg-dark-card\/85/);
+  assert.match(portalLayout, /backdrop-blur-xl/);
+  assert.doesNotMatch(portalLayout, /from-amber|from-orange|from-rose/);
+});
+
+// ---------------------------------------------------------------------------
+// 5. Mobile drawer + no loss of functionality
+// ---------------------------------------------------------------------------
+
+test('mobile: the drawer is always expanded, has a close button, and auto-closes on nav', () => {
+  assert.match(sidebar, /mobile \? false : collapsed/);
+  assert.match(sidebar, /aria-label="Close menu"/);
+  assert.match(sidebar, /if \(mobile\) onClose\(\)/);
+  // The collapse toggle is desktop-only — the mobile branch renders
+  // the logo + close button, never the toggle.
+  const mobileBranch = sidebar.slice(
+    sidebar.indexOf('{mobile ? ('),
+    sidebar.indexOf(') : effectiveCollapsed ? ('),
+  );
+  assert.ok(mobileBranch.length > 100, 'mobile header branch must exist');
+  assert.doesNotMatch(mobileBranch, /handleToggle/);
+  assert.doesNotMatch(mobileBranch, /Collapse sidebar/);
+});
+
+test('no loss: Sign Out, portal switcher, bell, UserMenu, BackButton and view-as all survive', () => {
+  assert.match(sidebar, /Sign Out/);
+  assert.match(sidebar, /onClick=\{onLogout\}/);
+  assert.match(portalLayout, /getPortalSwitch\(user, pathname, adminBasePath, hasTeamAccess\)/);
+  assert.match(portalLayout, /<NotificationBadge \/>/);
+  assert.match(portalLayout, /<UserMenu/);
+  assert.match(portalLayout, /<BackButton inline \/>/);
+  assert.match(portalLayout, /<LoginNotificationPopup \/>/);
+  // View-as is untouched: the guards live in the server layouts.
+  assert.match(studentLayout, /viewAs/);
+  assert.match(adminLayout, /viewAs/);
+});
+
+// ---------------------------------------------------------------------------
+// 6. No nav mixing — each portal renders only its own routes
+// ---------------------------------------------------------------------------
+
+function hrefsIn(source: string): string[] {
+  return [...source.matchAll(/href:\s*'([^']+)'/g)].map((m) => m[1]);
+}
+
+test('no nav mixing: student nav contains only /student/* hrefs', () => {
+  const hrefs = hrefsIn(studentLayout);
+  assert.ok(hrefs.length >= 12, `student nav must list its items (found ${hrefs.length})`);
+  for (const href of hrefs) {
+    assert.ok(href.startsWith('/student/'), `student nav must not contain ${href}`);
+  }
+  assert.doesNotMatch(studentLayout, /href: '\/admin\//);
+  assert.doesNotMatch(studentLayout, /href: '\/instructor\//);
+  assert.doesNotMatch(studentLayout, /href: '\/team\//);
+});
+
+test('no nav mixing: instructor nav contains only /instructor/* hrefs (+ the documented ambassador exception)', () => {
+  const hrefs = hrefsIn(instructorLayout);
+  assert.ok(hrefs.length >= 11, `instructor nav must list its items (found ${hrefs.length})`);
+  for (const href of hrefs) {
+    assert.ok(
+      href.startsWith('/instructor/') || href === '/student/ambassador',
+      `instructor nav must not contain ${href}`,
+    );
+  }
+  assert.doesNotMatch(instructorLayout, /href: '\/admin\//);
+  assert.doesNotMatch(instructorLayout, /href: '\/team\//);
+});
+
+test('no nav mixing: team nav contains only /team/* hrefs', () => {
+  const hrefs = hrefsIn(teamLayout);
+  assert.ok(hrefs.length >= 7, `team nav must list its items (found ${hrefs.length})`);
+  for (const href of hrefs) {
+    assert.ok(href.startsWith('/team/'), `team nav must not contain ${href}`);
+  }
+  assert.doesNotMatch(teamLayout, /href: '\/admin\//);
+  assert.doesNotMatch(teamLayout, /href: '\/student\//);
+  assert.doesNotMatch(teamLayout, /href: '\/instructor\//);
+});
+
+test('no nav mixing: admin nav is built from ADMIN_AREAS with the permission filter, never another portal', () => {
+  assert.match(adminLayout, /hasAdminArea\(permissions, area\.key\)/);
+  assert.match(adminLayout, /ADMIN_AREAS/);
+  assert.doesNotMatch(adminLayout, /href: '\/student\//);
+  assert.doesNotMatch(adminLayout, /href: '\/instructor\//);
+  assert.doesNotMatch(adminLayout, /href: '\/team\//);
+});
+
+test('one implementation: no second sidebar component exists anywhere', () => {
+  // PortalLayout no longer defines its own Sidebar — the only
+  // sidebar implementation is CollapsibleSidebar.
+  assert.doesNotMatch(portalLayout, /function Sidebar\(/);
+  assert.match(portalLayout, /import CollapsibleSidebar from '@\/components\/layout\/CollapsibleSidebar'/);
+});

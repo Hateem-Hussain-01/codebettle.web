@@ -178,10 +178,15 @@ test('PortalLayout: avatar is a UserMenu, not the plain profile Link; bell + sid
   // fallback is load-bearing in the applicant portal — see
   // lib/user-menu.ts.
   assert.match(layout, /href=\{`\$\{portalBase\}\/notifications`\}/);
-  // Sidebar Sign Out still uses the same (now hoisted) logout.
-  assert.match(layout, /Sign Out/);
+  // Sidebar Sign Out still uses the same (now hoisted) logout —
+  // since 18 Nov 2026 it lives in CollapsibleSidebar and PortalLayout
+  // passes the shared handleLogout down as onLogout.
   assert.match(layout, /async function handleLogout\(\)/);
   assert.doesNotMatch(layout, /const handleLogout = async/);
+  assert.match(layout, /<CollapsibleSidebar[^>]*onLogout=\{handleLogout\}/);
+  const sidebar = read('components/layout/CollapsibleSidebar.tsx');
+  assert.match(sidebar, /Sign Out/);
+  assert.match(sidebar, /onClick=\{onLogout\}/);
 });
 
 test('Navbar: logged-in desktop shows UserMenu; Login/Get Started stay for guests; mobile portal button kept', () => {

@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation';
-import { headers } from 'next/headers';
+import { cookies, headers } from 'next/headers';
 import { getSession } from '@/lib/auth';
+import { parseSidebarCollapsed, SIDEBAR_COLLAPSED_COOKIE } from '@/lib/sidebar';
 import { hasTeacherCapability } from '@/lib/rbac';
 import { getAdminBasePath } from '@/lib/admin-url';
 import { countUnsubmittedVisibleAssignments } from '@/lib/db/assignments';
@@ -31,6 +32,10 @@ const NAV_ITEMS = [
 
 export default async function StudentLayout({ children }: { children: React.ReactNode }) {
   const session = await getSession();
+  // Collapsed sidebar (Eman, 18 Nov 2026): read the persisted
+  // preference from the cookie so the rail renders collapsed on the
+  // first paint — no flash or width jump.
+  const defaultCollapsed = parseSidebarCollapsed((await cookies()).get(SIDEBAR_COLLAPSED_COOKIE)?.value);
   // Phase 2, Module 21.4 — view-as scope (extended 16 Nov 2026):
   // teacher view-as NEVER opens a student portal — a viewing admin
   // who navigates here by hand goes back to the teacher portal they
@@ -132,7 +137,7 @@ export default async function StudentLayout({ children }: { children: React.Reac
       {/* Theme toggle lives in Profile settings for students (Eman,
           15 Nov 2026) — the top-bar toggle is hidden in this portal
           only; instructor/admin portals keep theirs. */}
-      <PortalLayout user={session} navItems={navItemsForRender} portalName="Student Portal" adminBasePath={getAdminBasePath()} hideThemeToggle>
+      <PortalLayout user={session} navItems={navItemsForRender} portalName="Student Portal" adminBasePath={getAdminBasePath()} hideThemeToggle defaultCollapsed={defaultCollapsed}>
         {children}
       </PortalLayout>
       {/* Phase 3, Worker C: "Message from Your Teacher" popup. It shows

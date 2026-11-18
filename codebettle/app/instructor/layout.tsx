@@ -1,5 +1,7 @@
 import { redirect } from 'next/navigation';
+import { cookies } from 'next/headers';
 import { getSession } from '@/lib/auth';
+import { parseSidebarCollapsed, SIDEBAR_COLLAPSED_COOKIE } from '@/lib/sidebar';
 import { hasTeacherCapability } from '@/lib/rbac';
 import { getAdminBasePath } from '@/lib/admin-url';
 import { hasTeamAccess } from '@/lib/db/team';
@@ -24,6 +26,10 @@ const NAV_ITEMS = [
 
 export default async function InstructorLayout({ children }: { children: React.ReactNode }) {
   const session = await getSession();
+  // Collapsed sidebar (Eman, 18 Nov 2026): read the persisted
+  // preference from the cookie so the rail renders collapsed on the
+  // first paint — no flash or width jump.
+  const defaultCollapsed = parseSidebarCollapsed((await cookies()).get(SIDEBAR_COLLAPSED_COOKIE)?.value);
   // Phase 2: teacher capability is the isTeacher flag (legacy primary
   // role 'instructor' still counts). A PURE admin (isAdmin only, no
   // teacher flag) is still redirected — unchanged from before; admins
@@ -66,7 +72,7 @@ export default async function InstructorLayout({ children }: { children: React.R
           the banner (who is viewing + the way back). The session user
           is the teacher; session.viewAs names the viewing admin. */}
       {session.viewAs && <ViewAsBanner adminName={session.viewAs.adminName} adminBasePath={getAdminBasePath()} />}
-      <PortalLayout user={session} navItems={navItems} portalName="Instructor Portal" adminBasePath={getAdminBasePath()} hasTeamAccess={hasTeam}>
+      <PortalLayout user={session} navItems={navItems} portalName="Instructor Portal" adminBasePath={getAdminBasePath()} hasTeamAccess={hasTeam} defaultCollapsed={defaultCollapsed}>
         {children}
       </PortalLayout>
     </>
