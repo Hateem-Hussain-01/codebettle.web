@@ -122,9 +122,13 @@ test('persistence: the toggle writes the cookie; the server layouts seed from it
 test('search: filters the passed navItems (real routes only), with an empty state', () => {
   assert.match(sidebar, /placeholder="Search pages"/);
   // The scope is the navItems prop — the permission-filtered routes
-  // the server layout passed — never a hardcoded dummy list.
-  assert.match(sidebar, /navItems\.filter\(\(item\) => matchesQuery\(item, query\)\)/);
-  assert.match(sidebar, /item\.label\.toLowerCase\(\)\.includes\(q\)/);
+  // the server layout passed — never a hardcoded dummy list. The
+  // matching lives in lib/nav-search.ts, SHARED with the top-bar
+  // search (dashboard follow-up, 18 Nov 2026): one index, one
+  // matcher, two surfaces — see tests/dashboard-followup.test.ts
+  // for the matching unit tests.
+  assert.match(sidebar, /const hits = searchNavItems\(navItems, query\);/);
+  assert.match(sidebar, /import \{ searchNavItems, type NavItemNode \} from '@\/lib\/nav-search';/);
   assert.match(sidebar, /No pages found/);
   assert.match(sidebar, /No pages match/);
   // Search sits immediately below the profile/name section.
@@ -134,15 +138,19 @@ test('search: filters the passed navItems (real routes only), with an empty stat
   );
 });
 
-test('search: keyboard — arrows move, Enter navigates, Esc clears/closes, ⌘K focuses', () => {
+test('search: keyboard — arrows move, Enter navigates, Esc clears/closes (⌘K lives in PortalLayout)', () => {
   assert.match(sidebar, /e\.key === 'ArrowDown'/);
   assert.match(sidebar, /e\.key === 'ArrowUp'/);
   assert.match(sidebar, /e\.key === 'Enter'/);
-  assert.match(sidebar, /router\.push\(target\.href\)/);
+  assert.match(sidebar, /router\.push\(target\.item\.href\)/);
   assert.match(sidebar, /e\.key === 'Escape'/);
   assert.match(sidebar, /⌘K/);
-  assert.match(sidebar, /\(e\.metaKey \|\| e\.ctrlKey\) && e\.key\.toLowerCase\(\) === 'k'/);
   assert.match(sidebar, /aria-activedescendant/);
+  // ⌘K moved to PortalLayout (dashboard follow-up, 18 Nov 2026):
+  // one owner for the two search surfaces — the sidebar answers via
+  // the focusSearchSignal prop instead of listening itself.
+  assert.doesNotMatch(sidebar, /\(e\.metaKey \|\| e\.ctrlKey\) && e\.key\.toLowerCase\(\) === 'k'/);
+  assert.match(sidebar, /focusSearchSignal\?: number;/);
 });
 
 test('search: the collapsed search icon expands the rail and focuses the input', () => {

@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Menu, Bell, ArrowLeftRight } from 'lucide-react';
@@ -10,6 +10,8 @@ import { portalMenuLinks } from '@/lib/user-menu';
 import { sidebarCollapsedCookieString } from '@/lib/sidebar';
 import CollapsibleSidebar from '@/components/layout/CollapsibleSidebar';
 import type { NavItem } from '@/components/layout/CollapsibleSidebar';
+import PageTransition from '@/components/layout/PageTransition';
+import TopBarSearch from '@/components/layout/TopBarSearch';
 import UserMenu from '@/components/layout/UserMenu';
 import BackButton from '@/components/layout/BackButton';
 import LoginNotificationPopup from '@/components/notifications/LoginNotificationPopup';
@@ -72,6 +74,19 @@ async function handleLogout() {
 }
 
 /**
+ * Time-of-day greeting (dashboard follow-up): morning / afternoon /
+ * evening by the user's local hour; late night gets a plain "Hello"
+ * ("Good night" is a farewell, not a greeting). Pure, so the
+ * buckets are unit-testable.
+ */
+export function greetingForHour(hour: number): string {
+  if (hour >= 5 && hour < 12) return 'Good morning';
+  if (hour >= 12 && hour < 17) return 'Good afternoon';
+  if (hour >= 17 && hour < 21) return 'Good evening';
+  return 'Hello';
+}
+
+/**
  * Sidebar navigation lives in components/layout/CollapsibleSidebar.tsx
  * (Eman, 18 Nov 2026 — premium animated collapsible sidebar): one
  * shared client component for every portal. It stays a module-level
@@ -92,6 +107,48 @@ export default function PortalLayout({ user, navItems, children, portalName, adm
   const [collapsed, setCollapsed] = useState(defaultCollapsed);
   const reduceMotion = useReducedMotion();
   const pathname = usePathname();
+
+  // Top-bar greeting (Eman, 18 Nov 2026 — dashboard follow-up):
+  // time-of-day + the user's own first name, never invented. The
+  // greeting renders only after mount: the server clock (UTC) and
+  // the user's clock (PKT) disagree about the time of day, so a
+  // server-rendered greeting would hydrate-mismatch on the boundary
+  // hours. Before mount the slot stays empty — no layout shift
+  // beyond the text appearing once, right after hydration.
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+  const firstName = user.name?.trim().split(/\s+/)[0] ?? '';
+  const greeting = mounted && firstName ? `${greetingForHour(new Date().getHours())}, ${firstName}` : null;
+
+  // ⌘K — ONE owner (Eman, 18 Nov 2026 — dashboard follow-up). The
+  // sidebar used to own this shortcut; now PortalLayout owns it
+  // because there are two search surfaces sharing one index
+  // (lib/nav-search.ts): the top-bar palette (desktop) and the
+  // sidebar search (mobile drawer, collapsed rail). ⌘K focuses
+  // whichever is visible — the top-bar input when it is rendered
+  // (offsetParent is null under `hidden md:`), otherwise it signals
+  // the sidebar to focus (expanding the rail first if collapsed).
+  // The signal is a counter so repeated ⌘K presses re-fire the
+  // sidebar's effect even when the count's parity repeats.
+  const topSearchRef = useRef<HTMLInputElement>(null);
+  const [focusSearchSignal, setFocusSearchSignal] = useState(0);
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        const topInput = topSearchRef.current;
+        if (topInput && topInput.offsetParent !== null) {
+          topInput.focus();
+        } else {
+          setFocusSearchSignal((s) => s + 1);
+        }
+      }
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, []);
 
   const toggleCollapsed = () => {
     setCollapsed((c) => {
@@ -147,7 +204,7 @@ export default function PortalLayout({ user, navItems, children, portalName, adm
           !reduceMotion && 'transition-[width] duration-450 ease-out',
         )}
       >
-        <CollapsibleSidebar user={user} navItems={navItems} pathname={pathname} portalName={portalName} collapsed={collapsed} onToggleCollapsed={toggleCollapsed} onLogout={handleLogout} onClose={() => setSidebarOpen(false)} />
+        <CollapsibleSidebar user={user} navItems={navItems} pathname={pathname} portalName={portalName} collapsed={collapsed} onToggleCollapsed={toggleCollapsed} onLogout={handleLogout} onClose={() => setSidebarOpen(false)} focusSearchSignal={focusSearchSignal} />
       </aside>
 
       {/* Mobile Sidebar Overlay */}
@@ -157,7 +214,7 @@ export default function PortalLayout({ user, navItems, children, portalName, adm
             {/* Theme audit: dark scrim over the page behind the mobile sidebar — stays dark in both themes. */}
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 lg:hidden" onClick={() => setSidebarOpen(false)} />
             <motion.aside initial={{ x: -280 }} animate={{ x: 0 }} exit={{ x: -280 }} transition={reduceMotion ? { duration: 0 } : { type: 'spring', damping: 30 }} className="fixed left-0 top-0 h-full w-72 bg-dark-card/90 border-r border-dark-border backdrop-blur-xl z-50 lg:hidden">
-              <CollapsibleSidebar user={user} navItems={navItems} pathname={pathname} portalName={portalName} collapsed={false} onToggleCollapsed={toggleCollapsed} onLogout={handleLogout} mobile onClose={() => setSidebarOpen(false)} />
+              <CollapsibleSidebar user={user} navItems={navItems} pathname={pathname} portalName={portalName} collapsed={false} onToggleCollapsed={toggleCollapsed} onLogout={handleLogout} mobile onClose={() => setSidebarOpen(false)} focusSearchSignal={focusSearchSignal} />
             </motion.aside>
           </>
         )}
@@ -186,7 +243,18 @@ export default function PortalLayout({ user, navItems, children, portalName, adm
               <Menu className="w-5 h-5" />
             </button>
           </div>
-          <div className="flex-1 lg:flex-none" />
+          {/* Centre: top-bar search + greeting (dashboard follow-up).
+              Search is the header palette (md+); the greeting joins
+              it on lg+. Below md the centre collapses away entirely
+              so the left + right groups keep the header compact —
+              the sidebar search in the mobile drawer covers search
+              there, and ⌘K falls back to it. */}
+          <div className="hidden min-w-0 flex-1 items-center justify-center gap-4 px-4 md:flex">
+            <TopBarSearch navItems={navItems} inputRef={topSearchRef} />
+            {greeting && (
+              <p className="hidden shrink-0 truncate text-sm text-muted lg:block">{greeting}</p>
+            )}
+          </div>
           <div className="flex items-center gap-3">
             {/* Module 17 — portal switcher. Rendered only when the user
                 holds the other portal's capability (see getPortalSwitch);
@@ -224,13 +292,17 @@ export default function PortalLayout({ user, navItems, children, portalName, adm
           </div>
         </header>
 
-        {/* Page content */}
+        {/* Page content — the PageTransition wrapper (dashboard
+            follow-up) crossfades + rises the page content on route
+            change; the sidebar + topbar above stay fixed. */}
         <main className="flex-1 overflow-y-auto">
-          <div className="p-4 sm:p-6">
-            {/* Admin base path (PR #33): admin client components build
+          <PageTransition>
+            <div className="p-4 sm:p-6">
+              {/* Admin base path (PR #33): admin client components build
                 their links from this context, never from process.env. */}
-            <AdminBasePathProvider value={adminBasePath}>{children}</AdminBasePathProvider>
-          </div>
+              <AdminBasePathProvider value={adminBasePath}>{children}</AdminBasePathProvider>
+            </div>
+          </PageTransition>
         </main>
       </div>
     </div>
