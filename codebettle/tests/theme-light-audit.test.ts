@@ -123,6 +123,11 @@ const ALLOWLIST: AllowEntry[] = [
     match: 'bg-[#28c840]',
     reason: 'macOS traffic-light dots on the featured course-card editor header (Eman, 17 Nov 2026): fixed green in both themes, exactly as the approved preview.',
   },
+  {
+    file: 'components/intro/WebsiteIntro.tsx',
+    match: 'bg-[#0A0A0A]',
+    reason: 'Intro splash is intentionally fixed dark in both themes (CodeBettle dark background, not a theme surface) and must match the pre-hydration first-paint cover in globals.css so there is no colour step when React mounts.',
+  },
   // Rule 4 — hex colour literal inside an inline style prop.
   {
     file: 'app/admin/email-templates/email-template-editor-client.tsx',
