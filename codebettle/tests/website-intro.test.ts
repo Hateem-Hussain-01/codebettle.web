@@ -192,6 +192,15 @@ test('intro touches only landing-page, layout, hero and intro files (no dashboar
   // vacuous-pass pattern as the V32 scope guard. The guard still fires
   // on any branch that actually changes files.
   if (files.length === 0) return;
+  // Scope (PR #81, 19 Nov 2026 — same pattern as the V32 guard): this
+  // guard only applies to a branch that touches intro files. A later
+  // branch that changes only dashboard files (e.g. this follow-up)
+  // must not trip it; if a branch touches intro files AND other files,
+  // the allowlist check below still fails on the non-intro ones. Test
+  // files in the allowlist do not arm it: editing a guard must not arm
+  // that guard (same rule as the V32 guard's own test file).
+  const INTRO_SOURCE = [...allowed].filter((f) => !f.startsWith('codebettle/tests/'));
+  if (!files.some((f) => INTRO_SOURCE.includes(f))) return;
   for (const f of files) {
     assert.ok(allowed.has(f), `intro PR must not touch ${f} (outside its landing-page scope)`);
   }

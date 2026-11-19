@@ -2,7 +2,7 @@ import { redirect } from 'next/navigation';
 import { cookies, headers } from 'next/headers';
 import { getSession } from '@/lib/auth';
 import { parseSidebarCollapsed, SIDEBAR_COLLAPSED_COOKIE } from '@/lib/sidebar';
-import { ADMIN_AREAS, areaForAdminPath, firstGrantedArea, hasAdminArea } from '@/lib/admin-access';
+import { ADMIN_AREAS, ADMIN_SUB_PAGES, areaForAdminPath, firstGrantedArea, hasAdminArea } from '@/lib/admin-access';
 import { adminUrl, getAdminBasePath, toExternalAdminPath, toInternalAdminPath } from '@/lib/admin-url';
 import { hasTeamAccess } from '@/lib/db/team';
 import { hasAdminCapability } from '@/lib/rbac';
@@ -141,9 +141,27 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   // (external/secret form), or home when they have none.
   const deniedRedirect = toExternalAdminPath(firstGrantedArea(permissions)?.href ?? '/');
 
-  const navItems = ADMIN_AREAS.filter((area) => hasAdminArea(permissions, area.key)).map(
-    (area) => ({ href: toExternalAdminPath(area.href), label: area.label, icon: NAV_ICONS[area.key] }),
-  );
+  const navItems = ADMIN_AREAS.filter((area) => hasAdminArea(permissions, area.key)).map((area) => {
+    // Expandable submenus (Eman, 18 Nov 2026 — dashboard follow-up):
+    // the area's static sub-pages from ADMIN_SUB_PAGES, if any.
+    // Children inherit the parent's permission (the filter above
+    // already granted this area), and reuse the area icon.
+    const subPages = ADMIN_SUB_PAGES[area.key] ?? [];
+    return {
+      href: toExternalAdminPath(area.href),
+      label: area.label,
+      icon: NAV_ICONS[area.key],
+      ...(subPages.length > 0
+        ? {
+            children: subPages.map((sub) => ({
+              href: toExternalAdminPath(sub.href),
+              label: sub.label,
+              icon: NAV_ICONS[area.key],
+            })),
+          }
+        : {}),
+    };
+  });
   // Profile is not a grantable ADMIN_AREAS entry (every admin-capability
   // user has a profile) — it sits at the end of the built list, next to
   // Settings, like the Profile item in the other portals' sidebars.

@@ -180,6 +180,38 @@ export const ADMIN_AREAS: readonly AdminArea[] = [
 export const ADMIN_AREA_KEYS: readonly AdminAreaKey[] = ADMIN_AREAS.map((a) => a.key);
 
 /**
+ * One static sub-page of an admin area.
+ */
+export interface AdminSubPage {
+  label: string;
+  /** Internal /admin/... href — the layout maps it through toExternalAdminPath. */
+  href: string;
+}
+
+/**
+ * Static sub-pages per admin area (Eman, 18 Nov 2026 — dashboard
+ * follow-up: expandable sidebar submenus). Only the static sibling
+ * routes that really exist as pages:
+ * - Courses → New Course (/admin/courses/new)
+ * - Students → Import CSV (/admin/students/import)
+ * - Notifications → Compose (/admin/notifications/compose)
+ * - Email Templates → New Template (/admin/email-templates/new)
+ *
+ * Dynamic detail pages ([id], builder, submissions) are NOT listed —
+ * they are per-record pages, not siblings to jump between. Areas
+ * without an entry here get no submenu. Children inherit the
+ * parent's area permission (areaForAdminPath maps each sub-page to
+ * its parent area), so no new guard is needed and a restricted
+ * admin only ever sees submenus for areas they were granted.
+ */
+export const ADMIN_SUB_PAGES: Partial<Record<AdminAreaKey, readonly AdminSubPage[]>> = {
+  courses: [{ label: 'New Course', href: '/admin/courses/new' }],
+  students: [{ label: 'Import CSV', href: '/admin/students/import' }],
+  notifications: [{ label: 'Compose', href: '/admin/notifications/compose' }],
+  'email-templates': [{ label: 'New Template', href: '/admin/email-templates/new' }],
+};
+
+/**
  * The stored permissions shape. Declared as a `type` (not an `interface`)
  * on purpose: like NotificationPrefs, the Json column needs an index
  * signature, which a type alias carries implicitly.
