@@ -16,7 +16,9 @@ const MONTH_DATA = [
 // Theme audit: these are data colours for the pie slices and legend dots
 // (colour swatches, not text) — readable on a dark or a white card. The
 // axis stroke #6B7280 equals --color-muted in both themes, and the bar
-// fill #F5C518 is brand gold in both themes. Left as literals on purpose.
+// fill #FF6B00 is the video's orange (V32-EXACT, Eman 20 Nov 2026 —
+// the dashboard bars are orange like the video's Performance chart).
+// Left as literals on purpose.
 const CATEGORY_DATA = [
   { name: 'Web Dev', value: 35, color: '#3B82F6' },
   { name: 'Mobile', value: 22, color: '#8B5CF6' },
@@ -69,7 +71,7 @@ export default function DashboardClient({ users, students, instructors, courses,
               <XAxis dataKey="month" stroke="#6B7280" tick={{ fontSize: 12 }} />
               <YAxis stroke="#6B7280" tick={{ fontSize: 12 }} />
               <Tooltip contentStyle={{ backgroundColor: 'var(--color-dark-card)', border: '1px solid var(--color-dark-border)', borderRadius: '8px', color: 'var(--color-foreground)' }} />
-              <Bar dataKey="enrollments" fill="#F5C518" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="enrollments" fill="#FF6B00" radius={[4, 4, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </Card>
