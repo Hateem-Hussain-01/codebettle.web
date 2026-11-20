@@ -40,7 +40,7 @@ import { getAmbassadorById, isMissingReferralTableError } from './ambassadors';
 import { getCourseById } from './courses';
 import { getEnrollmentById } from './enrollments';
 import { getUserById } from './users';
-import { createCoupon, getCouponByCode, updateCouponByCode } from './coupons';
+import { createCoupon, getCouponByCode, updateCouponByCode, validateCouponForCourse } from './coupons';
 import { mapAmbassadorCreditLedgerRow } from './mappers';
 import type { AmbassadorCreditLedgerEntry, Coupon } from './types';
 
@@ -294,4 +294,64 @@ export async function maybeAwardAmbassadorCreditsForEnrollment(enrollmentId: str
     console.error('[ambassador-credits] Failed to award credits for enrollment', enrollmentId, error);
     return false;
   }
+}
+
+// ---------------------------------------------------------------------------
+// Coupon auto-set — the referred student gets Rs 200 off, server-side
+// ---------------------------------------------------------------------------
+
+/**
+ * The ambassador coupon for a student, if they joined with an
+ * ambassador's code: attribution → active ambassador → their code,
+ * validated for THIS course (P-3: expiry, usage, applicability).
+ * Returns the canonical code, or null when there is no attribution,
+ * the ambassador is inactive, or the coupon cannot be used for this
+ * course. Never throws — a lookup failure just means no auto-set.
+ *
+ * Used at enrollment creation (both the admin and the self-enroll
+ * paths): when the student entered no other coupon, couponUsed is
+ * auto-set to this code, so the Rs 200 discount is computed at
+ * payment creation from the enrollment's couponUsed.
+ */
+export async function resolveAmbassadorCouponForStudent(
+  studentId: string,
+  courseId: string,
+): Promise<string | null> {
+  try {
+    const attribution = await getDb().orm.public.ReferralAttribution.where({ userId: studentId }).first();
+    if (!attribution) return null;
+    const ambassador = await getAmbassadorById(attribution.ambassadorId as string);
+    if (!ambassador || ambassador.status !== 'active') return null;
+    const coupon = await validateCouponForCourse(ambassador.referralCode, courseId);
+    return coupon ? coupon.code : null;
+  } catch (error) {
+    if (isMissingReferralTableError(error)) return null;
+    console.error('[ambassador-credits] Failed to resolve ambassador coupon for student', studentId, error);
+    return null;
+  }
+}
+
+/**
+ * Discounts given per ambassador code: how many enrollments recorded
+ * `couponUsed` equal to each code. Used by the admin Referral Codes
+ * page ("discounts given" column). Unknown codes (or a lookup
+ * failure) map to 0 — the page must never 500 on this count.
+ */
+export async function countAmbassadorDiscounts(codes: string[]): Promise<Map<string, number>> {
+  const out = new Map<string, number>();
+  for (const code of codes) out.set(code, 0);
+  if (codes.length === 0) return out;
+  try {
+    const rows = await getDb()
+      .orm.public.Enrollment.where((e) => e.couponUsed.in(codes))
+      .select('couponUsed')
+      .all();
+    for (const row of rows) {
+      const code = row.couponUsed as string;
+      if (out.has(code)) out.set(code, out.get(code)! + 1);
+    }
+  } catch (error) {
+    console.error('[ambassador-credits] Failed to count ambassador discounts', error);
+  }
+  return out;
 }

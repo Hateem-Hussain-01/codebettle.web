@@ -225,20 +225,38 @@ export interface CreateAmbassadorInput {
   email: string;
   applicationId?: string;
   userId?: string;
+  /**
+   * Admin-assigned referral code (Eman, 20 Nov 2026). When given, it
+   * is validated (format + free across both namespaces) and used
+   * as-is — the admin chooses every code. When omitted, a random code
+   * is generated (the backfill path only: no admin is present there
+   * to choose). A taken/invalid code throws with the validation
+   * message (routes map it to 400).
+   */
+  referralCode?: string;
 }
 
 /**
- * Create an approved ambassador with a fresh random referral code.
- * Idempotent by email: an existing ambassador for the email is
- * returned instead of a duplicate (the approve flow and the
- * direct-grant flow can both run for the same person).
+ * Create an approved ambassador with a referral code. Idempotent by
+ * email: an existing ambassador for the email is returned instead of
+ * a duplicate (the approve flow and the direct-grant flow can both
+ * run for the same person). The coupon for the code is ensured by
+ * the CALLER (routes), not here — this module cannot import
+ * lib/db/ambassador-credits.ts (it imports this one).
  */
 export async function createAmbassador(input: CreateAmbassadorInput): Promise<Ambassador> {
   const email = input.email.trim().toLowerCase();
   const existing = await getAmbassadorByEmail(email);
   if (existing) return existing;
   try {
-    const referralCode = await generateUniqueReferralCode();
+    let referralCode: string;
+    if (input.referralCode?.trim()) {
+      const problem = await validateReferralCodeForAssignment(input.referralCode);
+      if (problem) throw new Error(problem);
+      referralCode = normalizeReferralCode(input.referralCode);
+    } else {
+      referralCode = await generateUniqueReferralCode();
+    }
     const row = await getDb().orm.public.Ambassador.create({
       applicationId: input.applicationId ?? null,
       userId: input.userId ?? null,
@@ -288,6 +306,10 @@ export async function linkAmbassadorToUserByEmail(email: string, userId: string)
  * Used on admin approve and by the backfill below. Links the user
  * account now when one exists with the same email.
  *
+ * `referralCode` is the admin-chosen code at approve time (Eman,
+ * 20 Nov 2026) — validated inside createAmbassador. When omitted, a
+ * random code is generated (the backfill path: no admin present).
+ *
  * Healing (Eman, 16 Nov 2026 — register-first apply): an ambassador
  * approved BEFORE their account existed (e.g. Areeba Imran, approved
  * 16 Nov, userId null) gets linked here as soon as the account
@@ -297,6 +319,7 @@ export async function linkAmbassadorToUserByEmail(email: string, userId: string)
  */
 export async function ensureAmbassadorForApplication(
   application: { id: string; email: string },
+  referralCode?: string,
 ): Promise<Ambassador> {
   const byApplication = await getAmbassadorByApplicationId(application.id);
   if (byApplication) {
@@ -354,7 +377,7 @@ export async function ensureAmbassadorForApplication(
   } catch {
     userId = undefined;
   }
-  return createAmbassador({ email: application.email, applicationId: application.id, userId });
+  return createAmbassador({ email: application.email, applicationId: application.id, userId, referralCode });
 }
 
 /**
@@ -443,46 +466,16 @@ export async function updateOwnAmbassadorGroup(
 }
 
 // ---------------------------------------------------------------------------
-// Referral clicks
-// ---------------------------------------------------------------------------
-
-/** Record one landing on a referral link (best-effort: false when the table is missing). */
-export async function recordReferralClick(ambassadorId: string, ip: string): Promise<boolean> {
-  try {
-    await getDb().orm.public.ReferralClick.create({
-      ambassadorId,
-      ip,
-      day: utcDayString(),
-    });
-    return true;
-  } catch (error) {
-    if (isMissingReferralTableError(error)) return false;
-    throw error;
-  }
-}
-
-/** Distinct (ip, UTC day) clicks for one ambassador — the displayed click count. */
-export async function countDistinctReferralClicks(ambassadorId: string): Promise<number> {
-  return withReferralTableFallback(async () => {
-    const rows = await getDb()
-      .orm.public.ReferralClick.where({ ambassadorId })
-      .select('ip', 'day')
-      .all();
-    const seen = new Set(rows.map((r) => `${r.ip}|${r.day}`));
-    return seen.size;
-  }, 0);
-}
-
-// ---------------------------------------------------------------------------
-// Referral attribution (who signed up via whose link)
+// Referral attribution (who signed up with whose code)
 // ---------------------------------------------------------------------------
 
 /**
  * Store the referrer for a newly registered user — server-side only.
  * Called from registerUser with the ambassador id resolved from the
- * `cb_ref` cookie (never a client-sent field). Best-effort: a missing
- * table or a duplicate (the user already attributed) must never fail
- * signup — returns false in both cases.
+ * code the student TYPED on the register form (server-validated, never
+ * trusted from the client as an id). Best-effort: a missing table or
+ * a duplicate (the user already attributed) must never fail signup —
+ * returns false in both cases.
  */
 export async function attributeSignupToAmbassador(ambassadorId: string, userId: string): Promise<boolean> {
   try {
@@ -521,7 +514,7 @@ export async function resolveReferralForSignup(code: string, email: string): Pro
 }
 
 // ---------------------------------------------------------------------------
-// 4-stage stats + team (derived from source tables)
+// 3-stage stats + team (derived from source tables)
 // ---------------------------------------------------------------------------
 
 interface ReferredUserRow {
@@ -532,7 +525,7 @@ interface ReferredUserRow {
 }
 
 /**
- * 4-stage stats + level-1/level-2 team for several ambassadors in a
+ * 3-stage stats + level-1/level-2 team for several ambassadors in a
  * few batched queries. Returns a map keyed by ambassador id; unknown
  * ids (or a missing table) map to empty stats. Level 2 = referrals
  * of the ambassador's level-1 members who are themselves ambassadors
@@ -548,19 +541,6 @@ export async function getReferralStatsForAmbassadors(
   if (ambassadorIds.length === 0) return out;
 
   try {
-    // Clicks (distinct ip|day per ambassador).
-    const clickRows = await getDb()
-      .orm.public.ReferralClick.where((c) => c.ambassadorId.in(ambassadorIds))
-      .select('ambassadorId', 'ip', 'day')
-      .all();
-    const distinctClicks = new Map<string, Set<string>>();
-    for (const row of clickRows) {
-      const key = row.ambassadorId as string;
-      if (!distinctClicks.has(key)) distinctClicks.set(key, new Set());
-      distinctClicks.get(key)!.add(`${row.ip}|${row.day}`);
-    }
-    for (const [id, set] of distinctClicks) out.get(id)!.stats.clicks = set.size;
-
     // Level-1 users per ambassador.
     const attributionRows = await getDb()
       .orm.public.ReferralAttribution.where((a) => a.ambassadorId.in(ambassadorIds))
@@ -678,7 +658,7 @@ export async function getReferralStatsForAmbassadors(
   }
 }
 
-/** 4-stage stats + team for one ambassador. */
+/** 3-stage stats + team for one ambassador. */
 export async function getAmbassadorStats(
   ambassadorId: string,
 ): Promise<{ stats: ReferralStats; teamLevel1: ReferralTeamMember[]; teamLevel2: ReferralTeamMember[] }> {
