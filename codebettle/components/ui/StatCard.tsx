@@ -1,7 +1,7 @@
 'use client';
 import Link from 'next/link';
-import { ArrowRight } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { ArrowRight, ArrowUpRight, ArrowDownRight } from 'lucide-react';
+import { motion, useReducedMotion } from 'framer-motion';
 import Card from './Card';
 import CountUp from './CountUp';
 import { cn } from '@/lib/utils';
@@ -38,6 +38,9 @@ interface StatCardProps {
 }
 
 export default function StatCard({ title, value, subtitle, icon, color = 'yellow', trend, delay = 0, decimal = false, prefix = '', suffix = '', glass = false, href }: StatCardProps) {
+  // Reduced motion: no hover lift at all (the entrance below is
+  // already instant under reduced motion via framer-motion).
+  const reduceMotion = useReducedMotion();
   const colors = {
     yellow: 'text-primary-text bg-primary/10',
     blue: 'text-blue-400 bg-blue-400/10',
@@ -52,6 +55,12 @@ export default function StatCard({ title, value, subtitle, icon, color = 'yellow
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4, delay }}
+      // Dashboard V32-EXACT (Eman, 20 Nov 2026): the video's own
+      // hover lift — whileHover y:-5 on the card. This REPLACES the
+      // card-lift (-2px) the adapted V32 used: the inner Card gets no
+      // `hover` prop any more, so the two lifts never stack (-7px).
+      // Reduced motion disables the lift entirely.
+      whileHover={reduceMotion ? undefined : { y: -5 }}
     >
       {/* Equal-height stat cards (Eman, 20 Nov 2026 — "ye cards ka
           size same kro"): the grid item (this motion.div) stretches
@@ -60,7 +69,7 @@ export default function StatCard({ title, value, subtitle, icon, color = 'yellow
           or that carried a subtitle ("1 read (2%)") stuck out below
           the rest. h-full on BOTH keeps every card's bottom aligned
           in any grid row, on every dashboard that uses StatCard. */}
-      <Card hover glow glass={glass} className="h-full">
+      <Card glow glass={glass} className="h-full">
         <div className="flex items-start justify-between">
           <div>
             {/* Fixed label area: min-h-10 reserves exactly two
@@ -82,8 +91,13 @@ export default function StatCard({ title, value, subtitle, icon, color = 'yellow
                 same height. */}
             <p className="text-muted text-xs mt-1 min-h-4">{subtitle ?? '\u00A0'}</p>
             {trend && (
-              <p className={cn('text-xs mt-2 font-medium', trend.value >= 0 ? 'text-green-400' : 'text-red-400')}>
-                {trend.value >= 0 ? '↑' : '↓'} {Math.abs(trend.value)}% {trend.label}
+              // V32-EXACT: the video's change line — ArrowUpRight /
+              // ArrowDownRight (lucide, like the video's own snippet)
+              // + % in emerald-400 / red-400. Only real computed
+              // deltas are ever passed; no trend = no line.
+              <p className={cn('mt-2 flex items-center gap-1 text-xs font-medium', trend.value >= 0 ? 'text-green-400' : 'text-red-400')}>
+                {trend.value >= 0 ? <ArrowUpRight className="h-3.5 w-3.5" /> : <ArrowDownRight className="h-3.5 w-3.5" />}
+                {Math.abs(trend.value)}% {trend.label}
               </p>
             )}
             {href && (
