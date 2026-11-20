@@ -325,3 +325,98 @@ html[data-cb-intro="show"] body::before {
 .animate-float-slower {
   animation: float-y 8s ease-in-out infinite;
 }
+
+/* ------------------------------------------------------------------ */
+/* Dashboard V32-EXACT (Eman, 20 Nov 2026) — dashboard ONLY.          */
+/*                                                                     */
+/* The dashboard is rebuilt EXACTLY like the V32/Mercato reference    */
+/* video, INCLUDING its palette: vivid orange accent (#FF6B00,         */
+/* sampled from the video's "V32" title and chart bars) and the        */
+/* brown/wood sidebar (#2D1910 → #5B3C2A). This REVERSES the 18 Nov   */
+/* "adapt to dark+gold, video is reference only" rule FOR THE          */
+/* DASHBOARD ONLY — the public site stays dark + gold.                 */
+/*                                                                     */
+/* Mechanism: PortalLayout's root carries a `.v32` scope class, and    */
+/* these rules redefine the theme tokens underneath it. Tailwind v4    */
+/* plain @theme makes every token utility reference                    */
+/* `var(--color-...)`, so the whole dashboard subtree — cards,         */
+/* buttons, links, badges, focus rings — recolors with no              */
+/* per-component change, and nothing outside the scope moves.          */
+/*                                                                     */
+/* Specificity: `.v32` (0,1,0) ties `[data-theme="light"]` (0,1,0),   */
+/* so these rules sit at the END of the file and win by order in       */
+/* dark mode; `[data-theme="light"] .v32` (0,2,0) beats the light      */
+/* block anywhere. The video's LIGHT frame keeps the wood sidebar     */
+/* and the orange accent, so the light overrides recolor the cards    */
+/* to white but keep the wood + orange.                                */
+/* ------------------------------------------------------------------ */
+
+.v32 {
+  --color-primary: #FF6B00;
+  --color-primary-dark: #E55A00;
+  --color-primary-light: #FFD9B8;
+  --color-primary-text: #FF8A3D;
+  --color-dark-card: #1E1E22;
+  --color-dark-border: #2E2E33;
+  --color-background: #0B0B0D;
+  --color-surface: #17171A;
+  --color-foreground: #FFFFFF;
+  --color-muted: rgba(255, 255, 255, 0.6);
+}
+
+[data-theme="light"] .v32 {
+  --color-primary: #FF6B00;
+  --color-primary-dark: #E55A00;
+  --color-primary-light: #FFEDD5;
+  /* Orange text on white: #C2410C is 5.18:1 (WCAG AA) — the same
+     remap the light block already applies to --color-orange-400. */
+  --color-primary-text: #C2410C;
+  --color-dark-card: #FFFFFF;
+  --color-dark-border: #E5E7EB;
+  --color-background: #F2F2F4;
+  --color-surface: #FFFFFF;
+  --color-foreground: #111111;
+  --color-muted: #6B7280;
+}
+
+/* Wood sidebar (video: brown/wood gradient, dark — kept in BOTH
+   themes, like the video's light frame). The aside's bg-dark-card/85
+   utility loses to this (0,2,0) rule, which sets the gradient. */
+.v32 .v32-sidebar {
+  background: linear-gradient(180deg, #4A2E1B 0%, #33200F 55%, #241608 100%);
+  border-color: rgba(255, 255, 255, 0.08);
+}
+
+/* Sidebar logo + any gradient text inside a dashboard: orange, not
+   gold. Light mode uses the dark oranges so it stays readable. */
+.v32 .gradient-text {
+  background: linear-gradient(135deg, #FF6B00, #FFB25E);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+[data-theme="light"] .v32 .gradient-text {
+  background: linear-gradient(135deg, #C2410C, #9A3412);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Glass cards inside a dashboard: the video's dark translucent card
+   with an orange-tinted border (the gold tint lives on public-page
+   cards only now). */
+.v32 .glass-card {
+  background: rgba(30, 30, 34, 0.8);
+  border: 1px solid rgba(255, 107, 0, 0.25);
+}
+
+[data-theme="light"] .v32 .glass-card {
+  background: rgba(255, 255, 255, 0.85);
+  border: 1px solid rgba(194, 65, 12, 0.25);
+}
+
+/* Hover lift shadow inside a dashboard: orange tint, not gold. */
+.v32 .card-lift:hover {
+  box-shadow: var(--shadow-elev-2), 0 0 20px rgba(255, 107, 0, 0.12);
+}
