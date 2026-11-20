@@ -19,6 +19,7 @@ import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { portalMenuLinks } from '../lib/user-menu';
 import UserMenu from '../components/layout/UserMenu';
+import { ThemeProvider } from '../components/theme/ThemeProvider';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const read = (rel: string) => readFileSync(join(root, rel), 'utf8');
@@ -27,14 +28,21 @@ const noop = () => {};
 const user = { name: 'Ayesha Khan', email: 'ayesha@example.com' };
 
 function renderMenu(props: Record<string, unknown> = {}): string {
+  // ThemeMenuRow (inside the menu) reads useTheme(), so the menu
+  // renders inside the provider — in node the provider falls back
+  // to the 'system' preference with no document access.
   return renderToStaticMarkup(
-    createElement(UserMenu, {
-      user,
-      profileHref: '/admin/profile',
-      settingsHref: '/admin/settings',
-      onLogout: noop,
-      ...props,
-    }),
+    createElement(
+      ThemeProvider,
+      null,
+      createElement(UserMenu, {
+        user,
+        profileHref: '/admin/profile',
+        settingsHref: '/admin/settings',
+        onLogout: noop,
+        ...props,
+      }),
+    ),
   );
 }
 
@@ -146,6 +154,38 @@ test('UserMenu controlled-open: custom hrefs are honoured (instructor/applicant 
   assert.doesNotMatch(html, /href="\/applicant\/settings"/);
 });
 
+// ---------------------------------------------------------------------------
+// Theme row — compact icon switcher inside the menu (Eman, 20 Nov 2026)
+// ---------------------------------------------------------------------------
+
+test('UserMenu controlled-open: compact Theme row with three icon buttons, above Logout', () => {
+  const html = renderMenu({ open: true, onOpenChange: noop });
+  // Short label only — no explanatory paragraph, no long text.
+  assert.match(html, />Theme</);
+  assert.doesNotMatch(html, /click the icon/);
+  assert.doesNotMatch(html, /Choose how the website looks/);
+  assert.doesNotMatch(html, /Default \(system\)/);
+  // The three options are icon buttons (Moon / Sun / Monitor).
+  assert.match(html, /aria-label="Dark theme"/);
+  assert.match(html, /aria-label="Light theme"/);
+  assert.match(html, /aria-label="System theme"/);
+  // In node the provider falls back to the 'system' preference, so
+  // the Monitor button is the checked one.
+  assert.match(html, /aria-label="System theme"[^>]*aria-checked="true"|aria-checked="true"[^>]*aria-label="System theme"/);
+  // The row sits above Logout (it is rendered before it in the menu).
+  assert.ok(
+    html.indexOf('aria-label="Dark theme"') < html.indexOf('>Logout<'),
+    'theme row must sit above Logout',
+  );
+});
+
+test('UserMenu closed: no theme row rendered', () => {
+  const html = renderMenu();
+  assert.doesNotMatch(html, /aria-label="Dark theme"/);
+  assert.doesNotMatch(html, /aria-label="System theme"/);
+  assert.doesNotMatch(html, />Theme</);
+});
+
 test('UserMenu: a set avatar is used instead of the DiceBear fallback', () => {
   const html = renderMenu({
     open: true,
@@ -220,4 +260,44 @@ test('UserMenu source: outside-click + Escape close, arrow keys move between ite
   assert.match(menu, /aria-haspopup="menu"/);
   assert.match(menu, /AnimatePresence/);
   assert.match(menu, /role="menuitem"/);
+});
+
+test('ThemeMenuRow source: same theme behaviour as ThemeToggle, inline icons, menu stays open', () => {
+  const row = read('components/theme/ThemeMenuRow.tsx');
+  // Same hook, same three preferences, same cookie-persisted setter
+  // as ThemeToggle — only the presentation changed (inline icons in
+  // the avatar menu instead of a floating dropdown).
+  assert.match(row, /useTheme\(\)/);
+  assert.match(row, /setPreference\(option\)/);
+  assert.match(row, /'dark'/);
+  assert.match(row, /'light'/);
+  assert.match(row, /'system'/);
+  // The buttons are radio items, NOT menuitem: the menu's ArrowUp /
+  // ArrowDown handler walks [role="menuitem"] only, so it steps over
+  // the theme group as one block instead of landing on each icon.
+  assert.match(row, /role="menuitemradio"/);
+  assert.doesNotMatch(row, /role="menuitem"/);
+  // Picking a theme must NOT close the menu: the row calls
+  // setPreference only — setOpen lives in UserMenu, not here.
+  assert.doesNotMatch(row, /setOpen/);
+  // No nested floating menu: no AnimatePresence, no absolute
+  // positioning — the icons sit inline in the UserMenu.
+  assert.doesNotMatch(row, /AnimatePresence/);
+  assert.doesNotMatch(row, /absolute/);
+  // Compact by design: short label, three icon buttons, no long text.
+  assert.match(row, />Theme</);
+  assert.doesNotMatch(row, /click the icon/);
+  assert.doesNotMatch(row, /Choose how the website looks/);
+  // Active option gets the gold treatment (primary-text token — the
+  // readable gold on light surfaces; bare text-primary is banned by
+  // the theme conversion guard).
+  assert.match(row, /text-primary-text/);
+});
+
+test('UserMenu source: arrow-key nav walks menuitem only, theme row is a menuitemradio group', () => {
+  const menu = read('components/layout/UserMenu.tsx');
+  assert.match(menu, /querySelectorAll<HTMLElement>\('\[role="menuitem"\]'\)/);
+  assert.doesNotMatch(menu, /menuitemradio/);
+  assert.match(menu, /import ThemeMenuRow from '@\/components\/theme\/ThemeMenuRow'/);
+  assert.match(menu, /<ThemeMenuRow \/>/);
 });
