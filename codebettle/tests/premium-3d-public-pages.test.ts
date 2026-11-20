@@ -19,16 +19,19 @@ const read = (rel: string) => readFileSync(join(root, rel), 'utf8');
 
 // ---------------------------------------------------------------- hero stats
 
-// (17 Nov 2026 — screenshot redesign, Eman): the hero now HAS a stats
-// row again — but a NEW one, the three stats from the preview
-// screenshot (1500+ Students trained / 300+ Reviews / 4.8/5 Average
-// rating, counting up on page load). The OLD four-stat grid from
-// before PR #60 (1,500+ Students / 8+ Courses / 5+ Instructors) must
-// stay gone; the separate StatsSection below the hero keeps the four
-// real stats. The typewriter is untouched by the redesign — it still
-// cycles the role phrases on headline line 2 (Eman's 17 Nov
+// (17 Nov 2026 — screenshot redesign, Eman): the hero HAD a stats
+// row again — a NEW one, the three stats from the preview screenshot
+// (1500+ Students trained / 300+ Reviews / 4.8/5 Average rating,
+// counting up on page load). The OLD four-stat grid from before PR #60
+// (1,500+ Students / 8+ Courses / 5+ Instructors) must stay gone; the
+// separate StatsSection below the hero keeps the four real stats.
+// (20 Nov 2026 — Eman): the upper hero stats are REMOVED — the same
+// numbers appeared twice ("upper walay stats ko remove kr do"). The
+// hero now has NO stats row at all; the StatsSection below is the
+// only stats on the page. The typewriter is untouched by the redesign
+// — it still cycles the role phrases on headline line 2 (Eman's 17 Nov
 // correction to the original brief).
-test('hero has the new 3-stat row (screenshot redesign) — the old 4-stat grid stays gone', () => {
+test('hero has NO stats row (upper stats removed 20 Nov) — the old 4-stat grid stays gone', () => {
   const hero = read('components/sections/HeroSection.tsx');
   // The removed block rendered this exact grid (numbers + labels).
   assert.ok(!hero.includes("['1,500+', 'Students']"), 'hero stats grid must be gone');
@@ -40,13 +43,15 @@ test('hero has the new 3-stat row (screenshot redesign) — the old 4-stat grid 
   assert.ok(hero.includes('Become a'), 'hero headline must stay');
   assert.ok(hero.includes('Explore Courses'), 'hero CTA must stay');
   assert.ok(hero.includes('TYPEWRITER_WORDS'), 'typewriter must stay');
-  // The NEW hero stats row (Eman, 17 Nov 2026): three stats, counting
-  // up on page load — not the old grid, not the StatsSection.
-  assert.ok(hero.includes('HERO_STATS'), 'hero must define its own stats row');
-  assert.ok(hero.includes('Students trained'), '1500+ Students trained must be in the hero');
-  assert.ok(hero.includes("'Reviews'"), '300+ Reviews must be in the hero');
-  assert.ok(hero.includes('Average rating'), '4.8/5 Average rating must be in the hero');
-  assert.ok(hero.includes('HeroLoadCounter'), 'hero stats must count up on page load');
+  // The upper hero stats row is REMOVED (Eman, 20 Nov 2026) — the
+  // same numbers twice looked bad. No HERO_STATS, no load counter,
+  // no stats row markup anywhere in the hero.
+  assert.ok(!hero.includes('HERO_STATS'), 'hero must not define a stats row');
+  assert.ok(!hero.includes('HeroLoadCounter'), 'hero load counter must be gone');
+  assert.ok(!hero.includes('Students trained'), '1500+ Students trained must not be in the hero');
+  assert.ok(!hero.includes("'Reviews'"), '300+ Reviews must not be in the hero');
+  assert.ok(!hero.includes('Average rating'), '4.8/5 Average rating must not be in the hero');
+  assert.ok(!hero.includes('border-t border-dark-border'), 'hero stats row top border must be gone');
 });
 
 test('hero is a real 3D scene: the code window stays, the old parallax/chips/tilt are gone', () => {

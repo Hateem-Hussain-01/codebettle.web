@@ -123,13 +123,16 @@ test('globals.css paints the pre-hydration cover only when the flag is set', () 
   assert.ok(css.includes('z-index: 9999'), 'cover must sit above everything until the overlay mounts');
 });
 
-test('hero count-up waits for the intro, and the hero is otherwise untouched', () => {
+test('hero has no count-up anymore (upper stats removed 20 Nov) — typewriter untouched', () => {
   const hero = read('components/sections/HeroSection.tsx');
-  assert.ok(hero.includes('HeroLoadCounter'), 'hero stats must still count up (component kept)');
-  assert.ok(hero.includes('onIntroDone'), 'count-up must wait for the intro-done event');
-  assert.ok(hero.includes('INTRO_DONE_FALLBACK_MS'), 'count-up must have a fallback so it can never stick at 0');
-  assert.ok(hero.includes("{ value: 1500, suffix: '+', label: 'Students trained'"), 'hero stats values must be unchanged');
-  assert.ok(hero.includes("{ value: 4.8, suffix: '/5', label: 'Average rating'"), 'hero rating must be unchanged');
+  // (Eman, 20 Nov 2026): the upper hero stats row is removed — the
+  // hero no longer counts anything up, so nothing in it waits for
+  // the intro-done event. The intro-done subscription lives in the
+  // 3D fade-in (HeroSceneWrapper) instead.
+  assert.ok(!hero.includes('HeroLoadCounter'), 'hero load counter must be gone');
+  assert.ok(!hero.includes('onIntroDone'), 'hero must not subscribe to the intro-done event');
+  assert.ok(!hero.includes('INTRO_DONE_FALLBACK_MS'), 'hero must not carry the intro fallback');
+  assert.ok(!hero.includes('HERO_STATS'), 'hero must not define a stats row');
   assert.ok(hero.includes('TYPEWRITER_WORDS'), 'hero typewriter must be untouched');
   assert.ok(hero.includes('setTimeout(() => setDisplayed(word.slice(0, displayed.length + 1)), 80)'), 'hero typing speed (80ms) must be unchanged');
 });
@@ -142,10 +145,12 @@ test('3D scene fades in at the reveal without changing no-intro loads', () => {
   assert.ok(!wrapper.includes('useState(() => introAlreadyDone())'), 'no React-state opacity — that would mismatch hydration');
 });
 
-test('intro dispatches the exact event the hero listens for', () => {
+test('intro dispatches the exact event the 3D scene listens for', () => {
   assert.equal(INTRO_DONE_EVENT, 'cb:intro-done', 'event name must be stable');
-  const hero = read('components/sections/HeroSection.tsx');
-  assert.ok(hero.includes('onIntroDone'), 'hero must subscribe to the intro-done event');
+  // (20 Nov 2026): the hero no longer subscribes — its count-up is
+  // gone with the upper stats row. The listener is the 3D fade-in.
+  const wrapper = read('components/sections/HeroSceneWrapper.tsx');
+  assert.ok(wrapper.includes('onIntroDone'), '3D scene fade-in must subscribe to the intro-done event');
 });
 
 // ---------------------------------------------------------------- scope guard
@@ -185,6 +190,17 @@ test('intro touches only landing-page, layout, hero and intro files (no dashboar
     // intentionally fixed-dark intro splash.
     'codebettle/tests/dashboard-v32.test.ts',
     'codebettle/tests/theme-light-audit.test.ts',
+    // Hero-stats removal (20 Nov 2026, Eman): removing the upper hero
+    // stats row from HeroSection.tsx also updates the two test files
+    // that pinned it (hero-screenshot + premium-3d guard) — test-only
+    // changes to files that assert about the hero.
+    'codebettle/tests/hero-screenshot.test.ts',
+    'codebettle/tests/premium-3d-public-pages.test.ts',
+    // Follow-up guard arming fix (20 Nov 2026): the follow-up guard
+    // armed on any allowlisted test file, so editing a guard fix
+    // tripped it — its arming is now source-only, same pattern as
+    // this guard's own PR #81 fix.
+    'codebettle/tests/dashboard-followup.test.ts',
   ]);
   // Merged state (19 Nov 2026 — the old `files.length > 0` assertion
   // below failed CI on main right after PR #79 merged): on main the

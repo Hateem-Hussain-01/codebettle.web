@@ -3,10 +3,12 @@
 //
 // The landing-page hero matches the screenshot: two columns (left:
 // badge, two-line typewriter headline, subtext, two CTAs; right: the
-// student.py code window), with the three hero stats along the bottom
-// counting up on page load. The 3D scene behind the content, the
-// Mac-window frame, the StatsSection below the hero and the navbar are
-// untouched — see the premium-3D guard for those.
+// student.py code window). The three hero stats along the bottom were
+// REMOVED (Eman, 20 Nov 2026 — the same numbers appeared twice); the
+// stats live only in the StatsSection below the hero. The 3D scene
+// behind the content, the Mac-window frame, the StatsSection below
+// the hero and the navbar are untouched — see the premium-3D guard
+// for those.
 //
 // A correction the same day OVERRIDES the original brief's "static
 // headline / delete the typewriter": the typewriter KEEPS working
@@ -153,29 +155,29 @@ test('hero is two columns on desktop, stacked on mobile', () => {
   assert.ok(src.includes('overflow-x-auto whitespace-nowrap'), 'code body must scroll long lines inside the window');
 });
 
-// ---------------------------------------------------------------- hero stats: count up on load
+// ---------------------------------------------------------------- hero stats: REMOVED (20 Nov 2026)
 
-test('hero stats row: the three screenshot stats with load count-up', () => {
+// (Eman, 20 Nov 2026 — "upper walay stats ko remove kr do"): the
+// three hero stats (1500+ Students trained / 300+ Reviews / 4.8/5
+// Average rating) are REMOVED from the bottom of the hero — the same
+// numbers appeared twice (hero row + StatsSection below) and it did
+// not look good. The StatsSection below keeps its four stats and its
+// scroll-gated Counter, untouched (see the test below).
+test('hero has NO stats row: the upper stats were removed 20 Nov', () => {
   const src = hero();
-  assert.ok(src.includes('HERO_STATS'), 'hero must define its own stats row');
-  // Values + labels, exactly as in the screenshot.
-  assert.ok(src.includes('value: 1500'), '1500+ Students trained must be in the hero');
-  assert.ok(src.includes('value: 300'), '300+ Reviews must be in the hero');
-  assert.ok(src.includes('value: 4.8'), '4.8/5 Average rating must be in the hero');
-  assert.ok(src.includes('Students trained'), 'Students trained label must stay');
-  assert.ok(src.includes("'Reviews'"), 'Reviews label must stay');
-  assert.ok(src.includes('Average rating'), 'Average rating label must stay');
-  assert.ok(src.includes("suffix: '/5'"), '4.8 must carry the /5 suffix');
-  // Count-up starts ON PAGE LOAD: the hero counter starts its
-  // interval on mount — it must not be gated on scroll.
-  assert.ok(src.includes('function HeroLoadCounter'), 'hero must have its own load counter');
-  assert.ok(src.includes('HeroLoadCounter to={stat.value}'), 'hero stats must use the load counter');
-  assert.ok(!src.includes('useInView'), 'hero must not gate anything on scroll — the count-up starts on load');
-  // The row sits at the hero bottom with a top border (preview).
-  assert.ok(src.includes('border-t border-dark-border'), 'hero stats row must have the top border');
+  assert.ok(!src.includes('HERO_STATS'), 'hero must not define a stats row');
+  assert.ok(!src.includes('value: 1500'), '1500+ must not be in the hero');
+  assert.ok(!src.includes('value: 300'), '300+ must not be in the hero');
+  assert.ok(!src.includes('value: 4.8'), '4.8 must not be in the hero');
+  assert.ok(!src.includes('Students trained'), 'Students trained label must not be in the hero');
+  assert.ok(!src.includes("'Reviews'"), 'Reviews label must not be in the hero');
+  assert.ok(!src.includes('Average rating'), 'Average rating label must not be in the hero');
+  assert.ok(!src.includes('function HeroLoadCounter'), 'hero load counter must be gone');
+  assert.ok(!src.includes('HeroLoadCounter to={stat.value}'), 'hero stats must not use the load counter');
+  assert.ok(!src.includes('border-t border-dark-border'), 'hero stats row top border must be gone');
 });
 
-test('hero stats do not touch the StatsSection below', () => {
+test('StatsSection below keeps its four stats', () => {
   const stats = read('components/sections/StatsSection.tsx');
   assert.ok(stats.includes('value: 1500'), 'StatsSection 1500+ must stay');
   assert.ok(stats.includes('value: 8'), 'StatsSection 8+ must stay');
