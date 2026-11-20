@@ -451,6 +451,55 @@ export async function updateAmbassadorGroup(
 }
 
 /**
+ * Change an ambassador's referral code (admin only — Referral Codes
+ * page). The new code is validated (format + free across both
+ * namespaces, except the ambassador's own current code) and the
+ * caller must ensure/deactivate the matching coupons (see the API
+ * route — this module cannot import lib/db/ambassador-credits.ts).
+ * Returns the updated ambassador, or null when it does not exist.
+ * Throws the validation message on a bad code.
+ */
+export async function updateAmbassadorCode(
+  ambassadorId: string,
+  rawCode: string,
+): Promise<Ambassador | null> {
+  const problem = await validateReferralCodeForAssignment(rawCode, ambassadorId);
+  if (problem) throw new Error(problem);
+  try {
+    const updated = await getDb()
+      .orm.public.Ambassador.where({ id: ambassadorId })
+      .update({ referralCode: normalizeReferralCode(rawCode) });
+    if (!updated) return null;
+    return mapAmbassadorRow(updated as never);
+  } catch (error) {
+    throwIfTableMissing(error);
+  }
+}
+
+/**
+ * Activate / deactivate an ambassador (admin only — Referral Codes
+ * page). A deactivated ambassador's code stops attributing new
+ * signups (resolveReferralForSignup requires 'active'); their
+ * existing team, stats and credits are untouched. The caller must
+ * ensure/deactivate the matching coupon (see the API route).
+ * Returns the updated ambassador, or null when it does not exist.
+ */
+export async function updateAmbassadorStatus(
+  ambassadorId: string,
+  status: AmbassadorStatus,
+): Promise<Ambassador | null> {
+  try {
+    const updated = await getDb()
+      .orm.public.Ambassador.where({ id: ambassadorId })
+      .update({ status });
+    if (!updated) return null;
+    return mapAmbassadorRow(updated as never);
+  } catch (error) {
+    throwIfTableMissing(error);
+  }
+}
+
+/**
  * Own-record group update: resolves the ambassador from the signed-in
  * user's id first, so an ambassador can only ever edit THEIR OWN
  * record — the route passes the session user id, never a client-sent
