@@ -1,6 +1,7 @@
 'use client';
 import { Monitor, Moon, Sun } from 'lucide-react';
 import { useTheme } from './ThemeProvider';
+import { applyThemeWithWipe, elementCenter } from '@/lib/theme-wipe';
 import type { ThemePreference } from '@/lib/theme';
 import { cn } from '@/lib/utils';
 
@@ -51,7 +52,14 @@ export default function ThemeMenuRow() {
               aria-checked={isActive}
               aria-label={label}
               title={label}
-              onClick={() => setPreference(option)}
+              onClick={(e) => {
+                // Ink-wipe theme switch (Eman, 21 Nov 2026): the new
+                // theme spreads as an ink blob from the clicked icon;
+                // the menu stays open so the user sees the change and
+                // can pick another. Reduced motion / no View
+                // Transitions support = instant switch (lib/theme-wipe).
+                applyThemeWithWipe(() => setPreference(option), elementCenter(e.currentTarget));
+              }}
               className={cn(
                 'flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg transition-colors',
                 isActive
