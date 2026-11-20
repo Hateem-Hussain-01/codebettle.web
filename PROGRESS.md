@@ -14,8 +14,17 @@
 
 ## Status
 - [x] Read: proxy.ts, lib/referral.ts, lib/db/ambassadors.ts, lib/db/coupons.ts, lib/db/team-credits.ts, lib/services/payment-service.ts, enrollment-service coupon parts, auth referral flow.
-- [ ] Read: register form client, ambassador dashboard page/client, admin ambassadors page/client + API routes, lib/admin-access.ts, admin coupons page, migrations + SQL file pattern, existing tests.
+- [x] Read (4th coordinator, 20 Nov ~21:00 PKT): lib/services/auth-service.ts, app/api/auth/route.ts, components/auth/RegisterForm.tsx, lib/admin-access.ts, app/admin/ambassadors/page.tsx + ambassadors-client.tsx, app/api/admin/ambassadors/grant + [id] routes, app/student/ambassador/page.tsx + ambassador-dashboard-client.tsx, lib/services/enrollment-service.ts, lib/db/types.ts (Coupon/Ambassador/ReferralStats), lib/db/mappers.ts, src/prisma/contract.prisma (Coupon/Ambassador/ReferralClick/TeamCreditLedger), migrations/app/20261115T2118 + 20261116T2324 pattern, SQL twins (team-credits + ambassador-referral), tests/ambassador-referral.test.ts (head), tests/fake-db.ts tables, scope guards (website-intro, dashboard-v32, dashboard-followup, theme-light-audit, security-group-b).
+- [x] Rebased onto main 52c4208 (PR #84 sidebar merged) — clean; pushed (remote tree == local tree 82daf4b1…).
 - [ ] Implement (increments, commit + push often).
 - [ ] Tests (targeted then full suite in chunks) + tsc + build; CI as authoritative gate.
 - [ ] Evidence screenshots (code-entry field, admin referral-codes section, dashboard 100-credit award, payment Rs 200 discount).
 - [ ] Open PR, report to Huffy (do NOT merge).
+
+## Implementation plan (4th coordinator)
+- Guards: V32 guard arms (ambassador-dashboard-client.tsx is a V32 source file) AND follow-up guard arms (lib/admin-access.ts is a follow-up source file). Both require EVERY changed file in their allowlist → add the feature file list to BOTH guards with a comment naming the feature (repo pattern, PRs #79/#81/#84). Intro guard does NOT arm (no intro files touched). Theme audit scans all files — new UI must use theme tokens only, no hex/bare colours.
+- `usedCount` is NEVER incremented anywhere (only read + displayed) → "discounts given" in the admin section = count of enrollments whose couponUsed equals the ambassador's code (new repo helper).
+- Admin coupons client is local-state-only (create/toggle/delete never persist) — pre-existing gap, NOT in scope. Ambassador coupon is created server-side in the repo (new `createCoupon` in lib/db/coupons.ts).
+- Approve/grant UX: admin supplies the code at approve time (PATCH [id] gains optional `referralCode`) and at grant time (grant form + route gain `referralCode`, required). Backfill of legacy approved rows keeps random generation (no admin present to choose) — documented exception.
+- Migration: edit src/prisma/contract.prisma (add AmbassadorCreditLedger, DROP ReferralClick) → `npm run contract:emit` → generate migration via prisma CLI (migration create) → hand-written SQL twin in ~/workspace/your_files/codebettle-ambassador-credits-migration.sql. Start snapshot = 4e2766c530b45f219045ef0168d29c2a04d2500c26ecdd9ff05c1d596b4af9cc (end of 20261116T2324).
+- npm ci running (pid 13209, started 20 Nov ~21:02 PKT) — node_modules was a broken partial install (.bin missing); tsc/tests/build/contract:emit wait on it.
