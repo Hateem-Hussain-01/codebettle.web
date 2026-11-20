@@ -74,28 +74,11 @@ async function handleLogout() {
 }
 
 /**
- * Time-of-day greeting (dashboard follow-up): morning / afternoon /
- * evening by the user's local hour; late night gets a plain "Hello"
- * ("Good night" is a farewell, not a greeting). Pure, so the
- * buckets are unit-testable.
+ * Dashboard V32-EXACT (Eman, 20 Nov 2026): the top-bar greeting is
+ * the video's own — "Hi, {firstName}! Welcome back." — not the
+ * time-of-day greeting from the follow-up. The user's own first name,
+ * never invented; mount-gated as before (server UTC vs user PKT).
  */
-export function greetingForHour(hour: number): string {
-  if (hour >= 5 && hour < 12) return 'Good morning';
-  if (hour >= 12 && hour < 17) return 'Good afternoon';
-  if (hour >= 17 && hour < 21) return 'Good evening';
-  return 'Hello';
-}
-
-/**
- * Sidebar navigation lives in components/layout/CollapsibleSidebar.tsx
- * (Eman, 18 Nov 2026 — premium animated collapsible sidebar): one
- * shared client component for every portal. It stays a module-level
- * component imported here (Phase 7 fix CB-15) — never inline it in
- * PortalLayout or it remounts on every render and loses focus/scroll
- * state. The four server layouts pass their own permission-filtered
- * navItems; this layout only forwards them.
- */
-
 export default function PortalLayout({ user, navItems, children, portalName, adminBasePath = 'admin', hasTeamAccess = false, hideThemeToggle = false, defaultCollapsed = false }: PortalLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   // Collapsed rail state (Eman, 18 Nov 2026): seeded from the cookie
@@ -108,19 +91,19 @@ export default function PortalLayout({ user, navItems, children, portalName, adm
   const reduceMotion = useReducedMotion();
   const pathname = usePathname();
 
-  // Top-bar greeting (Eman, 18 Nov 2026 — dashboard follow-up):
-  // time-of-day + the user's own first name, never invented. The
-  // greeting renders only after mount: the server clock (UTC) and
-  // the user's clock (PKT) disagree about the time of day, so a
-  // server-rendered greeting would hydrate-mismatch on the boundary
-  // hours. Before mount the slot stays empty — no layout shift
-  // beyond the text appearing once, right after hydration.
+  // Top-bar greeting (Dashboard V32-EXACT, Eman 20 Nov 2026): the
+  // video's own "Hi, {firstName}! Welcome back." — renders only
+  // after mount: the server clock (UTC) and the user's clock (PKT)
+  // disagree about the time of day, so a server-rendered greeting
+  // would hydrate-mismatch on the boundary hours. Before mount the
+  // slot stays empty — no layout shift beyond the text appearing
+  // once, right after hydration.
   const [mounted, setMounted] = useState(false);
   useEffect(() => {
     setMounted(true);
   }, []);
   const firstName = user.name?.trim().split(/\s+/)[0] ?? '';
-  const greeting = mounted && firstName ? `${greetingForHour(new Date().getHours())}, ${firstName}` : null;
+  const greeting = mounted && firstName ? `Hi, ${firstName}! Welcome back.` : null;
 
   // ⌘K — ONE owner (Eman, 18 Nov 2026 — dashboard follow-up). The
   // sidebar used to own this shortcut; now PortalLayout owns it
@@ -184,7 +167,11 @@ export default function PortalLayout({ user, navItems, children, portalName, adm
   const links = portalMenuLinks(pathname, user.role, adminBasePath);
 
   return (
-    <div className="flex h-screen bg-background overflow-hidden">
+    // Dashboard V32-EXACT (Eman, 20 Nov 2026): the `.v32` scope
+    // recolors this whole subtree to the video's palette (orange +
+    // wood) via the scoped tokens in globals.css — public pages
+    // outside this subtree keep dark + gold.
+    <div className="v32 flex h-screen bg-background overflow-hidden">
       {/* Phase 3 (Worker B) — login notification popup. Mounted here so
           it runs after login in every portal (student / instructor /
           admin) and never on public/auth pages. It fetches its own
@@ -199,7 +186,10 @@ export default function PortalLayout({ user, navItems, children, portalName, adm
           expo glide); the flex content area follows it. */}
       <aside
         className={cn(
-          'hidden shrink-0 flex-col overflow-hidden border-r border-dark-border bg-dark-card/85 shadow-[0_8px_30px_rgba(0,0,0,0.15)] backdrop-blur-xl lg:flex',
+          // V32-EXACT: the wood sidebar (video's brown/wood gradient,
+          // globals.css `.v32-sidebar`) — both themes, like the
+          // video's light frame.
+          'v32-sidebar hidden shrink-0 flex-col overflow-hidden border-r border-dark-border bg-dark-card/85 shadow-[0_8px_30px_rgba(0,0,0,0.15)] backdrop-blur-xl lg:flex',
           collapsed ? 'w-20' : 'w-64',
           !reduceMotion && 'transition-[width] duration-450 ease-out',
         )}
@@ -213,7 +203,7 @@ export default function PortalLayout({ user, navItems, children, portalName, adm
           <>
             {/* Theme audit: dark scrim over the page behind the mobile sidebar — stays dark in both themes. */}
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 lg:hidden" onClick={() => setSidebarOpen(false)} />
-            <motion.aside initial={{ x: -280 }} animate={{ x: 0 }} exit={{ x: -280 }} transition={reduceMotion ? { duration: 0 } : { type: 'spring', damping: 30 }} className="fixed left-0 top-0 h-full w-72 bg-dark-card/90 border-r border-dark-border backdrop-blur-xl z-50 lg:hidden">
+            <motion.aside initial={{ x: -280 }} animate={{ x: 0 }} exit={{ x: -280 }} transition={reduceMotion ? { duration: 0 } : { type: 'spring', damping: 30 }} className="v32-sidebar fixed left-0 top-0 h-full w-72 bg-dark-card/90 border-r border-dark-border backdrop-blur-xl z-50 lg:hidden">
               <CollapsibleSidebar user={user} navItems={navItems} pathname={pathname} portalName={portalName} collapsed={false} onToggleCollapsed={toggleCollapsed} onLogout={handleLogout} mobile onClose={() => setSidebarOpen(false)} focusSearchSignal={focusSearchSignal} />
             </motion.aside>
           </>
