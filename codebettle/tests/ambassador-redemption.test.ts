@@ -24,7 +24,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { NextRequest } from 'next/server';
-import { existsSync, readFileSync } from 'node:fs';
+import { readFileSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { __resetDbClient, __setDbClient } from '../lib/db/client';
@@ -277,12 +277,15 @@ test('design: Credits Management decides ambassador redemptions the same way as 
   assert.match(client, /\/api\/admin\/ambassador-redemptions\//);
 });
 
-test('design: the migration + SQL twin create the redemption table and widen the ledger kind check', () => {
+test('design: the migration creates the redemption table and widens the ledger kind check', () => {
   const migration = read('migrations/app/20261120T1908_add_ambassador_redemptions/migration.ts');
   assert.match(migration, /AmbassadorRedemption/);
   assert.match(migration, /'earn', 'hold', 'release'/);
-  assert.ok(existsSync(join(root, '../../your_files/codebettle-ambassador-redemption-migration.sql')));
-  const sql = readFileSync(join(root, '../../your_files/codebettle-ambassador-redemption-migration.sql'), 'utf8');
-  assert.match(sql, /CREATE TABLE IF NOT EXISTS "public"\."AmbassadorRedemption"/);
-  assert.match(sql, /"kind" IN \('earn', 'hold', 'release'\)/);
+  // The SQL twin for Eman (codebettle-ambassador-redemption-migration.sql)
+  // is hand-written from this same DDL and lives outside the repo, so
+  // this test asserts the DDL here — never a path outside the checkout
+  // (CI has no your_files directory).
+  assert.match(migration, /AmbassadorRedemption_goody_check_667d0f96/);
+  assert.match(migration, /AmbassadorRedemption_status_check_19a2b525/);
+  assert.match(migration, /AmbassadorCreditLedger_kind_check_604125b7/);
 });
