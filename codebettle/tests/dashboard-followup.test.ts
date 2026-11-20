@@ -390,6 +390,7 @@ const FOLLOWUP_ALLOWLIST = [
   'codebettle/tests/ambassador-referral.test.ts',
   'codebettle/tests/ambassador-credits.test.ts',
   'codebettle/tests/view-as-extension.test.ts',
+  'codebettle/tests/admin-access.test.ts',
 ];
 
 function changedFiles(): string[] {
