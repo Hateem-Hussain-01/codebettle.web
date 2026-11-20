@@ -294,14 +294,13 @@ test('portal layout: one ⌘K owner — it focuses the visible search, sidebar o
   assert.match(portalLayout, /hidden min-w-0 flex-1 items-center justify-center gap-4 px-4 md:flex/);
 });
 
-test('portal layout: greeting is time-of-day + the user’s own first name, never invented', () => {
-  assert.match(portalLayout, /function greetingForHour\(hour: number\): string \{/);
-  assert.match(portalLayout, /if \(hour >= 5 && hour < 12\) return 'Good morning';/);
-  assert.match(portalLayout, /if \(hour >= 12 && hour < 17\) return 'Good afternoon';/);
-  assert.match(portalLayout, /if \(hour >= 17 && hour < 21\) return 'Good evening';/);
-  assert.match(portalLayout, /return 'Hello';/);
+test('portal layout: greeting is the video’s "Hi, {firstName}! Welcome back."', () => {
+  // Dashboard V32-EXACT (Eman, 20 Nov 2026): the top-bar greeting
+  // is the video's own — "Hi, Mira! Welcome back." with the user's
+  // own first name, never invented. The time-of-day helper is gone.
+  assert.doesNotMatch(portalLayout, /function greetingForHour/);
   assert.match(portalLayout, /const firstName = user\.name\?\.trim\(\)\.split\(\/\\s\+\/\)\[0\] \?\? '';/);
-  assert.match(portalLayout, /mounted && firstName \? `\$\{greetingForHour\(new Date\(\)\.getHours\(\)\)\}, \$\{firstName\}` : null/);
+  assert.match(portalLayout, /mounted && firstName \? `Hi, \$\{firstName\}! Welcome back\.` : null/);
   // Mount-gated: the server clock (UTC) and the user clock (PKT)
   // disagree, so a server-rendered greeting would hydrate-mismatch.
   assert.match(portalLayout, /useEffect\(\(\) => \{\s*setMounted\(true\);\s*\}, \[\]\);/);
@@ -350,6 +349,10 @@ const FOLLOWUP_ALLOWLIST = [
   'codebettle/components/ui/Card.tsx',
   'codebettle/components/ui/StatCard.tsx',
   'codebettle/app/student/dashboard/page.tsx',
+  // Dashboard V32-EXACT (Eman, 20 Nov 2026): the scoped palette
+  // lives in globals.css and the admin chart bars go orange.
+  'codebettle/app/globals.css',
+  'codebettle/app/admin/dashboard/dashboard-client.tsx',
   // Ambassador referral + credits redesign (Eman, 20 Nov 2026):
   // codes are admin-assigned (no link tracking, no clicks), the code
   // IS a Rs 200 coupon and earns 100 credits per referred student.

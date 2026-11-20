@@ -12,6 +12,14 @@
 // ease-out, the card-lift translateY(-2px) over 0.25s ease — NOT the
 // video's fast tick or its literal whileHover y:-5.
 //
+// V32-EXACT REVERSAL (Eman, 20 Nov 2026 ~23:32 PKT): the 18 Nov
+// correction is REVERSED for the dashboard — rebuild it EXACTLY like
+// the video, INCLUDING its palette (orange/amber + brown/wood) and
+// its literal whileHover y:-5 lift. The tests below that pinned
+// "no literal video copy" now pin the exact copy instead, and the
+// palette tests pin the video's colours under the `.v32` scope.
+// The public site stays dark + gold; only the dashboard changes.
+//
 // SCOPE (coordination with the parallel collapsible-sidebar PR):
 // this PR touches ONLY the shared primitives (components/ui) and the
 // five dashboard pages. PortalLayout, the four server layouts and
@@ -74,16 +82,23 @@ test('StatCard: staggered entrance via delay, colours + trend unchanged', () => 
     assert.ok(src.includes(`${colour}: 'text-`), `colour variant ${colour} must stay`);
   }
   assert.ok(src.includes('trend.value >= 0'), 'the trend arrow + % must stay');
-  assert.ok(src.includes('<Card hover glow'), 'StatCard must still render a hoverable glowing Card');
+  assert.ok(src.includes('<Card glow glass={glass}'), 'StatCard must still render a glowing glass Card (no hover prop — the whileHover lift below replaces card-lift)');
 });
 
-test('StatCard: no literal video lift — hover lift is the existing card-lift', () => {
+test('StatCard: the video lift — whileHover y:-5, no stacked card-lift (V32-EXACT)', () => {
+  // Eman, 20 Nov 2026: the dashboard is EXACTLY like the video, so
+  // StatCard carries the video's literal whileHover y:-5. The inner
+  // Card must NOT also lift (card-lift -2px would stack to -7px),
+  // and reduced motion must disable the lift entirely.
   const src = read('components/ui/StatCard.tsx');
   assert.ok(
-    !src.includes('whileHover={{ y: -5 }}'),
-    'StatCard must NOT copy the video literal whileHover y:-5 — the lift is Card card-lift (translateY -2px, 0.25s ease)',
+    src.includes('whileHover={reduceMotion ? undefined : { y: -5 }}'),
+    'StatCard must carry the video literal whileHover y:-5, disabled under reduced motion',
   );
-  assert.ok(!src.includes('whileHover'), 'StatCard needs no framer-motion hover at all — Card carries the lift');
+  assert.ok(src.includes('useReducedMotion'), 'StatCard must read the reduced-motion preference for the lift');
+  assert.ok(!src.includes('<Card hover'), 'the inner Card must not also lift (no stacked -7px)');
+  assert.ok(src.includes('ArrowUpRight'), 'the trend must use the video\'s ArrowUpRight icon');
+  assert.ok(src.includes('ArrowDownRight'), 'the trend must use the video\'s ArrowDownRight icon');
 });
 
 test('StatCard: optional href renders a View more link to a real route', () => {
@@ -212,26 +227,74 @@ test('ambassador dashboard: 3-stage stats are StatCards over the real stage numb
   assert.ok(src.includes('ambassador.referralCode'), 'the referral code must still show');
 });
 
-// ---------------------------------------------------------------- Motion character — no literal video copy
+// ---------------------------------------------------------------- Motion character — the video lift, StatCard only
 
-test('V32 files: the video literal whileHover y:-5 appears nowhere', () => {
-  const files = [
+test('V32 files: the video literal whileHover y:-5 lives ONLY in StatCard (V32-EXACT)', () => {
+  // Eman, 20 Nov 2026: the dashboard is EXACTLY like the video, so
+  // StatCard carries the literal lift — and nothing else may copy it.
+  const statCard = read('components/ui/StatCard.tsx');
+  assert.ok(
+    statCard.includes('whileHover={reduceMotion ? undefined : { y: -5 }}'),
+    'StatCard must carry the video literal whileHover y:-5',
+  );
+  for (const file of [
     'components/ui/CountUp.tsx',
-    'components/ui/StatCard.tsx',
     'components/ui/Card.tsx',
     'app/student/dashboard/page.tsx',
     'app/instructor/dashboard/page.tsx',
     'app/team/dashboard/page.tsx',
     'app/admin/dashboard/dashboard-client.tsx',
     'app/student/ambassador/ambassador-dashboard-client.tsx',
-  ];
-  for (const file of files) {
+  ]) {
     const src = read(file);
     assert.ok(
-      !src.includes('whileHover={{ y: -5 }}'),
-      `${file} must not copy the video literal whileHover y:-5 (motion correction, 18 Nov 2026)`,
+      !src.includes('whileHover={{ y: -5 }}') && !src.includes('whileHover={reduceMotion'),
+      `${file} must not copy the video lift — it lives in StatCard only`,
     );
   }
+});
+
+// ---------------------------------------------------------------- V32-EXACT palette — orange + wood, dashboard scope only
+
+test('V32-EXACT palette: the video colours live under the .v32 scope in globals.css', () => {
+  const css = read('app/globals.css');
+  // Scoped tokens (dark): vivid orange primary + video darks.
+  assert.ok(css.includes('.v32 {'), 'globals.css must define the .v32 dashboard scope');
+  assert.ok(css.includes('--color-primary: #FF6B00;'), 'the dashboard primary must be the video orange #FF6B00');
+  assert.ok(css.includes('--color-primary-text: #FF8A3D;'), 'dashboard orange text must be readable on dark (#FF8A3D)');
+  assert.ok(css.includes('--color-dark-card: #1E1E22;'), 'dashboard cards must be the video dark #1E1E22');
+  assert.ok(css.includes('--color-background: #0B0B0D;'), 'the dashboard background must be the video near-black');
+  // Light mode keeps the wood + orange (the video's light frame does).
+  assert.ok(css.includes('[data-theme="light"] .v32 {'), 'the light theme must keep the .v32 scope');
+  assert.ok(css.includes('--color-primary-text: #C2410C;'), 'light-mode orange text must be the readable #C2410C');
+  // Wood sidebar gradient (sampled browns #2D1910 → #5B3C2A).
+  assert.ok(css.includes('.v32 .v32-sidebar {'), 'globals.css must define the wood sidebar');
+  assert.ok(css.includes('#4A2E1B'), 'the wood gradient must start at the sampled #4A2E1B');
+  assert.ok(css.includes('#241608'), 'the wood gradient must end at the sampled #241608');
+  // Orange gradient text + orange glass-card border inside dashboards.
+  assert.ok(css.includes('.v32 .gradient-text {'), 'dashboard gradient text must be orange, not gold');
+  assert.ok(css.includes('rgba(255, 107, 0, 0.25)'), 'dashboard glass cards must carry the orange-tinted border');
+  // The public gold tokens must be untouched — the scope redefines
+  // them only underneath .v32.
+  assert.ok(css.includes('--color-primary: #F5C518;'), 'the global gold primary must stay (public site)');
+});
+
+test('V32-EXACT scope: PortalLayout roots the dashboard in .v32 with the wood sidebar', () => {
+  const layout = read('components/layout/PortalLayout.tsx');
+  assert.ok(layout.includes('className="v32 flex h-screen'), 'PortalLayout root must carry the .v32 scope class');
+  assert.ok(layout.includes('v32-sidebar hidden shrink-0'), 'the desktop sidebar must carry the wood class');
+  assert.ok(layout.includes('v32-sidebar fixed left-0'), 'the mobile drawer must carry the wood class');
+  // The video greeting, not the time-of-day one.
+  assert.ok(layout.includes('Hi, ${firstName}! Welcome back.'), 'the top-bar greeting must be the video\'s "Hi, {firstName}! Welcome back."');
+  assert.ok(!layout.includes('greetingForHour'), 'the time-of-day greeting helper must be gone');
+});
+
+test('V32-EXACT sidebar: live clock above Sign Out', () => {
+  const sidebar = read('components/layout/CollapsibleSidebar.tsx');
+  assert.ok(sidebar.includes('toLocaleTimeString'), 'the sidebar must show the live clock');
+  assert.ok(sidebar.includes("hour12: false"), 'the clock must be 24-hour like the video (17:23)');
+  assert.ok(sidebar.includes('setInterval(() => setNow(new Date()), 30_000)'), 'the clock must tick every 30s');
+  assert.ok(sidebar.includes('useState<Date | null>(null)'), 'the clock must be mount-gated (no hydration mismatch)');
 });
 
 // ---------------------------------------------------------------- Scope guard (same mechanism as the premium-3D guard)
@@ -256,6 +319,12 @@ const V32_ALLOWLIST = [
   // for this same PR, so its test file is in scope here too (guard
   // files that coordinate scope belong in each other's allowlists).
   'codebettle/tests/dashboard-followup.test.ts',
+  // Dashboard V32-EXACT (Eman, 20 Nov 2026): the dashboard is
+  // rebuilt EXACTLY like the video — the scoped palette lives in
+  // globals.css and the scope class + wood sidebar + video greeting
+  // live in PortalLayout.
+  'codebettle/app/globals.css',
+  'codebettle/components/layout/PortalLayout.tsx',
   // Ambassador referral + credits redesign (Eman, 20 Nov 2026):
   // codes are admin-assigned (no link tracking, no clicks), the code
   // IS a Rs 200 coupon and earns 100 credits per referred student.
