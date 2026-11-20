@@ -15,6 +15,7 @@ import {
   Send,
   MessageSquare,
   Coins,
+  Gift,
 } from 'lucide-react';
 import Card from '@/components/ui/Card';
 import StatCard from '@/components/ui/StatCard';
@@ -24,15 +25,32 @@ import Badge from '@/components/ui/Badge';
 import FadeIn from '@/components/ui/FadeIn';
 import { formatDateShort } from '@/lib/utils';
 import toast from 'react-hot-toast';
-import type { Ambassador, AmbassadorMessage, ReferralStats, ReferralTeamMember } from '@/lib/db/types';
+import { useRouter } from 'next/navigation';
+import type {
+  Ambassador,
+  AmbassadorMessage,
+  AmbassadorRedemption,
+  ReferralStats,
+  ReferralTeamMember,
+  TeamGoody,
+} from '@/lib/db/types';
+import { TEAM_GOODIES, TEAM_GOODY_LABELS } from '@/lib/db/types';
 
 interface AmbassadorDashboardClientProps {
   ambassador: Ambassador;
   stats: ReferralStats;
-  /** Credits earned (100 per referred student on their first
-   * enrollment). In v1 the balance IS the earned total (only 'earn'
-   * exists; redemption is a later decision). */
+  /** Credits available to spend (balance = SUM(ledger) — holds
+   * already deducted). Pending requests hold credits separately
+   * (see `redemptions`). */
   creditBalance: number;
+  /** The goody prices from the live admin setting (Credits
+   * Management) — the app never hard-codes a credit number. */
+  goodyPrices: Record<TeamGoody, number>;
+  /** The ambassador's redemption requests, newest first. */
+  redemptions: AmbassadorRedemption[];
+  /** False until Eman runs the redemption SQL — the redeem card
+   * then shows a "not set up yet" note instead of the goodies. */
+  redemptionReady: boolean;
   teamLevel1: ReferralTeamMember[];
   teamLevel2: ReferralTeamMember[];
   meetingLink: string;
@@ -41,6 +59,12 @@ interface AmbassadorDashboardClientProps {
    * link shows only when the session holds teacher capability. */
   showInstructorPortal: boolean;
 }
+
+const REDEMPTION_BADGE: Record<AmbassadorRedemption['status'], 'info' | 'success' | 'muted'> = {
+  pending: 'info',
+  approved: 'success',
+  rejected: 'muted',
+};
 
 const STAGE_BADGE: Record<ReferralTeamMember['stage'], 'info' | 'success' | 'muted'> = {
   'signed up': 'info',
@@ -82,13 +106,46 @@ export default function AmbassadorDashboardClient({
   ambassador,
   stats,
   creditBalance,
+  goodyPrices,
+  redemptions,
+  redemptionReady,
   teamLevel1,
   teamLevel2,
   meetingLink,
   messages: initialMessages,
   showInstructorPortal,
 }: AmbassadorDashboardClientProps) {
+  const router = useRouter();
   const [copied, setCopied] = useState(false);
+  const [requesting, setRequesting] = useState<TeamGoody | null>(null);
+
+  // Credits held in pending redemption requests (the hold is already
+  // deducted from creditBalance — this is just the display split).
+  const heldCredits = redemptions
+    .filter((r) => r.status === 'pending')
+    .reduce((sum, r) => sum + r.creditsSpent, 0);
+
+  const requestGoody = async (goody: TeamGoody) => {
+    setRequesting(goody);
+    try {
+      const res = await fetch('/api/student/ambassador/redemptions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ goody }),
+      });
+      const data: unknown = await res.json().catch(() => null);
+      if (!res.ok) {
+        toast.error((data as { error?: string } | null)?.error ?? 'Could not request this goody');
+        return;
+      }
+      toast.success('Request sent — an admin will review it');
+      router.refresh();
+    } catch {
+      toast.error('Could not request this goody');
+    } finally {
+      setRequesting(null);
+    }
+  };
 
   // Group link + daily member count (Eman, 16 Nov 2026): the
   // ambassador types their own campus-group link and the member
@@ -261,9 +318,9 @@ export default function AmbassadorDashboardClient({
 
       {/* My Credits (Eman, 20 Nov 2026): 100 credits for every
           referred student on their FIRST enrollment — never for
-          signups alone, never per enrollment. What credits can be
-          used for is the admin's call (goodies come later); until
-          then the balance is the record of what you have earned. */}
+          signups alone, never per enrollment. Redemption landed
+          21 Nov 2026 (Eman): credits redeem for goodies below, at
+          the admin's prices. */}
       <FadeIn>
         <Card glass>
           <div className="flex items-start gap-3">
@@ -278,13 +335,82 @@ export default function AmbassadorDashboardClient({
               </p>
               <p className="mt-3">
                 <span className="text-3xl font-bold text-foreground">{creditBalance}</span>
-                <span className="text-muted text-sm ml-2">credits in total</span>
+                <span className="text-muted text-sm ml-2">credits available</span>
               </p>
-              <p className="text-muted text-xs mt-2">What credits can be used for is decided by the admin — more on that soon.</p>
+              {heldCredits > 0 ? (
+                <p className="text-muted text-xs mt-2">{heldCredits} credits held in pending redemption requests.</p>
+              ) : null}
             </div>
           </div>
         </Card>
       </FadeIn>
+
+      {/* Redeem for goodies (Eman, 21 Nov 2026): the SAME goodies +
+          prices as the team system, set by the admin in Credits
+          Management. A request holds the credits while it is pending. */}
+      <FadeIn>
+        <Card glass>
+          <h2 className="text-lg font-bold text-foreground flex items-center gap-2">
+            <Gift className="w-5 h-5 text-primary-text" /> Redeem for goodies
+          </h2>
+          <p className="text-muted text-sm mt-1">
+            Request a goody and an admin approves it — the credits are held while your request is pending, so they
+            cannot be spent twice.
+          </p>
+          {!redemptionReady ? (
+            <p className="text-sm text-muted mt-4">
+              Goodies are not set up yet — the admin still has to run the redemption setup. Your credits are safe
+              and keep earning meanwhile.
+            </p>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-4">
+              {TEAM_GOODIES.map((goody) => {
+                const price = goodyPrices[goody];
+                const priced = Number.isInteger(price) && price > 0;
+                const affordable = priced && creditBalance >= price;
+                return (
+                  <div key={goody} className="border border-dark-border rounded-xl p-4 flex flex-col">
+                    <p className="font-bold text-foreground">{TEAM_GOODY_LABELS[goody]}</p>
+                    <p className="text-2xl font-black text-primary-text mt-2">
+                      {priced ? price : '—'} <span className="text-sm font-medium text-muted">credits</span>
+                    </p>
+                    <Button
+                      onClick={() => requestGoody(goody)}
+                      disabled={!affordable || requesting !== null}
+                      className="mt-4 w-full"
+                    >
+                      {requesting === goody ? 'Requesting…' : !priced ? 'Not priced yet' : affordable ? 'Request' : 'Not enough credits'}
+                    </Button>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </Card>
+      </FadeIn>
+
+      {/* My redemptions */}
+      {redemptionReady && redemptions.length > 0 ? (
+        <FadeIn>
+          <Card glass>
+            <h2 className="text-lg font-bold text-foreground">My redemptions</h2>
+            <ul className="space-y-3 mt-4">
+              {redemptions.map((r) => (
+                <li key={r.id} className="flex items-center justify-between gap-3 border-b border-dark-border pb-3 last:border-0 last:pb-0">
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium text-foreground">{TEAM_GOODY_LABELS[r.goody]}</p>
+                    <p className="text-xs text-muted">Requested {formatDateShort(r.requestedAt)}</p>
+                  </div>
+                  <div className="flex items-center gap-3 shrink-0">
+                    <span className="text-sm font-bold text-foreground">{r.creditsSpent} credits</span>
+                    <Badge variant={REDEMPTION_BADGE[r.status]}>{r.status}</Badge>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </Card>
+        </FadeIn>
+      ) : null}
 
       {/* Ambassador meeting link (same style as the course live-class
           card). Shown only when the admin has set a link. */}
