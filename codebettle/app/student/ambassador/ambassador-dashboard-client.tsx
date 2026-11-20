@@ -3,7 +3,6 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import {
-  MousePointerClick,
   UserPlus,
   BookOpen,
   BadgeCheck,
@@ -15,6 +14,7 @@ import {
   Link2,
   Send,
   MessageSquare,
+  Coins,
 } from 'lucide-react';
 import Card from '@/components/ui/Card';
 import StatCard from '@/components/ui/StatCard';
@@ -28,8 +28,11 @@ import type { Ambassador, AmbassadorMessage, ReferralStats, ReferralTeamMember }
 
 interface AmbassadorDashboardClientProps {
   ambassador: Ambassador;
-  referralLink: string;
   stats: ReferralStats;
+  /** Credits earned (100 per referred student on their first
+   * enrollment). In v1 the balance IS the earned total (only 'earn'
+   * exists; redemption is a later decision). */
+  creditBalance: number;
   teamLevel1: ReferralTeamMember[];
   teamLevel2: ReferralTeamMember[];
   meetingLink: string;
@@ -77,8 +80,8 @@ function TeamList({ members, emptyText }: { members: ReferralTeamMember[]; empty
 
 export default function AmbassadorDashboardClient({
   ambassador,
-  referralLink,
   stats,
+  creditBalance,
   teamLevel1,
   teamLevel2,
   meetingLink,
@@ -103,19 +106,19 @@ export default function AmbassadorDashboardClient({
   const [sendingMessage, setSendingMessage] = useState(false);
   const [messages, setMessages] = useState(initialMessages);
 
-  const copyLink = async () => {
+  const copyCode = async () => {
     try {
-      await navigator.clipboard.writeText(referralLink);
+      await navigator.clipboard.writeText(ambassador.referralCode);
     } catch {
       // Clipboard API unavailable (older browsers / insecure
-      // context): fall back to selecting the link text.
-      const input = document.getElementById('referral-link-input') as HTMLInputElement | null;
+      // context): fall back to selecting the code text.
+      const input = document.getElementById('referral-code-input') as HTMLInputElement | null;
       input?.select();
       document.execCommand('copy');
     }
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
-    toast.success('Referral link copied');
+    toast.success('Referral code copied');
   };
 
   const saveGroup = async () => {
@@ -174,7 +177,6 @@ export default function AmbassadorDashboardClient({
   };
 
   const statCards: { label: string; value: number; icon: React.ReactNode; color: 'blue' | 'green' | 'yellow' }[] = [
-    { label: 'Link Clicks', value: stats.clicks, icon: <MousePointerClick className="w-5 h-5" />, color: 'blue' },
     { label: 'Signups', value: stats.signups, icon: <UserPlus className="w-5 h-5" />, color: 'green' },
     { label: 'Enrollments', value: stats.enrollments, icon: <BookOpen className="w-5 h-5" />, color: 'yellow' },
     { label: 'Payments', value: stats.payments, icon: <BadgeCheck className="w-5 h-5" />, color: 'yellow' },
@@ -214,44 +216,75 @@ export default function AmbassadorDashboardClient({
       <FadeIn>
         <h1 className="text-2xl font-black text-foreground">Ambassador Dashboard</h1>
         <p className="text-muted text-sm mt-1">
-          Share your referral link — everyone who signs up through it joins your team.
+          Share your referral code — everyone who types it when they register joins your team.
         </p>
       </FadeIn>
 
-      {/* Referral code + link */}
+      {/* Referral code — the ONLY way a student joins your team
+          (Eman, 20 Nov 2026): there is no link tracking any more.
+          New students type this code in the "Referral code" box on
+          the register form; you earn 100 credits when they enrol,
+          and they get Rs 200 off. */}
       <FadeIn>
         <Card glass>
-          <p className="text-foreground font-semibold mb-1">Your referral link</p>
+          <p className="text-foreground font-semibold mb-1">Your referral code</p>
           <p className="text-muted text-sm mb-4">
             Your code is <span className="text-primary-text font-mono font-bold">{ambassador.referralCode}</span> —
-            anyone who signs up through this link counts as your referral.
+            anyone who types it when they register counts as your referral.
           </p>
           <div className="flex gap-2">
             <Input
-              id="referral-link-input"
-              value={referralLink}
+              id="referral-code-input"
+              value={ambassador.referralCode}
               readOnly
-              aria-label="Your referral link"
+              aria-label="Your referral code"
               className="flex-1 font-mono text-sm"
             />
-            <Button onClick={copyLink} className="flex-shrink-0">
+            <Button onClick={copyCode} className="flex-shrink-0">
               {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
-              {copied ? 'Copied' : 'Copy link'}
+              {copied ? 'Copied' : 'Copy code'}
             </Button>
           </div>
         </Card>
       </FadeIn>
 
-      {/* 4-stage stats — the canonical StatCard (V32): count-up values,
+      {/* 3-stage stats — the canonical StatCard (V32): count-up values,
           staggered entrance, glass surface. Same real stage numbers;
           the stagger comes from StatCard's own entrance delay, so no
           FadeIn wrapper is needed around each card (that would fade
           the card twice). */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
         {statCards.map((stat, i) => (
           <StatCard key={stat.label} title={stat.label} value={stat.value} icon={stat.icon} color={stat.color} delay={0.05 + i * 0.06} glass />
         ))}
       </div>
+
+      {/* My Credits (Eman, 20 Nov 2026): 100 credits for every
+          referred student on their FIRST enrollment — never for
+          signups alone, never per enrollment. What credits can be
+          used for is the admin's call (goodies come later); until
+          then the balance is the record of what you have earned. */}
+      <FadeIn>
+        <Card glass>
+          <div className="flex items-start gap-3">
+            <div className="w-10 h-10 rounded-xl bg-primary/15 text-primary-text flex items-center justify-center flex-shrink-0">
+              <Coins className="w-5 h-5" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <h2 className="text-lg font-bold text-foreground">My Credits</h2>
+              <p className="text-muted text-sm mt-1">
+                You earn <span className="text-foreground font-semibold">100 credits</span> for every student who
+                enrols with your code — and they get Rs 200 off their course.
+              </p>
+              <p className="mt-3">
+                <span className="text-3xl font-bold text-foreground">{creditBalance}</span>
+                <span className="text-muted text-sm ml-2">credits in total</span>
+              </p>
+              <p className="text-muted text-xs mt-2">What credits can be used for is decided by the admin — more on that soon.</p>
+            </div>
+          </div>
+        </Card>
+      </FadeIn>
 
       {/* Ambassador meeting link (same style as the course live-class
           card). Shown only when the admin has set a link. */}
@@ -279,10 +312,10 @@ export default function AmbassadorDashboardClient({
         <Card glass>
           <h2 className="text-lg font-bold text-foreground mb-1">My Team</h2>
           <p className="text-muted text-sm mb-4">
-            People who joined through your link (level 1), and people who joined through their links (level 2).
+            People who joined with your code (level 1), and people who joined with their codes (level 2).
           </p>
           <h3 className="text-foreground font-semibold text-sm mb-2">Level 1 — direct referrals ({teamLevel1.length})</h3>
-          <TeamList members={teamLevel1} emptyText="No one has joined through your link yet — share it with your campus." />
+          <TeamList members={teamLevel1} emptyText="No one has joined with your code yet — share it with your campus." />
           <h3 className="text-foreground font-semibold text-sm mt-6 mb-2">Level 2 — referrals of your referrals ({teamLevel2.length})</h3>
           <TeamList members={teamLevel2} emptyText="No level-2 referrals yet — when your team members bring people in, they show up here." />
         </Card>
