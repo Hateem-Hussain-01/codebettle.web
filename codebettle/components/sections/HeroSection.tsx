@@ -1,82 +1,21 @@
 'use client';
-import { motion, useReducedMotion, useScroll } from 'framer-motion';
+import { motion, useScroll } from 'framer-motion';
 import Link from 'next/link';
 import { useEffect, useRef, useState } from 'react';
 import Button from '@/components/ui/Button';
 import PublicPageBackdrop from '@/components/ui/PublicPageBackdrop';
 import HeroSceneWrapper from '@/components/sections/HeroSceneWrapper';
-import { INTRO_DONE_FALLBACK_MS, introAlreadyDone, onIntroDone } from '@/lib/intro';
 import { ArrowRight } from 'lucide-react';
 
 const TYPEWRITER_WORDS = ['Web Developer', 'Mobile Developer', 'Data Scientist', 'UI/UX Designer', 'DevOps Engineer'];
-
-// Hero stats (Eman, 17 Nov 2026 — from the calm-vs-3D preview
-// screenshot): 1500+ Students trained / 300+ Reviews / 4.8/5 Average
-// rating. They count up from 0 ON PAGE LOAD (not on scroll), so they
-// are a separate row from the StatsSection below the hero (which keeps
-// its own four stats and its scroll-gated Counter, untouched).
-const HERO_STATS = [
-  { value: 1500, suffix: '+', label: 'Students trained', decimal: false },
-  { value: 300, suffix: '+', label: 'Reviews', decimal: false },
-  { value: 4.8, suffix: '/5', label: 'Average rating', decimal: true },
-];
-
-// Count-up that starts on mount — i.e. on page load — never gated on
-// scroll. Same ~1.8s / 60-step animation as the StatsSection Counter.
-// Reduced-motion users see the final value immediately.
-//
-// Website intro gating (18 Nov 2026): on a first visit the intro
-// covers the hero for ~4s — starting the count-up on mount would
-// finish it hidden behind the overlay, so the visitor would see
-// only final values. The count now waits for the intro-done event
-// instead. When there is no intro (returning visit, reduced-motion,
-// any page but the landing page) introAlreadyDone() is true and the
-// count starts at once, exactly as before. A 6s fallback starts it
-// anyway if the event is ever missed, so the stats can never stick
-// at 0. The component name, the stats row markup and the values
-// are unchanged (see the hero-screenshot + premium-3d guard tests).
-function HeroLoadCounter({ to, decimal = false }: { to: number; decimal?: boolean }) {
-  const reduceMotion = useReducedMotion();
-  const [count, setCount] = useState(0);
-  const [started, setStarted] = useState(() => introAlreadyDone());
-
-  useEffect(() => {
-    if (started) return undefined;
-    const off = onIntroDone(() => setStarted(true));
-    const fallback = setTimeout(() => setStarted(true), INTRO_DONE_FALLBACK_MS);
-    return () => {
-      off();
-      clearTimeout(fallback);
-    };
-  }, [started]);
-
-  useEffect(() => {
-    if (!started) return undefined;
-    if (reduceMotion) {
-      setCount(to);
-      return undefined;
-    }
-    const duration = 1800;
-    const steps = 60;
-    const step = to / steps;
-    let current = 0;
-    const interval = setInterval(() => {
-      current = Math.min(current + step, to);
-      setCount(decimal ? Math.round(current * 10) / 10 : Math.floor(current));
-      if (current >= to) clearInterval(interval);
-    }, duration / steps);
-    return () => clearInterval(interval);
-  }, [started, to, decimal, reduceMotion]);
-
-  return <span>{decimal ? count.toFixed(1) : count.toLocaleString()}</span>;
-}
 
 /**
  * Home hero — screenshot redesign (Eman, 17 Nov 2026, from the
  * calm-vs-3D preview): two columns — left the badge, the two-line
  * headline, the subtext and the two CTAs; right the student.py code
- * window; the three hero stats along the bottom of the hero, counting
- * up on page load.
+ * window; the stats live only in the StatsSection below the hero —
+ * the upper hero stats row was REMOVED (Eman, 20 Nov 2026: the same
+ * numbers appeared twice, "upper walay stats ko remove kr do").
  *
  * The typewriter KEEPS working exactly as before (Eman, 17 Nov 2026,
  * correction): it cycles the role phrases one after another on line 2
@@ -336,29 +275,9 @@ export default function HeroSection() {
           </motion.div>
         </div>
 
-        {/* Hero stats — count up on page load (see HeroLoadCounter).
-            The row sits on the hero's bottom edge, above the scroll
-            indicator's padding zone, so the two never overlap. */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.6 }}
-          className="mt-14 sm:mt-16 flex flex-wrap gap-x-12 gap-y-6 border-t border-dark-border pt-8"
-        >
-          {HERO_STATS.map((stat) => (
-            <div key={stat.label}>
-              <p className="text-3xl sm:text-4xl font-black text-foreground">
-                <HeroLoadCounter to={stat.value} decimal={stat.decimal} />
-                <span className="text-primary-text">{stat.suffix}</span>
-              </p>
-              <p className="text-muted text-sm mt-1">{stat.label}</p>
-            </div>
-          ))}
-        </motion.div>
       </div>
 
-      {/* Scroll indicator — sits in the bottom padding below the stats
-          row, so it cannot overlap them. */}
+      {/* Scroll indicator — sits in the bottom padding. */}
       <motion.div
         className="absolute bottom-8 left-1/2 -translate-x-1/2"
         animate={{ y: [0, 8, 0] }}

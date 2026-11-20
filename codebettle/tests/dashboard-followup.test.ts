@@ -371,11 +371,14 @@ function changedFiles(): string[] {
 test('follow-up scope: only the portal chrome + shared search + tests change', () => {
   const changed = changedFiles();
   if (changed.length === 0) return; // Merged state (empty diff) passes trivially.
-  // The guard only applies to a branch that touches follow-up files —
-  // later branches (e.g. the intro PR) must not trip it. The guard's
-  // own test file does not count: editing this guard must not arm it.
+  // The guard only applies to a branch that touches follow-up SOURCE
+  // files — later branches (e.g. the intro PR) must not trip it. Test
+  // files in the allowlist do not arm it: editing a guard must not
+  // arm that guard (same rule as the intro guard, PR #81). A branch
+  // that touches website-intro.test.ts (a guard fix, not a follow-up
+  // source file) therefore does not arm this guard.
   const followupSource = FOLLOWUP_ALLOWLIST.filter(
-    (f) => f !== 'codebettle/tests/dashboard-followup.test.ts',
+    (f) => !f.startsWith('codebettle/tests/'),
   );
   if (!changed.some((f) => followupSource.includes(f))) return;
   const outside = changed.filter((f) => !FOLLOWUP_ALLOWLIST.includes(f));
