@@ -85,7 +85,12 @@ export default function AmbassadorsClient({
   const [ambassadors, setAmbassadors] = useState(initialAmbassadors);
   const [expandedAmbassadorId, setExpandedAmbassadorId] = useState<string | null>(null);
   const [grantEmail, setGrantEmail] = useState('');
+  const [grantCode, setGrantCode] = useState('');
   const [granting, setGranting] = useState(false);
+  // Code typed at approve time (Eman, 20 Nov 2026): the admin
+  // chooses the ambassador's code when approving. Blank = a random
+  // code is generated (the backfill path).
+  const [approveCode, setApproveCode] = useState('');
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
   const [meetingLink, setMeetingLink] = useState(initialMeetingLink);
   const [savingMeetingLink, setSavingMeetingLink] = useState(false);
@@ -100,14 +105,20 @@ export default function AmbassadorsClient({
     const res = await fetch(`/api/admin/ambassadors/${application.id}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ status }),
+      body: JSON.stringify({
+        status,
+        // The admin-chosen code at approve time (blank = random).
+        referralCode: status === 'approved' && approveCode.trim() ? approveCode.trim().toUpperCase() : undefined,
+      }),
     });
     if (!res.ok) {
-      toast.error('Could not update the application');
+      const data = await res.json().catch(() => ({}));
+      toast.error(data.error ?? 'Could not update the application');
       return;
     }
     const data = await res.json();
     setList((l) => l.map((a) => (a.id === application.id ? data.application : a)));
+    setApproveCode('');
     toast.success(`Application ${STATUS_LABEL[status].toLowerCase()}`);
     // Approving creates the ambassador + referral code (server-side);
     // refresh the ambassadors list so the new code shows here.
@@ -129,8 +140,13 @@ export default function AmbassadorsClient({
 
   const grantAmbassador = async () => {
     const email = grantEmail.trim();
+    const referralCode = grantCode.trim().toUpperCase();
     if (!email) {
       toast.error('Enter an email address');
+      return;
+    }
+    if (!referralCode) {
+      toast.error('Enter the referral code to assign');
       return;
     }
     setGranting(true);
@@ -138,7 +154,7 @@ export default function AmbassadorsClient({
       const res = await fetch('/api/admin/ambassadors/grant', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email }),
+        body: JSON.stringify({ email, referralCode }),
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
@@ -150,10 +166,11 @@ export default function AmbassadorsClient({
         setAmbassadors((a) =>
           a.some((x) => x.id === created.id)
             ? a
-            : [{ ...created, stats: { clicks: 0, signups: 0, enrollments: 0, payments: 0 }, teamLevel1: [], teamLevel2: [] }, ...a],
+            : [{ ...created, stats: { signups: 0, enrollments: 0, payments: 0 }, teamLevel1: [], teamLevel2: [] }, ...a],
         );
       }
       setGrantEmail('');
+      setGrantCode('');
       toast.success(`Ambassador granted — code ${data.ambassador?.referralCode ?? ''}`);
     } catch {
       toast.error('Could not grant ambassador status');
@@ -340,11 +357,21 @@ export default function AmbassadorsClient({
                         <span className="text-foreground font-medium">How they plan to promote CodeBettle: </span>
                         <span className="whitespace-pre-line">{application.promotionPlan}</span>
                       </div>
-                      <div className="flex gap-2 flex-wrap pt-2">
+                      <div className="flex gap-2 flex-wrap pt-2 items-center">
                         {application.status !== 'approved' && (
-                          <Button size="sm" onClick={() => changeStatus(application, 'approved')}>
-                            Approve
-                          </Button>
+                          <>
+                            <Input
+                              value={approveCode}
+                              onChange={(e) => setApproveCode(e.target.value.toUpperCase())}
+                              placeholder="Code, e.g. FG2SZU (blank = random)"
+                              aria-label="Referral code to assign on approve"
+                              className="w-56"
+                              maxLength={6}
+                            />
+                            <Button size="sm" onClick={() => changeStatus(application, 'approved')}>
+                              Approve
+                            </Button>
+                          </>
                         )}
                         {application.status !== 'rejected' && (
                           <Button size="sm" variant="outline" onClick={() => changeStatus(application, 'rejected')}>
@@ -370,18 +397,18 @@ export default function AmbassadorsClient({
       )}
 
       {/* ---------------------------------------------------------------
-          Referral tracking (Eman, 16 Nov 2026) — sections of THIS
-          page, not a new admin tab. Approving an application creates
-          the ambassador + referral code; the list below shows every
-          ambassador's code and 4-stage numbers, their team tree, and
-          their group link + member count.
+          Referral tracking (Eman, 16 Nov 2026; redesigned 20 Nov 2026)
+          — sections of THIS page, not a new admin tab. Approving an
+          application creates the ambassador + referral code; the list
+          below shows every ambassador's code and 3-stage numbers,
+          their team tree, and their group link + member count.
       --------------------------------------------------------------- */}
       <FadeIn>
         <div className="flex items-center justify-between flex-wrap gap-3">
           <div>
             <h2 className="text-xl font-black text-foreground">Referral Tracking</h2>
             <p className="text-muted text-sm mt-1">
-              Every ambassador&apos;s referral code and what their link brought in — clicks, signups, enrollments, payments.
+              Every ambassador&apos;s referral code and what their code brought in — signups, enrollments, payments.
             </p>
           </div>
         </div>
@@ -405,14 +432,22 @@ export default function AmbassadorsClient({
               Give a referral code to one of your own people by email — no application needed. They get their dashboard
               as soon as they sign in with that email.
             </p>
-            <div className="flex gap-2">
+            <div className="flex gap-2 flex-wrap">
               <Input
                 type="email"
                 value={grantEmail}
                 onChange={(e) => setGrantEmail(e.target.value)}
                 placeholder="name@example.com"
                 aria-label="Email to grant ambassador status"
-                className="flex-1"
+                className="flex-1 min-w-52"
+              />
+              <Input
+                value={grantCode}
+                onChange={(e) => setGrantCode(e.target.value.toUpperCase())}
+                placeholder="Code, e.g. FG2SZU"
+                aria-label="Referral code to assign"
+                className="w-44"
+                maxLength={6}
               />
               <Button onClick={grantAmbassador} loading={granting}>Grant ambassador</Button>
             </div>
@@ -466,7 +501,6 @@ export default function AmbassadorsClient({
                               </button>
                             </div>
                             <div className="flex gap-4 mt-2 flex-wrap text-sm">
-                              <span className="text-muted"><span className="text-foreground font-bold">{ambassador.stats.clicks}</span> clicks</span>
                               <span className="text-muted"><span className="text-foreground font-bold">{ambassador.stats.signups}</span> signups</span>
                               <span className="text-muted"><span className="text-foreground font-bold">{ambassador.stats.enrollments}</span> enrollments</span>
                               <span className="text-muted"><span className="text-foreground font-bold">{ambassador.stats.payments}</span> payments</span>

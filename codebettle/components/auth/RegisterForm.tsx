@@ -37,7 +37,7 @@ export default function RegisterForm() {
     searchParams.get('redirect')
       ? `/auth/login?redirect=${encodeURIComponent(searchParams.get('redirect')!)}`
       : '/auth/login';
-  const [form, setForm] = useState({ name: '', email: '', phone: '', password: '', confirmPassword: '' });
+  const [form, setForm] = useState({ name: '', email: '', phone: '', password: '', confirmPassword: '', referralCode: '' });
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -50,6 +50,17 @@ export default function RegisterForm() {
     if (!form.email.includes('@')) e.email = 'Valid email required';
     if (form.password.length < 8) e.password = 'Password must be at least 8 characters';
     if (form.password !== form.confirmPassword) e.confirmPassword = 'Passwords do not match';
+    // Referral code (Eman, 20 Nov 2026): optional — but when typed
+    // it must be a real code shape (6 chars, A–Z/2–9, no 0/O/1/I).
+    // The server is authoritative (it checks the code exists and is
+    // active); this only catches typos early. The alphabet lives in
+    // lib/referral.ts (REFERRAL_CODE_ALPHABET) — this client file
+    // cannot import it (that module imports node:crypto), so the
+    // pattern is inlined here and must match it.
+    const code = form.referralCode.trim().toUpperCase();
+    if (code && !/^[ABCDEFGHJKMNPQRSTUVWXYZ23456789]{6}$/.test(code)) {
+      e.referralCode = 'Referral codes are 6 characters (letters and numbers, no 0, O, 1 or I)';
+    }
     setErrors(e);
     return Object.keys(e).length === 0;
   };
@@ -62,7 +73,13 @@ export default function RegisterForm() {
       const res = await fetch('/api/auth', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'register', ...form }),
+        body: JSON.stringify({
+          action: 'register',
+          ...form,
+          // Send the code normalised (trimmed + uppercase); an empty
+          // box sends nothing (undefined is dropped by stringify).
+          referralCode: form.referralCode.trim() ? form.referralCode.trim().toUpperCase() : undefined,
+        }),
       });
       const data = await res.json();
       if (!res.ok) { toast.error(data.error); return; }
@@ -145,6 +162,10 @@ export default function RegisterForm() {
             </button>
           </div>
           <Input label="Confirm Password" type="password" placeholder="Repeat your password" value={form.confirmPassword} onChange={set('confirmPassword')} icon={<Lock className="h-4 w-4" />} error={errors.confirmPassword} required />
+          <div>
+            <Input label="Referral code (optional)" placeholder="e.g. U5W5GK" value={form.referralCode} onChange={set('referralCode')} icon={<User className="h-4 w-4" />} error={errors.referralCode} />
+            <p className="text-muted text-xs mt-1">Have a code from a CodeBettle ambassador? Enter it here — you get Rs 200 off your first course, and they earn credits for bringing you in.</p>
+          </div>
           <Button type="submit" fullWidth size="lg" loading={loading}>Create Account</Button>
         </form>
       )}

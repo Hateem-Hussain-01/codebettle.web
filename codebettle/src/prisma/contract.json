@@ -12,6 +12,10 @@
       "model": "AmbassadorApplication",
       "namespace": "public"
     },
+    "AmbassadorCreditLedger": {
+      "model": "AmbassadorCreditLedger",
+      "namespace": "public"
+    },
     "AmbassadorMessage": {
       "model": "AmbassadorMessage",
       "namespace": "public"
@@ -180,10 +184,6 @@
       "model": "ReferralAttribution",
       "namespace": "public"
     },
-    "ReferralClick": {
-      "model": "ReferralClick",
-      "namespace": "public"
-    },
     "Review": {
       "model": "Review",
       "namespace": "public"
@@ -295,6 +295,15 @@
               {
                 "name": "rejected",
                 "value": "rejected"
+              }
+            ]
+          },
+          "AmbassadorCreditLedgerKind": {
+            "codecId": "pg/text@1",
+            "members": [
+              {
+                "name": "earn",
+                "value": "earn"
               }
             ]
           },
@@ -1048,6 +1057,109 @@
               },
               "namespaceId": "public",
               "table": "AmbassadorApplication"
+            }
+          },
+          "AmbassadorCreditLedger": {
+            "fields": {
+              "ambassadorId": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "amount": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
+              "createdAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "precision": 3
+                  }
+                }
+              },
+              "id": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "kind": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                },
+                "valueSet": {
+                  "entityKind": "enum",
+                  "entityName": "AmbassadorCreditLedgerKind",
+                  "namespaceId": "public",
+                  "plane": "domain"
+                }
+              },
+              "note": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "referenceId": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "updatedAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "precision": 3
+                  }
+                }
+              }
+            },
+            "relations": {},
+            "storage": {
+              "fields": {
+                "ambassadorId": {
+                  "column": "ambassadorId"
+                },
+                "amount": {
+                  "column": "amount"
+                },
+                "createdAt": {
+                  "column": "createdAt"
+                },
+                "id": {
+                  "column": "id"
+                },
+                "kind": {
+                  "column": "kind"
+                },
+                "note": {
+                  "column": "note"
+                },
+                "referenceId": {
+                  "column": "referenceId"
+                },
+                "updatedAt": {
+                  "column": "updatedAt"
+                }
+              },
+              "namespaceId": "public",
+              "table": "AmbassadorCreditLedger"
             }
           },
           "AmbassadorMessage": {
@@ -7398,70 +7510,6 @@
               "table": "ReferralAttribution"
             }
           },
-          "ReferralClick": {
-            "fields": {
-              "ambassadorId": {
-                "nullable": false,
-                "type": {
-                  "codecId": "pg/text@1",
-                  "kind": "scalar"
-                }
-              },
-              "clickedAt": {
-                "nullable": false,
-                "type": {
-                  "codecId": "pg/timestamptz-date@1",
-                  "kind": "scalar",
-                  "typeParams": {
-                    "precision": 3
-                  }
-                }
-              },
-              "day": {
-                "nullable": false,
-                "type": {
-                  "codecId": "pg/text@1",
-                  "kind": "scalar"
-                }
-              },
-              "id": {
-                "nullable": false,
-                "type": {
-                  "codecId": "pg/text@1",
-                  "kind": "scalar"
-                }
-              },
-              "ip": {
-                "nullable": false,
-                "type": {
-                  "codecId": "pg/text@1",
-                  "kind": "scalar"
-                }
-              }
-            },
-            "relations": {},
-            "storage": {
-              "fields": {
-                "ambassadorId": {
-                  "column": "ambassadorId"
-                },
-                "clickedAt": {
-                  "column": "clickedAt"
-                },
-                "day": {
-                  "column": "day"
-                },
-                "id": {
-                  "column": "id"
-                },
-                "ip": {
-                  "column": "ip"
-                }
-              },
-              "namespaceId": "public",
-              "table": "ReferralClick"
-            }
-          },
           "Review": {
             "fields": {
               "comment": {
@@ -11326,6 +11374,98 @@
                 ]
               },
               "uniques": []
+            },
+            "AmbassadorCreditLedger": {
+              "checks": [
+                {
+                  "expression": "\"kind\" IN ('earn')",
+                  "name": "AmbassadorCreditLedger_kind_check_cd76a86b",
+                  "prefix": "AmbassadorCreditLedger_kind_check"
+                }
+              ],
+              "columns": {
+                "ambassadorId": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                },
+                "amount": {
+                  "codecId": "pg/int4@1",
+                  "dataType": "pg/int4",
+                  "nullable": false
+                },
+                "createdAt": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "dataType": "pg/timestamptz",
+                  "default": {
+                    "expression": "now()",
+                    "kind": "function"
+                  },
+                  "nullable": false,
+                  "typeParams": {
+                    "precision": 3
+                  }
+                },
+                "id": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                },
+                "kind": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false,
+                  "valueSet": {
+                    "entityKind": "valueSet",
+                    "entityName": "AmbassadorCreditLedgerKind",
+                    "namespaceId": "public",
+                    "plane": "storage"
+                  }
+                },
+                "note": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": true
+                },
+                "referenceId": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": true
+                },
+                "updatedAt": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "dataType": "pg/timestamptz",
+                  "nullable": false,
+                  "typeParams": {
+                    "precision": 3
+                  }
+                }
+              },
+              "foreignKeys": [],
+              "indexes": [
+                {
+                  "columns": [
+                    "ambassadorId",
+                    "createdAt"
+                  ],
+                  "name": "AmbassadorCreditLedger_ambassadorId_createdAt_idx_5d54f454",
+                  "prefix": "AmbassadorCreditLedger_ambassadorId_createdAt_idx",
+                  "unique": false
+                }
+              ],
+              "primaryKey": {
+                "columns": [
+                  "id"
+                ]
+              },
+              "uniques": [
+                {
+                  "columns": [
+                    "kind",
+                    "referenceId"
+                  ]
+                }
+              ]
             },
             "AmbassadorMessage": {
               "columns": {
@@ -16748,60 +16888,6 @@
                 }
               ]
             },
-            "ReferralClick": {
-              "columns": {
-                "ambassadorId": {
-                  "codecId": "pg/text@1",
-                  "dataType": "pg/text",
-                  "nullable": false
-                },
-                "clickedAt": {
-                  "codecId": "pg/timestamptz-date@1",
-                  "dataType": "pg/timestamptz",
-                  "default": {
-                    "expression": "now()",
-                    "kind": "function"
-                  },
-                  "nullable": false,
-                  "typeParams": {
-                    "precision": 3
-                  }
-                },
-                "day": {
-                  "codecId": "pg/text@1",
-                  "dataType": "pg/text",
-                  "nullable": false
-                },
-                "id": {
-                  "codecId": "pg/text@1",
-                  "dataType": "pg/text",
-                  "nullable": false
-                },
-                "ip": {
-                  "codecId": "pg/text@1",
-                  "dataType": "pg/text",
-                  "nullable": false
-                }
-              },
-              "foreignKeys": [],
-              "indexes": [
-                {
-                  "columns": [
-                    "ambassadorId",
-                    "clickedAt"
-                  ],
-                  "name": "ReferralClick_ambassadorId_clickedAt_idx_cc7a22ca",
-                  "prefix": "ReferralClick_ambassadorId_clickedAt_idx",
-                  "unique": false
-                }
-              ],
-              "primaryKey": {
-                "columns": [
-                  "id"
-                ]
-              },
-              "uniques": []
-            },
             "Review": {
               "checks": [
                 {
@@ -19388,6 +19474,12 @@
                 "rejected"
               ]
             },
+            "AmbassadorCreditLedgerKind": {
+              "kind": "valueSet",
+              "values": [
+                "earn"
+              ]
+            },
             "AmbassadorStatus": {
               "kind": "valueSet",
               "values": [
@@ -19613,10 +19705,10 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "4e2766c530b45f219045ef0168d29c2a04d2500c26ecdd9ff05c1d596b4af9cc"
+    "storageHash": "39bf4b7c939aba7fb732aec3459f751a3fc4ca9bf3f47694aebbce419e24028d"
   },
   "execution": {
-    "executionHash": "e5e1c0e0836c075fda0ecef5f3862fed9fbd7c32cdb84a9b3122ba3fe736e5aa",
+    "executionHash": "98880c7f0fbd44922391bb5e03981d97ad8c9441fa605c9be30a144425a140bd",
     "mutations": {
       "defaults": [
         {
@@ -19707,6 +19799,52 @@
           },
           "ref": {
             "entry": "AmbassadorApplication",
+            "field": "updatedAt",
+            "namespace": "public"
+          }
+        },
+        {
+          "onCreate": {
+            "id": "timestampNow",
+            "kind": "generator",
+            "params": {
+              "precision": 3
+            }
+          },
+          "ref": {
+            "entry": "AmbassadorCreditLedger",
+            "field": "createdAt",
+            "namespace": "public"
+          }
+        },
+        {
+          "onCreate": {
+            "id": "cuid2",
+            "kind": "generator"
+          },
+          "ref": {
+            "entry": "AmbassadorCreditLedger",
+            "field": "id",
+            "namespace": "public"
+          }
+        },
+        {
+          "onCreate": {
+            "id": "timestampNow",
+            "kind": "generator",
+            "params": {
+              "precision": 3
+            }
+          },
+          "onUpdate": {
+            "id": "timestampNow",
+            "kind": "generator",
+            "params": {
+              "precision": 3
+            }
+          },
+          "ref": {
+            "entry": "AmbassadorCreditLedger",
             "field": "updatedAt",
             "namespace": "public"
           }
@@ -20991,31 +21129,6 @@
           },
           "ref": {
             "entry": "ReferralAttribution",
-            "field": "id",
-            "namespace": "public"
-          }
-        },
-        {
-          "onCreate": {
-            "id": "timestampNow",
-            "kind": "generator",
-            "params": {
-              "precision": 3
-            }
-          },
-          "ref": {
-            "entry": "ReferralClick",
-            "field": "clickedAt",
-            "namespace": "public"
-          }
-        },
-        {
-          "onCreate": {
-            "id": "cuid2",
-            "kind": "generator"
-          },
-          "ref": {
-            "entry": "ReferralClick",
             "field": "id",
             "namespace": "public"
           }

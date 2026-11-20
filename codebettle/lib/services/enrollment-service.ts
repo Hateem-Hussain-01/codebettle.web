@@ -15,6 +15,7 @@ import { getUserById } from '../db/users';
 import { isFullAdmin } from '../admin-access';
 import { logAudit } from '../db/audit';
 import { maybeAwardTeamCreditsForEnrollment } from '../db/team-credits';
+import { maybeAwardAmbassadorCreditsForEnrollment, resolveAmbassadorCouponForStudent } from '../db/ambassador-credits';
 import { onCertificateIssued, onCourseCompleted, onEnrollmentCreated, onEnrollmentCreatedForInstructor } from './notification-service';
 import type { Certificate, Enrollment, EnrollmentPaymentStatus } from '../db/types';
 import { badRequest, conflict, forbidden, notFound, type Actor, type ServiceError } from './errors';
@@ -102,6 +103,13 @@ export async function createEnrollmentService(
     }
     couponUsed = coupon.code;
   }
+  // Ambassador referral (Eman, 20 Nov 2026): when the admin entered
+  // no coupon, a student who joined with an ambassador's code gets
+  // that code's Rs 200 coupon auto-set here (server-side, P-3) — the
+  // discount is computed at payment creation from couponUsed.
+  if (!couponUsed) {
+    couponUsed = (await resolveAmbassadorCouponForStudent(input.studentId, input.courseId)) ?? undefined;
+  }
   const created = await createEnrollment({
     studentId: input.studentId,
     courseId: input.courseId,
@@ -126,6 +134,10 @@ export async function createEnrollmentService(
   // when the admin setting says credits are earned on enrollment.
   // Best-effort, never throws (see the function doc).
   await maybeAwardTeamCreditsForEnrollment(created.enrollment.id, 'enrollment');
+  // Ambassador credits (Eman, 20 Nov 2026): a referred student just
+  // enrolled — 100 credits to their ambassador on the student's
+  // FIRST enrollment, ever (idempotent; best-effort, never throws).
+  await maybeAwardAmbassadorCreditsForEnrollment(created.enrollment.id);
   return { enrollment: created.enrollment };
 }
 
@@ -210,6 +222,14 @@ export async function enrollSelfService(
     if (!coupon) return badRequest('Coupon code is invalid, expired, or does not apply to this course');
     couponUsed = coupon.code;
   }
+  // Ambassador referral (Eman, 20 Nov 2026): when the student
+  // entered no coupon, a student who joined with an ambassador's
+  // code gets that code's Rs 200 coupon auto-set here (server-side,
+  // P-3) — the discount is computed at payment creation from
+  // couponUsed.
+  if (!couponUsed) {
+    couponUsed = (await resolveAmbassadorCouponForStudent(actor.id, input.courseId)) ?? undefined;
+  }
   const paymentStatus: EnrollmentPaymentStatus = course.isFree ? 'free' : 'pending';
   const created = await createEnrollment({
     studentId: actor.id,
@@ -235,6 +255,10 @@ export async function enrollSelfService(
   // when the admin setting says credits are earned on enrollment.
   // Best-effort, never throws (see the function doc).
   await maybeAwardTeamCreditsForEnrollment(created.enrollment.id, 'enrollment');
+  // Ambassador credits (Eman, 20 Nov 2026): a referred student just
+  // enrolled — 100 credits to their ambassador on the student's
+  // FIRST enrollment, ever (idempotent; best-effort, never throws).
+  await maybeAwardAmbassadorCreditsForEnrollment(created.enrollment.id);
   return { enrollment: created.enrollment };
 }
 

@@ -197,13 +197,16 @@ test('team dashboard: stats are StatCards over the real counts, credits balance 
   assert.ok(src.includes('getTeamAccessByUserId'), 'the team access lookup (credits strip) must stay');
 });
 
-test('ambassador dashboard: 4-stage stats are StatCards over the real stage numbers', () => {
+test('ambassador dashboard: 3-stage stats are StatCards over the real stage numbers (no clicks, no link)', () => {
   const src = read('app/student/ambassador/ambassador-dashboard-client.tsx');
-  for (const needle of ['stats.clicks', 'stats.signups', 'stats.enrollments', 'stats.payments']) {
+  for (const needle of ['stats.signups', 'stats.enrollments', 'stats.payments']) {
     assert.ok(src.includes(needle), `ambassador stats must still read the real stage numbers: ${needle}`);
   }
+  assert.ok(!src.includes('stats.clicks'), 'clicks are gone — the redesign tracks signups, enrollments, payments only');
+  assert.ok(!src.includes('referralLink'), 'no referral link is shown — the code is what the student types in');
+  assert.ok(src.includes('creditBalance'), 'the ambassador sees their credit balance');
   assert.ok(src.includes('<StatCard'), 'ambassador stats must use the canonical StatCard');
-  for (const needle of ['copyLink', 'saveGroup', 'sendMessage']) {
+  for (const needle of ['copyCode', 'saveGroup', 'sendMessage']) {
     assert.ok(src.includes(needle), `ambassador functionality must stay: ${needle}`);
   }
   assert.ok(src.includes('ambassador.referralCode'), 'the referral code must still show');
@@ -253,6 +256,48 @@ const V32_ALLOWLIST = [
   // for this same PR, so its test file is in scope here too (guard
   // files that coordinate scope belong in each other's allowlists).
   'codebettle/tests/dashboard-followup.test.ts',
+  // Ambassador referral + credits redesign (Eman, 20 Nov 2026):
+  // codes are admin-assigned (no link tracking, no clicks), the code
+  // IS a Rs 200 coupon and earns 100 credits per referred student.
+  // This branch touches the ambassador dashboard (a V32 file), so
+  // every file it changes is listed here, same pattern as PR #79/#81.
+  'codebettle/app/admin/ambassadors/ambassadors-client.tsx',
+  'codebettle/app/admin/ambassadors/page.tsx',
+  'codebettle/app/admin/layout.tsx',
+  'codebettle/app/admin/referral-codes/page.tsx',
+  'codebettle/app/admin/referral-codes/referral-codes-client.tsx',
+  'codebettle/app/api/admin/ambassadors/[id]/route.ts',
+  'codebettle/app/api/admin/ambassadors/grant/route.ts',
+  'codebettle/app/api/admin/referral-codes/[id]/route.ts',
+  'codebettle/app/api/admin/referral-codes/route.ts',
+  'codebettle/app/api/auth/route.ts',
+  'codebettle/app/api/referral/track/route.ts',
+  'codebettle/app/student/ambassador/page.tsx',
+  'codebettle/app/team/credits/credits-client.tsx',
+  'codebettle/app/team/credits/page.tsx',
+  'codebettle/components/auth/RegisterForm.tsx',
+  'codebettle/lib/admin-access.ts',
+  'codebettle/lib/db/ambassador-credits.ts',
+  'codebettle/lib/db/ambassadors.ts',
+  'codebettle/lib/db/coupons.ts',
+  'codebettle/lib/db/mappers.ts',
+  'codebettle/lib/db/types.ts',
+  'codebettle/lib/referral.ts',
+  'codebettle/lib/services/enrollment-service.ts',
+  'codebettle/migrations/app/20261120T1608_add_ambassador_credits/migration.json',
+  'codebettle/migrations/app/20261120T1608_add_ambassador_credits/migration.ts',
+  'codebettle/migrations/app/20261120T1608_add_ambassador_credits/ops.json',
+  'codebettle/migrations/snapshots/39bf4b7c939aba7fb732aec3459f751a3fc4ca9bf3f47694aebbce419e24028d/contract.d.ts',
+  'codebettle/migrations/snapshots/39bf4b7c939aba7fb732aec3459f751a3fc4ca9bf3f47694aebbce419e24028d/contract.json',
+  'codebettle/proxy.ts',
+  'codebettle/src/prisma/contract.d.ts',
+  'codebettle/src/prisma/contract.json',
+  'codebettle/src/prisma/contract.prisma',
+  'codebettle/tests/ambassador-referral.test.ts',
+  'codebettle/tests/ambassador-credits.test.ts',
+  'codebettle/tests/view-as-extension.test.ts',
+  'codebettle/tests/admin-access.test.ts',
+  'codebettle/tests/team-credits.test.ts',
 ];
 
 function changedFiles(): string[] {

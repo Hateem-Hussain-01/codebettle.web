@@ -60,6 +60,7 @@ export type AdminAreaKey =
   | 'navbar-editor'
   | 'book-a-call'
   | 'ambassadors'
+  | 'referral-codes'
   | 'team'
   | 'credits'
   | 'subscribers'
@@ -148,6 +149,14 @@ export const ADMIN_AREAS: readonly AdminArea[] = [
   // missing keys are denied).
   { key: 'book-a-call', label: 'Book a Call', href: '/admin/book-a-call', description: 'Free career-guidance call requests (review, mark contacted/done)' },
   { key: 'ambassadors', label: 'Ambassadors', href: '/admin/ambassadors', description: 'Campus ambassador applications (review, approve/reject)' },
+  // Referral Codes (Eman, 20 Nov 2026): the DEDICATED referral-code
+  // section — every ambassador's code, owner, uses, credits awarded
+  // and discounts given, plus create/assign/deactivate. A NEW area
+  // (not folded into 'ambassadors') because codes are money-adjacent
+  // admin work with their own review workflow, like coupons. Restricted
+  // admins do NOT get it by default (secure default: missing keys are
+  // denied).
+  { key: 'referral-codes', label: 'Referral Codes', href: '/admin/referral-codes', description: 'Ambassador referral codes: assign, deactivate, uses, credits awarded, discounts given' },
   // Team Portal (Eman, 16 Nov 2026): the 4th portal's admin surface —
   // team access grants, tasks, announcements, meetings, files. A NEW
   // area (not folded into 'ambassadors') because team access is a

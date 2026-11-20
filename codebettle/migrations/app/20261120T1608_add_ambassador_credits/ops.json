@@ -1,0 +1,192 @@
+[
+  {
+    "id": "dropTable.ReferralClick",
+    "label": "Drop table \"ReferralClick\"",
+    "operationClass": "destructive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "ReferralClick"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"ReferralClick\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"ReferralClick\""
+        ],
+        "expectation": {
+          "expects": "present",
+          "object": "table \"ReferralClick\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "drop table \"ReferralClick\"",
+        "sql": "DROP TABLE \"public\".\"ReferralClick\""
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"ReferralClick\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"ReferralClick\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "table \"ReferralClick\""
+        }
+      }
+    ]
+  },
+  {
+    "id": "table.AmbassadorCreditLedger",
+    "label": "Create table \"AmbassadorCreditLedger\"",
+    "summary": "Creates table \"AmbassadorCreditLedger\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "AmbassadorCreditLedger"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"AmbassadorCreditLedger\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"AmbassadorCreditLedger\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "table \"AmbassadorCreditLedger\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"AmbassadorCreditLedger\"",
+        "sql": "CREATE TABLE \"public\".\"AmbassadorCreditLedger\" (\n  \"ambassadorId\" text NOT NULL,\n  \"amount\" int4 NOT NULL,\n  \"createdAt\" timestamptz(3) DEFAULT (now()) NOT NULL,\n  \"id\" text NOT NULL,\n  \"kind\" text NOT NULL,\n  \"note\" text,\n  \"referenceId\" text,\n  \"updatedAt\" timestamptz(3) NOT NULL,\n  PRIMARY KEY (\"id\"),\n  CONSTRAINT \"AmbassadorCreditLedger_kind_check_cd76a86b\" CHECK (\"kind\" IN ('earn'))\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"AmbassadorCreditLedger\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" WHERE (\"c\".\"oid\" = to_regclass($1) AND (\"c\".\"relkind\" = $2 OR \"c\".\"relkind\" = $3))) AS \"result\"",
+        "params": [
+          "\"public\".\"AmbassadorCreditLedger\"",
+          "r",
+          "p"
+        ],
+        "expectation": {
+          "expects": "present",
+          "object": "table \"AmbassadorCreditLedger\""
+        }
+      }
+    ]
+  },
+  {
+    "id": "unique.AmbassadorCreditLedger.AmbassadorCreditLedger_kind_referenceId_key",
+    "label": "Add unique constraint on \"AmbassadorCreditLedger\" (kind, referenceId)",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "unique",
+        "name": "AmbassadorCreditLedger_kind_referenceId_key",
+        "table": "AmbassadorCreditLedger"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"AmbassadorCreditLedger_kind_referenceId_key\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "AmbassadorCreditLedger_kind_referenceId_key",
+          "public",
+          "\"public\".\"AmbassadorCreditLedger\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "constraint \"AmbassadorCreditLedger_kind_referenceId_key\" on \"AmbassadorCreditLedger\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "add unique constraint \"AmbassadorCreditLedger_kind_referenceId_key\"",
+        "sql": "ALTER TABLE \"public\".\"AmbassadorCreditLedger\" ADD CONSTRAINT \"AmbassadorCreditLedger_kind_referenceId_key\" UNIQUE (\"kind\", \"referenceId\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify unique constraint \"AmbassadorCreditLedger_kind_referenceId_key\" exists on (kind, referenceId)",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3) AND \"c\".\"contype\" = $4 AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"c\".\"conkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"c\".\"conrelid\" AND key_attribute.attnum = key_column.attnum) = ($5)::jsonb)) AS \"result\"",
+        "params": [
+          "AmbassadorCreditLedger_kind_referenceId_key",
+          "public",
+          "\"public\".\"AmbassadorCreditLedger\"",
+          "u",
+          "[\"kind\",\"referenceId\"]"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.AmbassadorCreditLedger.AmbassadorCreditLedger_ambassadorId_createdAt_idx_5d54f454",
+    "label": "Create index \"AmbassadorCreditLedger_ambassadorId_createdAt_idx_5d54f454\" on \"AmbassadorCreditLedger\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "AmbassadorCreditLedger_ambassadorId_createdAt_idx_5d54f454",
+        "table": "AmbassadorCreditLedger"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"AmbassadorCreditLedger_ambassadorId_createdAt_idx_5d54f454\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"AmbassadorCreditLedger_ambassadorId_createdAt_idx_5d54f454\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "index \"AmbassadorCreditLedger_ambassadorId_createdAt_idx_5d54f454\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"AmbassadorCreditLedger_ambassadorId_createdAt_idx_5d54f454\"",
+        "sql": "CREATE INDEX \"AmbassadorCreditLedger_ambassadorId_createdAt_idx_5d54f454\" ON \"public\".\"AmbassadorCreditLedger\" (\"ambassadorId\", \"createdAt\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"AmbassadorCreditLedger_ambassadorId_createdAt_idx_5d54f454\" exists on \"AmbassadorCreditLedger\" with the planned definition",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" INNER JOIN \"pg_index\" AS \"i\" ON \"i\".\"indexrelid\" = \"c\".\"oid\" INNER JOIN \"pg_am\" AS \"m\" ON \"m\".\"oid\" = \"c\".\"relam\" WHERE (\"c\".\"oid\" = to_regclass($1) AND (\"c\".\"relkind\" = $2 OR \"c\".\"relkind\" = $3) AND \"i\".\"indrelid\" = to_regclass($4) AND NOT (\"i\".\"indisunique\") AND \"m\".\"amname\" = $5 AND (\"i\".\"indexprs\" IS NULL AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"i\".\"indkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"i\".\"indrelid\" AND key_attribute.attnum = key_column.attnum) = ($6)::jsonb) AND \"i\".\"indpred\" IS NULL)) AS \"result\"",
+        "params": [
+          "\"public\".\"AmbassadorCreditLedger_ambassadorId_createdAt_idx_5d54f454\"",
+          "i",
+          "I",
+          "\"public\".\"AmbassadorCreditLedger\"",
+          "btree",
+          "[\"ambassadorId\",\"createdAt\"]"
+        ]
+      }
+    ]
+  }
+]

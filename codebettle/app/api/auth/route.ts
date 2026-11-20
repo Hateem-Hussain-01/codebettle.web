@@ -26,7 +26,7 @@ import { getUserByEmail } from '@/lib/db/users';
 import { revokeOtherSessionsForUser } from '@/lib/db/sessions';
 import { resolveReferralForSignup } from '@/lib/db/ambassadors';
 import { resolveTeamReferralForSignup } from '@/lib/db/team-credits';
-import { REFERRAL_COOKIE } from '@/lib/referral';
+import { normalizeReferralCode } from '@/lib/referral';
 import { normalizeEmail } from '@/lib/security';
 import {
   getEmailVerificationStatus,
@@ -104,6 +104,10 @@ const registerSchema = z.object({
   phone: z.string().optional(),
   password: z.string().min(1),
   confirmPassword: z.string().optional(),
+  // Referral code (Eman, 20 Nov 2026 — redesigned): the optional
+  // code the student TYPED on the register form. Server-validated
+  // below; never trusted as an id.
+  referralCode: z.string().optional(),
 });
 
 const logoutSchema = z.object({ action: z.literal('logout') });
@@ -251,7 +255,7 @@ export async function POST(request: NextRequest) {
     if (!parsed.success) {
       return NextResponse.json({ error: 'Name, email and password are required' }, { status: 400 });
     }
-    const { name, email, phone, password, confirmPassword } = parsed.data;
+    const { name, email, phone, password, confirmPassword, referralCode } = parsed.data;
     if (confirmPassword !== undefined && confirmPassword !== password) {
       return NextResponse.json({ error: 'Passwords do not match' }, { status: 400 });
     }
@@ -264,33 +268,41 @@ export async function POST(request: NextRequest) {
         { status: 429 },
       );
     }
+    // Ambassador referral (Eman, 20 Nov 2026 — redesigned): the
+    // student TYPES an ambassador's (or a team member's) code in the
+    // "Referral code" box on the register form. The code is only a
+    // lookup key — resolved server-side here (exists / active / not
+    // self-referral), never trusted as an id. An invalid code is a
+    // 400 with a clear message (the student can fix a typo or leave
+    // the box blank) — silently dropping it would cost the ambassador
+    // their 100 credits and the student their Rs 200 discount
+    // without either of them knowing.
+    const rawReferralCode = referralCode?.trim() ? normalizeReferralCode(referralCode) : '';
+    const referredByAmbassadorId = rawReferralCode
+      ? await resolveReferralForSignup(rawReferralCode, email)
+      : null;
+    // Team referral (PR B, Eman 16 Nov 2026): the SAME code box may
+    // hold a TEAM member's code instead of an ambassador's — resolved
+    // server-side the same way. Exactly one of the two can match:
+    // minting checks both namespaces, so a code belongs to one
+    // referrer only.
+    const referredByTeamAccessId =
+      rawReferralCode && !referredByAmbassadorId
+        ? await resolveTeamReferralForSignup(rawReferralCode, email)
+        : null;
+    if (rawReferralCode && !referredByAmbassadorId && !referredByTeamAccessId) {
+      return NextResponse.json(
+        { error: 'This referral code is not valid. Check the code and try again, or leave it blank.' },
+        { status: 400 },
+      );
+    }
     const result = await registerUser({
       name,
       email,
       phone,
       password,
-      // Ambassador referral (Eman, 16 Nov 2026): the referrer comes
-      // from the `cb_ref` cookie set when the visitor landed on a
-      // referral link — resolved server-side here, never from a
-      // client-sent field. resolveReferralForSignup returns null for
-      // an unknown/inactive code and for self-referral (the
-      // ambassador's own email), so a planted cookie attributes
-      // nothing. A missing/unreadable cookie is simply no referrer.
-      referredByAmbassadorId:
-        (await resolveReferralForSignup(
-          request.cookies.get(REFERRAL_COOKIE)?.value ?? '',
-          email,
-        )) ?? undefined,
-      // Team referral (PR B, Eman 16 Nov 2026): the SAME cookie may
-      // hold a TEAM member's code instead of an ambassador's —
-      // resolved server-side the same way. Exactly one of the two
-      // can match: minting checks both namespaces, so a code belongs
-      // to one referrer only.
-      referredByTeamAccessId:
-        (await resolveTeamReferralForSignup(
-          request.cookies.get(REFERRAL_COOKIE)?.value ?? '',
-          email,
-        )) ?? undefined,
+      referredByAmbassadorId: referredByAmbassadorId ?? undefined,
+      referredByTeamAccessId: referredByTeamAccessId ?? undefined,
     });
     if ('duplicate' in result) {
       // MEDIUM-A1: the same generic 201 success as a fresh signup —

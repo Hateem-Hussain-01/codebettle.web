@@ -25,6 +25,76 @@ export async function listCoupons(): Promise<Coupon[]> {
   return rows.map(mapCouponRow);
 }
 
+export interface CreateCouponInput {
+  code: string;
+  type: 'percentage' | 'fixed';
+  value: number;
+  maxUses: number;
+  expiresAt: Date;
+  applicableCourses?: string[];
+}
+
+/**
+ * Create a coupon row (server-side only). The admin coupons page
+ * never persisted creates (local-state-only UI — a pre-existing gap,
+ * not fixed here); the ambassador system creates its own coupon rows
+ * through this function, so it is the first real writer. Duplicate
+ * code returns the existing row (the DB unique constraint is the
+ * backstop; the re-read keeps a concurrent create from 500ing).
+ */
+export async function createCoupon(input: CreateCouponInput): Promise<Coupon> {
+  const code = input.code.trim().toUpperCase();
+  const existing = await getCouponByCode(code);
+  if (existing) return existing;
+  try {
+    const row = await getDb().orm.public.Coupon.create({
+      code,
+      type: input.type,
+      value: input.value,
+      maxUses: input.maxUses,
+      usedCount: 0,
+      expiresAt: input.expiresAt,
+      isActive: true,
+      applicableCourses: input.applicableCourses ?? [],
+    });
+    return mapCouponRow(row as never);
+  } catch (error) {
+    if (error instanceof Error && /duplicate key value violates unique constraint/i.test(error.message)) {
+      const winner = await getCouponByCode(code);
+      if (winner) return winner;
+    }
+    throw error;
+  }
+}
+
+/**
+ * Update a coupon's stored fields (used by the ambassador system to
+ * keep a code's coupon canonical — fixed Rs 200, active — and to
+ * deactivate the coupon of a code that was changed away or whose
+ * ambassador was deactivated). Returns null when the code is unknown.
+ */
+export async function updateCouponByCode(
+  code: string,
+  patch: Partial<Pick<Coupon, 'type' | 'value' | 'maxUses' | 'expiresAt' | 'isActive' | 'applicableCourses'>>,
+): Promise<Coupon | null> {
+  const normalized = code.trim().toUpperCase();
+  const existing = await getCouponByCode(normalized);
+  if (!existing) return null;
+  const update: Record<string, unknown> = {};
+  if (patch.type !== undefined) update.type = patch.type;
+  if (patch.value !== undefined) update.value = patch.value;
+  if (patch.maxUses !== undefined) update.maxUses = patch.maxUses;
+  if (patch.expiresAt !== undefined) update.expiresAt = new Date(patch.expiresAt);
+  if (patch.isActive !== undefined) update.isActive = patch.isActive;
+  if (patch.applicableCourses !== undefined) update.applicableCourses = patch.applicableCourses;
+  if (Object.keys(update).length === 0) return existing;
+  const updated = await getDb()
+    .orm.public.Coupon.where((c) => c.code.eq(normalized))
+    .update(update);
+  if (!updated) return existing;
+  return mapCouponRow(updated as never);
+}
+
 /** Validate a coupon code. Returns the coupon, or null when it cannot be used. */
 export async function validateCoupon(code: string, now: number = Date.now()): Promise<Coupon | null> {
   const coupon = await getCouponByCode(code);

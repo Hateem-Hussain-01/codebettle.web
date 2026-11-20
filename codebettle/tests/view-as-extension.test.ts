@@ -270,7 +270,7 @@ function ambassadorFixture(id: string, userId: string | undefined, status: 'acti
     status,
     createdAt: '2026-01-01',
     updatedAt: '2026-01-01',
-    stats: { clicks: 0, signups: 0, enrollments: 0, payments: 0 },
+    stats: { signups: 0, enrollments: 0, payments: 0 },
     teamLevel1: [],
     teamLevel2: [],
   };

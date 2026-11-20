@@ -458,14 +458,16 @@ export interface AmbassadorApplication {
 }
 
 /**
- * Ambassador referral tracking (Eman, 16 Nov 2026). One row per
- * approved ambassador. `referralCode` is random (6 chars,
- * crypto-secure) and unique. `userId` links to the student account
- * when one exists with the same email; `applicationId` is set when
- * they came through the form, null for directly-granted ambassadors.
- * `groupLink` / `groupMemberCount` / `groupCountUpdatedAt` are the
- * ambassador's own campus-group link + the member count they update
- * DAILY by hand (no WhatsApp API exists to fetch it).
+ * Ambassador referral tracking (Eman, 16 Nov 2026; redesigned
+ * 20 Nov 2026). One row per approved ambassador. `referralCode` is
+ * assigned BY THE ADMIN (6 chars, unique) — it replaced the random
+ * auto-generated code at approval. `userId` links to the student
+ * account when one exists with the same email; `applicationId` is
+ * set when they came through the form, null for directly-granted
+ * ambassadors. `groupLink` / `groupMemberCount` /
+ * `groupCountUpdatedAt` are the ambassador's own campus-group link +
+ * the member count they update DAILY by hand (no WhatsApp API exists
+ * to fetch it).
  */
 export type AmbassadorStatus = 'active' | 'inactive';
 
@@ -483,7 +485,7 @@ export interface Ambassador {
   updatedAt: string;
 }
 
-/** One user who signed up through an ambassador's link. */
+/** One user who signed up with an ambassador's code. */
 export interface ReferralAttribution {
   id: string;
   ambassadorId: string;
@@ -500,11 +502,11 @@ export interface AmbassadorMessage {
   createdAt: string;
 }
 
-/** The 4 referral stages (Eman, 16 Nov 2026): clicks on the link,
- * signups via the link, course enrollments by referred users, and
- * payments (approved payment submissions) by referred users. */
+/** The 3 referral stages (Eman, 16 Nov 2026; clicks removed 20 Nov
+ * 2026 when link tracking was dropped): signups via the code,
+ * course enrollments by referred users, and payments (approved
+ * payment submissions) by referred users. */
 export interface ReferralStats {
-  clicks: number;
   signups: number;
   enrollments: number;
   payments: number;
@@ -526,11 +528,30 @@ export interface ReferralTeamMember {
   viaName?: string;
 }
 
-/** An ambassador with their 4-stage numbers and team (admin view). */
+/** An ambassador with their 3-stage numbers and team (admin view). */
 export interface AmbassadorWithStats extends Ambassador {
   stats: ReferralStats;
   teamLevel1: ReferralTeamMember[];
   teamLevel2: ReferralTeamMember[];
+}
+
+// Ambassador Credit System (Eman, 20 Nov 2026) — 100 credits per
+// referred student, awarded on the referred student's FIRST
+// enrollment. A member's balance is SUM(AmbassadorCreditLedger.amount);
+// there is NO balance column anywhere. Only 'earn' exists in v1
+// (redemption is a later decision for Eman). See
+// src/prisma/contract.prisma for the model docs.
+export type AmbassadorCreditLedgerKind = 'earn';
+
+export interface AmbassadorCreditLedgerEntry {
+  id: string;
+  ambassadorId: string;
+  kind: AmbassadorCreditLedgerKind;
+  amount: number;
+  referenceId?: string;
+  note?: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 /**
@@ -1282,9 +1303,9 @@ export type ReferralAttributionRow = Pick<
   'id' | 'ambassadorId' | 'userId' | 'createdAt'
 >;
 
-export type ReferralClickRow = Pick<
-  Models.public_ReferralClick,
-  'id' | 'ambassadorId' | 'ip' | 'day' | 'clickedAt'
+export type AmbassadorCreditLedgerRow = Pick<
+  Models.public_AmbassadorCreditLedger,
+  'id' | 'ambassadorId' | 'kind' | 'amount' | 'referenceId' | 'note' | 'createdAt' | 'updatedAt'
 >;
 
 export type AmbassadorMessageRow = Pick<

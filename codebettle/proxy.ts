@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { API_CSP, buildCspHeader, generateNonce, isSameOriginRequest, shouldAllowFraming } from '@/lib/security';
 import { adminUrl, getAdminBasePath, isAdminPath, isAdminSigninPath, isLegacyAdminPath } from '@/lib/admin-url';
-import { REFERRAL_COOKIE, REFERRAL_COOKIE_MAX_AGE_S, normalizeReferralCode } from '@/lib/referral';
 
 /**
  * Route guard + security headers (Next.js 16 `proxy`, formerly middleware).
@@ -51,64 +50,6 @@ import { REFERRAL_COOKIE, REFERRAL_COOKIE_MAX_AGE_S, normalizeReferralCode } fro
 
 /** Paths the maintenance gate never rewrites. */
 const MAINTENANCE_EXEMPT = ['/auth'];
-
-/**
- * Ambassador referral capture (Eman, 16 Nov 2026): a visitor who
- * lands with `?ref=CODE` gets the click recorded server-side (via
- * GET /api/referral/track, which validates the code and records the
- * click) and the `cb_ref` cookie set when the code is valid. The
- * cookie is what the register route later reads to attribute the
- * signup — never a client-sent field.
- *
- * Fail-open like the maintenance check: any fetch error, timeout or
- * non-OK response means "no cookie, normal flow". Skipped when the
- * cookie already holds the same code (no duplicate click rows while
- * the visitor navigates with ?ref= still in the URL). No lib/db
- * imports here: the proxy runs on the Edge runtime, which cannot
- * run Node-only modules — the Node-runtime API route does the DB
- * work, exactly like the maintenance check's settings fetch.
- */
-async function resolveReferralCookie(request: NextRequest): Promise<string | null> {
-  const raw = request.nextUrl.searchParams.get('ref');
-  if (!raw) return null;
-  const code = normalizeReferralCode(raw);
-  if (!code) return null;
-  if (request.cookies.get(REFERRAL_COOKIE)?.value === code) return null;
-  try {
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 2000);
-    try {
-      const res = await fetch(
-        new URL(`/api/referral/track?code=${encodeURIComponent(code)}`, request.url),
-        { signal: controller.signal },
-      );
-      if (!res.ok) return null;
-      const data: unknown = await res.json().catch(() => null);
-      if (!!data && typeof data === 'object' && (data as { valid?: unknown }).valid === true) {
-        return code;
-      }
-      return null;
-    } finally {
-      clearTimeout(timeout);
-    }
-  } catch {
-    return null;
-  }
-}
-
-/** Set the referral cookie on a page response (only when a valid code was just resolved). */
-function withReferralCookie(response: NextResponse, code: string | null): NextResponse {
-  if (code) {
-    response.cookies.set(REFERRAL_COOKIE, code, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      maxAge: REFERRAL_COOKIE_MAX_AGE_S,
-      path: '/',
-    });
-  }
-  return response;
-}
 
 /**
  * Fail-open maintenance check: true only when the public settings
@@ -207,13 +148,6 @@ export async function proxy(request: NextRequest) {
   const nonce = generateNonce();
   const csp = buildCspHeader(nonce, process.env.NODE_ENV === 'development', { allowFraming });
 
-  // Ambassador referral landing (?ref=CODE): resolve + record the
-  // click server-side, and remember the code for the response cookie
-  // below. Runs before the maintenance gate so a referral landing
-  // during maintenance still attributes (the rewrite response below
-  // carries the cookie too).
-  const referralCode = await resolveReferralCookie(request);
-
   const session = request.cookies.get('cb_session');
   const adminBase = getAdminBasePath();
 
@@ -246,7 +180,7 @@ export async function proxy(request: NextRequest) {
       request: { headers: requestHeaders },
     });
     // The maintenance page itself is never an embed render.
-    return withReferralCookie(setPageSecurityHeaders(response, csp, false), referralCode);
+    return setPageSecurityHeaders(response, csp, false);
   }
 
   const protectedRoutes = ['/student', '/instructor'];
@@ -277,7 +211,7 @@ export async function proxy(request: NextRequest) {
   const response = NextResponse.next({
     request: { headers: requestHeaders },
   });
-  return withReferralCookie(setPageSecurityHeaders(response, csp, allowFraming), referralCode);
+  return setPageSecurityHeaders(response, csp, allowFraming);
 }
 
 export const config = {

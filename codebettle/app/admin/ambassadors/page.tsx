@@ -15,7 +15,7 @@ import AmbassadorsClient from './ambassadors-client';
  * Admin Ambassadors — server wrapper (PR #33 + referral tracking).
  *
  * ONE page, no new sidebar tab (Eman, 16 Nov 2026): applications
- * (existing), ambassadors with referral codes + 4-stage numbers +
+ * (existing), ambassadors with referral codes + 3-stage numbers +
  * team tree + group link/member count, the ambassador meeting link,
  * and the ambassador messages — all sections of this page.
  *

@@ -350,6 +350,48 @@ const FOLLOWUP_ALLOWLIST = [
   'codebettle/components/ui/Card.tsx',
   'codebettle/components/ui/StatCard.tsx',
   'codebettle/app/student/dashboard/page.tsx',
+  // Ambassador referral + credits redesign (Eman, 20 Nov 2026):
+  // codes are admin-assigned (no link tracking, no clicks), the code
+  // IS a Rs 200 coupon and earns 100 credits per referred student.
+  // This branch adds the 33rd admin area in lib/admin-access.ts (a
+  // follow-up source file), so every file it changes is listed here,
+  // same pattern as PR #79/#81.
+  'codebettle/app/admin/ambassadors/ambassadors-client.tsx',
+  'codebettle/app/admin/ambassadors/page.tsx',
+  'codebettle/app/admin/referral-codes/page.tsx',
+  'codebettle/app/admin/referral-codes/referral-codes-client.tsx',
+  'codebettle/app/api/admin/ambassadors/[id]/route.ts',
+  'codebettle/app/api/admin/ambassadors/grant/route.ts',
+  'codebettle/app/api/admin/referral-codes/[id]/route.ts',
+  'codebettle/app/api/admin/referral-codes/route.ts',
+  'codebettle/app/api/auth/route.ts',
+  'codebettle/app/api/referral/track/route.ts',
+  'codebettle/app/student/ambassador/ambassador-dashboard-client.tsx',
+  'codebettle/app/student/ambassador/page.tsx',
+  'codebettle/app/team/credits/credits-client.tsx',
+  'codebettle/app/team/credits/page.tsx',
+  'codebettle/components/auth/RegisterForm.tsx',
+  'codebettle/lib/db/ambassador-credits.ts',
+  'codebettle/lib/db/ambassadors.ts',
+  'codebettle/lib/db/coupons.ts',
+  'codebettle/lib/db/mappers.ts',
+  'codebettle/lib/db/types.ts',
+  'codebettle/lib/referral.ts',
+  'codebettle/lib/services/enrollment-service.ts',
+  'codebettle/migrations/app/20261120T1608_add_ambassador_credits/migration.json',
+  'codebettle/migrations/app/20261120T1608_add_ambassador_credits/migration.ts',
+  'codebettle/migrations/app/20261120T1608_add_ambassador_credits/ops.json',
+  'codebettle/migrations/snapshots/39bf4b7c939aba7fb732aec3459f751a3fc4ca9bf3f47694aebbce419e24028d/contract.d.ts',
+  'codebettle/migrations/snapshots/39bf4b7c939aba7fb732aec3459f751a3fc4ca9bf3f47694aebbce419e24028d/contract.json',
+  'codebettle/proxy.ts',
+  'codebettle/src/prisma/contract.d.ts',
+  'codebettle/src/prisma/contract.json',
+  'codebettle/src/prisma/contract.prisma',
+  'codebettle/tests/ambassador-referral.test.ts',
+  'codebettle/tests/ambassador-credits.test.ts',
+  'codebettle/tests/view-as-extension.test.ts',
+  'codebettle/tests/admin-access.test.ts',
+  'codebettle/tests/team-credits.test.ts',
 ];
 
 function changedFiles(): string[] {
