@@ -263,6 +263,7 @@ const V32_ALLOWLIST = [
   // every file it changes is listed here, same pattern as PR #79/#81.
   'codebettle/app/admin/ambassadors/ambassadors-client.tsx',
   'codebettle/app/admin/ambassadors/page.tsx',
+  'codebettle/app/admin/layout.tsx',
   'codebettle/app/admin/referral-codes/page.tsx',
   'codebettle/app/admin/referral-codes/referral-codes-client.tsx',
   'codebettle/app/api/admin/ambassadors/[id]/route.ts',
