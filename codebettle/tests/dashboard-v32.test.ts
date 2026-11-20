@@ -86,6 +86,17 @@ test('StatCard: no literal video lift — hover lift is the existing card-lift',
   assert.ok(!src.includes('whileHover'), 'StatCard needs no framer-motion hover at all — Card carries the lift');
 });
 
+test('StatCard: optional href renders a View more link to a real route', () => {
+  // V32 reference: every stat card links onward (Eman, 20 Nov 2026
+  // — dashboard items lacked the reference's hierarchy). The link
+  // is opt-in: only callers that pass a real destination get one.
+  const src = read('components/ui/StatCard.tsx');
+  assert.ok(src.includes('href?: string'), 'StatCard must accept an optional href');
+  assert.ok(src.includes("href={href}"), 'the link must point at the passed href');
+  assert.ok(src.includes('View more'), 'the link must read "View more"');
+  assert.ok(src.includes('<ArrowRight'), 'the link must carry the arrow icon');
+});
+
 // ---------------------------------------------------------------- Card glass
 
 test('Card: opt-in glass surface, token colours only', () => {
@@ -95,6 +106,13 @@ test('Card: opt-in glass surface, token colours only', () => {
     src.includes("'bg-dark-card/70 backdrop-blur-md rounded-2xl"),
     'glass must be the translucent dark-card surface + blur + 2xl radius (the reference glass-card)',
   );
+  // Sidebar-polish (Eman, 20 Nov 2026 — dashboard cards looked
+  // washed out in light mode): the glass branch also carries the
+  // `glass-card` class, whose globals.css rule gives the card a
+  // gold-tinted border in BOTH themes (dark: rgba(245,197,24,0.15);
+  // light: rgba(138,109,0,0.2)) — without it the light card fell
+  // back to the grey #E5E7EB border and read as a flat wash.
+  assert.ok(src.includes("glass && 'glass-card'"), 'glass must also carry the glass-card class (gold-tinted border, both themes)');
   assert.ok(
     src.includes(": 'bg-dark-card rounded-xl'"),
     'without glass the card must stay the solid dark card (no behaviour change for existing callers)',
@@ -116,6 +134,11 @@ test('student dashboard: stats are StatCards over the real counts', () => {
   );
   assert.ok(src.includes('getEnrollmentsByStudent'), 'the data fetch must stay');
   assert.ok(src.includes('Welcome back, {session!.name.split'), 'the welcome banner must stay');
+  // Sidebar-polish (Eman, 20 Nov 2026 — V32 stat cards link onward):
+  // the three student stats link to real pages, not invented ones.
+  for (const needle of ["href: '/student/courses'", "href: '/student/certificates'"]) {
+    assert.ok(src.includes(needle), `student stats must link onward to a real route: ${needle}`);
+  }
 });
 
 test('instructor dashboard: StatCards staggered, Avg. Rating counts up to the same value', () => {
@@ -198,6 +221,16 @@ const V32_ALLOWLIST = [
   'codebettle/app/admin/dashboard/dashboard-client.tsx',
   'codebettle/app/student/ambassador/ambassador-dashboard-client.tsx',
   'codebettle/tests/dashboard-v32.test.ts',
+  // Sidebar hover-polish (Eman, 20 Nov 2026): the same PR that
+  // polishes the V32 cards also fixes the sidebar pill tracking —
+  // the shared sidebar + its tests are in scope here, same pattern
+  // as the guard fixes in PR #79/#81.
+  'codebettle/components/layout/CollapsibleSidebar.tsx',
+  'codebettle/tests/collapsible-sidebar.test.ts',
+  // The follow-up scope guard's allowlist had to gain the V32 files
+  // for this same PR, so its test file is in scope here too (guard
+  // files that coordinate scope belong in each other's allowlists).
+  'codebettle/tests/dashboard-followup.test.ts',
 ];
 
 function changedFiles(): string[] {

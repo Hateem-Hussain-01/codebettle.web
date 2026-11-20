@@ -343,6 +343,13 @@ const FOLLOWUP_ALLOWLIST = [
   // guard fired on any later branch, so it gets the same V32-style
   // scoping (only fires when the branch touches intro files).
   'codebettle/tests/website-intro.test.ts',
+  // Sidebar hover-polish (Eman, 20 Nov 2026): the same PR that fixes
+  // the sidebar pill tracking also polishes the V32 dashboard cards
+  // — the shared primitives + the student dashboard page are in
+  // scope here, same pattern as the guard fixes in PR #79/#81.
+  'codebettle/components/ui/Card.tsx',
+  'codebettle/components/ui/StatCard.tsx',
+  'codebettle/app/student/dashboard/page.tsx',
 ];
 
 function changedFiles(): string[] {
