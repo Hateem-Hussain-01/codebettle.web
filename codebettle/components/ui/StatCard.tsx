@@ -1,4 +1,6 @@
 'use client';
+import Link from 'next/link';
+import { ArrowRight } from 'lucide-react';
 import { motion } from 'framer-motion';
 import Card from './Card';
 import CountUp from './CountUp';
@@ -26,9 +28,16 @@ interface StatCardProps {
   suffix?: string;
   /** V32 glass surface (translucent + blur) on the underlying Card. Defaults to false. */
   glass?: boolean;
+  /**
+   * Optional destination for the "View more" link under the value
+   * (V32 reference: every stat card links onward; Eman, 20 Nov 2026
+   * — dashboard items lacked the reference's hierarchy). Only real
+   * routes the user can open — never invented. Absent = no link.
+   */
+  href?: string;
 }
 
-export default function StatCard({ title, value, subtitle, icon, color = 'yellow', trend, delay = 0, decimal = false, prefix = '', suffix = '', glass = false }: StatCardProps) {
+export default function StatCard({ title, value, subtitle, icon, color = 'yellow', trend, delay = 0, decimal = false, prefix = '', suffix = '', glass = false, href }: StatCardProps) {
   const colors = {
     yellow: 'text-primary-text bg-primary/10',
     blue: 'text-blue-400 bg-blue-400/10',
@@ -59,6 +68,11 @@ export default function StatCard({ title, value, subtitle, icon, color = 'yellow
               <p className={cn('text-xs mt-2 font-medium', trend.value >= 0 ? 'text-green-400' : 'text-red-400')}>
                 {trend.value >= 0 ? '↑' : '↓'} {Math.abs(trend.value)}% {trend.label}
               </p>
+            )}
+            {href && (
+              <Link href={href} className="mt-2 inline-flex items-center gap-1 text-xs font-medium text-primary-text hover:underline">
+                View more <ArrowRight className="h-3.5 w-3.5" />
+              </Link>
             )}
           </div>
           <div className={cn('p-3 rounded-xl', colors[color])}>

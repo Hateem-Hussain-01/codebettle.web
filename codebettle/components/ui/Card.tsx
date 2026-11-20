@@ -33,6 +33,12 @@ export default function Card({ children, className, hover, glow, glass, style }:
       glass
         ? 'bg-dark-card/70 backdrop-blur-md rounded-2xl shadow-[0_8px_30px_rgba(0,0,0,0.20)]'
         : 'bg-dark-card rounded-xl',
+      // The glass-card class (globals.css) carries the gold-tinted
+      // border in BOTH themes (dark: rgba(245,197,24,0.15); light:
+      // rgba(138,109,0,0.2)) — without it the light-theme card fell
+      // back to the grey #E5E7EB border and read as a flat wash
+      // (Eman, 20 Nov 2026 — dashboard items looked washed out).
+      glass && 'glass-card',
       // Phase 6: hoverable cards get the subtle 3D lift (translate + layered
       // shadow). card-lift carries its own transition for transform, shadow
       // and border-color, so no separate transition-all is needed here.

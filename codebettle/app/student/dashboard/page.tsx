@@ -55,11 +55,11 @@ export default async function StudentDashboard() {
           the card twice). */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         {[
-          { label: 'Enrolled Courses', value: enrollments.length, icon: <BookOpen className="w-5 h-5" />, color: 'blue' as const },
-          { label: 'Completed', value: completed, icon: <CheckCircle className="w-5 h-5" />, color: 'green' as const },
-          { label: 'Certificates', value: certificates.length, icon: <Award className="w-5 h-5" />, color: 'yellow' as const },
+          { label: 'Enrolled Courses', value: enrollments.length, icon: <BookOpen className="w-5 h-5" />, color: 'blue' as const, href: '/student/courses' },
+          { label: 'Completed', value: completed, icon: <CheckCircle className="w-5 h-5" />, color: 'green' as const, href: '/student/courses' },
+          { label: 'Certificates', value: certificates.length, icon: <Award className="w-5 h-5" />, color: 'yellow' as const, href: '/student/certificates' },
         ].map((stat, i) => (
-          <StatCard key={stat.label} title={stat.label} value={stat.value} icon={stat.icon} color={stat.color} delay={0.05 + i * 0.06} glass />
+          <StatCard key={stat.label} title={stat.label} value={stat.value} icon={stat.icon} color={stat.color} delay={0.05 + i * 0.06} glass href={stat.href} />
         ))}
       </div>
 

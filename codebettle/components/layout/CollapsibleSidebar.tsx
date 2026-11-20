@@ -73,7 +73,12 @@ interface CollapsibleSidebarProps {
  *   two states are sequenced with short timeouts so neither step
  *   jumps; under reduced motion both steps happen instantly.
  * - Gliding row highlight: a single framer-motion layoutId pill that
- *   rests on the active row and glides to the hovered row.
+ *   rests on the active row and glides to the hovered row — on a fast
+ *   critically damped spring (~0.1s settle, Eman 20 Nov 2026: the old
+ *   slow spring lagged a full row behind the cursor) so the pill sits
+ *   on the hovered row at every step, plus an instant hover background
+ *   on the row itself that lights up on the same frame the cursor
+ *   arrives.
  * - Collapsed tooltips: portaled to document.body (so the scrolling
  *   nav and the clipping aside can never cut them off), positioned
  *   from the hovered row's bounding rect.
@@ -96,10 +101,17 @@ interface CollapsibleSidebarProps {
 const EASE_OUT = 'easeOut' as const;
 /** House motion duration — matches FadeIn (0.45s ease-out). */
 const MOTION_DURATION = 0.45;
-/** Gliding highlight spring — TiltCard's critically damped character
- *  (stiffness 200, damping 22, mass 0.6): a slow glide that settles
- *  without overshoot, never the video's snappy bounce. */
-const HIGHLIGHT_SPRING = { type: 'spring', stiffness: 200, damping: 22, mass: 0.6 } as const;
+/** Gliding highlight spring — the pill must TRACK the cursor: it
+ *  rests on the active row and glides to the hovered row at every
+ *  step as the pointer moves down the list (Eman, 20 Nov 2026 — the
+ *  old spring, stiffness 200 / damping 22, settled in ~0.2s per hop,
+ *  so the pill lagged a full row behind the cursor while it moved).
+ *  stiffness 800 / damping 40 / mass 0.5 is still critically damped
+ *  (damping ratio ~1.0) so it settles without overshoot, but it
+ *  settles in ~0.1s — fast enough to sit on the hovered row at every
+ *  step, slow enough to read as a glide rather than a snap. NOT the
+ *  video's snappy bounce — no overshoot, no expo curve. */
+const HIGHLIGHT_SPRING = { type: 'spring', stiffness: 800, damping: 40, mass: 0.5 } as const;
 /** Labels fade out over 300ms before the rail starts shrinking. */
 const COLLAPSE_LABEL_DELAY_MS = 300;
 /** Labels start fading in shortly after the rail starts growing. */
@@ -521,7 +533,7 @@ export default function CollapsibleSidebar({
           data-flyout-trigger={item.href}
           className={cn(
             'relative flex w-full cursor-pointer items-center gap-3 rounded-lg py-2.5 text-sm font-medium outline-none transition-colors focus-visible:ring-2 focus-visible:ring-primary/60',
-            'justify-center px-2',
+            'justify-center px-2 hover:bg-dark-border/40',
             isActive ? 'text-primary-text' : 'text-muted hover:text-foreground',
           )}
         >
@@ -545,7 +557,12 @@ export default function CollapsibleSidebar({
             setHoveredHref(null);
             hideTooltip();
           }}
-          className="relative rounded-lg"
+          // Instant hover background (Eman, 20 Nov 2026): the row
+          // under the cursor lights up on the same frame, while the
+          // gliding pill catches up in ~0.1s — the hover never reads
+          // as lagging. The pill (absolute inset-0) covers this
+          // background once it arrives.
+          className="relative rounded-lg hover:bg-dark-border/40"
         >
           {highlight}
           <div className="relative flex items-center gap-3 rounded-lg py-2.5 pl-3 pr-1.5 text-sm font-medium">
@@ -615,7 +632,12 @@ export default function CollapsibleSidebar({
         aria-label={item.label}
         aria-current={isActive ? 'page' : undefined}
         className={cn(
-          'relative flex items-center gap-3 rounded-lg py-2.5 text-sm font-medium outline-none transition-colors focus-visible:ring-2 focus-visible:ring-primary/60',
+          // Instant hover background (Eman, 20 Nov 2026): the row
+          // under the cursor lights up on the same frame, while the
+          // gliding pill catches up in ~0.1s — the hover never reads
+          // as lagging. The pill (absolute inset-0) covers this
+          // background once it arrives.
+          'relative flex items-center gap-3 rounded-lg py-2.5 text-sm font-medium outline-none transition-colors hover:bg-dark-border/40 focus-visible:ring-2 focus-visible:ring-primary/60',
           effectiveCollapsed ? 'justify-center px-2' : 'px-3',
           isActive ? 'text-primary-text' : 'text-muted hover:text-foreground',
         )}

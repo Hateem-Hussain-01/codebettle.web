@@ -171,10 +171,21 @@ test('highlight: a single layoutId pill rests on the active row and glides to th
   // result while searching.
   assert.match(sidebar, /hoveredHref \?\? \(isSearching/);
   assert.match(sidebar, /activeItem\?\.href/);
-  // CodeBettle motion (Eman, 18 Nov 2026 — motion correction): the
-  // glide is TiltCard's critically damped spring (stiffness 200,
-  // damping 22), settling without overshoot — not a snappy bounce.
-  assert.match(sidebar, /stiffness: 200, damping: 22, mass: 0\.6/);
+  // CodeBettle motion (Eman, 20 Nov 2026 — the pill lagged a full
+  // row behind the cursor while it moved down the list): the glide
+  // is a FAST critically damped spring (stiffness 800, damping 40,
+  // mass 0.5 — damping ratio ~1.0, settles in ~0.1s without
+  // overshoot), so the pill sits on the hovered row at every step.
+  // Still no bounce, no expo curve — fast, not snappy.
+  assert.match(sidebar, /stiffness: 800, damping: 40, mass: 0\.5/);
+});
+
+test('highlight: the hovered row lights up instantly, before the pill arrives', () => {
+  // The row under the cursor carries its own instant hover
+  // background (Eman, 20 Nov 2026 — the hover must read as
+  // responsive even while the pill is still gliding). The pill
+  // (absolute inset-0) covers it once it arrives.
+  assert.match(sidebar, /hover:bg-dark-border\/40/);
 });
 
 test('motion character: house 0.45s ease-out everywhere, never the video expo curve', () => {
