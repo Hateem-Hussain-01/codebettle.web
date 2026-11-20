@@ -3,8 +3,12 @@ import Link from 'next/link';
 import { getSession } from '@/lib/auth';
 import { hasTeacherCapability } from '@/lib/rbac';
 import { getAmbassadorByUserId, getAmbassadorStats, listMessagesForAmbassador } from '@/lib/db/ambassadors';
-import { getAmbassadorCreditSummary } from '@/lib/db/ambassador-credits';
-import { getAmbassadorMeetingLink } from '@/lib/services/settings-service';
+import {
+  getAmbassadorCreditSummary,
+  isAmbassadorRedemptionTableReady,
+  listAmbassadorRedemptionsForAmbassador,
+} from '@/lib/db/ambassador-credits';
+import { getAmbassadorMeetingLink, getTeamCreditSettings } from '@/lib/services/settings-service';
 import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
 import { Users } from 'lucide-react';
@@ -63,18 +67,25 @@ export default async function AmbassadorDashboardPage() {
     );
   }
 
-  const [{ stats, teamLevel1, teamLevel2 }, messages, meetingLink, creditSummary] = await Promise.all([
-    getAmbassadorStats(ambassador.id),
-    listMessagesForAmbassador(ambassador.id),
-    getAmbassadorMeetingLink(),
-    getAmbassadorCreditSummary(ambassador.id),
-  ]);
+  const [{ stats, teamLevel1, teamLevel2 }, messages, meetingLink, creditSummary, settings, redemptions, redemptionReady] =
+    await Promise.all([
+      getAmbassadorStats(ambassador.id),
+      listMessagesForAmbassador(ambassador.id),
+      getAmbassadorMeetingLink(),
+      getAmbassadorCreditSummary(ambassador.id),
+      getTeamCreditSettings(),
+      listAmbassadorRedemptionsForAmbassador(ambassador.id),
+      isAmbassadorRedemptionTableReady(),
+    ]);
 
   return (
     <AmbassadorDashboardClient
       ambassador={ambassador}
       stats={stats}
       creditBalance={creditSummary.balance}
+      goodyPrices={settings.goodyPrices}
+      redemptions={redemptions}
+      redemptionReady={redemptionReady}
       teamLevel1={teamLevel1}
       teamLevel2={teamLevel2}
       meetingLink={meetingLink}

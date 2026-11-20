@@ -20,6 +20,10 @@
       "model": "AmbassadorMessage",
       "namespace": "public"
     },
+    "AmbassadorRedemption": {
+      "model": "AmbassadorRedemption",
+      "namespace": "public"
+    },
     "Announcement": {
       "model": "Announcement",
       "namespace": "public"
@@ -304,6 +308,31 @@
               {
                 "name": "earn",
                 "value": "earn"
+              },
+              {
+                "name": "hold",
+                "value": "hold"
+              },
+              {
+                "name": "release",
+                "value": "release"
+              }
+            ]
+          },
+          "AmbassadorRedemptionStatus": {
+            "codecId": "pg/text@1",
+            "members": [
+              {
+                "name": "pending",
+                "value": "pending"
+              },
+              {
+                "name": "approved",
+                "value": "approved"
+              },
+              {
+                "name": "rejected",
+                "value": "rejected"
               }
             ]
           },
@@ -1224,6 +1253,141 @@
               },
               "namespaceId": "public",
               "table": "AmbassadorMessage"
+            }
+          },
+          "AmbassadorRedemption": {
+            "fields": {
+              "ambassadorId": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "createdAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "precision": 3
+                  }
+                }
+              },
+              "creditsSpent": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
+              "decidedAt": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "precision": 3
+                  }
+                }
+              },
+              "decidedBy": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "goody": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                },
+                "valueSet": {
+                  "entityKind": "enum",
+                  "entityName": "TeamGoody",
+                  "namespaceId": "public",
+                  "plane": "domain"
+                }
+              },
+              "id": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "requestedAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "precision": 3
+                  }
+                }
+              },
+              "status": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                },
+                "valueSet": {
+                  "entityKind": "enum",
+                  "entityName": "AmbassadorRedemptionStatus",
+                  "namespaceId": "public",
+                  "plane": "domain"
+                }
+              },
+              "updatedAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "precision": 3
+                  }
+                }
+              }
+            },
+            "relations": {},
+            "storage": {
+              "fields": {
+                "ambassadorId": {
+                  "column": "ambassadorId"
+                },
+                "createdAt": {
+                  "column": "createdAt"
+                },
+                "creditsSpent": {
+                  "column": "creditsSpent"
+                },
+                "decidedAt": {
+                  "column": "decidedAt"
+                },
+                "decidedBy": {
+                  "column": "decidedBy"
+                },
+                "goody": {
+                  "column": "goody"
+                },
+                "id": {
+                  "column": "id"
+                },
+                "requestedAt": {
+                  "column": "requestedAt"
+                },
+                "status": {
+                  "column": "status"
+                },
+                "updatedAt": {
+                  "column": "updatedAt"
+                }
+              },
+              "namespaceId": "public",
+              "table": "AmbassadorRedemption"
             }
           },
           "Announcement": {
@@ -11378,8 +11542,8 @@
             "AmbassadorCreditLedger": {
               "checks": [
                 {
-                  "expression": "\"kind\" IN ('earn')",
-                  "name": "AmbassadorCreditLedger_kind_check_cd76a86b",
+                  "expression": "\"kind\" IN ('earn', 'hold', 'release')",
+                  "name": "AmbassadorCreditLedger_kind_check_604125b7",
                   "prefix": "AmbassadorCreditLedger_kind_check"
                 }
               ],
@@ -11524,6 +11688,135 @@
                   ],
                   "name": "AmbassadorMessage_read_createdAt_idx_bb5ea906",
                   "prefix": "AmbassadorMessage_read_createdAt_idx",
+                  "unique": false
+                }
+              ],
+              "primaryKey": {
+                "columns": [
+                  "id"
+                ]
+              },
+              "uniques": []
+            },
+            "AmbassadorRedemption": {
+              "checks": [
+                {
+                  "expression": "\"goody\" IN ('bottle', 'diary', 'pen', 'keychain')",
+                  "name": "AmbassadorRedemption_goody_check_667d0f96",
+                  "prefix": "AmbassadorRedemption_goody_check"
+                },
+                {
+                  "expression": "\"status\" IN ('pending', 'approved', 'rejected')",
+                  "name": "AmbassadorRedemption_status_check_19a2b525",
+                  "prefix": "AmbassadorRedemption_status_check"
+                }
+              ],
+              "columns": {
+                "ambassadorId": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                },
+                "createdAt": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "dataType": "pg/timestamptz",
+                  "default": {
+                    "expression": "now()",
+                    "kind": "function"
+                  },
+                  "nullable": false,
+                  "typeParams": {
+                    "precision": 3
+                  }
+                },
+                "creditsSpent": {
+                  "codecId": "pg/int4@1",
+                  "dataType": "pg/int4",
+                  "nullable": false
+                },
+                "decidedAt": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "dataType": "pg/timestamptz",
+                  "nullable": true,
+                  "typeParams": {
+                    "precision": 3
+                  }
+                },
+                "decidedBy": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": true
+                },
+                "goody": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false,
+                  "valueSet": {
+                    "entityKind": "valueSet",
+                    "entityName": "TeamGoody",
+                    "namespaceId": "public",
+                    "plane": "storage"
+                  }
+                },
+                "id": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                },
+                "requestedAt": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "dataType": "pg/timestamptz",
+                  "default": {
+                    "expression": "now()",
+                    "kind": "function"
+                  },
+                  "nullable": false,
+                  "typeParams": {
+                    "precision": 3
+                  }
+                },
+                "status": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "default": {
+                    "kind": "literal",
+                    "value": "pending"
+                  },
+                  "nullable": false,
+                  "valueSet": {
+                    "entityKind": "valueSet",
+                    "entityName": "AmbassadorRedemptionStatus",
+                    "namespaceId": "public",
+                    "plane": "storage"
+                  }
+                },
+                "updatedAt": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "dataType": "pg/timestamptz",
+                  "nullable": false,
+                  "typeParams": {
+                    "precision": 3
+                  }
+                }
+              },
+              "foreignKeys": [],
+              "indexes": [
+                {
+                  "columns": [
+                    "ambassadorId",
+                    "status"
+                  ],
+                  "name": "AmbassadorRedemption_ambassadorId_status_idx_857a51a1",
+                  "prefix": "AmbassadorRedemption_ambassadorId_status_idx",
+                  "unique": false
+                },
+                {
+                  "columns": [
+                    "status",
+                    "createdAt"
+                  ],
+                  "name": "AmbassadorRedemption_status_createdAt_idx_58610442",
+                  "prefix": "AmbassadorRedemption_status_createdAt_idx",
                   "unique": false
                 }
               ],
@@ -19477,7 +19770,17 @@
             "AmbassadorCreditLedgerKind": {
               "kind": "valueSet",
               "values": [
-                "earn"
+                "earn",
+                "hold",
+                "release"
+              ]
+            },
+            "AmbassadorRedemptionStatus": {
+              "kind": "valueSet",
+              "values": [
+                "pending",
+                "approved",
+                "rejected"
               ]
             },
             "AmbassadorStatus": {
@@ -19705,10 +20008,10 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "39bf4b7c939aba7fb732aec3459f751a3fc4ca9bf3f47694aebbce419e24028d"
+    "storageHash": "f49bc76c869052d79ae6a1222fe7c34eef4eb777c321e3385c8859f54e436a54"
   },
   "execution": {
-    "executionHash": "98880c7f0fbd44922391bb5e03981d97ad8c9441fa605c9be30a144425a140bd",
+    "executionHash": "918412864651e70049934e3c7e3eda36c2b97a8e53c7ff775e56677a10f2b8d4",
     "mutations": {
       "defaults": [
         {
@@ -19871,6 +20174,66 @@
           "ref": {
             "entry": "AmbassadorMessage",
             "field": "id",
+            "namespace": "public"
+          }
+        },
+        {
+          "onCreate": {
+            "id": "timestampNow",
+            "kind": "generator",
+            "params": {
+              "precision": 3
+            }
+          },
+          "ref": {
+            "entry": "AmbassadorRedemption",
+            "field": "createdAt",
+            "namespace": "public"
+          }
+        },
+        {
+          "onCreate": {
+            "id": "cuid2",
+            "kind": "generator"
+          },
+          "ref": {
+            "entry": "AmbassadorRedemption",
+            "field": "id",
+            "namespace": "public"
+          }
+        },
+        {
+          "onCreate": {
+            "id": "timestampNow",
+            "kind": "generator",
+            "params": {
+              "precision": 3
+            }
+          },
+          "ref": {
+            "entry": "AmbassadorRedemption",
+            "field": "requestedAt",
+            "namespace": "public"
+          }
+        },
+        {
+          "onCreate": {
+            "id": "timestampNow",
+            "kind": "generator",
+            "params": {
+              "precision": 3
+            }
+          },
+          "onUpdate": {
+            "id": "timestampNow",
+            "kind": "generator",
+            "params": {
+              "precision": 3
+            }
+          },
+          "ref": {
+            "entry": "AmbassadorRedemption",
+            "field": "updatedAt",
             "namespace": "public"
           }
         },

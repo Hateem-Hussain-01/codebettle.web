@@ -1,0 +1,244 @@
+[
+  {
+    "id": "dropCheckConstraint.AmbassadorCreditLedger.AmbassadorCreditLedger_kind_check_cd76a86b",
+    "label": "Drop check constraint \"AmbassadorCreditLedger_kind_check_cd76a86b\" on \"AmbassadorCreditLedger\"",
+    "operationClass": "widening",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "checkConstraint",
+        "name": "AmbassadorCreditLedger_kind_check_cd76a86b",
+        "table": "AmbassadorCreditLedger"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"AmbassadorCreditLedger_kind_check_cd76a86b\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "AmbassadorCreditLedger_kind_check_cd76a86b",
+          "public",
+          "\"public\".\"AmbassadorCreditLedger\""
+        ],
+        "expectation": {
+          "expects": "present",
+          "object": "constraint \"AmbassadorCreditLedger_kind_check_cd76a86b\" on \"AmbassadorCreditLedger\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "drop check constraint \"AmbassadorCreditLedger_kind_check_cd76a86b\"",
+        "sql": "ALTER TABLE \"public\".\"AmbassadorCreditLedger\" DROP CONSTRAINT \"AmbassadorCreditLedger_kind_check_cd76a86b\""
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify constraint \"AmbassadorCreditLedger_kind_check_cd76a86b\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "AmbassadorCreditLedger_kind_check_cd76a86b",
+          "public",
+          "\"public\".\"AmbassadorCreditLedger\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "constraint \"AmbassadorCreditLedger_kind_check_cd76a86b\" on \"AmbassadorCreditLedger\""
+        }
+      }
+    ]
+  },
+  {
+    "id": "table.AmbassadorRedemption",
+    "label": "Create table \"AmbassadorRedemption\"",
+    "summary": "Creates table \"AmbassadorRedemption\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "AmbassadorRedemption"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"AmbassadorRedemption\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"AmbassadorRedemption\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "table \"AmbassadorRedemption\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"AmbassadorRedemption\"",
+        "sql": "CREATE TABLE \"public\".\"AmbassadorRedemption\" (\n  \"ambassadorId\" text NOT NULL,\n  \"createdAt\" timestamptz(3) DEFAULT (now()) NOT NULL,\n  \"creditsSpent\" int4 NOT NULL,\n  \"decidedAt\" timestamptz(3),\n  \"decidedBy\" text,\n  \"goody\" text NOT NULL,\n  \"id\" text NOT NULL,\n  \"requestedAt\" timestamptz(3) DEFAULT (now()) NOT NULL,\n  \"status\" text DEFAULT 'pending' NOT NULL,\n  \"updatedAt\" timestamptz(3) NOT NULL,\n  PRIMARY KEY (\"id\"),\n  CONSTRAINT \"AmbassadorRedemption_goody_check_667d0f96\" CHECK (\"goody\" IN ('bottle', 'diary', 'pen', 'keychain')),\n  CONSTRAINT \"AmbassadorRedemption_status_check_19a2b525\" CHECK (\"status\" IN ('pending', 'approved', 'rejected'))\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"AmbassadorRedemption\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" WHERE (\"c\".\"oid\" = to_regclass($1) AND (\"c\".\"relkind\" = $2 OR \"c\".\"relkind\" = $3))) AS \"result\"",
+        "params": [
+          "\"public\".\"AmbassadorRedemption\"",
+          "r",
+          "p"
+        ],
+        "expectation": {
+          "expects": "present",
+          "object": "table \"AmbassadorRedemption\""
+        }
+      }
+    ]
+  },
+  {
+    "id": "checkConstraint.AmbassadorCreditLedger.AmbassadorCreditLedger_kind_check_604125b7",
+    "label": "Add check constraint \"AmbassadorCreditLedger_kind_check_604125b7\" on \"AmbassadorCreditLedger\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "checkConstraint",
+        "name": "AmbassadorCreditLedger_kind_check_604125b7",
+        "table": "AmbassadorCreditLedger"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"AmbassadorCreditLedger_kind_check_604125b7\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "AmbassadorCreditLedger_kind_check_604125b7",
+          "public",
+          "\"public\".\"AmbassadorCreditLedger\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "constraint \"AmbassadorCreditLedger_kind_check_604125b7\" on \"AmbassadorCreditLedger\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "add check constraint \"AmbassadorCreditLedger_kind_check_604125b7\"",
+        "sql": "ALTER TABLE \"public\".\"AmbassadorCreditLedger\" ADD CONSTRAINT \"AmbassadorCreditLedger_kind_check_604125b7\" CHECK (\"kind\" IN ('earn', 'hold', 'release'))"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify check constraint \"AmbassadorCreditLedger_kind_check_604125b7\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3) AND \"c\".\"contype\" = $4)) AS \"result\"",
+        "params": [
+          "AmbassadorCreditLedger_kind_check_604125b7",
+          "public",
+          "\"public\".\"AmbassadorCreditLedger\"",
+          "c"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.AmbassadorRedemption.AmbassadorRedemption_ambassadorId_status_idx_857a51a1",
+    "label": "Create index \"AmbassadorRedemption_ambassadorId_status_idx_857a51a1\" on \"AmbassadorRedemption\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "AmbassadorRedemption_ambassadorId_status_idx_857a51a1",
+        "table": "AmbassadorRedemption"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"AmbassadorRedemption_ambassadorId_status_idx_857a51a1\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"AmbassadorRedemption_ambassadorId_status_idx_857a51a1\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "index \"AmbassadorRedemption_ambassadorId_status_idx_857a51a1\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"AmbassadorRedemption_ambassadorId_status_idx_857a51a1\"",
+        "sql": "CREATE INDEX \"AmbassadorRedemption_ambassadorId_status_idx_857a51a1\" ON \"public\".\"AmbassadorRedemption\" (\"ambassadorId\", \"status\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"AmbassadorRedemption_ambassadorId_status_idx_857a51a1\" exists on \"AmbassadorRedemption\" with the planned definition",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" INNER JOIN \"pg_index\" AS \"i\" ON \"i\".\"indexrelid\" = \"c\".\"oid\" INNER JOIN \"pg_am\" AS \"m\" ON \"m\".\"oid\" = \"c\".\"relam\" WHERE (\"c\".\"oid\" = to_regclass($1) AND (\"c\".\"relkind\" = $2 OR \"c\".\"relkind\" = $3) AND \"i\".\"indrelid\" = to_regclass($4) AND NOT (\"i\".\"indisunique\") AND \"m\".\"amname\" = $5 AND (\"i\".\"indexprs\" IS NULL AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"i\".\"indkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"i\".\"indrelid\" AND key_attribute.attnum = key_column.attnum) = ($6)::jsonb) AND \"i\".\"indpred\" IS NULL)) AS \"result\"",
+        "params": [
+          "\"public\".\"AmbassadorRedemption_ambassadorId_status_idx_857a51a1\"",
+          "i",
+          "I",
+          "\"public\".\"AmbassadorRedemption\"",
+          "btree",
+          "[\"ambassadorId\",\"status\"]"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.AmbassadorRedemption.AmbassadorRedemption_status_createdAt_idx_58610442",
+    "label": "Create index \"AmbassadorRedemption_status_createdAt_idx_58610442\" on \"AmbassadorRedemption\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "AmbassadorRedemption_status_createdAt_idx_58610442",
+        "table": "AmbassadorRedemption"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"AmbassadorRedemption_status_createdAt_idx_58610442\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"AmbassadorRedemption_status_createdAt_idx_58610442\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "index \"AmbassadorRedemption_status_createdAt_idx_58610442\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"AmbassadorRedemption_status_createdAt_idx_58610442\"",
+        "sql": "CREATE INDEX \"AmbassadorRedemption_status_createdAt_idx_58610442\" ON \"public\".\"AmbassadorRedemption\" (\"status\", \"createdAt\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"AmbassadorRedemption_status_createdAt_idx_58610442\" exists on \"AmbassadorRedemption\" with the planned definition",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" INNER JOIN \"pg_index\" AS \"i\" ON \"i\".\"indexrelid\" = \"c\".\"oid\" INNER JOIN \"pg_am\" AS \"m\" ON \"m\".\"oid\" = \"c\".\"relam\" WHERE (\"c\".\"oid\" = to_regclass($1) AND (\"c\".\"relkind\" = $2 OR \"c\".\"relkind\" = $3) AND \"i\".\"indrelid\" = to_regclass($4) AND NOT (\"i\".\"indisunique\") AND \"m\".\"amname\" = $5 AND (\"i\".\"indexprs\" IS NULL AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"i\".\"indkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"i\".\"indrelid\" AND key_attribute.attnum = key_column.attnum) = ($6)::jsonb) AND \"i\".\"indpred\" IS NULL)) AS \"result\"",
+        "params": [
+          "\"public\".\"AmbassadorRedemption_status_createdAt_idx_58610442\"",
+          "i",
+          "I",
+          "\"public\".\"AmbassadorRedemption\"",
+          "btree",
+          "[\"status\",\"createdAt\"]"
+        ]
+      }
+    ]
+  }
+]

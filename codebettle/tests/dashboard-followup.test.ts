@@ -392,6 +392,22 @@ const FOLLOWUP_ALLOWLIST = [
   'codebettle/tests/view-as-extension.test.ts',
   'codebettle/tests/admin-access.test.ts',
   'codebettle/tests/team-credits.test.ts',
+  // Ambassador redemption (Eman, 21 Nov 2026): ambassadors redeem
+  // for the same goodies + prices as the team system; the admin
+  // decides ambassador requests in Credits Management. This branch
+  // touches the ambassador dashboard (a follow-up source file via
+  // the #88 entries), so every file it changes is listed here, same
+  // pattern as PR #79/#81.
+  'codebettle/app/admin/credits/credits-client.tsx',
+  'codebettle/app/admin/credits/page.tsx',
+  'codebettle/app/api/admin/ambassador-redemptions/[id]/route.ts',
+  'codebettle/app/api/student/ambassador/redemptions/route.ts',
+  'codebettle/migrations/app/20261120T1908_add_ambassador_redemptions/migration.json',
+  'codebettle/migrations/app/20261120T1908_add_ambassador_redemptions/migration.ts',
+  'codebettle/migrations/app/20261120T1908_add_ambassador_redemptions/ops.json',
+  'codebettle/migrations/snapshots/f49bc76c869052d79ae6a1222fe7c34eef4eb777c321e3385c8859f54e436a54/contract.d.ts',
+  'codebettle/migrations/snapshots/f49bc76c869052d79ae6a1222fe7c34eef4eb777c321e3385c8859f54e436a54/contract.json',
+  'codebettle/tests/ambassador-redemption.test.ts',
 ];
 
 function changedFiles(): string[] {

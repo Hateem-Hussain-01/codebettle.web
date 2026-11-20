@@ -9,6 +9,11 @@ import {
   listTeamReferralCodes,
   TEAM_CREDIT_TABLE_MISSING_MESSAGE,
 } from '@/lib/db/team-credits';
+import {
+  isAmbassadorRedemptionTableReady,
+  listAmbassadorRedemptions,
+} from '@/lib/db/ambassador-credits';
+import { listAmbassadors } from '@/lib/db/ambassadors';
 import { listTeamAccess } from '@/lib/db/team';
 import { getUsersByIds } from '@/lib/db/users';
 import Card from '@/components/ui/Card';
@@ -19,11 +24,13 @@ import CreditsAdminClient from './credits-client';
  * credits section (NOT inside the Team section): (1) credits per
  * referred enrolled student, (2) each goody's credit price, (3) all
  * team members' credit balances, (4) redemption requests
- * (approve/reject), (5) credit history/ledger.
+ * (approve/reject), (5) credit history/ledger. Ambassador redemption
+ * requests (Eman, 21 Nov 2026) are decided here too — same goodies +
+ * prices, same approve/reject flow.
  *
- * The numbers here are the LIVE settings — the team portal reads
- * them directly. The seeded values are PLACEHOLDERS (Eman sets the
- * real numbers himself).
+ * The numbers here are the LIVE settings — the team portal and the
+ * ambassador dashboard read them directly. The seeded values are
+ * PLACEHOLDERS (Eman sets the real numbers himself).
  *
  * Fail-safe: until Eman runs codebettle-team-credits-migration.sql
  * the page shows a "run the SQL" card instead of a 500.
@@ -55,18 +62,23 @@ export default async function AdminCreditsPage() {
     console.error('[team-credits] Backfill of team referral codes failed', error);
   }
 
-  const [settings, grants, redemptions, ledger, codes] = await Promise.all([
-    getTeamCreditSettings(),
-    listTeamAccess(),
-    listTeamRedemptions(),
-    listTeamCreditLedger(),
-    listTeamReferralCodes(),
-  ]);
+  const [settings, grants, redemptions, ledger, codes, ambassadorRedemptions, ambassadors, ambassadorRedemptionReady] =
+    await Promise.all([
+      getTeamCreditSettings(),
+      listTeamAccess(),
+      listTeamRedemptions(),
+      listTeamCreditLedger(),
+      listTeamReferralCodes(),
+      listAmbassadorRedemptions(),
+      listAmbassadors(),
+      isAmbassadorRedemptionTableReady(),
+    ]);
   const balances = await getTeamCreditBalances(grants.map((g) => g.id));
   const linkedUserIds = grants.map((g) => g.userId).filter((id): id is string => Boolean(id));
   const usersById = await getUsersByIds(linkedUserIds);
   const codeByAccessId = new Map(codes.map((c) => [c.teamAccessId, c.code]));
   const emailByAccessId = new Map(grants.map((g) => [g.id, g.email]));
+  const emailByAmbassadorId = new Map(ambassadors.map((a) => [a.id, a.email]));
 
   const earnedByAccessId = new Map<string, number>();
   for (const entry of ledger) {
@@ -96,7 +108,8 @@ export default async function AdminCreditsPage() {
         <h1 className="text-2xl font-black text-foreground">Credits Management</h1>
         <p className="text-muted mt-1">
           Team credits: earn rate, goody prices, member balances, redemption requests and the ledger. The numbers
-          below are live — the team portal shows them everywhere.
+          below are live — the team portal and the ambassador dashboard show them everywhere. Ambassador redemption
+          requests are decided here too.
         </p>
       </div>
       <CreditsAdminClient
@@ -110,6 +123,11 @@ export default async function AdminCreditsPage() {
           ...e,
           memberEmail: emailByAccessId.get(e.teamAccessId) ?? 'Unknown member',
         }))}
+        ambassadorRedemptions={ambassadorRedemptions.map((r) => ({
+          ...r,
+          ambassadorEmail: emailByAmbassadorId.get(r.ambassadorId) ?? 'Unknown ambassador',
+        }))}
+        ambassadorRedemptionReady={ambassadorRedemptionReady}
       />
     </div>
   );

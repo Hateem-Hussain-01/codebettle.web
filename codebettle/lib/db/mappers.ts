@@ -23,6 +23,8 @@ import type {
   AmbassadorCreditLedgerRow,
   AmbassadorMessage,
   AmbassadorMessageRow,
+  AmbassadorRedemption,
+  AmbassadorRedemptionRow,
   AmbassadorRow,
   AmbassadorStatus,
   ReferralAttribution,
@@ -594,7 +596,7 @@ export function mapAmbassadorMessageRow(row: AmbassadorMessageRow): AmbassadorMe
 }
 
 export function ambassadorCreditLedgerKindFromStorage(stored: string): AmbassadorCreditLedgerKind {
-  if (stored === 'earn') return stored;
+  if (stored === 'earn' || stored === 'hold' || stored === 'release') return stored;
   throw new Error(`Unknown ambassador credit ledger kind in database: ${stored}`);
 }
 
@@ -606,6 +608,21 @@ export function mapAmbassadorCreditLedgerRow(row: AmbassadorCreditLedgerRow): Am
     amount: row.amount,
     referenceId: row.referenceId ?? undefined,
     note: row.note ?? undefined,
+    createdAt: dateToString(row.createdAt),
+    updatedAt: dateToString(row.updatedAt),
+  };
+}
+
+export function mapAmbassadorRedemptionRow(row: AmbassadorRedemptionRow): AmbassadorRedemption {
+  return {
+    id: row.id,
+    ambassadorId: row.ambassadorId,
+    goody: teamGoodyFromStorage(row.goody),
+    creditsSpent: row.creditsSpent,
+    status: teamRedemptionStatusFromStorage(row.status),
+    requestedAt: row.requestedAt instanceof Date ? row.requestedAt.toISOString() : String(row.requestedAt),
+    decidedAt: row.decidedAt ? dateToString(row.decidedAt) : undefined,
+    decidedBy: row.decidedBy ?? undefined,
     createdAt: dateToString(row.createdAt),
     updatedAt: dateToString(row.updatedAt),
   };

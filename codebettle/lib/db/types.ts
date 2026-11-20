@@ -538,10 +538,10 @@ export interface AmbassadorWithStats extends Ambassador {
 // Ambassador Credit System (Eman, 20 Nov 2026) — 100 credits per
 // referred student, awarded on the referred student's FIRST
 // enrollment. A member's balance is SUM(AmbassadorCreditLedger.amount);
-// there is NO balance column anywhere. Only 'earn' exists in v1
-// (redemption is a later decision for Eman). See
+// there is NO balance column anywhere. Redemption landed 21 Nov
+// 2026 (Eman): 'hold' / 'release' for redemption requests. See
 // src/prisma/contract.prisma for the model docs.
-export type AmbassadorCreditLedgerKind = 'earn';
+export type AmbassadorCreditLedgerKind = 'earn' | 'hold' | 'release';
 
 export interface AmbassadorCreditLedgerEntry {
   id: string;
@@ -550,6 +550,23 @@ export interface AmbassadorCreditLedgerEntry {
   amount: number;
   referenceId?: string;
   note?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// Ambassador redemption (Eman, 21 Nov 2026) — the same goody
+// catalogue + prices as the team system (TeamGoody, prices from the
+// admin's Credits Management settings). Status reuses
+// TeamRedemptionStatus: pending / approved / rejected.
+export interface AmbassadorRedemption {
+  id: string;
+  ambassadorId: string;
+  goody: TeamGoody;
+  creditsSpent: number;
+  status: TeamRedemptionStatus;
+  requestedAt: string;
+  decidedAt?: string;
+  decidedBy?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -1306,6 +1323,20 @@ export type ReferralAttributionRow = Pick<
 export type AmbassadorCreditLedgerRow = Pick<
   Models.public_AmbassadorCreditLedger,
   'id' | 'ambassadorId' | 'kind' | 'amount' | 'referenceId' | 'note' | 'createdAt' | 'updatedAt'
+>;
+
+export type AmbassadorRedemptionRow = Pick<
+  Models.public_AmbassadorRedemption,
+  | 'id'
+  | 'ambassadorId'
+  | 'goody'
+  | 'creditsSpent'
+  | 'status'
+  | 'requestedAt'
+  | 'decidedAt'
+  | 'decidedBy'
+  | 'createdAt'
+  | 'updatedAt'
 >;
 
 export type AmbassadorMessageRow = Pick<
