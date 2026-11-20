@@ -48,14 +48,26 @@ export default function StatCard({ title, value, subtitle, icon, color = 'yellow
 
   return (
     <motion.div
+      className="h-full"
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4, delay }}
     >
-      <Card hover glow glass={glass}>
+      {/* Equal-height stat cards (Eman, 20 Nov 2026 — "ye cards ka
+          size same kro"): the grid item (this motion.div) stretches
+          to the row height, but the Card inside sized to its own
+          content — so a card whose title wrapped ("Teacher-authored")
+          or that carried a subtitle ("1 read (2%)") stuck out below
+          the rest. h-full on BOTH keeps every card's bottom aligned
+          in any grid row, on every dashboard that uses StatCard. */}
+      <Card hover glow glass={glass} className="h-full">
         <div className="flex items-start justify-between">
           <div>
-            <p className="text-muted text-sm">{title}</p>
+            {/* Fixed label area: min-h-10 reserves exactly two
+                text-sm lines, so a one-line title and a wrapped
+                two-line title start their numbers at the same y.
+                The label text itself never changes. */}
+            <p className="text-muted text-sm min-h-10">{title}</p>
             <p className="text-3xl font-bold text-foreground mt-1">
               {typeof value === 'number' ? (
                 <CountUp to={value} decimal={decimal} prefix={prefix} suffix={suffix} />
@@ -63,7 +75,12 @@ export default function StatCard({ title, value, subtitle, icon, color = 'yellow
                 value
               )}
             </p>
-            {subtitle && <p className="text-muted text-xs mt-1">{subtitle}</p>}
+            {/* Subtext line reserved on every card: the slot always
+                renders (a non-breaking space when there is no
+                subtitle), so a card with a subtitle and a card
+                without one keep the same internal rhythm and the
+                same height. */}
+            <p className="text-muted text-xs mt-1 min-h-4">{subtitle ?? '\u00A0'}</p>
             {trend && (
               <p className={cn('text-xs mt-2 font-medium', trend.value >= 0 ? 'text-green-400' : 'text-red-400')}>
                 {trend.value >= 0 ? '↑' : '↓'} {Math.abs(trend.value)}% {trend.label}
