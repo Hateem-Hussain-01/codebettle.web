@@ -134,7 +134,7 @@ export async function ensureAmbassadorCoupon(code: string): Promise<Coupon | nul
       type: 'fixed',
       value: AMBASSADOR_REFERRAL_DISCOUNT_PKR,
       maxUses: Math.max(existing.maxUses, AMBASSADOR_COUPON_MAX_USES),
-      expiresAt,
+      expiresAt: expiresAt.toISOString(),
       isActive: true,
       applicableCourses: [],
     });

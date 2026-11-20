@@ -9,7 +9,7 @@ import { hasAdminCapability } from '@/lib/rbac';
 import { isSuperAdmin } from '@/lib/super-admin';
 import { canSeeAuditLog } from '@/components/audit/audit-helpers';
 import PortalLayout from '@/components/layout/PortalLayout';
-import { LayoutDashboard, BookOpen, Users, GraduationCap, ClipboardList, Tag, Bell, FileText, Newspaper, BarChart2, Award, Settings, UserCheck, Mail, Megaphone, MessageSquare, ShieldCheck, ScrollText, ListChecks, Mails, User, Trophy, SlidersHorizontal, Star, PanelTop, CalendarCheck, UserPlus, MailPlus, Link2, LayoutTemplate, Coins } from 'lucide-react';
+import { LayoutDashboard, BookOpen, Users, GraduationCap, ClipboardList, Tag, Bell, FileText, Newspaper, BarChart2, Award, Settings, UserCheck, Mail, Megaphone, MessageSquare, ShieldCheck, ScrollText, ListChecks, Mails, User, Trophy, SlidersHorizontal, Star, PanelTop, CalendarCheck, UserPlus, MailPlus, Link2, LayoutTemplate, Coins, Ticket } from 'lucide-react';
 
 const NAV_ICONS = {
   dashboard: <LayoutDashboard className="w-5 h-5" />,
@@ -47,6 +47,8 @@ const NAV_ICONS = {
   // Footer forms sidebar icons (PR #33).
   'book-a-call': <CalendarCheck className="w-5 h-5" />,
   ambassadors: <UserPlus className="w-5 h-5" />,
+  // Referral Codes sidebar icon (ambassador redesign, Eman 20 Nov 2026).
+  'referral-codes': <Ticket className="w-5 h-5" />,
   // Team Portal sidebar icon (Eman, 16 Nov 2026).
   team: <Users className="w-5 h-5" />,
   // Credits Management sidebar icon (PR B, Eman, 16 Nov 2026).
