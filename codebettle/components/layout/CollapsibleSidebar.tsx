@@ -224,6 +224,18 @@ export default function CollapsibleSidebar({
   // desktop concern only.
   const effectiveCollapsed = mobile ? false : collapsed;
   const [labelsVisible, setLabelsVisible] = useState(mobile ? true : !collapsed);
+  // Live clock (Dashboard V32-EXACT, Eman 20 Nov 2026): the video's
+  // sidebar bottom shows the time (17:23) above Help/Settings/Log
+  // Out. Display-only — the user's own local time, 24-hour like the
+  // video, ticking every 30s. Mount-gated (null until hydration) so
+  // the server clock (UTC) and the user's clock (PKT) can never
+  // hydrate-mismatch; hidden on the collapsed rail like the labels.
+  const [now, setNow] = useState<Date | null>(null);
+  useEffect(() => {
+    setNow(new Date());
+    const id = setInterval(() => setNow(new Date()), 30_000);
+    return () => clearInterval(id);
+  }, []);
   const [query, setQuery] = useState('');
   const [hoveredHref, setHoveredHref] = useState<string | null>(null);
   const [activeResultIndex, setActiveResultIndex] = useState(0);
@@ -874,8 +886,22 @@ export default function CollapsibleSidebar({
         )}
       </nav>
 
+      {/* Live clock (V32-EXACT): the video's sidebar time, above Sign
+          Out. Expanded rail only — the collapsed rail hides it like
+          the labels. */}
+      {!effectiveCollapsed && now && (
+        <div className="border-t border-dark-border px-6 pb-1 pt-3">
+          <p className="text-lg font-bold tabular-nums leading-none text-primary-text">
+            {now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false })}
+          </p>
+          <p className="mt-1 text-[11px] text-muted">
+            {now.toLocaleDateString([], { weekday: 'long', day: 'numeric', month: 'short' })}
+          </p>
+        </div>
+      )}
+
       {/* Sign Out. */}
-      <div className="border-t border-dark-border px-3 py-4">
+      <div className={cn('px-3 py-4', effectiveCollapsed || !now ? 'border-t border-dark-border' : '')}>
         <button
           onClick={onLogout}
           aria-label="Sign Out"
