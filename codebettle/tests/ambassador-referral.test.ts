@@ -1,18 +1,24 @@
 /**
- * Ambassador referral tracking + Ambassador Dashboard (Eman, 16 Nov 2026).
+ * Ambassador referral tracking + Ambassador Dashboard (Eman, 16 Nov 2026;
+ * redesigned 20 Nov 2026).
  *
- * - Referral codes are RANDOM and unguessable: 6 chars from a
- *   32-char alphabet (no 0/O/1/I), crypto-secure, unique in the DB.
- * - Response tracking = 4 stages, derived from source tables (no
- *   counters that can drift): clicks (distinct ip+day), signups
- *   (attributions), enrollments (referred users' enrollments),
- *   payments (approved payment submissions of referred users).
+ * - Referral codes are ADMIN-ASSIGNED: 6 chars from a 32-char
+ *   alphabet (no 0/O/1/I), unique across ambassadors AND team codes.
+ *   (Random generation survives only as the backfill path.)
+ * - There is NO link tracking any more — no ?ref= capture, no
+ *   cb_ref cookie, no clicks. A student joins WITH an ambassador's
+ *   code, typed into the register form.
+ * - Response tracking = 3 stages, derived from source tables (no
+ *   counters that can drift): signups (attributions), enrollments
+ *   (referred users' enrollments), payments (approved payment
+ *   submissions of referred users).
  * - Multi-level tree: A refers B, B refers C — C is level 2 in A's
  *   network, level 1 in B's.
- * - Dashboard contents v1: code/link, 4 stat cards, My Team (L1+L2),
- *   meeting link, group link + daily member count (manual), message
- *   to admin. Admin sees everything on the ONE /admin/ambassadors
- *   page — no new admin tab was added.
+ * - Dashboard contents: code (copyable), 3 stat cards, My Credits,
+ *   My Team (L1+L2), meeting link, group link + daily member count
+ *   (manual), message to admin. Admin sees codes on the dedicated
+ *   /admin/referral-codes page and everything else on
+ *   /admin/ambassadors.
  *
  * Repo/service tests run against the fake DB; page/route wiring is
  * asserted by source inspection, following the Phase 6 design-test
@@ -27,7 +33,6 @@ import { __resetDbClient, __setDbClient } from '../lib/db/client';
 import { createFakeDb, type FakeDb } from './fake-db';
 import {
   REFERRAL_CODE_ALPHABET,
-  buildReferralLink,
   generateReferralCode,
   isReferralCodeFormat,
   normalizeReferralCode,
@@ -35,7 +40,6 @@ import {
 import {
   attributeSignupToAmbassador,
   backfillAmbassadorsForApprovedApplications,
-  countDistinctReferralClicks,
   countUnreadAmbassadorMessages,
   createAmbassador,
   createAmbassadorMessage,
@@ -50,11 +54,11 @@ import {
   listAmbassadorsWithStats,
   listMessagesForAmbassador,
   markAmbassadorMessageRead,
-  recordReferralClick,
   resolveReferralForSignup,
   updateAmbassadorGroup,
   updateOwnAmbassadorGroup,
 } from '../lib/db/ambassadors';
+import { isMissingAmbassadorCreditTableError } from '../lib/db/ambassador-credits';
 import { createAmbassadorApplication } from '../lib/db/ambassador-applications';
 import { getAmbassadorMeetingLink, updateSiteSettings, SettingsValidationError } from '../lib/services/settings-service';
 import { ADMIN_AREA_KEYS } from '../lib/admin-access';
@@ -145,31 +149,13 @@ test('getAmbassadorByCode normalizes case; unknown codes return null', async () 
   assert.equal(await getAmbassadorByCode('not-a-code'), null);
 });
 
-test('buildReferralLink is the site URL + ?ref=CODE', () => {
-  assert.equal(buildReferralLink('ABCDEF', 'https://codebettle-web.vercel.app'), 'https://codebettle-web.vercel.app/?ref=ABCDEF');
-  assert.equal(buildReferralLink('ABCDEF', 'https://codebettle.com/'), 'https://codebettle.com/?ref=ABCDEF');
+test('normalizeReferralCode trims + uppercases', () => {
   assert.equal(normalizeReferralCode('  abcdef '), 'ABCDEF');
 });
 
 // ---------------------------------------------------------------------------
-// Referral capture: clicks (distinct ip+day) + signup resolution
+// Signup resolution: the code is typed into the register form
 // ---------------------------------------------------------------------------
-
-test('clicks count distinct (ip, day) — refreshes do not inflate', async () => {
-  seedUsers();
-  const ambassador = await seedAmbassadorA();
-  await recordReferralClick(ambassador.id, '1.2.3.4');
-  await recordReferralClick(ambassador.id, '1.2.3.4');
-  await recordReferralClick(ambassador.id, '1.2.3.4');
-  assert.equal(await countDistinctReferralClicks(ambassador.id), 1);
-  await recordReferralClick(ambassador.id, '5.6.7.8');
-  assert.equal(await countDistinctReferralClicks(ambassador.id), 2);
-  // Same IP on a different day is a second distinct click.
-  fake.seed('ReferralClick', [
-    { id: 'click-old', ambassadorId: ambassador.id, ip: '1.2.3.4', day: '2026-01-01', clickedAt: D('2026-01-01') },
-  ]);
-  assert.equal(await countDistinctReferralClicks(ambassador.id), 3);
-});
 
 test('resolveReferralForSignup: valid code attributes; unknown, inactive and self-referral do not', async () => {
   seedUsers();
@@ -186,30 +172,30 @@ test('resolveReferralForSignup: valid code attributes; unknown, inactive and sel
 });
 
 // ---------------------------------------------------------------------------
-// 4-stage stats: each stage moves exactly one number
+// 3-stage stats: each stage moves exactly one number
 // ---------------------------------------------------------------------------
 
-test('4-stage counting: signup, then enrollment, then payment each move exactly one stage', async () => {
+test('3-stage counting: signup, then enrollment, then payment each move exactly one stage', async () => {
   seedUsers();
   const ambassador = await seedAmbassadorA();
   // Stage 2 — signup.
   assert.equal(await attributeSignupToAmbassador(ambassador.id, 'user-b'), true);
   let stats = await getAmbassadorStats(ambassador.id);
-  assert.deepEqual(stats.stats, { clicks: 0, signups: 1, enrollments: 0, payments: 0 });
+  assert.deepEqual(stats.stats, { signups: 1, enrollments: 0, payments: 0 });
   assert.equal(stats.teamLevel1[0].stage, 'signed up');
   // Stage 3 — enrollment (pending, unpaid).
   fake.seed('Enrollment', [
     { id: 'enr-1', studentId: 'user-b', courseId: 'course-1', batchId: null, enrolledAt: D('2026-02-02'), isCompleted: false, completedAt: null, paymentStatus: 'pending', amountPaid: 0, couponUsed: null, deletedAt: null },
   ]);
   stats = await getAmbassadorStats(ambassador.id);
-  assert.deepEqual(stats.stats, { clicks: 0, signups: 1, enrollments: 1, payments: 0 });
+  assert.deepEqual(stats.stats, { signups: 1, enrollments: 1, payments: 0 });
   assert.equal(stats.teamLevel1[0].stage, 'enrolled');
   // Stage 4 — approved payment submission.
   fake.seed('PaymentSubmission', [
     { id: 'pay-1', enrollmentId: 'enr-1', method: 'jazzcash', amountPkr: 1500, transactionRef: 'REF-1', accountSnapshot: {}, reviewStatus: 'approved', submittedAt: D('2026-02-03'), createdAt: D('2026-02-03'), updatedAt: D('2026-02-03') },
   ]);
   stats = await getAmbassadorStats(ambassador.id);
-  assert.deepEqual(stats.stats, { clicks: 0, signups: 1, enrollments: 1, payments: 1 });
+  assert.deepEqual(stats.stats, { signups: 1, enrollments: 1, payments: 1 });
   assert.equal(stats.teamLevel1[0].stage, 'paid');
   // A merely-submitted (not approved) payment does NOT count as a payment.
   fake.seed('Enrollment', [
@@ -220,7 +206,7 @@ test('4-stage counting: signup, then enrollment, then payment each move exactly 
   ]);
   assert.equal(await attributeSignupToAmbassador(ambassador.id, 'user-c'), true);
   stats = await getAmbassadorStats(ambassador.id);
-  assert.deepEqual(stats.stats, { clicks: 0, signups: 2, enrollments: 2, payments: 1 });
+  assert.deepEqual(stats.stats, { signups: 2, enrollments: 2, payments: 1 });
   assert.equal(stats.teamLevel1.find((m) => m.id === 'user-c')?.stage, 'enrolled');
   // A free-course enrollment counts at stage 3 only (no payment exists).
   fake.seed('Enrollment', [
@@ -228,7 +214,7 @@ test('4-stage counting: signup, then enrollment, then payment each move exactly 
   ]);
   assert.equal(await attributeSignupToAmbassador(ambassador.id, 'user-d'), true);
   stats = await getAmbassadorStats(ambassador.id);
-  assert.deepEqual(stats.stats, { clicks: 0, signups: 3, enrollments: 3, payments: 1 });
+  assert.deepEqual(stats.stats, { signups: 3, enrollments: 3, payments: 1 });
   assert.equal(stats.teamLevel1.find((m) => m.id === 'user-d')?.stage, 'enrolled');
 });
 
@@ -410,9 +396,14 @@ test('meeting link: a non-URL is rejected', async () => {
 // ---------------------------------------------------------------------------
 
 test('missing-table errors are recognised for every referral table', () => {
-  for (const table of ['Ambassador', 'ReferralAttribution', 'ReferralClick', 'AmbassadorMessage']) {
+  for (const table of ['Ambassador', 'ReferralAttribution', 'AmbassadorMessage']) {
     assert.equal(isMissingReferralTableError({ code: '42P01', message: `relation "public"."${table}" does not exist` }), true);
   }
+  // ReferralClick is gone (the redesign drops the table) — a
+  // "relation does not exist" for it is no longer a known missing
+  // table. The new ledger table has its own recogniser.
+  assert.equal(isMissingReferralTableError({ code: '42P01', message: 'relation "public"."ReferralClick" does not exist' }), false);
+  assert.equal(isMissingAmbassadorCreditTableError({ code: '42P01', message: 'relation "public"."AmbassadorCreditLedger" does not exist' }), true);
   assert.equal(isMissingReferralTableError({ code: '42P01', message: 'relation "public"."User" does not exist' }), false);
   assert.equal(isMissingReferralTableError({ code: '23505', message: 'duplicate key' }), false);
   assert.equal(isMissingReferralTableError(null), false);
@@ -440,15 +431,24 @@ test('wiring: student layout shows the Ambassador nav item only to ambassadors; 
   assert.ok(page.includes('getAmbassadorMeetingLink'));
 });
 
-test('wiring: register reads the referral cookie server-side, never a client-sent field', () => {
+test('wiring: register reads the referral code from the form field — no cookie, no link capture', () => {
   const route = read('app/api/auth/route.ts');
-  assert.ok(route.includes('REFERRAL_COOKIE'));
+  // The code arrives in the register body and is resolved server-side.
+  assert.ok(route.includes('referralCode'), 'register schema + resolution read the referralCode field');
   assert.ok(route.includes('resolveReferralForSignup'));
+  assert.ok(route.includes('resolveTeamReferralForSignup'));
+  // No link tracking survives anywhere on the path: no cookie, no
+  // ?ref= capture in the proxy, no track endpoint.
+  assert.ok(!route.includes('REFERRAL_COOKIE'), 'no referral cookie is read');
   assert.ok(!route.includes('referredByAmbassadorId: parsed.data'), 'no client-sent referrer field is accepted');
   const proxy = read('proxy.ts');
-  assert.ok(proxy.includes("searchParams.get('ref')"));
-  assert.ok(proxy.includes('/api/referral/track'));
-  assert.ok(proxy.includes('withReferralCookie'));
+  assert.ok(!proxy.includes("searchParams.get('ref')"), 'proxy no longer captures ?ref=');
+  assert.ok(!proxy.includes('/api/referral/track'), 'no click tracking call');
+  assert.ok(!proxy.includes('withReferralCookie'), 'no referral cookie is set');
+  // The form itself carries the code field.
+  const form = read('components/auth/RegisterForm.tsx');
+  assert.ok(form.includes('Referral code (optional)'));
+  assert.ok(form.includes('referralCode'));
 });
 
 test('wiring: group update resolves the ambassador from the session — no ambassador id in the request', () => {

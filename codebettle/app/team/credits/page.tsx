@@ -12,8 +12,6 @@ import {
 } from '@/lib/db/team-credits';
 import { getTeamCreditSettings } from '@/lib/services/settings-service';
 import { getUsersByIds } from '@/lib/db/users';
-import { buildReferralLink } from '@/lib/referral';
-import { getAppBaseUrl } from '@/lib/email/resend';
 import Card from '@/components/ui/Card';
 import { Coins } from 'lucide-react';
 import TeamCreditsClient from './credits-client';
@@ -21,7 +19,7 @@ import TeamCreditsClient from './credits-client';
 /**
  * Team Credits (PR B, Eman 16 Nov 2026) — /team/credits.
  *
- * The member's referral link/code (copy button), total credits,
+ * The member's referral code (copy button), total credits,
  * credit history (which student's enrollment earned what), goodies
  * with their credit prices + redemption requests, and their own
  * redemption history. Every number on this page reads the live admin
@@ -102,12 +100,11 @@ export default async function TeamCreditsPage() {
           <Coins className="w-6 h-6 text-primary-text" /> Credits
         </h1>
         <p className="text-muted mt-1">
-          Earn credits when students enroll through your referral link, then redeem them for CodeBettle goodies.
+          Earn credits when students enroll with your referral code, then redeem them for CodeBettle goodies.
         </p>
       </div>
       <TeamCreditsClient
         referralCode={referralCode}
-        referralLink={referralCode ? buildReferralLink(referralCode, getAppBaseUrl()) : null}
         summary={summary}
         earnRate={settings.creditsPerEnrollment}
         earnOn={settings.earnOn}

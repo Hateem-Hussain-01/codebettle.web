@@ -5,7 +5,6 @@ import { useRouter } from 'next/navigation';
 import { Check, Coins, Copy, Gift, Link2, Users } from 'lucide-react';
 import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
-import Input from '@/components/ui/Input';
 import Badge from '@/components/ui/Badge';
 import FadeIn from '@/components/ui/FadeIn';
 import { formatDateShort } from '@/lib/utils';
@@ -16,7 +15,6 @@ import type { TeamCreditEarnOn } from '@/lib/services/settings-service';
 
 interface TeamCreditsClientProps {
   referralCode: string | null;
-  referralLink: string | null;
   summary: { balance: number; held: number; earned: number };
   earnRate: number;
   earnOn: TeamCreditEarnOn;
@@ -39,28 +37,28 @@ const REDEMPTION_BADGE: Record<TeamRedemption['status'], 'info' | 'success' | 'm
 };
 
 /**
- * Team Credits client (PR B, Eman 16 Nov 2026): referral link copy,
- * goody redemption requests, and the credit history. Every price and
- * the earn rate come from props (live admin settings) — this file
- * never hard-codes a credit number.
+ * Team Credits client (PR B, Eman 16 Nov 2026; referral-code
+ * redesign 20 Nov 2026): referral CODE copy, goody redemption
+ * requests, and the credit history. Every price and the earn rate
+ * come from props (live admin settings) — this file never hard-codes
+ * a credit number. There is no referral link any more — students
+ * join with the code typed into the register form.
  */
 export default function TeamCreditsClient(props: TeamCreditsClientProps) {
-  const { referralCode, referralLink, summary, earnRate, earnOn, goodyPrices, redemptions, ledger, referred } = props;
+  const { referralCode, summary, earnRate, earnOn, goodyPrices, redemptions, ledger, referred } = props;
   const router = useRouter();
   const [copied, setCopied] = useState(false);
   const [requesting, setRequesting] = useState<TeamGoody | null>(null);
 
-  const copyLink = async () => {
-    if (!referralLink) return;
+  const copyCode = async () => {
+    if (!referralCode) return;
     try {
-      await navigator.clipboard.writeText(referralLink);
+      await navigator.clipboard.writeText(referralCode);
     } catch {
-      const input = document.getElementById('team-referral-link') as HTMLInputElement | null;
-      input?.select();
-      document.execCommand('copy');
+      // Clipboard unavailable — the code is still visible to copy by hand.
     }
     setCopied(true);
-    toast.success('Referral link copied');
+    toast.success('Referral code copied');
     setTimeout(() => setCopied(false), 2000);
   };
 
@@ -113,29 +111,29 @@ export default function TeamCreditsClient(props: TeamCreditsClientProps) {
         </Card>
       </FadeIn>
 
-      {/* Referral link */}
+      {/* Referral code (Eman, 20 Nov 2026): no link any more — the
+          student types this code into the register form. */}
       <Card className="p-6">
         <h2 className="text-lg font-bold text-foreground flex items-center gap-2">
-          <Link2 className="w-5 h-5 text-primary-text" /> Your referral link
+          <Link2 className="w-5 h-5 text-primary-text" /> Your referral code
         </h2>
         <p className="text-sm text-muted mt-1">
-          Share this link — you earn <strong className="text-foreground">{earnRate} credits</strong> for every student
-          who enrolls through it
+          Share this code — you earn <strong className="text-foreground">{earnRate} credits</strong> for every student
+          who enrolls with it
           {earnOn === 'approved_payment'
             ? ' once their payment is approved'
             : ''}.
         </p>
-        {referralCode && referralLink ? (
+        {referralCode ? (
           <div className="mt-4 flex flex-col sm:flex-row gap-3">
             <div className="flex items-center gap-3">
               <span className="text-xs font-medium text-muted">Code</span>
               <span className="font-mono text-lg font-black tracking-widest text-primary-text">{referralCode}</span>
             </div>
             <div className="flex gap-2 flex-1">
-              <Input id="team-referral-link" value={referralLink} readOnly className="flex-1" />
-              <Button onClick={copyLink} className="flex-shrink-0">
+              <Button onClick={copyCode} className="flex-shrink-0">
                 {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
-                {copied ? 'Copied' : 'Copy link'}
+                {copied ? 'Copied' : 'Copy code'}
               </Button>
             </div>
           </div>
