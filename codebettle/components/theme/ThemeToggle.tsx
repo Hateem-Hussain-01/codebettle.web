@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Check, Monitor, Moon, Sun } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTheme } from './ThemeProvider';
+import { applyThemeWithWipe, elementCenter } from '@/lib/theme-wipe';
 import type { ThemePreference } from '@/lib/theme';
 import { cn } from '@/lib/utils';
 
@@ -145,7 +146,15 @@ export default function ThemeToggle({ className, open, onOpenChange }: ThemeTogg
                     type="button"
                     role="menuitemradio"
                     aria-checked={isActive}
-                    onClick={() => { setPreference(option); setOpen(false); }}
+                    onClick={(e) => {
+                      // Ink-wipe theme switch (Eman, 21 Nov 2026): the
+                      // new theme spreads as an ink blob from the
+                      // clicked menu item; the menu closes as part of
+                      // the same transition so it never lingers over
+                      // the wipe. Reduced motion / no View Transitions
+                      // support = instant switch (see lib/theme-wipe).
+                      applyThemeWithWipe(() => { setPreference(option); setOpen(false); }, elementCenter(e.currentTarget));
+                    }}
                     className={cn(
                       'flex items-center gap-3 px-4 py-2.5 text-sm font-medium transition-colors w-full cursor-pointer',
                       isActive ? 'text-foreground bg-dark-border' : 'text-muted hover:text-foreground hover:bg-dark-border'

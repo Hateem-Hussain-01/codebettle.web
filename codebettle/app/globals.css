@@ -297,6 +297,10 @@ html[data-cb-intro="show"] body::before {
   z-index: 9999;
 }
 
+/* Theme ink-wipe rules live in public/theme-ink-wipe.css (plain file,
+   loaded via <link> from the root layout) — Tailwind's CSS pipeline
+   drops ::view-transition-* rules, so they must NOT live here. */
+
 /* ------------------------------------------------------------------ */
 /* Premium 3D public pages (Eman, 16 Nov 2026) — ADDITIVE ONLY.       */
 /*                                                                     */

@@ -1,0 +1,102 @@
+/* Theme ink-wipe (Eman, 21 Nov 2026 — reference video of an organic
+   ink-blob theme transition, adapted to CodeBettle).
+ *
+ * This file is intentionally a PLAIN stylesheet in public/, loaded via
+ * <link> from the root layout — NOT part of app/globals.css. Tailwind
+ * v4 processes globals.css through Lightning CSS, which drops the
+ * ::view-transition-old(root) / ::view-transition-new(root) rules (it
+ * does not recognise those pseudo-elements), so the wipe silently
+ * fell back to the browser's default 0.25s fade. Served raw from
+ * public/, the browser parses these rules as-is and the wipe runs.
+ * (Proven 21 Nov: document.styleSheets showed the @keyframes but no
+ * view-transition rules while the block lived in globals.css.)
+ *
+ * SELECTOR NOTE: the old -root selector form was REMOVED from
+ * Chromium (this build, Chrome 159, rejects it at parse time —
+ * CSS.supports returns false and insertRule throws). The current
+ * syntax is the functional form ::view-transition-old(root) /
+ * ::view-transition-new(root). Do NOT "fix" these back to the -root
+ * form. (The test asserts the old form never comes back, so this
+ * comment deliberately does not spell it out.)
+ *
+ * HOW THE WIPE IS BUILT (two parts, in lock-step):
+ *  1. The clip circle below reveals the new theme's content, spreading
+ *     from the clicked button (~0.9s, slow/damped ease). The #ink-blob
+ *     displacement filter wobbles the page content just inside the
+ *     spreading edge, for the liquid feel.
+ *  2. The GOLD edge is a separate gold ring in a manual popover
+ *     (.theme-wipe-ring-popover / .theme-wipe-ring), animated by
+ *     lib/theme-wipe.ts with the same origin, radius, duration and
+ *     ease. It MUST live in a popover: the view-transition snapshots
+ *     paint in the top layer above all normal DOM, so a plain overlay
+ *     would be hidden behind them — a popover shown after the
+ *     transition starts stacks above that layer (proven 21 Nov). The
+ *     ring is a bordered circle with a gold glow, wobbled into an
+ *     organic shape by the same #ink-blob displacement filter.
+ *  A CSS shadow filter on the snapshot does NOT paint in Chromium, and
+ *  an SVG flood/composite ring inside the filter cannot work either
+ *  (filters run BEFORE clip-path, so anything painted outside the clip
+ *  is cut away) — the popover ring is the mechanism that actually
+ *  paints. Never re-add a shadow filter or a filter-based ring.
+ *
+ * These rules are the ONLY view transition in the app, so they apply
+ * to every transition by design. If a second transition is ever
+ * added, scope these rules to a class on <html> first. Reduced
+ * motion: the helper skips the transition entirely (instant switch);
+ * the global reduced-motion block in globals.css also collapses any
+ * stray animation to 0.01ms.
+ */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
+}
+::view-transition-old(root) {
+  z-index: 1;
+}
+::view-transition-new(root) {
+  z-index: 2147483646;
+  animation: theme-ink-wipe 0.9s cubic-bezier(0.16, 1, 0.3, 1) both;
+  /* The #ink-blob displacement filter wobbles the snapshot content
+     near the spreading edge. See the header note: a shadow filter
+     here does not paint, and a filter-based gold ring cannot work. */
+  filter: url(#ink-blob);
+}
+@keyframes theme-ink-wipe {
+  from {
+    clip-path: circle(0px at var(--wipe-x, 50vw) var(--wipe-y, 50vh));
+  }
+  to {
+    clip-path: circle(var(--wipe-r, 150vmax) at var(--wipe-x, 50vw) var(--wipe-y, 50vh));
+  }
+}
+
+/* Gold ring (see the header note): a manual popover, transparent and
+   click-through, holding one ring. The helper positions/sizes the ring
+   per tap (left/top/width/height inline) and animates its scale with
+   the Web Animations API; the resting transform below keeps it
+   invisible until the animation runs. The popover has no backdrop. */
+.theme-wipe-ring-popover {
+  margin: 0;
+  padding: 0;
+  border: none;
+  background: transparent;
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  overflow: visible;
+  pointer-events: none;
+}
+.theme-wipe-ring-popover::backdrop {
+  background: transparent;
+}
+.theme-wipe-ring {
+  position: absolute;
+  transform: translate(-50%, -50%) scale(0);
+  border-radius: 50%;
+  border: 4px solid var(--color-primary);
+  box-shadow: 0 0 16px 4px color-mix(in srgb, var(--color-primary) 55%, transparent);
+  filter: url(#ink-blob);
+  pointer-events: none;
+}

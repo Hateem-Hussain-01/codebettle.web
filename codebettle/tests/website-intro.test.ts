@@ -250,6 +250,18 @@ test('intro touches only landing-page, layout, hero and intro files (no dashboar
     // tripped it — its arming is now source-only, same pattern as
     // this guard's own PR #81 fix.
     'codebettle/tests/dashboard-followup.test.ts',
+    // Theme ink-wipe (21 Nov 2026, Eman): the wipe touches the root
+    // layout (stylesheet link + displacement filter) and globals.css
+    // (pointer comment), which arms this guard — so its own files
+    // belong here too. No dashboard/sidebar overlap: the wipe only
+    // touches the two theme controls, its helper, its plain CSS and
+    // its tests.
+    'codebettle/components/theme/ThemeToggle.tsx',
+    'codebettle/components/theme/ThemeMenuRow.tsx',
+    'codebettle/lib/theme-wipe.ts',
+    'codebettle/public/theme-ink-wipe.css',
+    'codebettle/tests/theme-ink-wipe.test.ts',
+    'codebettle/tests/theme.test.ts',
   ]);
   // Merged state (19 Nov 2026 — the old `files.length > 0` assertion
   // below failed CI on main right after PR #79 merged): on main the

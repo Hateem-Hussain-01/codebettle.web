@@ -289,8 +289,11 @@ test('theme menu: three options (Dark / Light / Default (system)), active one ma
   assert.match(toggle, /<Check className="w-4 h-4 ml-auto"/);
   assert.match(toggle, /const isActive = preference === option;/);
   // Choosing an option applies it and closes the menu — the end of
-  // the flow: menu click -> setPreference -> cookie + data-theme.
-  assert.match(toggle, /onClick=\{\(\) => \{ setPreference\(option\); setOpen\(false\); \}\}/);
+  // the flow: menu click -> ink wipe (Eman, 21 Nov 2026: the new theme
+  // spreads as an ink blob from the clicked item) -> setPreference ->
+  // cookie + data-theme. The menu closes as part of the same
+  // transition so it never lingers over the wipe.
+  assert.match(toggle, /applyThemeWithWipe\(\(\) => \{ setPreference\(option\); setOpen\(false\); \}, elementCenter\(e\.currentTarget\)\)/);
   assert.match(toggle, /const \{ preference, theme, setPreference \} = useTheme\(\);/);
   // Menu behaviour: button toggles, closes on outside click and on
   // Escape (focus back to the button), arrow keys move between items.
