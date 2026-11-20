@@ -14,35 +14,39 @@ import {
   INTRO_TYPE_DURATION_MS,
   INTRO_TYPE_MS_PER_CHAR,
   dispatchIntroDone,
+  hasSeenIntro,
   markIntroSeen,
 } from '@/lib/intro';
 
 /**
  * Website intro & loading experience (Eman, 18 Nov 2026 — "Done bna do").
  *
- * A ~4s branded splash on the landing page ONLY, once per browser
- * session on the first full load of "/". CodeBettle's own motion
- * (dark + gold, slow and damped — FadeIn's 0.45s ease-out house
- * timing, the hero's 1.8s count-up character): the "notiune" video
- * was reference only; nothing here copies its motion, colours or
- * branding. Scenes, all on the dark background:
- *   1. (0–0.6s) gold particles fade in and drift upward; logo glows.
- *   2. (0.6–1.4s) the real bee mark scales in with a gold glow;
- *      "CODEBETTLE" letters rise one by one (clean premium rise —
- *      NOT the video's scattered falling letters).
- *   3. (1.4–~2.8s) the tagline types in char-by-char with the
- *      blinking cursor, in the hero typewriter's style (the speed
- *      adapts: 12ms/char for a 118-char sentence, where the hero's
- *      80ms suits 5–16-char role words); a gold underline draws
- *      left → right under it as typing finishes.
- *   4. (3.0–3.5s) a thin gold wavy line draws across (the video's
+ * A ~6s branded splash on the landing page ONLY, once per browser
+ * session on the first full load of "/". (Retuned 20 Nov 2026, Eman:
+ * the ~4s version felt rushed — slower, more damped motion
+ * throughout, total ~6s.) CodeBettle's own motion (dark + gold, slow
+ * and damped — FadeIn's 0.45s ease-out house timing, the hero's 1.8s
+ * count-up character): the "notiune" video was reference only;
+ * nothing here copies its motion, colours or branding. Scenes, all
+ * on the dark background:
+ *   1. (0–0.9s) gold particles fade in and drift upward slowly; logo glows.
+ *   2. (0.8–2.0s) the real bee mark scales in on a soft spring with
+ *      a gold glow; "CODEBETTLE" letters rise one by one from 1.0s
+ *      (clean premium rise — NOT the video's scattered falling
+ *      letters), 0.7s each with a 0.08s stagger.
+ *   3. (2.2–~4.6s) the tagline types in char-by-char with the
+ *      blinking cursor, in the hero typewriter's style (20ms/char
+ *      for a 118-char sentence, where the hero's 80ms suits 5–16-char
+ *      role words); a gold underline draws left → right under it as
+ *      typing finishes.
+ *   4. (4.6–5.2s) a thin gold wavy line draws across (the video's
  *      squiggle motif, reimagined in gold); gold rings ripple out
  *      behind the logo.
- *   5. (3.5–4.0s) a gold-ringed circle expands from the centre and
+ *   5. (5.2–6.0s) a gold-ringed circle expands from the centre and
  *      wipes the intro away — a circular reveal, not a plain fade:
  *      the dark overlay's clip-path circle collapses to the centre
  *      while a gold ring scales outward, revealing the hero beneath.
- *   6. (4.0s+) hero settles; the hero count-up and 3D fade-in start
+ *   6. (6.0s+) hero settles; the hero count-up and 3D fade-in start
  *      via the intro-done event (see lib/intro.ts).
  *
  * SESSION-SCOPING: the pre-hydration script (lib/intro.ts,
@@ -70,8 +74,12 @@ import {
 const LETTERS = 'CODEBETTLE'.split('');
 const BEE_SRC = `data:image/png;base64,${images.bee}`;
 const UNDERLINE_AT_MS = INTRO_TYPE_AT_MS + INTRO_TYPE_DURATION_MS;
-const WAVE_AT_MS = 3000;
+const WAVE_AT_MS = 4600;
 const SKIP_REVEAL_MS = 450;
+// Soft cinematic ease-out (slow landing, no snap) — the retune's
+// house ease for the letter rise, underline and wave. The reveal
+// keeps easeInOut, just slower.
+const SOFT_EASE: [number, number, number, number] = [0.22, 1, 0.36, 1];
 
 export default function WebsiteIntro() {
   const pathname = usePathname();
@@ -90,17 +98,28 @@ export default function WebsiteIntro() {
   };
 
   // Mount: tell the pre-hydration script's fallback we are alive,
-  // then play only when the script flagged this load as an intro
-  // load (full document load of "/" in a fresh session). The flag
-  // is removed in the same commit the overlay mounts. A plain
-  // useEffect (not useLayoutEffect — the codebase has none, and the
-  // CSS cover already protects the first paint) is enough: the cover
-  // stays up until this effect runs, so the hero cannot flash.
+  // then play on a full document load of "/" in a fresh session. The
+  // pre-hydration flag is the normal trigger — but it is NOT the only
+  // one. Mobile fix (20 Nov 2026): the script's cover fallback drops
+  // the flag if React has not mounted yet, and on a slow phone
+  // hydration can take longer than the fallback — the flag was then
+  // gone before this effect ran, so the intro never played on mobile
+  // at all. The session flag is the same source of truth (the script
+  // checks it before flagging), so play whenever the session has not
+  // seen the intro. Reduced motion may still be unresolved (null) on
+  // the very first client render — read the media query directly so
+  // a null never plays the intro for a reduced-motion user. This
+  // effect runs once per component lifetime in the root layout, and
+  // SPA navigation does not remount the layout, so the intro still
+  // never replays on internal route changes. No viewport / pointer
+  // gate anywhere: the intro plays on phones exactly as on desktop.
   useEffect(() => {
     (window as unknown as { __cbIntroMounted?: boolean }).__cbIntroMounted = true;
     const flagged =
       document.documentElement.getAttribute(`data-${INTRO_DATA_ATTR}`) === 'show';
-    if (flagged && pathname === '/' && !reduceMotion) {
+    const prefersReduced =
+      reduceMotion ?? window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (pathname === '/' && !prefersReduced && (flagged || !hasSeenIntro())) {
       document.documentElement.removeAttribute(`data-${INTRO_DATA_ATTR}`);
       setPhase('playing');
     }
@@ -129,7 +148,7 @@ export default function WebsiteIntro() {
   };
 
   // Playing: lock the background scroll, type the tagline, and
-  // auto-advance to the reveal at 3.5s.
+  // auto-advance to the reveal at 5.2s.
   useEffect(() => {
     if (phase !== 'playing') return undefined;
     const prevOverflow = document.body.style.overflow;
@@ -194,7 +213,7 @@ export default function WebsiteIntro() {
               style={{ left: `${p.left}%`, top: `${p.top}%`, width: p.size, height: p.size }}
               initial={{ opacity: 0, y: 0 }}
               animate={{ opacity: [0, 0.9, 0], y: -p.drift }}
-              transition={{ duration: 2.2, delay: p.delay, ease: 'easeOut' }}
+              transition={{ duration: 3.4, delay: p.delay, ease: 'easeOut' }}
             />
           ))}
         </div>
@@ -207,7 +226,7 @@ export default function WebsiteIntro() {
               className="absolute left-1/2 top-1/2 h-56 w-56 -translate-x-1/2 -translate-y-1/2 rounded-full border border-primary/40 sm:h-72 sm:w-72"
               initial={{ scale: 0.7, opacity: 0 }}
               animate={{ scale: 1.7, opacity: [0, 0.6, 0] }}
-              transition={{ duration: 1, delay: WAVE_AT_MS / 1000 + i * 0.18, ease: 'easeOut' }}
+              transition={{ duration: 1.5, delay: WAVE_AT_MS / 1000 + i * 0.25, ease: 'easeOut' }}
             />
           ))}
         </div>
@@ -217,7 +236,7 @@ export default function WebsiteIntro() {
           <motion.div
             initial={{ scale: 0.6, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
-            transition={{ type: 'spring', stiffness: 120, damping: 16, delay: 0.6 }}
+            transition={{ type: 'spring', stiffness: 70, damping: 18, delay: 0.8 }}
             className="relative"
           >
             <div aria-hidden="true" className="absolute -inset-10 rounded-full bg-primary/25 blur-3xl" />
@@ -241,7 +260,7 @@ export default function WebsiteIntro() {
                 className="inline-block"
                 initial={{ y: 28, opacity: 0 }}
                 animate={{ y: 0, opacity: 1 }}
-                transition={{ duration: 0.45, delay: 0.7 + i * 0.05, ease: 'easeOut' }}
+                transition={{ duration: 0.7, delay: 1.0 + i * 0.08, ease: SOFT_EASE }}
               >
                 {letter}
               </motion.span>
@@ -258,7 +277,7 @@ export default function WebsiteIntro() {
             className="mt-4 h-[2px] w-48 origin-left bg-primary sm:w-64"
             initial={{ scaleX: 0 }}
             animate={{ scaleX: 1 }}
-            transition={{ duration: 0.45, delay: UNDERLINE_AT_MS / 1000, ease: 'easeOut' }}
+            transition={{ duration: 0.7, delay: UNDERLINE_AT_MS / 1000, ease: SOFT_EASE }}
           />
 
           {/* Scene 4 — the gold wavy line (the video's squiggle motif, reimagined in gold). */}
@@ -276,7 +295,7 @@ export default function WebsiteIntro() {
               strokeLinecap="round"
               initial={{ pathLength: 0 }}
               animate={{ pathLength: 1 }}
-              transition={{ duration: 0.6, delay: WAVE_AT_MS / 1000, ease: 'easeOut' }}
+              transition={{ duration: 1.0, delay: WAVE_AT_MS / 1000, ease: SOFT_EASE }}
             />
           </motion.svg>
         </div>

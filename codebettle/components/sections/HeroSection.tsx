@@ -68,8 +68,14 @@ export default function HeroSection() {
     <section ref={heroRef} className="relative min-h-screen flex items-center justify-center overflow-hidden bg-background">
       {/* Shared public-page backdrop (static grid + glows). The hero
           scene already carries the particle field, so no second
-          particle canvas here. */}
-      <PublicPageBackdrop variant="hero" particles={false} />
+          particle canvas here. Hero readability (Eman, 20 Nov 2026
+          — first step: reduce opacity, do NOT remove): the backdrop
+          sits behind the headline too, so it renders at half
+          strength; the 3D scene itself is dimmed to 35% in
+          HeroSceneWrapper. */}
+      <div aria-hidden="true" className="pointer-events-none absolute inset-0 opacity-50">
+        <PublicPageBackdrop variant="hero" particles={false} />
+      </div>
       {/* Real 3D scene (lazy, desktop + WebGL only — phones and
           reduced-motion users keep the static backdrop above). */}
       <HeroSceneWrapper scrollYProgress={scrollYProgress} />

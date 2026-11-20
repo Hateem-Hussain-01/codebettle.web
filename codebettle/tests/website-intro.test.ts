@@ -1,11 +1,12 @@
-// Website intro & loading experience (Eman, 18 Nov 2026 — "Done bna do").
+// Website intro & loading experience (Eman, 18 Nov 2026 — "Done bna do";
+// retuned 20 Nov 2026 — ~6s, slower and more damped, plays on mobile).
 //
-// A ~4s branded splash on the landing page ONLY, once per browser
+// A ~6s branded splash on the landing page ONLY, once per browser
 // session on the first full load of "/". CodeBettle's own motion
 // (dark + gold) — the "notiune" video was reference only.
 //
 // These tests pin the contract: session-scoping, skip, reduced
-// motion, the hero count-up gating (stats must start at the reveal,
+// motion, the 3D fade-in gating (the scene fades in at the reveal,
 // never behind the intro), the first-paint cover, and the scope
 // (landing page + root layout + hero integration only — no
 // PortalLayout/layout/sidebar/dashboard files, so no conflict with
@@ -17,10 +18,13 @@ import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { execSync } from 'node:child_process';
 import {
+  INTRO_COVER_FALLBACK_MS,
   INTRO_DATA_ATTR,
   INTRO_DONE_EVENT,
+  INTRO_DONE_FALLBACK_MS,
   INTRO_PARTICLES,
   INTRO_REVEAL_AT_MS,
+  INTRO_REVEAL_MS,
   INTRO_SCRIPT,
   INTRO_SEEN_KEY,
   INTRO_TAGLINE,
@@ -46,8 +50,13 @@ test('intro shows only on the first full load of "/" in a fresh session', () => 
   assert.equal(shouldShowIntro({ ...firstVisit, isEntry: false }), false, 'SPA navigation to / — never replayed');
 });
 
-test('intro fits the ~4s cap: typing finishes before the reveal', () => {
-  assert.ok(INTRO_TOTAL_MS <= 4000, `total must be <= 4000ms, got ${INTRO_TOTAL_MS}`);
+test('intro fits the ~6s total: typing finishes before the reveal, fallbacks exceed the total', () => {
+  assert.equal(INTRO_TOTAL_MS, 6000, `total must be 6000ms, got ${INTRO_TOTAL_MS}`);
+  assert.equal(
+    INTRO_REVEAL_AT_MS + INTRO_REVEAL_MS,
+    INTRO_TOTAL_MS,
+    'reveal start + reveal duration must equal the total',
+  );
   assert.equal(
     INTRO_TYPE_DURATION_MS,
     INTRO_TAGLINE.length * INTRO_TYPE_MS_PER_CHAR,
@@ -59,9 +68,22 @@ test('intro fits the ~4s cap: typing finishes before the reveal', () => {
   );
   // The hero typewriter's 80ms/char suits 5–16-char role words; a
   // 118-char sentence at that speed would take ~9.5s and blow the
-  // cap. The intro speed adapts to the length (style, not speed,
+  // total. The intro speed adapts to the length (style, not speed,
   // is what is shared with the hero).
   assert.ok(INTRO_TYPE_MS_PER_CHAR < 80, 'intro typing must be faster than the hero role typewriter');
+  // Slower than the old 12ms/char — the 20 Nov retune: the ~4s intro
+  // felt rushed, so the typing (and everything else) slowed down.
+  assert.ok(INTRO_TYPE_MS_PER_CHAR > 12, 'intro typing must be slower than the rushed ~4s version');
+  // Fallbacks must stay above the total, or a missed event / slow
+  // hydration could strand the hero or the cover.
+  assert.ok(
+    INTRO_COVER_FALLBACK_MS > INTRO_TOTAL_MS,
+    `cover fallback (${INTRO_COVER_FALLBACK_MS}ms) must exceed the total (${INTRO_TOTAL_MS}ms)`,
+  );
+  assert.ok(
+    INTRO_DONE_FALLBACK_MS > INTRO_TOTAL_MS,
+    `hero-done fallback (${INTRO_DONE_FALLBACK_MS}ms) must exceed the total (${INTRO_TOTAL_MS}ms)`,
+  );
 });
 
 test('particles are deterministic and stay on screen', () => {
@@ -78,7 +100,11 @@ test('pre-hydration script mirrors the pure decision', () => {
   assert.ok(INTRO_SCRIPT.includes("matchMedia('(prefers-reduced-motion: reduce)')"), 'script must check reduced motion');
   assert.ok(INTRO_SCRIPT.includes("location.pathname!=='/'"), 'script must run only on the landing page');
   assert.ok(INTRO_SCRIPT.includes(`data-${INTRO_DATA_ATTR}`), 'script must set the data attribute');
-  assert.ok(INTRO_SCRIPT.includes('__cbIntroMounted'), 'script must have the 5s fallback if React never mounts');
+  assert.ok(INTRO_SCRIPT.includes('__cbIntroMounted'), 'script must have the cover fallback if React never mounts');
+  assert.ok(
+    INTRO_SCRIPT.includes(String(INTRO_COVER_FALLBACK_MS)),
+    `script must arm the cover fallback at ${INTRO_COVER_FALLBACK_MS}ms`,
+  );
 });
 
 // ---------------------------------------------------------------- component source
@@ -100,14 +126,37 @@ test('intro overlay: real bee mark, letters, tagline, skip, circular reveal', ()
   assert.ok(src.includes('role="dialog"'), 'overlay must be labelled as a dialog');
 });
 
-test('intro plays only when the pre-hydration script flagged this load', () => {
+test('intro plays on a fresh session even if the pre-hydration flag was eaten (mobile slow hydration)', () => {
   const src = intro();
   assert.ok(src.includes('getAttribute(`data-${INTRO_DATA_ATTR}`)'), 'component must read the script flag');
+  // Mobile fix (20 Nov 2026): the script's cover fallback drops the
+  // flag if React has not mounted yet, and on a slow phone hydration
+  // can take longer than the fallback — the flag was then gone before
+  // the component read it, so the intro never played on mobile. The
+  // session flag is the same source of truth, so the component must
+  // also play when the session has not seen the intro.
+  assert.ok(src.includes('hasSeenIntro'), 'component must fall back to the session flag directly');
   assert.ok(src.includes("pathname === '/'"), 'component must only play on the landing page');
   assert.ok(src.includes('useReducedMotion'), 'component must respect reduced motion');
+  // No viewport / pointer gate: the intro plays on phones exactly as
+  // on desktop — the fix is the session fallback, not a mobile branch.
+  assert.ok(!src.includes('max-width'), 'intro must not gate on viewport width');
+  assert.ok(!src.includes('pointer: coarse'), 'intro must not gate on pointer type');
+  assert.ok(!src.includes('isMobile'), 'intro must not gate on a mobile flag');
   assert.ok(src.includes('sessionStorage') || src.includes('markIntroSeen'), 'component must mark the session when done');
   assert.ok(src.includes('dispatchIntroDone'), 'component must tell the hero when it is over');
   assert.ok(src.includes("document.body.style.overflow = 'hidden'"), 'background scroll must lock while the intro plays');
+});
+
+test('hero background is dimmed for readability (first step: opacity down, nothing removed)', () => {
+  const wrapper = read('components/sections/HeroSceneWrapper.tsx');
+  assert.ok(wrapper.includes('HERO_SCENE_OPACITY'), 'wrapper must carry a named dim factor');
+  assert.ok(wrapper.includes('0.35'), '3D scene must render at 35% opacity');
+  assert.ok(wrapper.includes('sceneOpacityDimmed'), 'scroll fade must multiply on top of the dim');
+  assert.ok(wrapper.includes('<HeroScene scrollYProgress={scrollYProgress}'), 'scene must still render (dimmed, not removed)');
+  const hero = read('components/sections/HeroSection.tsx');
+  assert.ok(hero.includes('<PublicPageBackdrop variant="hero" particles={false}'), 'static backdrop must still render (dimmed, not removed)');
+  assert.ok(hero.includes('opacity-50'), 'static backdrop must render at half strength');
 });
 
 test('root layout mounts the intro and the pre-hydration script with the CSP nonce', () => {

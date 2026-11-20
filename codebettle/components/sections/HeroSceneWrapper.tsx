@@ -38,6 +38,14 @@ export default function HeroSceneWrapper({ scrollYProgress }: { scrollYProgress:
   // Step 2: the scene dissolves as the hero scrolls away — the
   // background recedes while the hero content stays put.
   const sceneOpacity = useTransform(scrollYProgress, (v) => scrollSceneOpacity(v));
+  // Hero readability (Eman, 20 Nov 2026 — first step: reduce
+  // opacity, do NOT remove): the bright 3D shapes drifting behind
+  // the headline hurt readability. The scene renders at 35%
+  // opacity — still fully visible and animated, but the headline and
+  // subtext now read clearly over it. The scroll fade above and the
+  // intro fade below multiply on top of this base dim.
+  const HERO_SCENE_OPACITY = 0.35;
+  const sceneOpacityDimmed = useTransform(sceneOpacity, (v) => v * HERO_SCENE_OPACITY);
   // Website intro (18 Nov 2026): when the intro plays, the scene
   // fades in behind the hero at the reveal instead of popping in
   // under the overlay. The fade is driven by a MotionValue (not
@@ -81,7 +89,7 @@ export default function HeroSceneWrapper({ scrollYProgress }: { scrollYProgress:
   }
 
   return (
-    <motion.div aria-hidden="true" className="pointer-events-none absolute inset-0 overflow-hidden" style={{ opacity: sceneOpacity }}>
+    <motion.div aria-hidden="true" className="pointer-events-none absolute inset-0 overflow-hidden" style={{ opacity: sceneOpacityDimmed }}>
       <motion.div className="absolute inset-0" style={{ opacity: introFade }}>
         <HeroScene scrollYProgress={scrollYProgress} />
       </motion.div>
