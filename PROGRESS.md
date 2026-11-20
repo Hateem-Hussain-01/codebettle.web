@@ -1,6 +1,6 @@
 # Ambassador referral + credits redesign — PROGRESS
 
-- Branch: `feature/ambassador-credits-coupon`, base main @ `926914b` (PRs #82, #83 merged).
+- Branch: `feature/ambassador-credits-coupon`, base main @ `52c4208` (PRs #82, #83, #84 merged; rebased 20 Nov ~20:58 PKT from 926914b — clean, no conflicts).
 - Predecessor lost in daemon restart; NO prior work found (clean tree, no commits, no evidence). Fresh start 20 Nov ~20:37 PKT.
 - Evidence dir: `~/workspace/your_files/ambassador-credits-evidence/`
 
