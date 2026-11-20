@@ -1,14 +1,17 @@
 /**
- * Explore New Courses + Join New Course + theme toggle in Profile
- * settings (Eman, 15 Nov 2026).
+ * Explore New Courses + Join New Course + theme toggle location
+ * (Eman, 15 Nov 2026 — moved into Profile settings; 20 Nov 2026 —
+ * moved OUT again into the avatar dropdown, see section 4).
  *
  * A student who finished their courses had no way to enrol in another
  * one without leaving for the landing page. The portal now has an
  * "Explore New Courses" nav item directly above "My Courses" listing
  * every published course, a "Join New Course" button at the top-right
- * of My Courses, and the dark/light toggle moved from the portal top
- * bar into Profile settings (same ThemeToggle, same cookie-based
- * theme — only the location changed).
+ * of My Courses, and the dark/light toggle lives in the avatar
+ * dropdown (UserMenu) — same cookie-based theme, only the location
+ * changed (it was in Profile settings 15–20 Nov 2026, removed because
+ * its long text overflowed and its floating menu overlapped Change
+ * Password).
  *
  * Pages/layouts are server/client components that cannot be rendered
  * in node, so the wiring is asserted by source inspection, following
@@ -125,16 +128,38 @@ test('My Courses page has a "Join New Course" button at the top-right', () => {
 });
 
 // ---------------------------------------------------------------------------
-// 4. Theme toggle: moved into Profile settings, same functionality
+// 4. Theme toggle: OUT of Profile settings, INTO the avatar dropdown
 // ---------------------------------------------------------------------------
 
-test('student Profile settings contains the theme toggle', () => {
+test('student Profile settings has NO Appearance section — theme lives in the avatar dropdown', () => {
+  // Eman, 20 Nov 2026: the Appearance section (long overflowing
+  // paragraph + floating ThemeToggle menu overlapping Change Password)
+  // was removed from Profile settings; the theme control now lives in
+  // the avatar dropdown (UserMenu), next to Logout.
+  assert.doesNotMatch(studentProfile, /Appearance/);
+  assert.doesNotMatch(studentProfile, /ThemeToggle/);
+  assert.doesNotMatch(studentProfile, /click the icon to switch/);
+  assert.doesNotMatch(studentProfile, /Choose how the website looks/);
+  // The page is unchanged otherwise: Personal Info + Change Password
+  // are still there, in the same order, with no gap left behind.
+  assert.match(studentProfile, /Personal Info/);
+  assert.match(studentProfile, /Change Password/);
   assert.ok(
-    studentProfile.includes("import ThemeToggle from '@/components/theme/ThemeToggle'"),
-    'profile page must import the same ThemeToggle component',
+    studentProfile.indexOf('Personal Info') < studentProfile.indexOf('Change Password'),
+    'Personal Info must come before Change Password',
   );
-  assert.ok(studentProfile.includes('Appearance'), 'profile needs an Appearance section');
-  assert.ok(studentProfile.includes('<ThemeToggle />'), 'toggle must render in Profile settings');
+});
+
+test('avatar dropdown carries the compact theme control (UserMenu, above Logout)', () => {
+  const userMenu = read('components/layout/UserMenu.tsx');
+  assert.match(userMenu, /import ThemeMenuRow from '@\/components\/theme\/ThemeMenuRow'/);
+  assert.match(userMenu, /<ThemeMenuRow \/>/);
+  // The row sits above the Logout button, after the divider that
+  // follows Settings. (The word "Logout" also appears in the file
+  // header comment, so pin the button itself via its onLogout call.)
+  const rowIdx = userMenu.indexOf('<ThemeMenuRow />');
+  const logoutBtnIdx = userMenu.indexOf('void onLogout()');
+  assert.ok(rowIdx > 0 && logoutBtnIdx > 0 && rowIdx < logoutBtnIdx, 'theme row must sit above Logout');
 });
 
 test('portal top bar hides the toggle only for the student portal', () => {

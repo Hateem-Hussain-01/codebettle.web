@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { LogOut, Settings, User } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import ThemeMenuRow from '@/components/theme/ThemeMenuRow';
 
 /**
  * Shared avatar dropdown menu — used by the portal topbar
@@ -19,6 +20,12 @@ import { motion, AnimatePresence } from 'framer-motion';
  * outside click, on Escape (focus returns to the avatar button), and
  * when a menu item is chosen. ArrowUp/ArrowDown move focus between
  * the three menu items.
+ *
+ * Theme: the compact icon row (ThemeMenuRow) sits above Logout
+ * (Eman, 20 Nov 2026 — moved out of Profile settings). Picking a
+ * theme does NOT close the menu; the row's buttons are radio items,
+ * so the arrow-key handler (plain menu items only) steps over the
+ * group.
  */
 
 export interface UserMenuUser {
@@ -129,6 +136,10 @@ export default function UserMenu({ user, profileHref, settingsHref, onLogout, op
                 Settings
               </Link>
               <div className="my-1 border-t border-dark-border" />
+              {/* Theme — compact icon row (Moon / Sun / Monitor), inline
+                  in the menu so nothing floats or overflows. Picking a
+                  theme leaves the menu open. */}
+              <ThemeMenuRow />
               <button
                 type="button"
                 role="menuitem"
