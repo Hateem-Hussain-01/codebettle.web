@@ -18,6 +18,9 @@ import type {
   AmbassadorApplication,
   AmbassadorApplicationRow,
   AmbassadorApplicationStatus,
+  AmbassadorCreditLedgerEntry,
+  AmbassadorCreditLedgerKind,
+  AmbassadorCreditLedgerRow,
   AmbassadorMessage,
   AmbassadorMessageRow,
   AmbassadorRow,
@@ -585,6 +588,24 @@ export function mapAmbassadorMessageRow(row: AmbassadorMessageRow): AmbassadorMe
     message: row.message,
     read: row.read,
     createdAt: dateToString(row.createdAt),
+  };
+}
+
+export function ambassadorCreditLedgerKindFromStorage(stored: string): AmbassadorCreditLedgerKind {
+  if (stored === 'earn') return stored;
+  throw new Error(`Unknown ambassador credit ledger kind in database: ${stored}`);
+}
+
+export function mapAmbassadorCreditLedgerRow(row: AmbassadorCreditLedgerRow): AmbassadorCreditLedgerEntry {
+  return {
+    id: row.id,
+    ambassadorId: row.ambassadorId,
+    kind: ambassadorCreditLedgerKindFromStorage(row.kind),
+    amount: row.amount,
+    referenceId: row.referenceId ?? undefined,
+    note: row.note ?? undefined,
+    createdAt: dateToString(row.createdAt),
+    updatedAt: dateToString(row.updatedAt),
   };
 }
 

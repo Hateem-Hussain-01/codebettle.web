@@ -1332,6 +1332,15 @@ enum AmbassadorStatus {
   inactive
 }
 
+// Ambassador credit ledger kinds (Eman, 20 Nov 2026): only 'earn'
+// exists in v1 — 100 credits per referred student, awarded on the
+// referred student's first enrollment. Redemption (hold/release) is
+// a later decision for Eman (see the brief); new kinds are added
+// here when it lands.
+enum AmbassadorCreditLedgerKind {
+  earn
+}
+
 // Campus Ambassador applications (/become-ambassador). Fields are the
 // PROPOSED set — Eman will confirm the exact fields later; the model
 // is built to be adjustable (fields are nullable where a future
@@ -1399,21 +1408,6 @@ model ReferralAttribution {
   @@index([ambassadorId, createdAt])
 }
 
-// One row per referral-link landing (GET /api/referral/track).
-// `day` is the UTC calendar date (YYYY-MM-DD) of the click: the
-// displayed click count is DISTINCT (ambassador, ip, day), so
-// refreshing the link or sharing it in a group cannot inflate the
-// number — raw rows are kept for audit, the count dedupes.
-model ReferralClick {
-  id           String   @id @onCreate(cuid(2))
-  ambassadorId String
-  ip           String
-  day          String
-  clickedAt    DateTime @default(now()) @onCreate(now())
-
-  @@index([ambassadorId, clickedAt])
-}
-
 // One-way messages from an ambassador to the admin (Eman, 16 Nov
 // 2026): message text only, no subject, no reply thread in v1.
 // `read` is set by the admin from /admin/ambassadors.
@@ -1426,6 +1420,32 @@ model AmbassadorMessage {
 
   @@index([ambassadorId, createdAt])
   @@index([read, createdAt])
+}
+
+// Ambassador credit ledger (Eman, 20 Nov 2026): 100 credits per
+// referred student, awarded on the referred student's FIRST
+// enrollment. Ledger-based, append-only — the balance is
+// SUM(amount), there is NO balance column anywhere. Only 'earn'
+// exists in v1 (redemption is a later decision); the (kind,
+// referenceId) unique keeps one earn per student ever —
+// referenceId is the referred student's userId, so a student who
+// enrolls in five courses still earns their ambassador 100 credits
+// exactly once. `note` is a human-readable line for the history
+// view (e.g. the referred student's name); the ledger never stores
+// a price — the earn amount is the constant
+// AMBASSADOR_CREDITS_PER_REFERRAL (100, Eman's number).
+model AmbassadorCreditLedger {
+  id           String                   @id @onCreate(cuid(2))
+  ambassadorId String
+  kind         AmbassadorCreditLedgerKind
+  amount       Int
+  referenceId  String?
+  note         String?
+  createdAt    DateTime                 @default(now()) @onCreate(now())
+  updatedAt    temporal.UpdatedAt
+
+  @@unique([kind, referenceId])
+  @@index([ambassadorId, createdAt])
 }
 
 // ---------------------------------------------------------------------------
