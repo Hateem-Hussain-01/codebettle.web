@@ -21,6 +21,15 @@
 - [x] Check existing tests pinning StatCard/V32 + other StatCard call sites (V32 guard allowlists StatCard.tsx; follow-up guard too — diff stays to StatCard + its test).
 - [x] Implement fix in StatCard.tsx (h-full wrapper + Card, min-h-10 title, always-rendered subtitle slot).
 - [x] Tests: new equal-height assertions in tests/dashboard-v32.test.ts; targeted run 15/15 pass incl. scope guard.
+- [x] Checkpoint pushed: local 6af631c == remote tree 5d27d588… (verified).
 - [ ] Visual evidence: temp repro page, 6 cards dark + light, measure heights; check one other dashboard stat row.
 - [ ] Full suite in chunks + tsc + build; CI as authoritative gate.
 - [ ] Push (commit + push often), open PR, report to Huffy (do NOT merge).
+
+## Resume — Huffy (20 Nov ~21:30 PKT, direct finish)
+- 2nd coordinator died in daemon restart ~21:28 PKT. Huffy is finishing the task directly (no more spawns — the restart storm kills subagents within ~10 min; the main agent survives).
+- Visual evidence DONE (probe ~/workspace/stat-cards-probe.cjs, dev server port 3105, headless Chromium): Communications 6 cards ALL 150px, same top/bottom, dark AND light; student row 3 cards ALL 177px, same top/bottom, dark AND light. Screenshots in ~/workspace/your_files/stat-cards-evidence/ (dark.png, light.png). Values correct (8/4/4/2/42 + "1 read (2%)" / 0; student 6/2/1). First probe run caught dark at opacity 0 + light mid-count-up (cold Turbopack compile) — re-ran with a settle wait (value == 8 && opacity == 1) and both shots are settled.
+- [slug] route restored byte-identical from origin/main (sha256 14ad4c38… verified); temp repro page removed; dev server stopped.
+- [ ] Rebase onto main 590c756 (PR #85 intro merged ~21:20 PKT; intro files only, no overlap).
+- [ ] Full suite in chunks + tsc; CI as authoritative gate.
+- [ ] Push, open PR, verify + merge (Huffy).
