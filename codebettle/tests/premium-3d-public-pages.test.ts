@@ -207,6 +207,14 @@ test('dashboard files are untouched by this branch', () => {
     // The branch touches codebettle/components/sections/ (TeamSection)
     // so this guard applies; only this one admin file is allowed.
     'codebettle/app/admin/success-stories-management/management-client.tsx',
+    // Dashboard V32-EXACT (Eman, 20 Nov 2026): the dashboard is
+    // rebuilt EXACTLY like the video — the branch touches
+    // globals.css (a 3D prefix, so this guard arms), and the two
+    // dashboard files ARE the feature: the admin chart bars go
+    // orange and PortalLayout carries the .v32 scope + wood sidebar
+    // + video greeting. Any OTHER dashboard file is still a failure.
+    'codebettle/app/admin/dashboard/dashboard-client.tsx',
+    'codebettle/components/layout/PortalLayout.tsx',
   ]);
   const offending = changed.filter(
     (f) =>

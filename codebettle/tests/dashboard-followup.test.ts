@@ -353,6 +353,12 @@ const FOLLOWUP_ALLOWLIST = [
   // lives in globals.css and the admin chart bars go orange.
   'codebettle/app/globals.css',
   'codebettle/app/admin/dashboard/dashboard-client.tsx',
+  // V32-EXACT guard fixes (same PR): the premium-3D and website-intro
+  // guards both armed on this branch (globals.css is a 3D/intro
+  // prefix) — their allowlists/arming needed the same coordination
+  // fix as the V32/follow-up guards.
+  'codebettle/tests/premium-3d-public-pages.test.ts',
+  'codebettle/tests/website-intro.test.ts',
   // Ambassador referral + credits redesign (Eman, 20 Nov 2026):
   // codes are admin-assigned (no link tracking, no clicks), the code
   // IS a Rs 200 coupon and earns 100 credits per referred student.

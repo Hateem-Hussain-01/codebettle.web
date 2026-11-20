@@ -264,7 +264,14 @@ test('intro touches only landing-page, layout, hero and intro files (no dashboar
   // the allowlist check below still fails on the non-intro ones. Test
   // files in the allowlist do not arm it: editing a guard must not arm
   // that guard (same rule as the V32 guard's own test file).
-  const INTRO_SOURCE = [...allowed].filter((f) => !f.startsWith('codebettle/tests/'));
+  // Dashboard V32-EXACT (Eman, 20 Nov 2026): globals.css is SHARED
+  // infrastructure, not an intro file — a branch that recolors the
+  // dashboard tokens in globals.css must not arm this guard, or
+  // every later dashboard branch trips it. The intro cover rule is
+  // still pinned by its own dedicated test above.
+  const INTRO_SOURCE = [...allowed].filter(
+    (f) => !f.startsWith('codebettle/tests/') && f !== 'codebettle/app/globals.css',
+  );
   if (!files.some((f) => INTRO_SOURCE.includes(f))) return;
   for (const f of files) {
     assert.ok(allowed.has(f), `intro PR must not touch ${f} (outside its landing-page scope)`);
