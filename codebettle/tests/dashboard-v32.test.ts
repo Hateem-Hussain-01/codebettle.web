@@ -97,6 +97,28 @@ test('StatCard: optional href renders a View more link to a real route', () => {
   assert.ok(src.includes('<ArrowRight'), 'the link must carry the arrow icon');
 });
 
+test('StatCard: equal-height cards — same size in any grid row (Eman, 20 Nov 2026)', () => {
+  // "ye cards ka size same kro": on the admin Communications page
+  // the 6 stat cards had unequal heights — "Teacher-authored"
+  // (title wraps to two lines) and "Targeted sent" (subtitle line)
+  // stuck out below the rest. The fix lives in the shared StatCard
+  // so every dashboard's stat row is equal-height, not just this one.
+  const src = read('components/ui/StatCard.tsx');
+  // The grid item (motion.div) stretches to the row height, but the
+  // Card inside sized to its own content — h-full on BOTH keeps
+  // every card's bottom aligned.
+  const hFull = (src.match(/className="h-full"/g) ?? []).length;
+  assert.ok(hFull >= 2, `motion wrapper AND Card must both carry h-full (found ${hFull})`);
+  // Fixed label area: two text-sm lines reserved, so a one-line
+  // title and a wrapped two-line title start their numbers at the
+  // same y. The label text itself must not change.
+  assert.ok(src.includes('min-h-10'), 'the title must reserve two lines (min-h-10)');
+  // Subtext line reserved on every card: the slot always renders
+  // (a non-breaking space when there is no subtitle).
+  assert.ok(src.includes("subtitle ?? '\\u00A0'"), 'the subtitle slot must always render, even with no subtitle');
+  assert.ok(src.includes('min-h-4'), 'the subtitle slot must reserve one text-xs line (min-h-4)');
+});
+
 // ---------------------------------------------------------------- Card glass
 
 test('Card: opt-in glass surface, token colours only', () => {
