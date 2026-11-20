@@ -10,7 +10,12 @@ import Select from '@/components/ui/Select';
 import Badge from '@/components/ui/Badge';
 import { formatDateShort } from '@/lib/utils';
 import toast from 'react-hot-toast';
-import type { TeamCreditLedgerEntry, TeamGoody, TeamRedemption } from '@/lib/db/types';
+import type {
+  AmbassadorRedemption,
+  TeamCreditLedgerEntry,
+  TeamGoody,
+  TeamRedemption,
+} from '@/lib/db/types';
 import { TEAM_GOODIES, TEAM_GOODY_LABELS } from '@/lib/db/types';
 import type { TeamCreditEarnOn, TeamCreditSettings } from '@/lib/services/settings-service';
 
@@ -30,6 +35,12 @@ interface CreditsAdminClientProps {
   members: MemberRow[];
   redemptions: Array<TeamRedemption & { memberEmail: string }>;
   ledger: Array<TeamCreditLedgerEntry & { memberEmail: string }>;
+  /** Ambassador redemption requests (Eman, 21 Nov 2026) — same
+   * goodies + prices as the team system, decided here too. */
+  ambassadorRedemptions: Array<AmbassadorRedemption & { ambassadorEmail: string }>;
+  /** False until Eman runs the redemption SQL — the ambassador
+   * section then shows a "not set up yet" note. */
+  ambassadorRedemptionReady: boolean;
 }
 
 const KIND_LABEL: Record<TeamCreditLedgerEntry['kind'], string> = {
@@ -122,8 +133,32 @@ export default function CreditsAdminClient(props: CreditsAdminClientProps) {
     }
   };
 
+  const decideAmbassadorRedemption = async (id: string, decision: 'approved' | 'rejected') => {
+    setDeciding(id);
+    try {
+      const res = await fetch(`/api/admin/ambassador-redemptions/${id}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ decision }),
+      });
+      const data: unknown = await res.json().catch(() => null);
+      if (!res.ok) {
+        toast.error((data as { error?: string } | null)?.error ?? 'Could not decide this request');
+        return;
+      }
+      toast.success(decision === 'approved' ? 'Redemption approved — goody issued' : 'Redemption rejected — credits released');
+      router.refresh();
+    } catch {
+      toast.error('Could not decide this request');
+    } finally {
+      setDeciding(null);
+    }
+  };
+
   const pending = props.redemptions.filter((r) => r.status === 'pending');
   const decided = props.redemptions.filter((r) => r.status !== 'pending');
+  const ambassadorPending = props.ambassadorRedemptions.filter((r) => r.status === 'pending');
+  const ambassadorDecided = props.ambassadorRedemptions.filter((r) => r.status !== 'pending');
 
   return (
     <div className="space-y-6">
@@ -133,8 +168,9 @@ export default function CreditsAdminClient(props: CreditsAdminClientProps) {
           <Coins className="w-5 h-5 text-primary-text" /> Earn rate &amp; goody prices
         </h2>
         <p className="text-sm text-muted mt-1">
-          These are the live numbers — the team portal shows them everywhere, and new credits are earned at this
-          rate. Set the real numbers here.
+          These are the live numbers — the team portal and the ambassador dashboard both show them, and new credits
+          are earned at this rate. The goody prices are shared: one catalogue for team members and ambassadors.
+          Set the real numbers here.
         </p>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
           <Input
@@ -244,6 +280,61 @@ export default function CreditsAdminClient(props: CreditsAdminClientProps) {
                   <li key={r.id} className="flex items-center justify-between gap-3 border-b border-dark-border pb-3 last:border-0 last:pb-0">
                     <div className="min-w-0">
                       <p className="text-sm font-medium text-foreground">{TEAM_GOODY_LABELS[r.goody]} — {r.memberEmail}</p>
+                      <p className="text-xs text-muted">Requested {formatDateShort(r.requestedAt)}</p>
+                    </div>
+                    <div className="flex items-center gap-3 shrink-0">
+                      <span className="text-sm font-bold text-foreground">{r.creditsSpent} credits</span>
+                      <Badge variant={REDEMPTION_BADGE[r.status]}>{r.status}</Badge>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </>
+        )}
+      </Card>
+
+      {/* Ambassador redemption requests (Eman, 21 Nov 2026): same
+          goodies + prices as above, decided the same way. */}
+      <Card className="p-6">
+        <h2 className="text-lg font-bold text-foreground flex items-center gap-2">
+          <Gift className="w-5 h-5 text-primary-text" /> Ambassador redemption requests
+        </h2>
+        {!props.ambassadorRedemptionReady ? (
+          <p className="text-sm text-muted mt-3">
+            Ambassador redemptions are not set up yet — run codebettle-ambassador-redemption-migration.sql in the
+            Supabase SQL Editor first.
+          </p>
+        ) : ambassadorPending.length === 0 && ambassadorDecided.length === 0 ? (
+          <p className="text-sm text-muted mt-3">No ambassador redemption requests yet.</p>
+        ) : (
+          <>
+            {ambassadorPending.length > 0 && (
+              <ul className="space-y-3 mt-4">
+                {ambassadorPending.map((r) => (
+                  <li key={r.id} className="flex flex-wrap items-center justify-between gap-3 border border-primary/30 rounded-xl p-4">
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium text-foreground">{TEAM_GOODY_LABELS[r.goody]} — {r.ambassadorEmail}</p>
+                      <p className="text-xs text-muted">Requested {formatDateShort(r.requestedAt)} · {r.creditsSpent} credits held</p>
+                    </div>
+                    <div className="flex gap-2 shrink-0">
+                      <Button onClick={() => decideAmbassadorRedemption(r.id, 'approved')} disabled={deciding !== null}>
+                        <Check className="w-4 h-4" /> Approve
+                      </Button>
+                      <Button onClick={() => decideAmbassadorRedemption(r.id, 'rejected')} disabled={deciding !== null}>
+                        <X className="w-4 h-4" /> Reject
+                      </Button>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
+            {ambassadorDecided.length > 0 && (
+              <ul className="space-y-3 mt-4">
+                {ambassadorDecided.map((r) => (
+                  <li key={r.id} className="flex items-center justify-between gap-3 border-b border-dark-border pb-3 last:border-0 last:pb-0">
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium text-foreground">{TEAM_GOODY_LABELS[r.goody]} — {r.ambassadorEmail}</p>
                       <p className="text-xs text-muted">Requested {formatDateShort(r.requestedAt)}</p>
                     </div>
                     <div className="flex items-center gap-3 shrink-0">
