@@ -25,6 +25,8 @@ import type {
   AmbassadorMessageRow,
   AmbassadorRow,
   AmbassadorStatus,
+  ReferralAttribution,
+  ReferralAttributionRow,
   Assignment,
   AssignmentRow,
   AssignmentSubmission,
@@ -606,6 +608,15 @@ export function mapAmbassadorCreditLedgerRow(row: AmbassadorCreditLedgerRow): Am
     note: row.note ?? undefined,
     createdAt: dateToString(row.createdAt),
     updatedAt: dateToString(row.updatedAt),
+  };
+}
+
+export function mapReferralAttributionRow(row: ReferralAttributionRow): ReferralAttribution {
+  return {
+    id: row.id,
+    ambassadorId: row.ambassadorId,
+    userId: row.userId,
+    createdAt: dateToString(row.createdAt),
   };
 }
 

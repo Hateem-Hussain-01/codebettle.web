@@ -1,27 +1,32 @@
 /**
- * Ambassador repository — referral tracking (Eman, 16 Nov 2026).
+ * Ambassador repository — referral tracking (Eman, 16 Nov 2026;
+ * redesigned 20 Nov 2026).
  *
- * One row per approved ambassador (random 6-char referral code),
- * referral clicks, referral attribution (who signed up via whose
- * link), the 4-stage stats, the ambassador's own group link +
- * daily member count, and one-way messages to the admin.
+ * One row per approved ambassador (ADMIN-ASSIGNED 6-char referral
+ * code — the auto-random code at approval is gone), referral
+ * attribution (who signed up with whose code), the 3-stage stats,
+ * the ambassador's own group link + daily member count, and one-way
+ * messages to the admin.
+ *
+ * There is NO link tracking any more: the old `?ref=` capture +
+ * `cb_ref` cookie + click counting were removed 20 Nov 2026. A
+ * student joins by TYPING the code on the register form; the code is
+ * only a lookup key, validated server-side (exists / active / not
+ * self-referral / one attribution per user).
  *
  * FAIL-SAFE (same shape as lib/db/ambassador-applications.ts): the
- * Ambassador / ReferralAttribution / ReferralClick /
- * AmbassadorMessage tables arrive via migration
- * 20261115T2118_add_ambassador_referral_tracking, which Eman runs
- * himself in the Supabase SQL Editor. Until it runs, reads return
- * empty (dashboards/admin show a "run the SQL" state) and writes
- * return a clear error telling the admin to run the SQL first. No
- * existing table is touched by this feature — attribution lives in
- * its own table, NOT as a column on User (a new User column would
- * be selected by every user read, login included, so the whole site
- * would 42703 until the SQL runs; see the PR body).
+ * Ambassador / ReferralAttribution / AmbassadorMessage tables arrive
+ * via migration 20261115T2118_add_ambassador_referral_tracking,
+ * which Eman runs himself in the Supabase SQL Editor. Until it runs,
+ * reads return empty (dashboards/admin show a "run the SQL" state)
+ * and writes return a clear error telling the admin to run the SQL
+ * first. No existing table is touched by this feature — attribution
+ * lives in its own table, NOT as a column on User (a new User column
+ * would be selected by every user read, login included, so the whole
+ * site would 42703 until the SQL runs; see the PR body).
  *
- * Counting rules (the 4 stages, derived from source tables — no
+ * Counting rules (the 3 stages, derived from source tables — no
  * separate counters that can drift):
- * - clicks: DISTINCT (ambassador, ip, UTC day) from ReferralClick
- *   rows — refreshing the link cannot inflate the number.
  * - signups: ReferralAttribution rows for the ambassador.
  * - enrollments: Enrollment rows of the referred users.
  * - payments: APPROVED PaymentSubmission rows of the referred
@@ -32,8 +37,8 @@
  * an enrollment with paymentStatus 'paid').
  */
 import { getDb } from './client';
-import { mapAmbassadorMessageRow, mapAmbassadorRow } from './mappers';
-import { generateReferralCode, normalizeReferralCode, utcDayString } from '../referral';
+import { mapAmbassadorMessageRow, mapAmbassadorRow, mapReferralAttributionRow } from './mappers';
+import { generateReferralCode, isReferralCodeFormat, normalizeReferralCode } from '../referral';
 import { listAmbassadorApplications } from './ambassador-applications';
 import { getUserByEmail } from './users';
 import type {
@@ -41,11 +46,12 @@ import type {
   AmbassadorMessage,
   AmbassadorStatus,
   AmbassadorWithStats,
+  ReferralAttribution,
   ReferralStats,
   ReferralTeamMember,
 } from './types';
 
-const REFERRAL_TABLES = ['Ambassador', 'ReferralAttribution', 'ReferralClick', 'AmbassadorMessage'];
+const REFERRAL_TABLES = ['Ambassador', 'ReferralAttribution', 'AmbassadorMessage'];
 
 /** True when the error is "relation does not exist" for one of the referral tables (migration not run yet). */
 export function isMissingReferralTableError(error: unknown): boolean {
@@ -89,21 +95,62 @@ function throwIfTableMissing(error: unknown): never {
   throw error;
 }
 
-export const EMPTY_REFERRAL_STATS: ReferralStats = { clicks: 0, signups: 0, enrollments: 0, payments: 0 };
+export const EMPTY_REFERRAL_STATS: ReferralStats = { signups: 0, enrollments: 0, payments: 0 };
 
 function emptyStatsResult(): { stats: ReferralStats; teamLevel1: ReferralTeamMember[]; teamLevel2: ReferralTeamMember[] } {
   return { stats: { ...EMPTY_REFERRAL_STATS }, teamLevel1: [], teamLevel2: [] };
 }
 
 // ---------------------------------------------------------------------------
-// Code generation
+// Code validation + generation (admin-assigned since 20 Nov 2026)
 // ---------------------------------------------------------------------------
 
 /**
+ * Validate an admin-chosen referral code: exactly 6 characters from
+ * the referral alphabet, and not already held by another ambassador
+ * or a team member. Returns an error string, or null when the code
+ * is free to use. `exceptAmbassadorId` skips one ambassador's own
+ * row (re-assigning the same code to its owner is not a collision).
+ *
+ * The team-namespace check reads TeamReferralCode directly instead
+ * of importing lib/db/team-credits.ts — that module imports this
+ * one (getAmbassadorByCode), so importing it back would be a cycle.
+ * A missing team table (their SQL not run yet) means no team code
+ * can conflict, so the check treats it as free.
+ */
+export async function validateReferralCodeForAssignment(
+  rawCode: string,
+  exceptAmbassadorId?: string,
+): Promise<string | null> {
+  const code = normalizeReferralCode(rawCode);
+  if (!isReferralCodeFormat(code)) {
+    return 'Referral code must be exactly 6 characters (A–Z, 2–9 — no 0, O, 1 or I)';
+  }
+  const ambassador = await getAmbassadorByCode(code);
+  if (ambassador && ambassador.id !== exceptAmbassadorId) {
+    return 'This code is already assigned to another ambassador';
+  }
+  try {
+    const teamRow = await getDb().orm.public.TeamReferralCode.where({ code }).first();
+    if (teamRow) return 'This code is already assigned to a team member';
+  } catch (error) {
+    if (!isMissingReferralTableError(error) && !/relation .* does not exist/i.test(error instanceof Error ? error.message : '')) {
+      throw error;
+    }
+    // Missing team table: no team code can conflict.
+  }
+  return null;
+}
+
+/**
  * A fresh referral code that no ambassador holds yet. Regenerates on
- * collision (10 tries — with 32^10 combinations a collision is
+ * collision (10 tries — with 32^6 combinations a collision is
  * already near-impossible; the DB unique constraint is the backstop).
  * `rand` is injectable for tests (defaults to crypto.randomInt).
+ *
+ * Used ONLY for the backfill of legacy approved rows (no admin is
+ * present to choose a code there). Every NEW assignment goes through
+ * validateReferralCodeForAssignment with an admin-chosen code.
  */
 export async function generateUniqueReferralCode(
   rand?: (min: number, max: number) => number,
