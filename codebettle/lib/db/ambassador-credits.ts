@@ -14,10 +14,15 @@
  *   referenceId = the referred student's userId. One earn per
  *   student, ever (explicit check + the (kind, referenceId) unique
  *   constraint as backstop).
- * A member's balance is SUM(amount) over their ledger rows. Only
- * 'earn' exists in v1 — redemption (hold/release) is a later
- * decision for Eman (see the brief); the balance shown to the
- * ambassador is the earn total until then.
+ * - hold: -N when a redemption is requested, referenceId = the
+ *   redemption id (pending requests hold credits — no double-spend).
+ * - release: +N when a redemption is rejected, referenceId = the
+ *   redemption id (the hold is released). An approved redemption
+ *   needs no new entry: the hold IS the permanent deduction.
+ * A member's balance is SUM(amount) over their ledger rows.
+ * Redemption landed 21 Nov 2026 (Eman): ambassadors redeem for the
+ * SAME goodies + prices as the team system (prices read from the
+ * live admin setting in Credits Management — never hard-coded here).
  *
  * FAIL-SAFE (same shape as lib/db/team-credits.ts): the
  * AmbassadorCreditLedger table exists only after Eman runs
@@ -26,7 +31,12 @@
  * returns its empty fallback, attribution lookups return null, and
  * award calls return false — the dashboard shows 0 credits with a
  * "not set up yet" note, and registration/enrollment/payment work
- * exactly as before. No existing table is touched.
+ * exactly as before. No existing table is touched. Redemption has
+ * its OWN fail-safe: the AmbassadorRedemption table exists only
+ * after Eman runs codebettle-ambassador-redemption-migration.sql
+ * (migration 20261120T1908_add_ambassador_redemptions). Until then
+ * redemption reads return empty and request/decide refuse with that
+ * file named — while credit earning keeps working.
  *
  * The Coupon table itself is old (Phase 2) — the coupon ensure below
  * needs no fail-safe. It is best-effort by design: a coupon that
@@ -41,10 +51,18 @@ import { getCourseById } from './courses';
 import { getEnrollmentById } from './enrollments';
 import { getUserById } from './users';
 import { createCoupon, getCouponByCode, updateCouponByCode, validateCouponForCourse } from './coupons';
-import { mapAmbassadorCreditLedgerRow } from './mappers';
-import type { AmbassadorCreditLedgerEntry, Coupon } from './types';
+import { mapAmbassadorCreditLedgerRow, mapAmbassadorRedemptionRow } from './mappers';
+import { getTeamCreditSettings } from '../services/settings-service';
+import type {
+  AmbassadorCreditLedgerEntry,
+  AmbassadorCreditLedgerKind,
+  AmbassadorRedemption,
+  Coupon,
+  TeamGoody,
+} from './types';
 
 const AMBASSADOR_CREDIT_TABLES = ['AmbassadorCreditLedger'];
+const AMBASSADOR_REDEMPTION_TABLES = ['AmbassadorRedemption'];
 
 /** The coupon's use cap — effectively unlimited, but the column is NOT NULL. */
 export const AMBASSADOR_COUPON_MAX_USES = 1_000_000;
@@ -63,8 +81,22 @@ export function isMissingAmbassadorCreditTableError(error: unknown): boolean {
   return /relation .* does not exist/i.test(text) && namesTable;
 }
 
+/** True when the error is "relation does not exist" for the redemption table (migration not run yet). */
+export function isMissingAmbassadorRedemptionTableError(error: unknown): boolean {
+  if (!error || typeof error !== 'object') return false;
+  const code = (error as { code?: unknown }).code;
+  const message = (error as { message?: unknown }).message;
+  const text = typeof message === 'string' ? message : '';
+  const namesTable = AMBASSADOR_REDEMPTION_TABLES.some((t) => text.includes(t));
+  if (code === '42P01' && namesTable) return true;
+  return /relation .* does not exist/i.test(text) && namesTable;
+}
+
 export const AMBASSADOR_CREDIT_TABLE_MISSING_MESSAGE =
   'The ambassador credit table is not set up yet — run codebettle-ambassador-credits-migration.sql in the Supabase SQL Editor first.';
+
+export const AMBASSADOR_REDEMPTION_TABLE_MISSING_MESSAGE =
+  'The ambassador redemption table is not set up yet — run codebettle-ambassador-redemption-migration.sql in the Supabase SQL Editor first.';
 
 /** Cheap probe: true when the AmbassadorCreditLedger table exists (migration has run). */
 export async function isAmbassadorCreditTableReady(): Promise<boolean> {
@@ -90,6 +122,34 @@ async function withAmbassadorCreditTableFallback<T>(fetch: () => Promise<T>, fal
 function throwIfTableMissing(error: unknown): never {
   if (isMissingAmbassadorCreditTableError(error)) {
     throw new Error(AMBASSADOR_CREDIT_TABLE_MISSING_MESSAGE);
+  }
+  throw error;
+}
+
+/** Cheap probe: true when the AmbassadorRedemption table exists (migration has run). */
+export async function isAmbassadorRedemptionTableReady(): Promise<boolean> {
+  try {
+    await getDb().orm.public.AmbassadorRedemption.orderBy((r) => r.createdAt.desc()).limit(1).all();
+    return true;
+  } catch (error) {
+    if (isMissingAmbassadorRedemptionTableError(error)) return false;
+    throw error;
+  }
+}
+
+/** A read that returns the fallback when the redemption table is missing, instead of throwing. */
+async function withAmbassadorRedemptionTableFallback<T>(fetch: () => Promise<T>, fallback: T): Promise<T> {
+  try {
+    return await fetch();
+  } catch (error) {
+    if (isMissingAmbassadorRedemptionTableError(error)) return fallback;
+    throw error;
+  }
+}
+
+function throwIfRedemptionTableMissing(error: unknown): never {
+  if (isMissingAmbassadorRedemptionTableError(error)) {
+    throw new Error(AMBASSADOR_REDEMPTION_TABLE_MISSING_MESSAGE);
   }
   throw error;
 }
@@ -226,7 +286,7 @@ export async function getAmbassadorCreditSummary(ambassadorId: string): Promise<
 }
 
 async function getLedgerEntryByKindAndReference(
-  kind: 'earn',
+  kind: AmbassadorCreditLedgerKind,
   referenceId: string,
 ): Promise<AmbassadorCreditLedgerEntry | null> {
   return withAmbassadorCreditTableFallback(async () => {
@@ -354,4 +414,186 @@ export async function countAmbassadorDiscounts(codes: string[]): Promise<Map<str
     console.error('[ambassador-credits] Failed to count ambassador discounts', error);
   }
   return out;
+}
+
+// ---------------------------------------------------------------------------
+// Redemptions — same goodies + prices as the team system (Eman, 21 Nov
+// 2026). Prices come from the live admin setting in Credits
+// Management (getTeamCreditSettings) — never hard-coded here.
+// ---------------------------------------------------------------------------
+
+/** All redemptions, newest first. Empty when the table is missing. */
+export async function listAmbassadorRedemptions(): Promise<AmbassadorRedemption[]> {
+  return withAmbassadorRedemptionTableFallback(async () => {
+    const rows = await getDb().orm.public.AmbassadorRedemption.orderBy((r) => r.requestedAt.desc()).all();
+    return rows.map((r) => mapAmbassadorRedemptionRow(r as never));
+  }, []);
+}
+
+/** One ambassador's redemptions, newest first. Empty when the table is missing. */
+export async function listAmbassadorRedemptionsForAmbassador(ambassadorId: string): Promise<AmbassadorRedemption[]> {
+  return withAmbassadorRedemptionTableFallback(async () => {
+    const rows = await getDb()
+      .orm.public.AmbassadorRedemption.where({ ambassadorId })
+      .orderBy((r) => r.requestedAt.desc())
+      .all();
+    return rows.map((r) => mapAmbassadorRedemptionRow(r as never));
+  }, []);
+}
+
+export async function getAmbassadorRedemptionById(id: string): Promise<AmbassadorRedemption | null> {
+  return withAmbassadorRedemptionTableFallback(async () => {
+    const row = await getDb().orm.public.AmbassadorRedemption.where({ id }).first();
+    if (!row) return null;
+    return mapAmbassadorRedemptionRow(row as never);
+  }, null);
+}
+
+/**
+ * Request a goody. Holds the credits immediately (a ledger hold
+ * entry), so the same credits cannot be spent twice. Returns the
+ * redemption, or an error string the route can show as-is (not
+ * enough credits, goody unpriced, not an ambassador).
+ *
+ * Double-spend guard: after creating the hold, the balance is
+ * re-read — if it went negative (two requests racing the same
+ * credits), the request is rolled back (hold + redemption deleted)
+ * and refused. A perfect race fails BOTH requests and the ambassador
+ * retries; credits can never go negative.
+ */
+export async function requestAmbassadorRedemption(
+  ambassadorId: string,
+  goody: TeamGoody,
+): Promise<{ redemption: AmbassadorRedemption } | { error: string }> {
+  const settings = await getTeamCreditSettings();
+  const price = settings.goodyPrices[goody];
+  if (!Number.isInteger(price) || price <= 0) {
+    return { error: 'This goody has no credit price yet — an admin sets its price in Credits Management first.' };
+  }
+  const ambassador = await getAmbassadorById(ambassadorId);
+  if (!ambassador || ambassador.status !== 'active') return { error: 'Ambassador access required' };
+  const balance = await getAmbassadorCreditBalance(ambassadorId);
+  if (balance < price) {
+    return { error: `Not enough credits — this goody costs ${price} credits and the balance is ${balance}.` };
+  }
+  try {
+    const row = await getDb().orm.public.AmbassadorRedemption.create({
+      ambassadorId,
+      goody,
+      creditsSpent: price,
+      status: 'pending',
+    });
+    const redemption = mapAmbassadorRedemptionRow(row as never);
+    let holdId: string | null = null;
+    try {
+      const hold = await getDb().orm.public.AmbassadorCreditLedger.create({
+        ambassadorId,
+        kind: 'hold',
+        amount: -price,
+        referenceId: redemption.id,
+        note: `Hold: ${goody} redemption requested`,
+      });
+      holdId = (hold as { id: string }).id;
+    } catch (error) {
+      // The hold is the whole point — without it the credits could be
+      // spent twice. Delete the redemption and refuse.
+      try {
+        await getDb().orm.public.AmbassadorRedemption.where({ id: redemption.id }).delete();
+      } catch {
+        // Best-effort cleanup; the redemption stays pending without a
+        // hold, which the admin page surfaces (a pending redemption
+        // with no hold is visible in the ledger view).
+        console.error('[ambassador-credits] Redemption created but hold failed and cleanup failed', redemption.id, error);
+      }
+      // The redemption itself was created (so its table exists) — a
+      // failed hold means the LEDGER table is missing, not the
+      // redemption table.
+      throwIfTableMissing(error);
+      return { error: 'Could not hold the credits — please try again.' };
+    }
+    const after = await getAmbassadorCreditBalance(ambassadorId);
+    if (after < 0) {
+      // Two requests raced the same credits — roll this one back.
+      try {
+        if (holdId) await getDb().orm.public.AmbassadorCreditLedger.where({ id: holdId }).delete();
+        await getDb().orm.public.AmbassadorRedemption.where({ id: redemption.id }).delete();
+      } catch (error) {
+        console.error('[ambassador-credits] Rollback of a raced redemption failed', redemption.id, error);
+      }
+      return { error: 'Not enough credits — another request used them first. Please try again.' };
+    }
+    return { redemption };
+  } catch (error) {
+    if (isMissingAmbassadorRedemptionTableError(error)) throw new Error(AMBASSADOR_REDEMPTION_TABLE_MISSING_MESSAGE);
+    throw error;
+  }
+}
+
+/**
+ * Decide a pending redemption (admin). Approve: the hold IS the
+ * deduction — no new ledger entry; the redemption flips to approved.
+ * Reject: a release entry returns the held credits. The status flip
+ * is a conditional update (status must still be pending), which
+ * closes the double-decide race. Returns the updated redemption, or
+ * null when it is not pending (already decided).
+ *
+ * Repair: deciding an already-REJECTED redemption whose release entry
+ * is missing (a failed release at decide time) creates the release
+ * instead of returning null — so "run the reject again" repairs it.
+ */
+export async function decideAmbassadorRedemption(
+  id: string,
+  decision: 'approved' | 'rejected',
+  decidedBy: string,
+): Promise<AmbassadorRedemption | null> {
+  const redemption = await getAmbassadorRedemptionById(id);
+  if (!redemption) return null;
+  if (redemption.status === 'rejected' && decision === 'rejected') {
+    const release = await getLedgerEntryByKindAndReference('release', id);
+    if (!release) {
+      try {
+        await getDb().orm.public.AmbassadorCreditLedger.create({
+          ambassadorId: redemption.ambassadorId,
+          kind: 'release',
+          amount: redemption.creditsSpent,
+          referenceId: id,
+          note: `Released: ${redemption.goody} redemption rejected`,
+        });
+      } catch (error) {
+        throwIfTableMissing(error);
+      }
+    }
+    return redemption;
+  }
+  if (redemption.status !== 'pending') return null;
+  try {
+    const updated = await getDb()
+      .orm.public.AmbassadorRedemption.where({ id })
+      .where((r) => r.status.eq('pending'))
+      .update({ status: decision, decidedAt: new Date(), decidedBy });
+    if (!updated) return null;
+    const decided = mapAmbassadorRedemptionRow(updated as never);
+    if (decision === 'rejected') {
+      const existing = await getLedgerEntryByKindAndReference('release', id);
+      if (!existing) {
+        try {
+          await getDb().orm.public.AmbassadorCreditLedger.create({
+            ambassadorId: redemption.ambassadorId,
+            kind: 'release',
+            amount: redemption.creditsSpent,
+            referenceId: id,
+            note: `Released: ${redemption.goody} redemption rejected`,
+          });
+        } catch (error) {
+          // The redemption IS rejected; the release failed. Log loudly
+          // — deciding it rejected again repairs the missing release
+          // (see the repair path above).
+          console.error('[ambassador-credits] Redemption rejected but credit release failed', id, error);
+        }
+      }
+    }
+    return decided;
+  } catch (error) {
+    throwIfRedemptionTableMissing(error);
+  }
 }
