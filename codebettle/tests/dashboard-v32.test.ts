@@ -277,6 +277,12 @@ test('V32-EXACT palette: the video colours live under the .v32 scope in globals.
   // The public gold tokens must be untouched — the scope redefines
   // them only underneath .v32.
   assert.ok(css.includes('--color-primary: #F5C518;'), 'the global gold primary must stay (public site)');
+  // Wood sidebar text stays light in BOTH themes (the sidebar is
+  // dark wood even in light mode — the light theme's dark tokens
+  // would be unreadable on it).
+  assert.ok(css.includes('.v32 .v32-sidebar .text-muted {'), 'the sidebar must keep light muted text in both themes');
+  assert.ok(css.includes('.v32 .v32-sidebar .text-primary-text {'), 'the sidebar active text must stay bright orange in both themes');
+  assert.ok(css.includes('.v32 .v32-sidebar .bg-surface {'), 'the sidebar search must stay translucent on wood in both themes');
 });
 
 test('V32-EXACT scope: PortalLayout roots the dashboard in .v32 with the wood sidebar', () => {

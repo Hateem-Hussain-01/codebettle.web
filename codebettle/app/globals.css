@@ -420,3 +420,37 @@ html[data-cb-intro="show"] body::before {
 .v32 .card-lift:hover {
   box-shadow: var(--shadow-elev-2), 0 0 20px rgba(255, 107, 0, 0.12);
 }
+
+/* Wood sidebar text (BOTH themes): the sidebar is dark wood even in
+   light mode, so its text must stay light — the light theme's dark
+   tokens (#6B7280 muted, #111111 foreground, #C2410C orange text)
+   would be unreadable on wood. These rules beat the token utilities
+   inside the sidebar only; tooltips/flyouts are portaled to
+   document.body, so they keep the theme tokens. */
+.v32 .v32-sidebar .text-muted {
+  color: rgba(255, 255, 255, 0.65);
+}
+.v32 .v32-sidebar .text-foreground {
+  color: #ffffff;
+}
+.v32 .v32-sidebar .hover\:text-foreground:hover {
+  color: #ffffff;
+}
+.v32 .v32-sidebar .text-primary-text {
+  color: #ff8a3d;
+}
+.v32 .v32-sidebar .border-dark-border {
+  border-color: rgba(255, 255, 255, 0.12);
+}
+.v32 .v32-sidebar .bg-surface {
+  background-color: rgba(255, 255, 255, 0.08);
+}
+.v32 .v32-sidebar .placeholder\:text-muted::placeholder {
+  color: rgba(255, 255, 255, 0.5);
+}
+.v32 .v32-sidebar .gradient-text {
+  background: linear-gradient(135deg, #ff6b00, #ffb25e);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
