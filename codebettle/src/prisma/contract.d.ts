@@ -23,9 +23,9 @@ import type {
 } from '@prisma/orm-postgres/contract/types';
 
 export type StorageHash =
-  StorageHashBase<'39bf4b7c939aba7fb732aec3459f751a3fc4ca9bf3f47694aebbce419e24028d'>;
+  StorageHashBase<'f49bc76c869052d79ae6a1222fe7c34eef4eb777c321e3385c8859f54e436a54'>;
 export type ExecutionHash =
-  ExecutionHashBase<'98880c7f0fbd44922391bb5e03981d97ad8c9441fa605c9be30a144425a140bd'>;
+  ExecutionHashBase<'918412864651e70049934e3c7e3eda36c2b97a8e53c7ff775e56677a10f2b8d4'>;
 export type ProfileHash =
   ProfileHashBase<'3916f444a8a17ad749191acf9e08dad97d1a327b88c2f1d45d12f240296aa8b2'>;
 
@@ -291,7 +291,20 @@ type FieldTypeOverrides = {
         };
       };
       readonly AmbassadorCreditLedger: {
-        readonly kind: { readonly output: 'earn'; readonly input: 'earn' };
+        readonly kind: {
+          readonly output: 'earn' | 'hold' | 'release';
+          readonly input: 'earn' | 'hold' | 'release';
+        };
+      };
+      readonly AmbassadorRedemption: {
+        readonly goody: {
+          readonly output: 'bottle' | 'diary' | 'pen' | 'keychain';
+          readonly input: 'bottle' | 'diary' | 'pen' | 'keychain';
+        };
+        readonly status: {
+          readonly output: 'pending' | 'approved' | 'rejected';
+          readonly input: 'pending' | 'approved' | 'rejected';
+        };
       };
       readonly Announcement: {
         readonly type: {
@@ -497,7 +510,20 @@ type ColumnTypeOverrides = {
       };
     };
     readonly AmbassadorCreditLedger: {
-      readonly kind: { readonly output: 'earn'; readonly input: 'earn' };
+      readonly kind: {
+        readonly output: 'earn' | 'hold' | 'release';
+        readonly input: 'earn' | 'hold' | 'release';
+      };
+    };
+    readonly AmbassadorRedemption: {
+      readonly goody: {
+        readonly output: 'bottle' | 'diary' | 'pen' | 'keychain';
+        readonly input: 'bottle' | 'diary' | 'pen' | 'keychain';
+      };
+      readonly status: {
+        readonly output: 'pending' | 'approved' | 'rejected';
+        readonly input: 'pending' | 'approved' | 'rejected';
+      };
     };
     readonly Announcement: {
       readonly type: {
@@ -733,6 +759,19 @@ export namespace Models {
     id: FieldOutputTypes['public']['AmbassadorMessage']['id'];
     message: FieldOutputTypes['public']['AmbassadorMessage']['message'];
     read: FieldOutputTypes['public']['AmbassadorMessage']['read'];
+    readonly [RelationKeys]?: never;
+  };
+  export type public_AmbassadorRedemption = {
+    ambassadorId: FieldOutputTypes['public']['AmbassadorRedemption']['ambassadorId'];
+    createdAt: FieldOutputTypes['public']['AmbassadorRedemption']['createdAt'];
+    creditsSpent: FieldOutputTypes['public']['AmbassadorRedemption']['creditsSpent'];
+    decidedAt: FieldOutputTypes['public']['AmbassadorRedemption']['decidedAt'];
+    decidedBy: FieldOutputTypes['public']['AmbassadorRedemption']['decidedBy'];
+    goody: FieldOutputTypes['public']['AmbassadorRedemption']['goody'];
+    id: FieldOutputTypes['public']['AmbassadorRedemption']['id'];
+    requestedAt: FieldOutputTypes['public']['AmbassadorRedemption']['requestedAt'];
+    status: FieldOutputTypes['public']['AmbassadorRedemption']['status'];
+    updatedAt: FieldOutputTypes['public']['AmbassadorRedemption']['updatedAt'];
     readonly [RelationKeys]?: never;
   };
   export type public_Announcement = {
@@ -1764,6 +1803,7 @@ export declare const models: {
     AmbassadorApplication: Models.public_AmbassadorApplication;
     AmbassadorCreditLedger: Models.public_AmbassadorCreditLedger;
     AmbassadorMessage: Models.public_AmbassadorMessage;
+    AmbassadorRedemption: Models.public_AmbassadorRedemption;
     Announcement: Models.public_Announcement;
     ApplicationNote: Models.public_ApplicationNote;
     ApplicationStage: Models.public_ApplicationStage;
@@ -2167,6 +2207,97 @@ type ContractBase = Omit<
                   readonly name: 'AmbassadorMessage_read_createdAt_idx_bb5ea906';
                   readonly prefix: 'AmbassadorMessage_read_createdAt_idx';
                   readonly columns: readonly ['read', 'createdAt'];
+                  readonly unique: false;
+                },
+              ];
+              foreignKeys: readonly [];
+            };
+            readonly AmbassadorRedemption: {
+              columns: {
+                readonly ambassadorId: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly createdAt: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly nullable: false;
+                  readonly default: { readonly kind: 'function'; readonly expression: 'now()' };
+                  readonly typeParams: { readonly precision: 3 };
+                  readonly many: false;
+                };
+                readonly creditsSpent: {
+                  readonly dataType: 'pg/int4';
+                  readonly codecId: 'pg/int4@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly decidedAt: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly nullable: true;
+                  readonly typeParams: { readonly precision: 3 };
+                  readonly many: false;
+                };
+                readonly decidedBy: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly goody: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly id: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly requestedAt: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly nullable: false;
+                  readonly default: { readonly kind: 'function'; readonly expression: 'now()' };
+                  readonly typeParams: { readonly precision: 3 };
+                  readonly many: false;
+                };
+                readonly status: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'literal';
+                    readonly value: DefaultLiteralValue<'pg/text@1', 'pending'>;
+                  };
+                  readonly many: false;
+                };
+                readonly updatedAt: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly nullable: false;
+                  readonly typeParams: { readonly precision: 3 };
+                  readonly many: false;
+                };
+              };
+              primaryKey: { readonly columns: readonly ['id'] };
+              uniques: readonly [];
+              indexes: readonly [
+                {
+                  readonly name: 'AmbassadorRedemption_ambassadorId_status_idx_857a51a1';
+                  readonly prefix: 'AmbassadorRedemption_ambassadorId_status_idx';
+                  readonly columns: readonly ['ambassadorId', 'status'];
+                  readonly unique: false;
+                },
+                {
+                  readonly name: 'AmbassadorRedemption_status_createdAt_idx_58610442';
+                  readonly prefix: 'AmbassadorRedemption_status_createdAt_idx';
+                  readonly columns: readonly ['status', 'createdAt'];
                   readonly unique: false;
                 },
               ];
@@ -8608,7 +8739,11 @@ type ContractBase = Omit<
             };
             readonly AmbassadorCreditLedgerKind: {
               readonly kind: 'valueSet';
-              readonly values: readonly ['earn'];
+              readonly values: readonly ['earn', 'hold', 'release'];
+            };
+            readonly AmbassadorRedemptionStatus: {
+              readonly kind: 'valueSet';
+              readonly values: readonly ['pending', 'approved', 'rejected'];
             };
             readonly AmbassadorStatus: {
               readonly kind: 'valueSet';
@@ -8757,6 +8892,10 @@ type ContractBase = Omit<
     readonly AmbassadorMessage: {
       readonly namespace: 'public' & NamespaceId;
       readonly model: 'AmbassadorMessage';
+    };
+    readonly AmbassadorRedemption: {
+      readonly namespace: 'public' & NamespaceId;
+      readonly model: 'AmbassadorRedemption';
     };
     readonly Announcement: {
       readonly namespace: 'public' & NamespaceId;
@@ -9214,6 +9353,83 @@ type ContractBase = Omit<
                 readonly id: { readonly column: 'id' };
                 readonly message: { readonly column: 'message' };
                 readonly read: { readonly column: 'read' };
+              };
+            };
+          };
+          readonly AmbassadorRedemption: {
+            readonly fields: {
+              readonly ambassadorId: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly createdAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly typeParams: { readonly precision: 3 };
+                };
+              };
+              readonly creditsSpent: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/int4@1' };
+              };
+              readonly decidedAt: {
+                readonly nullable: true;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly typeParams: { readonly precision: 3 };
+                };
+              };
+              readonly decidedBy: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly goody: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly id: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly requestedAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly typeParams: { readonly precision: 3 };
+                };
+              };
+              readonly status: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly updatedAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly typeParams: { readonly precision: 3 };
+                };
+              };
+            };
+            readonly relations: Record<string, never>;
+            readonly storage: {
+              readonly table: 'AmbassadorRedemption';
+              readonly namespaceId: 'public';
+              readonly fields: {
+                readonly ambassadorId: { readonly column: 'ambassadorId' };
+                readonly createdAt: { readonly column: 'createdAt' };
+                readonly creditsSpent: { readonly column: 'creditsSpent' };
+                readonly decidedAt: { readonly column: 'decidedAt' };
+                readonly decidedBy: { readonly column: 'decidedBy' };
+                readonly goody: { readonly column: 'goody' };
+                readonly id: { readonly column: 'id' };
+                readonly requestedAt: { readonly column: 'requestedAt' };
+                readonly status: { readonly column: 'status' };
+                readonly updatedAt: { readonly column: 'updatedAt' };
               };
             };
           };
@@ -15204,7 +15420,19 @@ type ContractBase = Omit<
           };
           readonly AmbassadorCreditLedgerKind: {
             readonly codecId: 'pg/text@1';
-            readonly members: readonly [{ readonly name: 'earn'; readonly value: 'earn' }];
+            readonly members: readonly [
+              { readonly name: 'earn'; readonly value: 'earn' },
+              { readonly name: 'hold'; readonly value: 'hold' },
+              { readonly name: 'release'; readonly value: 'release' },
+            ];
+          };
+          readonly AmbassadorRedemptionStatus: {
+            readonly codecId: 'pg/text@1';
+            readonly members: readonly [
+              { readonly name: 'pending'; readonly value: 'pending' },
+              { readonly name: 'approved'; readonly value: 'approved' },
+              { readonly name: 'rejected'; readonly value: 'rejected' },
+            ];
           };
           readonly AmbassadorStatus: {
             readonly codecId: 'pg/text@1';
@@ -15434,6 +15662,13 @@ type ContractBase = Omit<
           ];
           readonly AmbassadorCreditLedgerKind: readonly [
             { readonly name: 'earn'; readonly value: 'earn' },
+            { readonly name: 'hold'; readonly value: 'hold' },
+            { readonly name: 'release'; readonly value: 'release' },
+          ];
+          readonly AmbassadorRedemptionStatus: readonly [
+            { readonly name: 'pending'; readonly value: 'pending' },
+            { readonly name: 'approved'; readonly value: 'approved' },
+            { readonly name: 'rejected'; readonly value: 'rejected' },
           ];
           readonly AmbassadorStatus: readonly [
             { readonly name: 'active'; readonly value: 'active' },
@@ -15738,6 +15973,55 @@ type ContractBase = Omit<
           readonly ref: {
             readonly entry: 'AmbassadorMessage';
             readonly field: 'id';
+            readonly namespace: 'public';
+          };
+        },
+        {
+          readonly onCreate: {
+            readonly id: 'timestampNow';
+            readonly kind: 'generator';
+            readonly params: { readonly precision: 3 };
+          };
+          readonly ref: {
+            readonly entry: 'AmbassadorRedemption';
+            readonly field: 'createdAt';
+            readonly namespace: 'public';
+          };
+        },
+        {
+          readonly onCreate: { readonly id: 'cuid2'; readonly kind: 'generator' };
+          readonly ref: {
+            readonly entry: 'AmbassadorRedemption';
+            readonly field: 'id';
+            readonly namespace: 'public';
+          };
+        },
+        {
+          readonly onCreate: {
+            readonly id: 'timestampNow';
+            readonly kind: 'generator';
+            readonly params: { readonly precision: 3 };
+          };
+          readonly ref: {
+            readonly entry: 'AmbassadorRedemption';
+            readonly field: 'requestedAt';
+            readonly namespace: 'public';
+          };
+        },
+        {
+          readonly onCreate: {
+            readonly id: 'timestampNow';
+            readonly kind: 'generator';
+            readonly params: { readonly precision: 3 };
+          };
+          readonly onUpdate: {
+            readonly id: 'timestampNow';
+            readonly kind: 'generator';
+            readonly params: { readonly precision: 3 };
+          };
+          readonly ref: {
+            readonly entry: 'AmbassadorRedemption';
+            readonly field: 'updatedAt';
             readonly namespace: 'public';
           };
         },
