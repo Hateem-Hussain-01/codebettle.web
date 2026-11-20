@@ -296,6 +296,7 @@ const V32_ALLOWLIST = [
   'codebettle/tests/ambassador-credits.test.ts',
   'codebettle/tests/view-as-extension.test.ts',
   'codebettle/tests/admin-access.test.ts',
+  'codebettle/tests/team-credits.test.ts',
 ];
 
 function changedFiles(): string[] {

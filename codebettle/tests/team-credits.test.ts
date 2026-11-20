@@ -4,7 +4,9 @@
  *
  * - Referral codes are random 6-char, checked against ambassador
  *   codes too (one code, one referrer).
- * - Attribution at registration (team half of the shared ?ref=).
+ * - Attribution at registration: the student types the team code
+ *   into the register form (Eman, 20 Nov 2026 — no ?ref= link, no
+ *   track endpoint, no cookie any more).
  * - Credit awards are idempotent (one earn per enrollment, ever) and
  *   honour the admin setting for WHEN the credit is earned.
  * - Redemptions hold credits (no double-spend); approve keeps the
@@ -21,7 +23,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { NextRequest } from 'next/server';
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { __resetDbClient, __setDbClient } from '../lib/db/client';
@@ -50,7 +52,6 @@ import { getTeamCreditSettings, SettingsValidationError, updateSiteSettings } fr
 import { POST as redeem } from '../app/api/team/credits/redeem/route';
 import { POST as saveSettings } from '../app/api/admin/credits/settings/route';
 import { POST as decideRedemptionRoute } from '../app/api/admin/credits/redemptions/[id]/route';
-import { GET as trackReferral } from '../app/api/referral/track/route';
 import type { SessionUser } from '../lib/services/auth-service';
 
 const D = (s: string) => new Date(s);
@@ -201,13 +202,20 @@ test('attribution: one user, one referrer — second attribution refused, ambass
   assert.equal(await attributeSignupToTeamMember(grant.id, 'stu-2'), false);
 });
 
-test('attribution: a team code landing validates at /api/referral/track (cookie is set)', async () => {
+test('attribution: a team code validates through the register form field — no track endpoint, no cookie', async () => {
   const grant = await grantTeamAccess({ email: 'maryam@codebettle.com', grantedBy: 'admin-1' });
   const code = await ensureTeamReferralCode(grant.id);
-  const ok = await trackReferral(new NextRequest(`http://localhost/api/referral/track?code=${code.code}`));
-  assert.deepEqual(await ok.json(), { valid: true });
-  const bad = await trackReferral(new NextRequest('http://localhost/api/referral/track?code=ZZZZZZ'));
-  assert.deepEqual(await bad.json(), { valid: false });
+  // The code resolves at signup from the form field.
+  assert.equal(await resolveTeamReferralForSignup(code.code, 'ali@example.com'), grant.id);
+  assert.equal(await resolveTeamReferralForSignup('ZZZZZZ', 'ali@example.com'), null);
+  // Wiring: the register route resolves team codes from the
+  // referralCode field, and the track endpoint is gone — no ?ref=
+  // capture, no cookie, no click tracking left anywhere on the path.
+  const route = read('app/api/auth/route.ts');
+  assert.ok(route.includes('resolveTeamReferralForSignup'));
+  assert.ok(!existsSync(join(root, 'app/api/referral/track/route.ts')), 'the track endpoint is deleted');
+  const proxy = read('proxy.ts');
+  assert.ok(!proxy.includes("searchParams.get('ref')"), 'proxy no longer captures ?ref=');
 });
 
 // ---------------------------------------------------------------------------
