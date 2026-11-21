@@ -3,7 +3,8 @@
  * VIDEO HE LAGA DO WAHA PAY").
  *
  * The intro is the EXACT video file he sent (the CodeBettle logo
- * intro, 9.7s, 1920x1080 — tunnel + bee logo) — served as-is from
+ * intro, 6.4s, 1920x1080 — tunnel + bee logo; the 9.7s file was
+ * replaced 21 Nov 2026 by his shorter one) — served as-is from
  * public/intro-video.mp4. No rebuild, no re-animation, no trim, no
  * re-edit: the previous animated intro (bee + letters + tagline,
  * ~6s, PRs #79/#85) is replaced wholesale by the video element.
@@ -38,9 +39,9 @@
  * The intro dispatches INTRO_DONE_EVENT when it finishes (or is
  * skipped); the hero listens and starts its scene fade-in at the
  * end. When there is no intro, introAlreadyDone() is true and
- * everything starts at once, exactly as before. A 12s fallback in
+ * everything starts at once, exactly as before. A 9s fallback in
  * the listener starts it anyway if the event is ever missed — it
- * must exceed the video (9.7s) so it never fires mid-video and lets
+ * must exceed the video (6.4s) so it never fires mid-video and lets
  * the scene fade in hidden behind the overlay.
  */
 
@@ -57,10 +58,10 @@ export const INTRO_DATA_ATTR = 'cb-intro';
  * 2026). Byte-identical to the reference he sent — never re-encoded. */
 export const INTRO_VIDEO_SRC = '/intro-video.mp4';
 
-/** Nominal length of the video (ms) — the file is 9.72s. Used
+/** Nominal length of the video (ms) — the file is 6.36s. Used
  * only to size the hero-done fallback below; the video itself ends
  * on its own onEnded, so the intro never depends on this clock. */
-export const INTRO_VIDEO_DURATION_MS = 9700;
+export const INTRO_VIDEO_DURATION_MS = 6400;
 
 /** Fallback (ms) after which the script drops the pre-hydration cover if React never mounted.
  * 10s: on a slow phone hydration can take longer than 5s, and the old fallback removed the flag before
@@ -69,8 +70,8 @@ export const INTRO_VIDEO_DURATION_MS = 9700;
 export const INTRO_COVER_FALLBACK_MS = 10000;
 
 /** Fallback (ms) after which hero listeners start anyway if the intro-done event is missed.
- * Must exceed the video (9.7s) — 12s leaves a 2.3s margin — so it never fires mid-video. */
-export const INTRO_DONE_FALLBACK_MS = 12000;
+ * Must exceed the video (6.4s) — 9s leaves a 2.6s margin — so it never fires mid-video. */
+export const INTRO_DONE_FALLBACK_MS = 9000;
 
 /**
  * Pure decision: should the intro play? Every input is passed in so

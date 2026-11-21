@@ -2,11 +2,13 @@
 // VIDEO HE LAGA DO WAHA PAY").
 //
 // The intro is the EXACT video file he sent (the CodeBettle logo
-// intro, 9.7s, 1920x1080 — tunnel + bee logo), served as-is from
+// intro, 6.4s, 1920x1080 — tunnel + bee logo), served as-is from
 // public/intro-video.mp4 — no rebuild, no re-animation, no trim.
 // The animated intro (bee + letters + tagline, PRs #79/#85) is
 // gone. (The notiune reference recording was a misread — NOT the
-// intro, never to be embedded.)
+// intro, never to be embedded.) The 9.7s video was replaced 21 Nov
+// 2026 by his shorter 6.4s file, and the video now plays cover-fit
+// (fills every screen, no black bars) instead of letterboxed.
 //
 // These tests pin the contract: session-scoping, skip, reduced
 // motion, the 3D fade-in gating (the scene fades in when the video
@@ -47,9 +49,9 @@ test('intro shows only on the first full load of "/" in a fresh session', () => 
   assert.equal(shouldShowIntro({ ...firstVisit, isEntry: false }), false, 'SPA navigation to / — never replayed');
 });
 
-test('video intro: 9.7s file, hero-done fallback exceeds it, cover fallback is hydration-only', () => {
+test('video intro: 6.4s file, hero-done fallback exceeds it, cover fallback is hydration-only', () => {
   assert.equal(INTRO_VIDEO_SRC, '/intro-video.mp4', `video must be served from ${INTRO_VIDEO_SRC}`);
-  assert.equal(INTRO_VIDEO_DURATION_MS, 9700, `video duration must be 9700ms (the file is 9.72s), got ${INTRO_VIDEO_DURATION_MS}`);
+  assert.equal(INTRO_VIDEO_DURATION_MS, 6400, `video duration must be 6400ms (the file is 6.36s), got ${INTRO_VIDEO_DURATION_MS}`);
   // The hero-done fallback must stay above the video, or a missed
   // event could start the 3D fade-in mid-video and let it finish
   // hidden behind the overlay.
@@ -68,7 +70,7 @@ test('the exact video file ships in public/ — never re-encoded, never trimmed'
   const file = join(root, 'public/intro-video.mp4');
   assert.ok(existsSync(file), 'public/intro-video.mp4 must exist in the repo');
   const size = statSync(file).size;
-  assert.ok(size > 1_000_000, `video file must be substantial (got ${size} bytes) — the 9.7s 1080p recording is ~16.6 MB`);
+  assert.ok(size > 1_000_000, `video file must be substantial (got ${size} bytes) — the 6.4s 1080p recording is ~17.5 MB`);
   // MP4 magic: bytes 4–7 are "ftyp" — the file is really an MP4,
   // not a renamed placeholder. Read only the header, not the whole
   // 13 MB file.
@@ -104,7 +106,9 @@ test('intro overlay: the exact video, muted autoplay, skip, ends on its own, nev
   assert.ok(src.includes('el.muted = true'), 'muted must also be set on the element — React does not always honour the attribute');
   assert.ok(src.includes('playsInline'), 'video must play inline on phones (no fullscreen takeover)');
   assert.ok(src.includes('preload="auto"'), 'video must preload so it starts at once');
-  assert.ok(src.includes('object-contain'), 'portrait video must letterbox on desktop, not crop');
+  assert.ok(src.includes('object-cover'), 'video must fill the whole intro viewport on every screen (cover-fit, crops as needed)');
+  assert.ok(!src.includes('object-contain'), 'never letterbox/pillarbox — object-contain is what left the black bars (Eman, 21 Nov 2026)');
+  assert.ok(src.includes('h-full w-full'), 'video must size to the full overlay');
   assert.ok(src.includes('onEnded={finish}'), 'video ending must dismiss the intro on its own');
   assert.ok(src.includes('onError={finish}'), 'a load failure must dismiss the intro at once — never a stuck black overlay');
   assert.ok(src.includes('Skip intro'), 'explicit Skip affordance must exist');
