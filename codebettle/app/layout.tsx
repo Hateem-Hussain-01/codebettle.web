@@ -89,39 +89,6 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         */}
         <script nonce={nonce} dangerouslySetInnerHTML={{ __html: THEME_SCRIPT }} />
         {/*
-          Theme ink-wipe displacement filter (Eman, 21 Nov 2026).
-          Referenced as url(#ink-blob) by the ::view-transition-new(root)
-          rule in public/theme-ink-wipe.css. Zero-size, aria-hidden, no
-          layout effect — it only exists so the filter can be referenced.
-          See the filter itself for what it does (organic edge + gold
-          ring); if it is ever removed, the wipe degrades to a clean
-          circle with no gold edge (the url() filter simply drops).
-        */}
-        <svg aria-hidden="true" focusable="false" width="0" height="0" style={{ position: 'absolute' }}>
-          <defs>
-            {/*
-              Ink-blob displacement filter (Eman, 21 Nov 2026): fractal
-              noise displaces whatever it is applied to into an organic,
-              feathery liquid edge. It is used in TWO places (see
-              public/theme-ink-wipe.css + lib/theme-wipe.ts): on the
-              view-transition snapshot (wobbles the page content just
-              inside the spreading edge) and on the popover gold ring
-              (wobbles the ring itself into an ink-like outline).
-              Displacement ONLY — no flood/composite ring here: filters
-              run BEFORE clip-path, so anything the filter paints
-              outside the clip is cut away, and a filter-based gold ring
-              cannot work (proven 21 Nov). The gold edge lives in the
-              popover ring, not in this filter. If this filter is ever
-              removed, both the snapshot wobble and the ring wobble
-              degrade to clean circles (the url() filter simply drops).
-            */}
-            <filter id="ink-blob" x="-5%" y="-5%" width="110%" height="110%">
-              <feTurbulence type="fractalNoise" baseFrequency="0.01 0.016" numOctaves="2" seed="7" result="noise" />
-              <feDisplacementMap in="SourceGraphic" in2="noise" scale="40" />
-            </filter>
-          </defs>
-        </svg>
-        {/*
           Website intro (18 Nov 2026): pre-hydration decision script.
           Same pattern as the theme script above — first children of
           <body>, same nonce. Sets data-cb-intro="show" on <html> only
