@@ -1,11 +1,10 @@
 'use client';
 
 import dynamic from 'next/dynamic';
-import { animate, motion, useMotionValue, useReducedMotion, useTransform, type MotionValue } from 'framer-motion';
+import { motion, useReducedMotion, useTransform, type MotionValue } from 'framer-motion';
 import { useEffect, useState } from 'react';
 import { shouldRenderScene } from '@/lib/hero-scene';
 import { scrollSceneOpacity } from '@/lib/scroll-3d';
-import { INTRO_DONE_FALLBACK_MS, introAlreadyDone, onIntroDone } from '@/lib/intro';
 
 /**
  * Hero 3D scene wrapper — fully-3D public site, Step 1 (Eman, 17 Nov
@@ -42,22 +41,10 @@ export default function HeroSceneWrapper({ scrollYProgress }: { scrollYProgress:
   // opacity, do NOT remove): the bright 3D shapes drifting behind
   // the headline hurt readability. The scene renders at 35%
   // opacity — still fully visible and animated, but the headline and
-  // subtext now read clearly over it. The scroll fade above and the
-  // intro fade below multiply on top of this base dim.
+  // subtext now read clearly over it. The scroll fade above
+  // multiplies on top of this base dim.
   const HERO_SCENE_OPACITY = 0.35;
   const sceneOpacityDimmed = useTransform(sceneOpacity, (v) => v * HERO_SCENE_OPACITY);
-  // Website intro (18 Nov 2026): when the intro plays, the scene
-  // fades in behind the hero at the reveal instead of popping in
-  // under the overlay. The fade is driven by a MotionValue (not
-  // React state) so the server render and the first client render
-  // are identical (opacity 1) — no hydration mismatch. Only after
-  // hydration, when an intro is actually pending on this load
-  // (!introAlreadyDone()), the value drops to 0 — invisible, the
-  // opaque overlay covers the hero — and animates back to 1 on the
-  // intro-done event. Loads with no intro never touch the value:
-  // zero behaviour change. A 6s fallback fades in anyway if the
-  // event is ever missed.
-  const introFade = useMotionValue(1);
 
   useEffect(() => {
     setIsMobile(window.matchMedia('(max-width: 768px), (pointer: coarse)').matches);
@@ -69,30 +56,15 @@ export default function HeroSceneWrapper({ scrollYProgress }: { scrollYProgress:
     }
   }, []);
 
-  useEffect(() => {
-    if (introAlreadyDone()) return undefined;
-    introFade.set(0);
-    const off = onIntroDone(() => {
-      void animate(introFade, 1, { duration: 0.8, ease: 'easeOut' });
-    });
-    const fallback = setTimeout(() => {
-      void animate(introFade, 1, { duration: 0.8, ease: 'easeOut' });
-    }, INTRO_DONE_FALLBACK_MS);
-    return () => {
-      off();
-      clearTimeout(fallback);
-    };
-  }, [introFade]);
-
   if (!shouldRenderScene({ reducedMotion: reduceMotion ?? false, isMobile, webglSupported })) {
     return null;
   }
 
   return (
     <motion.div aria-hidden="true" className="pointer-events-none absolute inset-0 overflow-hidden" style={{ opacity: sceneOpacityDimmed }}>
-      <motion.div className="absolute inset-0" style={{ opacity: introFade }}>
+      <div className="absolute inset-0">
         <HeroScene scrollYProgress={scrollYProgress} />
-      </motion.div>
+      </div>
     </motion.div>
   );
 }

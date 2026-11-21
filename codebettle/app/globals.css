@@ -278,25 +278,6 @@ body {
   }
 }
 
-/* Website intro pre-hydration cover (Eman, 18 Nov 2026).
- * The INTRO_SCRIPT in lib/intro.ts sets data-cb-intro="show" on
- * <html> before the first paint when the intro will play (first
- * full load of "/" in a fresh session). This rule then paints a
- * fixed dark cover over the SSR page so the hero never flashes
- * before the animated overlay mounts. It is a pseudo-element, not
- * a DOM node, so React hydration never sees it; the WebsiteIntro
- * component removes the attribute the moment its overlay mounts,
- * and the script's 5s fallback drops it if React never mounts —
- * the page can never be stuck dark. When the intro will NOT play
- * the attribute is absent and this rule does nothing. */
-html[data-cb-intro="show"] body::before {
-  content: "";
-  position: fixed;
-  inset: 0;
-  background: #0a0a0a;
-  z-index: 9999;
-}
-
 /* Theme ink-wipe rules live in public/theme-ink-wipe.css (plain file,
    loaded via <link> from the root layout) — Tailwind's CSS pipeline
    drops ::view-transition-* rules, so they must NOT live here. */
