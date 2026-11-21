@@ -1,7 +1,9 @@
-// Theme ink-wipe (Eman, 21 Nov 2026 — reference video of an organic
-// ink-blob theme transition, adapted to CodeBettle: the wipe uses the
-// incoming theme's surface with a thin GOLD edge/glow on the spreading
-// front, never the video's plain black/white ink).
+// Theme ink-wipe v2 (Eman, 21 Nov 2026 — EXACT COPY of the Codemure
+// reference video, after he rejected the v1 gold-edge adaptation
+// ("bilkul fazol hay", 10:45 PKT): the new theme spreads as an organic
+// ink blob with smoky/feathery tendril edges from the toggle button,
+// ~1.2s — the video's own black/white ink, NO gold edge, no ring, no
+// glow.
 //
 // These tests pin the pure helpers (unit) and the wiring
 // (source-level, like the other guard tests). They do not render
@@ -9,6 +11,12 @@
 // the PR body. The video's bottom-left settings/sliders panel is the
 // creator's dev panel and is NOT part of the feature — nothing here
 // builds it.
+//
+// v1 lesson pinned here: a filter runs BEFORE clip-path, so a clip
+// edge can never be wobbled — v1's blob was a clean circle with a
+// gold outline. v2 reveals through an SVG blob MASK (the displaced
+// circle IS the edge), so the tests forbid clip-path, the gold ring,
+// the popover, and the #ink-blob filter — all of which are gone.
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
@@ -57,26 +65,31 @@ test('elementCenter: centre of the clicked element (works for keyboard activatio
   assert.deepEqual(elementCenter(el), { x: 120, y: 70 });
 });
 
-test('wipe duration is ~0.9s (the brief: 0.8-1s, slow/damped)', () => {
-  assert.ok(THEME_WIPE_DURATION_MS >= 800 && THEME_WIPE_DURATION_MS <= 1000, `duration must be 0.8-1s, got ${THEME_WIPE_DURATION_MS}ms`);
-  assert.equal(THEME_WIPE_EASE, 'cubic-bezier(0.16, 1, 0.3, 1)', 'the ring must share the clip easing');
+test('wipe duration is ~1.2s (the video: 1-1.5s per wipe, steady spread)', () => {
+  assert.ok(THEME_WIPE_DURATION_MS >= 1000 && THEME_WIPE_DURATION_MS <= 1500, `duration must be 1-1.5s, got ${THEME_WIPE_DURATION_MS}ms`);
+  assert.equal(THEME_WIPE_EASE, 'cubic-bezier(0.33, 0.66, 0.66, 1)', 'the mask must use the steady-spread ease (v1 slow-out covered the viewport in ~200ms)');
   const css = read('public/theme-ink-wipe.css');
-  assert.ok(css.includes(`animation: theme-ink-wipe 0.9s`), 'the CSS animation must run the same 0.9s');
+  assert.ok(css.includes('animation: theme-ink-wipe 1.2s'), 'the CSS animation must run the same 1.2s');
+  assert.ok(!css.includes('theme-ink-wipe 0.9s'), 'v1 ran 0.9s — v2 is the video timing, 1.2s');
 });
 
 // ---------------------------------------------------------------------------
 // Wiring (source-level)
 // ---------------------------------------------------------------------------
 
-test('theme-wipe helper: view transition with instant fallback + stale-var cleanup', () => {
+test('theme-wipe helper: view transition with instant fallback + stale-var cleanup, no ring', () => {
   const src = read('lib/theme-wipe.ts');
   assert.ok(src.includes('document.startViewTransition(update)'), 'the theme switch must run inside startViewTransition');
   assert.ok(src.includes("matchMedia('(prefers-reduced-motion: reduce)')"), 'reduced motion must skip the wipe');
   assert.ok(src.includes('--wipe-x') && src.includes('--wipe-y') && src.includes('--wipe-r'), 'the origin + radius must reach the CSS as variables');
   assert.ok(src.includes('removeProperty'), 'the CSS variables must be cleaned up after the transition');
+  assert.ok(src.includes('wipeToken'), 'a second tap mid-wipe must not let the older wipe remove the new wipe variables early');
+  assert.ok(!src.includes('showPopover') && !src.includes('hidePopover'), 'v2 has no gold ring popover (Eman rejected it) — no popover code');
+  assert.ok(!src.includes('ring.animate') && !src.includes('getRingElements'), 'v2 has no ring to animate');
+  assert.ok(src.includes('THEME_WIPE_DURATION_MS = 1200'), 'the duration constant must be the v2 1.2s');
 });
 
-test('theme-ink-wipe.css: ink-wipe keyframes — clip-path circle + organic filter + gold edge', () => {
+test('theme-ink-wipe.css: ink-wipe keyframes — SVG blob MASK, no clip-path, no gold', () => {
   // The wipe CSS lives in public/theme-ink-wipe.css (plain file,
   // served raw) — Tailwind v4's CSS pipeline drops
   // ::view-transition-* rules, so they must NOT live in globals.css
@@ -91,29 +104,22 @@ test('theme-ink-wipe.css: ink-wipe keyframes — clip-path circle + organic filt
   assert.ok(css.includes('::view-transition-old(root)'), 'the old snapshot must be pinned (no fade)');
   assert.ok(!css.includes('::view-transition-new-root') && !css.includes('::view-transition-old-root'), 'the removed -root selector form must not come back');
   assert.ok(css.includes('@keyframes theme-ink-wipe'), 'the wipe keyframes must exist');
-  assert.ok(css.includes('clip-path: circle(0px at var(--wipe-x'), 'the wipe must start as a point at the clicked button');
-  assert.ok(css.includes('clip-path: circle(var(--wipe-r'), 'the wipe must expand to the farthest-corner radius');
-  assert.ok(css.includes('url(#ink-blob)'), 'the spreading edge must be wobbled into an organic shape by the SVG displacement filter');
-  assert.ok(!css.includes('drop-shadow'), 'a shadow filter does NOT paint on view-transition snapshots in Chromium (proven 21 Nov) — the gold edge lives in the popover ring, never as a shadow filter');
+  assert.ok(css.includes('mask-image:'), 'the wipe must reveal through a mask (the mask IS the edge)');
+  assert.ok(css.includes('data:image/svg+xml'), 'the mask must be an inline SVG blob');
+  assert.ok(css.includes('feTurbulence'), 'the blob mask must use fractal noise for the tendril edge');
+  assert.ok(css.includes('feDisplacementMap'), 'the blob mask must displace the circle with the noise');
+  assert.ok(css.includes("scale='120'"), 'the blob mask must displace hard (scale 120) — scale 45 gave a tame wobbly circle (21 Nov)');
+  assert.ok(css.includes('* 4.6'), 'the mask must overshoot to 4.6x the covering radius (min edge reach 1.03x with scale 120 — see the CSS overshoot note)');
+  assert.ok(css.includes('* 2.3'), 'the mask must stay centred on the clicked button at the overshoot size');
+  assert.ok(css.includes('mask-position:'), 'the mask must stay centred on the clicked button (mask-position)');
+  assert.ok(css.includes('mask-repeat: no-repeat'), 'the mask must not tile');
+  assert.ok(!css.includes('clip-path'), 'v1 clip-path is GONE — a filter runs before clip-path, so a clip edge can never be wobbled (proven 21 Nov)');
+  assert.ok(!css.includes('url(#ink-blob)'), 'the v1 displacement filter is GONE — the mask carries the edge now');
+  assert.ok(!css.includes('drop-shadow'), 'a shadow filter does NOT paint on view-transition snapshots in Chromium (proven 21 Nov)');
+  assert.ok(!css.includes('.theme-wipe-ring'), 'the gold ring is GONE (Eman rejected it)');
+  assert.ok(!css.includes('var(--color-primary)'), 'no gold anywhere in the wipe — the ink is the incoming theme surface itself');
   assert.ok(!css.includes('theme-ink-wipe 1.5s') && !css.includes('theme-ink-wipe 0.25s'), 'the wipe must not copy the video 1.5s or the UA 0.25s default');
-  assert.ok(css.includes('cubic-bezier(0.16, 1, 0.3, 1)'), 'the wipe must use the slow/damped ease');
-});
-
-test('theme-ink-wipe.css: the gold ring is a popover ring (above the view-transition layer)', () => {
-  // The view-transition snapshots paint in the top layer above all
-  // normal DOM, so a plain overlay would be hidden behind them — the
-  // gold ring MUST live in a manual popover shown after the transition
-  // starts (proven 21 Nov: a plain overlay ring was invisible, the
-  // popover ring traced the spreading edge).
-  const css = read('public/theme-ink-wipe.css');
-  assert.ok(css.includes('.theme-wipe-ring-popover'), 'the popover that carries the ring must exist');
-  assert.ok(css.includes('popover'), 'the ring holder must be a popover');
-  assert.ok(css.includes('background: transparent'), 'the popover must not dim the page');
-  assert.ok(css.includes('.theme-wipe-ring-popover::backdrop'), 'the popover backdrop must be transparent');
-  assert.ok(css.includes('.theme-wipe-ring'), 'the ring itself must exist');
-  assert.ok(css.includes('border: 4px solid var(--color-primary)'), 'the ring must be CodeBettle gold (never the video plain black/white ink)');
-  assert.ok(css.includes('box-shadow: 0 0 16px 4px'), 'the ring must carry a gold glow');
-  assert.ok(css.includes('pointer-events: none'), 'the ring must never block clicks');
+  assert.ok(css.includes('cubic-bezier(0.33, 0.66, 0.66, 1)'), 'the wipe must use the steady-spread ease');
 });
 
 test('globals.css must NOT hold view-transition rules (the pipeline drops them)', () => {
@@ -123,33 +129,11 @@ test('globals.css must NOT hold view-transition rules (the pipeline drops them)'
   assert.ok(!css.includes('@keyframes theme-ink-wipe'), 'the wipe keyframes belong with the rules in public/theme-ink-wipe.css');
 });
 
-test('root layout loads the plain wipe stylesheet', () => {
+test('root layout loads the plain wipe stylesheet and carries NO ink-blob filter', () => {
   const layout = read('app/layout.tsx');
   assert.ok(layout.includes('href="/theme-ink-wipe.css"'), 'the root layout must load the plain wipe stylesheet (same-origin, allowed by style-src self)');
-});
-
-test('root layout: the ink-blob SVG displacement filter exists (displacement only)', () => {
-  // Displacement ONLY — no flood/composite ring: filters run BEFORE
-  // clip-path, so anything the filter paints outside the clip is cut
-  // away and a filter-based gold ring cannot work (proven 21 Nov).
-  // The gold edge lives in the popover ring, not in this filter.
-  const layout = read('app/layout.tsx');
-  assert.ok(layout.includes('id="ink-blob"'), 'the filter the CSS references must exist in the DOM');
-  assert.ok(layout.includes('feTurbulence'), 'the filter must use fractal noise for the liquid edge');
-  assert.ok(layout.includes('feDisplacementMap'), 'the filter must displace the edge with the noise');
-  assert.ok(!layout.includes('feMorphology') && !layout.includes('feFlood'), 'no filter-based gold ring — it cannot paint past the clip');
-  assert.ok(layout.includes('aria-hidden="true"'), 'the filter SVG must be hidden from assistive tech');
-});
-
-test('theme-wipe helper: the ring is a popover animated in lock-step with the clip', () => {
-  const src = read('lib/theme-wipe.ts');
-  assert.ok(src.includes('showPopover'), 'the ring must be shown as a popover (above the view-transition layer)');
-  assert.ok(src.includes('hidePopover'), 'the popover must be hidden when the wipe settles');
-  assert.ok(src.includes("transition.ready.then"), 'the ring must start when the transition is ready (same moment as the clip animation)');
-  assert.ok(src.includes('ring.animate'), 'the ring must be animated with the Web Animations API');
-  assert.ok(src.includes('THEME_WIPE_DURATION_MS') && src.includes('THEME_WIPE_EASE'), 'the ring must share the clip duration and ease');
-  assert.ok(src.includes('wipeToken'), 'a second tap mid-wipe must not let the older wipe hide the new ring');
-  assert.ok(src.includes("setAttribute('popover', 'manual')"), 'the popover must be manual (no light-dismiss, no backdrop dim)');
+  assert.ok(!layout.includes('id="ink-blob"'), 'the v1 displacement filter is GONE — the mask is a data-URI in the CSS, nothing in the DOM');
+  assert.ok(!layout.includes('feTurbulence') && !layout.includes('feDisplacementMap'), 'no SVG filter defs remain in the layout');
 });
 
 test('ThemeToggle: picking a theme wipes from the clicked menu item and closes the menu', () => {
