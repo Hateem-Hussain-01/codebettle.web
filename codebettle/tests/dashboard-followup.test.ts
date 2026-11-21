@@ -294,14 +294,14 @@ test('portal layout: one ⌘K owner — it focuses the visible search, sidebar o
   assert.match(portalLayout, /hidden min-w-0 flex-1 items-center justify-center gap-4 px-4 md:flex/);
 });
 
-test('portal layout: greeting is time-of-day + the user’s own first name, never invented', () => {
-  assert.match(portalLayout, /function greetingForHour\(hour: number\): string \{/);
-  assert.match(portalLayout, /if \(hour >= 5 && hour < 12\) return 'Good morning';/);
-  assert.match(portalLayout, /if \(hour >= 12 && hour < 17\) return 'Good afternoon';/);
-  assert.match(portalLayout, /if \(hour >= 17 && hour < 21\) return 'Good evening';/);
-  assert.match(portalLayout, /return 'Hello';/);
+test('portal layout: greeting is "Hi, {firstName}! Welcome back."', () => {
+  // Dark+gold sidebar revision (Eman, 20 Nov 2026, kept 21 Nov):
+  // the top-bar greeting is "Hi, Mira! Welcome back." with the
+  // user's own first name, never invented. The time-of-day helper
+  // is gone. (Eman's 21 Nov order: greeting waisi hi.)
+  assert.doesNotMatch(portalLayout, /function greetingForHour/);
   assert.match(portalLayout, /const firstName = user\.name\?\.trim\(\)\.split\(\/\\s\+\/\)\[0\] \?\? '';/);
-  assert.match(portalLayout, /mounted && firstName \? `\$\{greetingForHour\(new Date\(\)\.getHours\(\)\)\}, \$\{firstName\}` : null/);
+  assert.match(portalLayout, /mounted && firstName \? `Hi, \$\{firstName\}! Welcome back\.` : null/);
   // Mount-gated: the server clock (UTC) and the user clock (PKT)
   // disagree, so a server-rendered greeting would hydrate-mismatch.
   assert.match(portalLayout, /useEffect\(\(\) => \{\s*setMounted\(true\);\s*\}, \[\]\);/);
@@ -350,6 +350,11 @@ const FOLLOWUP_ALLOWLIST = [
   'codebettle/components/ui/Card.tsx',
   'codebettle/components/ui/StatCard.tsx',
   'codebettle/app/student/dashboard/page.tsx',
+  // Dark+gold sidebar revision (Eman, 21 Nov 2026): the V32-exact
+  // orange/wood preview was rejected, so the sidebar is revised in
+  // CodeBettle dark+gold. Navbar exports the shared default logo
+  // URL the sidebar header uses (PortalLayout is already listed).
+  'codebettle/components/layout/Navbar.tsx',
   // Ambassador referral + credits redesign (Eman, 20 Nov 2026):
   // codes are admin-assigned (no link tracking, no clicks), the code
   // IS a Rs 200 coupon and earns 100 credits per referred student.

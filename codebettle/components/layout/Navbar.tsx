@@ -43,7 +43,10 @@ const FALLBACK_NAV_ITEMS = [
   { label: 'Contact', href: '/contact' },
 ];
 
-const DEFAULT_LOGO_URL =
+// The sidebar header (dark+gold revision, Eman 21 Nov 2026) shows the
+// same logo image — exported so CollapsibleSidebar uses the identical
+// default instead of duplicating the URL.
+export const DEFAULT_LOGO_URL =
   'https://phuzoxshzdfzjvephlhq.supabase.co/storage/v1/object/public/course-images/brand/navbar-logo.png';
 
 export default function Navbar({ session, navItems: navItemsProp, logoUrl: logoUrlProp }: NavbarProps) {

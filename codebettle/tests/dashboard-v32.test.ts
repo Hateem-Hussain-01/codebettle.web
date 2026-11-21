@@ -252,6 +252,13 @@ const V32_ALLOWLIST = [
   // as the guard fixes in PR #79/#81.
   'codebettle/components/layout/CollapsibleSidebar.tsx',
   'codebettle/tests/collapsible-sidebar.test.ts',
+  // Dark+gold sidebar revision (Eman, 21 Nov 2026): the V32-exact
+  // orange/wood preview was rejected, so the sidebar is revised in
+  // CodeBettle dark+gold — logo header, smaller clock + Sign Out,
+  // greeting kept. PortalLayout carries the greeting; Navbar exports
+  // the shared default logo URL.
+  'codebettle/components/layout/PortalLayout.tsx',
+  'codebettle/components/layout/Navbar.tsx',
   // The follow-up scope guard's allowlist had to gain the V32 files
   // for this same PR, so its test file is in scope here too (guard
   // files that coordinate scope belong in each other's allowlists).
