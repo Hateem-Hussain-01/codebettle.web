@@ -1,19 +1,22 @@
-// Website intro & loading experience (Eman, 18 Nov 2026 — "Done bna do";
-// retuned 20 Nov 2026 — ~6s, slower and more damped, plays on mobile).
+// Website intro (Eman, 21 Nov 2026 — "EXACT COPY NA KRO, WO EXACT
+// VIDEO HE LAGA DO WAHA PAY").
 //
-// A ~6s branded splash on the landing page ONLY, once per browser
-// session on the first full load of "/". CodeBettle's own motion
-// (dark + gold) — the "notiune" video was reference only.
+// The intro is the EXACT video file he sent (the CodeBettle logo
+// intro, 9.7s, 1920x1080 — tunnel + bee logo), served as-is from
+// public/intro-video.mp4 — no rebuild, no re-animation, no trim.
+// The animated intro (bee + letters + tagline, PRs #79/#85) is
+// gone. (The notiune reference recording was a misread — NOT the
+// intro, never to be embedded.)
 //
 // These tests pin the contract: session-scoping, skip, reduced
-// motion, the 3D fade-in gating (the scene fades in at the reveal,
-// never behind the intro), the first-paint cover, and the scope
+// motion, the 3D fade-in gating (the scene fades in when the video
+// ends, never behind the intro), the first-paint cover, and the scope
 // (landing page + root layout + hero integration only — no
 // PortalLayout/layout/sidebar/dashboard files, so no conflict with
 // the merged V32 (#77) and sidebar (#78) PRs).
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { closeSync, existsSync, openSync, readFileSync, readSync, statSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { execSync } from 'node:child_process';
@@ -22,16 +25,10 @@ import {
   INTRO_DATA_ATTR,
   INTRO_DONE_EVENT,
   INTRO_DONE_FALLBACK_MS,
-  INTRO_PARTICLES,
-  INTRO_REVEAL_AT_MS,
-  INTRO_REVEAL_MS,
   INTRO_SCRIPT,
   INTRO_SEEN_KEY,
-  INTRO_TAGLINE,
-  INTRO_TOTAL_MS,
-  INTRO_TYPE_AT_MS,
-  INTRO_TYPE_DURATION_MS,
-  INTRO_TYPE_MS_PER_CHAR,
+  INTRO_VIDEO_DURATION_MS,
+  INTRO_VIDEO_SRC,
   shouldShowIntro,
 } from '../lib/intro';
 
@@ -44,55 +41,42 @@ test('intro shows only on the first full load of "/" in a fresh session', () => 
   const firstVisit = { seen: false, reducedMotion: false, pathname: '/', isEntry: true };
   assert.equal(shouldShowIntro(firstVisit), true, 'first visit to / must show the intro');
   assert.equal(shouldShowIntro({ ...firstVisit, seen: true }), false, 'seen this session — never again');
-  assert.equal(shouldShowIntro({ ...firstVisit, reducedMotion: true }), false, 'reduced motion — never animate');
+  assert.equal(shouldShowIntro({ ...firstVisit, reducedMotion: true }), false, 'reduced motion — never play the video');
   assert.equal(shouldShowIntro({ ...firstVisit, pathname: '/courses' }), false, 'not the landing page — no intro');
   assert.equal(shouldShowIntro({ ...firstVisit, pathname: '/auth/login' }), false, 'auth pages — no intro');
   assert.equal(shouldShowIntro({ ...firstVisit, isEntry: false }), false, 'SPA navigation to / — never replayed');
 });
 
-test('intro fits the ~6s total: typing finishes before the reveal, fallbacks exceed the total', () => {
-  assert.equal(INTRO_TOTAL_MS, 6000, `total must be 6000ms, got ${INTRO_TOTAL_MS}`);
-  assert.equal(
-    INTRO_REVEAL_AT_MS + INTRO_REVEAL_MS,
-    INTRO_TOTAL_MS,
-    'reveal start + reveal duration must equal the total',
-  );
-  assert.equal(
-    INTRO_TYPE_DURATION_MS,
-    INTRO_TAGLINE.length * INTRO_TYPE_MS_PER_CHAR,
-    'typing duration must be the tagline length times the per-char speed',
-  );
+test('video intro: 9.7s file, hero-done fallback exceeds it, cover fallback is hydration-only', () => {
+  assert.equal(INTRO_VIDEO_SRC, '/intro-video.mp4', `video must be served from ${INTRO_VIDEO_SRC}`);
+  assert.equal(INTRO_VIDEO_DURATION_MS, 9700, `video duration must be 9700ms (the file is 9.72s), got ${INTRO_VIDEO_DURATION_MS}`);
+  // The hero-done fallback must stay above the video, or a missed
+  // event could start the 3D fade-in mid-video and let it finish
+  // hidden behind the overlay.
   assert.ok(
-    INTRO_TYPE_AT_MS + INTRO_TYPE_DURATION_MS < INTRO_REVEAL_AT_MS,
-    `typing (${INTRO_TYPE_AT_MS + INTRO_TYPE_DURATION_MS}ms) must finish before the reveal (${INTRO_REVEAL_AT_MS}ms)`,
+    INTRO_DONE_FALLBACK_MS > INTRO_VIDEO_DURATION_MS,
+    `hero-done fallback (${INTRO_DONE_FALLBACK_MS}ms) must exceed the video (${INTRO_VIDEO_DURATION_MS}ms)`,
   );
-  // The hero typewriter's 80ms/char suits 5–16-char role words; a
-  // 118-char sentence at that speed would take ~9.5s and blow the
-  // total. The intro speed adapts to the length (style, not speed,
-  // is what is shared with the hero).
-  assert.ok(INTRO_TYPE_MS_PER_CHAR < 80, 'intro typing must be faster than the hero role typewriter');
-  // Slower than the old 12ms/char — the 20 Nov retune: the ~4s intro
-  // felt rushed, so the typing (and everything else) slowed down.
-  assert.ok(INTRO_TYPE_MS_PER_CHAR > 12, 'intro typing must be slower than the rushed ~4s version');
-  // Fallbacks must stay above the total, or a missed event / slow
-  // hydration could strand the hero or the cover.
-  assert.ok(
-    INTRO_COVER_FALLBACK_MS > INTRO_TOTAL_MS,
-    `cover fallback (${INTRO_COVER_FALLBACK_MS}ms) must exceed the total (${INTRO_TOTAL_MS}ms)`,
-  );
-  assert.ok(
-    INTRO_DONE_FALLBACK_MS > INTRO_TOTAL_MS,
-    `hero-done fallback (${INTRO_DONE_FALLBACK_MS}ms) must exceed the total (${INTRO_TOTAL_MS}ms)`,
-  );
+  // The cover fallback is NOT sized to the video — the cover drops
+  // the moment the component mounts (hydration, seconds), so 10s is
+  // hydration protection only. It must stay at 10s (the 20 Nov
+  // mobile fix: slow phones can take longer than 5s to hydrate).
+  assert.equal(INTRO_COVER_FALLBACK_MS, 10000, `cover fallback must be 10000ms, got ${INTRO_COVER_FALLBACK_MS}`);
 });
 
-test('particles are deterministic and stay on screen', () => {
-  assert.equal(INTRO_PARTICLES.length, 14, 'fourteen gold particles');
-  for (const p of INTRO_PARTICLES) {
-    assert.ok(p.left >= 0 && p.left <= 100, `particle left ${p.left} must be a percentage`);
-    assert.ok(p.top >= 0 && p.top <= 100, `particle top ${p.top} must be a percentage`);
-    assert.ok(p.size >= 2 && p.size <= 4, `particle size ${p.size} must be 2–4px`);
-  }
+test('the exact video file ships in public/ — never re-encoded, never trimmed', () => {
+  const file = join(root, 'public/intro-video.mp4');
+  assert.ok(existsSync(file), 'public/intro-video.mp4 must exist in the repo');
+  const size = statSync(file).size;
+  assert.ok(size > 1_000_000, `video file must be substantial (got ${size} bytes) — the 9.7s 1080p recording is ~16.6 MB`);
+  // MP4 magic: bytes 4–7 are "ftyp" — the file is really an MP4,
+  // not a renamed placeholder. Read only the header, not the whole
+  // 13 MB file.
+  const fd = openSync(file, 'r');
+  const head = Buffer.alloc(12);
+  readSync(fd, head, 0, 12, 0);
+  closeSync(fd);
+  assert.equal(head.subarray(4, 8).toString('ascii'), 'ftyp', 'video file must be a real MP4 (ftyp box)');
 });
 
 test('pre-hydration script mirrors the pure decision', () => {
@@ -111,19 +95,30 @@ test('pre-hydration script mirrors the pure decision', () => {
 
 const intro = () => read('components/intro/WebsiteIntro.tsx');
 
-test('intro overlay: real bee mark, letters, tagline, skip, circular reveal', () => {
+test('intro overlay: the exact video, muted autoplay, skip, ends on its own, never strands', () => {
   const src = intro();
-  assert.ok(src.includes("images from '@/lib/certificates/assets/images.json'"), 'bee must come from the embedded brand asset (no network fetch)');
-  assert.ok(src.includes('data:image/png;base64'), 'bee must render as a bundled data URI');
-  assert.ok(src.includes("'CODEBETTLE'.split('')"), 'wordmark must rise letter by letter');
-  assert.ok(src.includes('INTRO_TAGLINE'), 'tagline must be the shared constant (hero subtext verbatim)');
+  assert.ok(src.includes('INTRO_VIDEO_SRC'), 'video src must be the shared constant (the exact file, as-is)');
+  assert.ok(src.includes('<video'), 'intro must render a video element');
+  assert.ok(src.includes('autoPlay'), 'video must autoplay');
+  assert.ok(src.includes('muted'), 'video must autoplay muted (browsers block sound autoplay)');
+  assert.ok(src.includes('el.muted = true'), 'muted must also be set on the element — React does not always honour the attribute');
+  assert.ok(src.includes('playsInline'), 'video must play inline on phones (no fullscreen takeover)');
+  assert.ok(src.includes('preload="auto"'), 'video must preload so it starts at once');
+  assert.ok(src.includes('object-contain'), 'portrait video must letterbox on desktop, not crop');
+  assert.ok(src.includes('onEnded={finish}'), 'video ending must dismiss the intro on its own');
+  assert.ok(src.includes('onError={finish}'), 'a load failure must dismiss the intro at once — never a stuck black overlay');
   assert.ok(src.includes('Skip intro'), 'explicit Skip affordance must exist');
   assert.ok(src.includes("e.key === 'Escape'"), 'Esc must skip');
   assert.ok(src.includes('onClick={skip}'), 'tap/click anywhere must skip');
-  assert.ok(src.includes("clipPath: 'circle(0% at 50% 50%)'"), 'reveal must collapse the overlay clip-path circle to the centre');
-  assert.ok(src.includes("clipPath: 'circle(150% at 50% 50%)'"), 'overlay must start fully covering');
-  assert.ok(src.includes('border-primary'), 'the expanding ring must be gold');
   assert.ok(src.includes('role="dialog"'), 'overlay must be labelled as a dialog');
+  // The animated intro is gone — no scenes, no typing, no particles,
+  // no circular reveal, no bee. The video IS the intro now.
+  assert.ok(!src.includes('INTRO_TAGLINE'), 'no tagline typing anymore');
+  assert.ok(!src.includes('INTRO_PARTICLES'), 'no gold particles anymore');
+  assert.ok(!src.includes("'CODEBETTLE'.split('')"), 'no letter-by-letter wordmark anymore');
+  assert.ok(!src.includes('clipPath'), 'no circular reveal anymore');
+  assert.ok(!src.includes('images.json'), 'no bee asset anymore');
+  assert.ok(!src.includes('<motion.'), 'no framer-motion scenes anymore');
 });
 
 test('intro plays on a fresh session even if the pre-hydration flag was eaten (mobile slow hydration)', () => {
@@ -233,6 +228,9 @@ test('intro touches only landing-page, layout, hero and intro files (no dashboar
     'codebettle/components/intro/WebsiteIntro.tsx',
     'codebettle/lib/intro.ts',
     'codebettle/tests/website-intro.test.ts',
+    // The exact video file itself (21 Nov 2026, Eman): the intro IS
+    // the video, so the file belongs in this guard's scope.
+    'codebettle/public/intro-video.mp4',
     // Guard fixes this PR had to make to land on post-V32 main (not
     // feature scope): the V32 scope guard fired on any later branch,
     // and the light-mode audit needed an allowlist entry for the
