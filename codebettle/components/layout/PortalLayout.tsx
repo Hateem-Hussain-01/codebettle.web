@@ -74,17 +74,12 @@ async function handleLogout() {
 }
 
 /**
- * Time-of-day greeting (dashboard follow-up): morning / afternoon /
- * evening by the user's local hour; late night gets a plain "Hello"
- * ("Good night" is a farewell, not a greeting). Pure, so the
- * buckets are unit-testable.
+ * Dashboard greeting (Eman, 20 Nov 2026, kept 21 Nov for the dark+gold
+ * sidebar revision): the top-bar greeting is "Hi, {firstName}!
+ * Welcome back." — the user's own first name, never invented. The
+ * time-of-day helper is gone; the greeting stays exactly as the
+ * V32 preview had it (Eman's 21 Nov order: greeting waisi hi).
  */
-export function greetingForHour(hour: number): string {
-  if (hour >= 5 && hour < 12) return 'Good morning';
-  if (hour >= 12 && hour < 17) return 'Good afternoon';
-  if (hour >= 17 && hour < 21) return 'Good evening';
-  return 'Hello';
-}
 
 /**
  * Sidebar navigation lives in components/layout/CollapsibleSidebar.tsx
@@ -108,9 +103,8 @@ export default function PortalLayout({ user, navItems, children, portalName, adm
   const reduceMotion = useReducedMotion();
   const pathname = usePathname();
 
-  // Top-bar greeting (Eman, 18 Nov 2026 — dashboard follow-up):
-  // time-of-day + the user's own first name, never invented. The
-  // greeting renders only after mount: the server clock (UTC) and
+  // Top-bar greeting (Eman, 20 Nov 2026): "Hi, {firstName}! Welcome
+  // back." — renders only after mount: the server clock (UTC) and
   // the user's clock (PKT) disagree about the time of day, so a
   // server-rendered greeting would hydrate-mismatch on the boundary
   // hours. Before mount the slot stays empty — no layout shift
@@ -120,7 +114,7 @@ export default function PortalLayout({ user, navItems, children, portalName, adm
     setMounted(true);
   }, []);
   const firstName = user.name?.trim().split(/\s+/)[0] ?? '';
-  const greeting = mounted && firstName ? `${greetingForHour(new Date().getHours())}, ${firstName}` : null;
+  const greeting = mounted && firstName ? `Hi, ${firstName}! Welcome back.` : null;
 
   // ⌘K — ONE owner (Eman, 18 Nov 2026 — dashboard follow-up). The
   // sidebar used to own this shortcut; now PortalLayout owns it

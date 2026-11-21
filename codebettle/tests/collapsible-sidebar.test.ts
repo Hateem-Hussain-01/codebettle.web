@@ -256,6 +256,67 @@ test('no loss: Sign Out, portal switcher, bell, UserMenu, BackButton and view-as
 });
 
 // ---------------------------------------------------------------------------
+// 5b. Dark+gold sidebar revision (Eman, 21 Nov 2026 — after the
+// V32-exact orange/wood preview was rejected: no orange, dashboards
+// stay CodeBettle dark+gold; greeting kept as-is)
+// ---------------------------------------------------------------------------
+
+test('dark+gold header: the actual CodeBettle logo (not the text), shorter header', () => {
+  // Same logo source as the navbar: the navbarLogoUrl setting via
+  // the root layout's NavConfigProvider, same default URL.
+  assert.match(sidebar, /import \{ useNavConfig \} from '@\/components\/layout\/NavConfigProvider';/);
+  assert.match(sidebar, /import \{ DEFAULT_LOGO_URL \} from '@\/components\/layout\/Navbar';/);
+  assert.match(sidebar, /const serverConfig = useNavConfig\(\);/);
+  assert.match(sidebar, /serverConfig\?\.logoUrl \?\? DEFAULT_LOGO_URL/);
+  // The logo image (h-7) replaces the "CodeBettle" gradient text in
+  // both the expanded and the mobile header; the text survives only
+  // as the onError fallback.
+  assert.match(sidebar, /<Image\s+src=\{logoUrl\}\s+alt="CodeBettle"/);
+  assert.match(sidebar, /className="h-7 w-auto"/);
+  assert.match(sidebar, /onError=\{\(\) => setLogoFailed\(true\)\}/);
+  assert.doesNotMatch(sidebar, /<Link href="\/" className="text-xl font-black gradient-text">\s*CodeBettle\s*<\/Link>/);
+  assert.match(sidebar, /<span className="text-xl font-black gradient-text">CodeBettle<\/span>/);
+  // The header area is shorter (py-3, was py-5); the collapsed rail
+  // keeps its "C" badge — no logo there.
+  assert.match(sidebar, /'flex items-center border-b border-dark-border py-3',/);
+  assert.doesNotMatch(sidebar, /'flex items-center border-b border-dark-border py-5',/);
+  assert.match(sidebar, /className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-primary text-base font-black text-ink"/);
+});
+
+test('dark+gold clock: live time above Sign Out, SMALLER than the V32 preview', () => {
+  assert.match(sidebar, /toLocaleTimeString/);
+  assert.match(sidebar, /hour12: false/);
+  assert.match(sidebar, /setInterval\(\(\) => setNow\(new Date\(\)\), 30_000\)/);
+  assert.match(sidebar, /useState<Date \| null>\(null\)/);
+  // Smaller than the preview (time text-lg, date 11px, px-6 pt-3).
+  assert.match(sidebar, /className="text-base font-bold tabular-nums leading-none text-primary-text"/);
+  assert.doesNotMatch(sidebar, /className="text-lg font-bold tabular-nums leading-none text-primary-text"/);
+  assert.match(sidebar, /className="mt-0\.5 text-\[10px\] text-muted"/);
+  assert.match(sidebar, /className="border-t border-dark-border px-4 pb-1 pt-2"/);
+  // Expanded rail only, mount-gated (no hydration mismatch).
+  assert.match(sidebar, /\{!effectiveCollapsed && now && \(/);
+});
+
+test('dark+gold sign out: shorter HEIGHT only, width unchanged', () => {
+  // Button py-2.5 -> py-1.5; still full width (w-full), still px-3
+  // expanded. Container py-4 -> py-3.
+  assert.match(sidebar, /relative flex w-full cursor-pointer items-center gap-3 rounded-lg py-1\.5 text-sm font-medium text-muted/);
+  assert.doesNotMatch(sidebar, /relative flex w-full cursor-pointer items-center gap-3 rounded-lg py-2\.5 text-sm font-medium text-muted/);
+  assert.match(sidebar, /className=\{cn\('px-3 py-3', effectiveCollapsed \|\| !now \? 'border-t border-dark-border' : ''\)\}/);
+});
+
+test('dark+gold: no orange, no wood anywhere in the dashboard shell', () => {
+  // The V32-exact palette was rejected 21 Nov ("ye orange color nh
+  // chahy") — the dashboard stays CodeBettle dark+gold. No .v32
+  // scope class, no video orange, no wood gradient.
+  assert.doesNotMatch(portalLayout, /v32/);
+  assert.doesNotMatch(sidebar, /v32/);
+  assert.doesNotMatch(sidebar, /#FF6B00/);
+  assert.doesNotMatch(portalLayout, /#FF6B00/);
+  assert.doesNotMatch(sidebar, /#4A2E1B/);
+});
+
+// ---------------------------------------------------------------------------
 // 6. No nav mixing — each portal renders only its own routes
 // ---------------------------------------------------------------------------
 

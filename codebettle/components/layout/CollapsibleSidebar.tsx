@@ -1,6 +1,7 @@
 'use client';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
+import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
@@ -8,6 +9,8 @@ import { ChevronDown, ChevronLeft, ChevronRight, LogOut, Search, X } from 'lucid
 import { cn } from '@/lib/utils';
 import { searchNavItems, type NavItemNode } from '@/lib/nav-search';
 import type { SessionUser } from '@/lib/auth';
+import { useNavConfig } from '@/components/layout/NavConfigProvider';
+import { DEFAULT_LOGO_URL } from '@/components/layout/Navbar';
 
 export interface NavItem extends NavItemNode {
   icon: React.ReactNode;
@@ -224,6 +227,26 @@ export default function CollapsibleSidebar({
   // desktop concern only.
   const effectiveCollapsed = mobile ? false : collapsed;
   const [labelsVisible, setLabelsVisible] = useState(mobile ? true : !collapsed);
+  // Live clock (dark+gold revision, Eman 21 Nov 2026): the V32
+  // preview's sidebar time, SMALLER — time text-base, date 10px,
+  // tighter padding. Display-only — the user's own local time,
+  // 24-hour like the video, ticking every 30s. Mount-gated (null
+  // until hydration) so the server clock (UTC) and the user's clock
+  // (PKT) can never hydrate-mismatch; hidden on the collapsed rail
+  // like the labels.
+  const [now, setNow] = useState<Date | null>(null);
+  useEffect(() => {
+    setNow(new Date());
+    const id = setInterval(() => setNow(new Date()), 30_000);
+    return () => clearInterval(id);
+  }, []);
+  // Sidebar logo (dark+gold revision, Eman 21 Nov 2026): the actual
+  // CodeBettle logo, same source as the navbar (the navbarLogoUrl
+  // setting via the root layout's NavConfigProvider, same default
+  // URL). If the image fails to load, the text wordmark shows.
+  const serverConfig = useNavConfig();
+  const [logoUrl] = useState(serverConfig?.logoUrl ?? DEFAULT_LOGO_URL);
+  const [logoFailed, setLogoFailed] = useState(false);
   const [query, setQuery] = useState('');
   const [hoveredHref, setHoveredHref] = useState<string | null>(null);
   const [activeResultIndex, setActiveResultIndex] = useState(0);
@@ -697,17 +720,32 @@ export default function CollapsibleSidebar({
 
   return (
     <div className="flex h-full flex-col">
-      {/* Header: logo + collapse toggle (desktop-only toggle). */}
+      {/* Header: logo + collapse toggle (desktop-only toggle).
+          Dark+gold revision (Eman, 21 Nov 2026): the header is
+          SHORTER (py-3) and shows the actual CodeBettle logo instead
+          of the "CodeBettle" text. */}
       <div
         className={cn(
-          'flex items-center border-b border-dark-border py-5',
+          'flex items-center border-b border-dark-border py-3',
           effectiveCollapsed ? 'px-2' : 'px-4',
         )}
       >
         {mobile ? (
           <>
-            <Link href="/" className="text-xl font-black gradient-text">
-              CodeBettle
+            <Link href="/" className="flex items-center">
+              {!logoFailed ? (
+                <Image
+                  src={logoUrl}
+                  alt="CodeBettle"
+                  width={130}
+                  height={40}
+                  className="h-7 w-auto"
+                  onError={() => setLogoFailed(true)}
+                  priority
+                />
+              ) : (
+                <span className="text-xl font-black gradient-text">CodeBettle</span>
+              )}
             </Link>
             <button
               onClick={onClose}
@@ -744,8 +782,20 @@ export default function CollapsibleSidebar({
           </div>
         ) : (
           <>
-            <Link href="/" className="text-xl font-black gradient-text">
-              CodeBettle
+            <Link href="/" className="flex items-center">
+              {!logoFailed ? (
+                <Image
+                  src={logoUrl}
+                  alt="CodeBettle"
+                  width={130}
+                  height={40}
+                  className="h-7 w-auto"
+                  onError={() => setLogoFailed(true)}
+                  priority
+                />
+              ) : (
+                <span className="text-xl font-black gradient-text">CodeBettle</span>
+              )}
             </Link>
             <button
               onClick={handleToggle}
@@ -874,15 +924,30 @@ export default function CollapsibleSidebar({
         )}
       </nav>
 
+      {/* Live clock (dark+gold revision, Eman 21 Nov 2026): the V32
+          preview's sidebar time, SMALLER — time text-base, date 10px,
+          tighter padding. Expanded rail only — the collapsed rail
+          hides it like the labels. */}
+      {!effectiveCollapsed && now && (
+        <div className="border-t border-dark-border px-4 pb-1 pt-2">
+          <p className="text-base font-bold tabular-nums leading-none text-primary-text">
+            {now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false })}
+          </p>
+          <p className="mt-0.5 text-[10px] text-muted">
+            {now.toLocaleDateString([], { weekday: 'long', day: 'numeric', month: 'short' })}
+          </p>
+        </div>
+      )}
+
       {/* Sign Out. */}
-      <div className="border-t border-dark-border px-3 py-4">
+      <div className={cn('px-3 py-3', effectiveCollapsed || !now ? 'border-t border-dark-border' : '')}>
         <button
           onClick={onLogout}
           aria-label="Sign Out"
           onMouseEnter={(e) => effectiveCollapsed && showTooltipFor(e.currentTarget, 'Sign Out')}
           onMouseLeave={hideTooltip}
           className={cn(
-            'relative flex w-full cursor-pointer items-center gap-3 rounded-lg py-2.5 text-sm font-medium text-muted outline-none transition-colors hover:bg-red-500/10 hover:text-red-400 focus-visible:ring-2 focus-visible:ring-primary/60',
+            'relative flex w-full cursor-pointer items-center gap-3 rounded-lg py-1.5 text-sm font-medium text-muted outline-none transition-colors hover:bg-red-500/10 hover:text-red-400 focus-visible:ring-2 focus-visible:ring-primary/60',
             effectiveCollapsed ? 'justify-center px-0' : 'px-3',
           )}
         >
