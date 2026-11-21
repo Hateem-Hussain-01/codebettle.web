@@ -16,7 +16,8 @@ import {
  * VIDEO HE LAGA DO WAHA PAY").
  *
  * The intro is the EXACT video he sent (the CodeBettle logo intro,
- * 9.7s, 1920x1080 — tunnel + bee logo) served as-is from
+ * 6.4s, 1920x1080 — tunnel + bee logo, the shorter replacement for
+ * the 9.7s video, 21 Nov 2026) served as-is from
  * public/intro-video.mp4 — no rebuild, no re-animation, no trim, no
  * re-edit. (The notiune reference recording was a misread — it is
  * NOT the intro and must not be embedded.) The previous animated
@@ -48,10 +49,12 @@ import {
  * invisible. The overlay itself is z-10000, above the cover, so
  * even a one-frame lag cannot flash the hero through.
  *
- * The video is landscape HD (1920x1080), so on desktop it fills
- * the screen and on portrait phones it letterboxes on the dark
- * background (object-contain) — that is the file as-is; nothing
- * here crops or reframes it.
+ * The video is landscape HD (1920x1080), and it plays FIT-TO-SCREEN
+ * on every viewport — object-cover, so it always fills the whole
+ * intro viewport and crops as needed, never letterboxes or
+ * pillarboxes. On a portrait phone the sides crop; on a wide
+ * desktop the top/bottom crop. No black bars anywhere (Eman, 21 Nov
+ * 2026 — his main complaint about the 9.7s video was the bars).
  */
 export default function WebsiteIntro() {
   const pathname = usePathname();
@@ -146,7 +149,8 @@ export default function WebsiteIntro() {
       className="fixed inset-0 z-[10000] flex cursor-pointer items-center justify-center overflow-hidden bg-[#0A0A0A]"
     >
       {/* The exact video file, as-is — muted autoplay, inline on
-          phones (no fullscreen takeover), letterboxed on desktop. */}
+          phones (no fullscreen takeover), cover-fit on every screen
+          (fills the viewport, crops as needed, never any black bars). */}
       {/* eslint-disable-next-line jsx-a11y/media-has-caption — the
           video is a silent screen recording; there is no speech to
           caption. */}
@@ -166,7 +170,7 @@ export default function WebsiteIntro() {
         preload="auto"
         onEnded={finish}
         onError={finish}
-        className="h-full w-full object-contain"
+        className="h-full w-full object-cover"
       />
       {/* Skip — tap anywhere works too; this is the explicit affordance. */}
       <button
