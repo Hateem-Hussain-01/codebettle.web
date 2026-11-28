@@ -46,7 +46,7 @@ test('code window keeps the exact student.py code, as data', () => {
 
 test('typing runs once on load: start delay, one char per tick, then stops', () => {
   const src = hero();
-  assert.ok(src.includes('CODE_TYPE_MS = 5'), 'typing speed must be 5ms per character');
+  assert.ok(src.includes('CODE_TYPE_MS = 2'), 'typing speed must be 2ms per character');
   assert.ok(src.includes('CODE_TYPE_START_DELAY_MS = 500'), 'typing must start 500ms after load');
   assert.ok(src.includes('CODE_TOTAL'), 'typing must run to the full code length');
   assert.ok(src.includes('setCodeTyped((n) => Math.min(n + 1, CODE_TOTAL))'), 'each tick must reveal exactly one more character');
