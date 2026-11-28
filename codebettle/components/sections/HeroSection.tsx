@@ -1,5 +1,5 @@
 'use client';
-import { motion, useScroll } from 'framer-motion';
+import { motion, useReducedMotion, useScroll } from 'framer-motion';
 import Link from 'next/link';
 import { useEffect, useRef, useState } from 'react';
 import Button from '@/components/ui/Button';
@@ -9,6 +9,89 @@ import { ArrowRight } from 'lucide-react';
 
 const TYPEWRITER_WORDS = ['Web Developer', 'Mobile Developer', 'Data Scientist', 'UI/UX Designer', 'DevOps Engineer'];
 
+// The student.py code window types itself out once on page load
+// (Eman, 28 Nov 2026): the code writes start to end, then stops —
+// no loop, no restart. Each line is styled segments, transcribed
+// exactly from the static window (same text, same classes); the
+// render below reveals them character by character.
+//
+// Timing: one character every CODE_TYPE_MS, after a short start
+// delay so the window has settled in (its fade-up runs 0.5s in).
+// ~243 characters ≈ 3.8s of typing. Reduced-motion users get the
+// full code at once — no animation.
+type CodeSegment = { text: string; className: string };
+const CODE_LINES: CodeSegment[][] = [
+  [
+    { text: 'class ', className: 'text-primary-text' },
+    { text: 'Developer', className: 'text-foreground font-semibold' },
+    { text: ':', className: 'text-muted' },
+  ],
+  [
+    { text: '    ', className: 'text-muted' },
+    { text: 'def ', className: 'text-primary-text' },
+    { text: '__init__', className: 'text-foreground font-semibold' },
+    { text: '(self, name):', className: 'text-muted' },
+  ],
+  [
+    { text: '        ', className: 'text-muted' },
+    { text: 'self.name', className: 'text-foreground' },
+    { text: ' = ', className: 'text-muted' },
+    { text: 'name', className: 'text-foreground' },
+  ],
+  [
+    { text: '        ', className: 'text-muted' },
+    { text: 'self.skills', className: 'text-foreground' },
+    { text: ' = []', className: 'text-muted' },
+  ],
+  [{ text: ' ', className: '' }],
+  [
+    { text: '    ', className: 'text-muted' },
+    { text: 'def ', className: 'text-primary-text' },
+    { text: 'learn', className: 'text-foreground font-semibold' },
+    { text: '(self, course):', className: 'text-muted' },
+  ],
+  [
+    { text: '        ', className: 'text-muted' },
+    { text: 'self.skills.append', className: 'text-foreground' },
+    { text: '(course)', className: 'text-muted' },
+  ],
+  [
+    { text: '        ', className: 'text-muted' },
+    { text: 'return ', className: 'text-primary-text' },
+    { text: '"Level up"', className: 'text-primary-light' },
+  ],
+  [{ text: ' ', className: '' }],
+  [
+    { text: 'you', className: 'text-foreground' },
+    { text: ' = ', className: 'text-muted' },
+    { text: 'Developer', className: 'text-foreground font-semibold' },
+    { text: '(', className: 'text-muted' },
+    { text: '"Future You"', className: 'text-primary-light' },
+    { text: ')', className: 'text-muted' },
+  ],
+  [
+    { text: 'you.learn', className: 'text-foreground' },
+    { text: '(', className: 'text-muted' },
+    { text: '"Python"', className: 'text-primary-light' },
+    { text: ')', className: 'text-muted' },
+  ],
+  [{ text: '# start today', className: 'text-muted' }],
+];
+const CODE_LINE_LENGTHS = CODE_LINES.map((line) => line.reduce((n, s) => n + s.text.length, 0));
+// Reveal-stream offset of each line: a line costs its characters
+// plus one step for the move onto the next line.
+const CODE_LINE_OFFSETS = CODE_LINE_LENGTHS.reduce<number[]>((offsets, len, i) => {
+  offsets.push(i === 0 ? 0 : offsets[i - 1] + CODE_LINE_LENGTHS[i - 1] + 1);
+  return offsets;
+}, []);
+const CODE_TOTAL = CODE_LINE_LENGTHS.reduce((n, len) => n + len, 0) + (CODE_LINES.length - 1);
+const CODE_TYPE_MS = 15;
+const CODE_TYPE_START_DELAY_MS = 500;
+// The code body is whitespace-nowrap (no pre), so plain spaces
+// would collapse — indentation is non-breaking spaces, exactly as
+// the old static window's &nbsp; entities were.
+const nbsp = (s: string) => s.replace(/ /g, ' ');
+
 /**
  * Home hero — screenshot redesign (Eman, 17 Nov 2026, from the
  * calm-vs-3D preview): two columns — left the badge, the two-line
@@ -16,6 +99,9 @@ const TYPEWRITER_WORDS = ['Web Developer', 'Mobile Developer', 'Data Scientist',
  * window; the stats live only in the StatsSection below the hero —
  * the upper hero stats row was REMOVED (Eman, 20 Nov 2026: the same
  * numbers appeared twice, "upper walay stats ko remove kr do").
+ *
+ * The code window types itself out once on load (Eman, 28 Nov
+ * 2026): start to end, then it stops — no loop. See CODE_LINES.
  *
  * The typewriter KEEPS working exactly as before (Eman, 17 Nov 2026,
  * correction): it cycles the role phrases one after another on line 2
@@ -37,6 +123,11 @@ export default function HeroSection() {
   const [wordIndex, setWordIndex] = useState(0);
   const [displayed, setDisplayed] = useState('');
   const [typing, setTyping] = useState(true);
+  // Code-window typewriter (Eman, 28 Nov 2026): characters revealed
+  // so far, 0 → CODE_TOTAL, then it stops. Reduced motion shows the
+  // full code at once.
+  const reduceMotion = useReducedMotion();
+  const [codeTyped, setCodeTyped] = useState(0);
   // Step 2: hero scroll progress (0 → 1 as the hero scrolls out),
   // passed to the 3D scene wrapper.
   const heroRef = useRef<HTMLElement>(null);
@@ -63,6 +154,17 @@ export default function HeroSection() {
 
     return () => clearTimeout(timeout);
   }, [displayed, typing, wordIndex]);
+
+  useEffect(() => {
+    if (reduceMotion) {
+      setCodeTyped(CODE_TOTAL);
+      return;
+    }
+    if (codeTyped >= CODE_TOTAL) return;
+    const delay = codeTyped === 0 ? CODE_TYPE_START_DELAY_MS : CODE_TYPE_MS;
+    const timeout = setTimeout(() => setCodeTyped((n) => Math.min(n + 1, CODE_TOTAL)), delay);
+    return () => clearTimeout(timeout);
+  }, [codeTyped, reduceMotion]);
 
   return (
     <section ref={heroRef} className="relative min-h-screen flex items-center justify-center overflow-hidden bg-background">
@@ -161,7 +263,11 @@ export default function HeroSection() {
           {/* Right: the student.py code window — the student's first
               Python program, exactly as in the preview. The 3 gold
               dots stay (dark + gold); the red/yellow/green dots
-              belong to the course cards only. */}
+              belong to the course cards only. The code types itself
+              out once on load (Eman, 28 Nov 2026) — see CODE_LINES
+              above. Unrevealed characters render opacity-0, so the
+              window keeps its final height from the first paint and
+              nothing below it shifts as the code appears. */}
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
@@ -184,97 +290,38 @@ export default function HeroSection() {
                     window instead of forcing the grid wider (see the
                     min-w-0 notes) or clipping mid-word. */}
                 <div className="px-5 py-4 font-mono text-sm sm:text-base leading-7 overflow-x-auto whitespace-nowrap">
-                  <div className="flex gap-4">
-                    <span className="text-muted/60 select-none w-4 text-right">1</span>
-                    <span>
-                      <span className="text-primary-text">class</span>{' '}
-                      <span className="text-foreground font-semibold">Developer</span>
-                      <span className="text-muted">:</span>
-                    </span>
-                  </div>
-                  <div className="flex gap-4">
-                    <span className="text-muted/60 select-none w-4 text-right">2</span>
-                    <span>
-                      <span className="text-muted">&nbsp;&nbsp;&nbsp;&nbsp;</span>
-                      <span className="text-primary-text">def</span>{' '}
-                      <span className="text-foreground font-semibold">__init__</span>
-                      <span className="text-muted">(self, name):</span>
-                    </span>
-                  </div>
-                  <div className="flex gap-4">
-                    <span className="text-muted/60 select-none w-4 text-right">3</span>
-                    <span>
-                      <span className="text-muted">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span>
-                      <span className="text-foreground">self.name</span>
-                      <span className="text-muted"> = </span>
-                      <span className="text-foreground">name</span>
-                    </span>
-                  </div>
-                  <div className="flex gap-4">
-                    <span className="text-muted/60 select-none w-4 text-right">4</span>
-                    <span>
-                      <span className="text-muted">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span>
-                      <span className="text-foreground">self.skills</span>
-                      <span className="text-muted"> = []</span>
-                    </span>
-                  </div>
-                  <div className="flex gap-4">
-                    <span className="text-muted/60 select-none w-4 text-right">5</span>
-                    <span>&nbsp;</span>
-                  </div>
-                  <div className="flex gap-4">
-                    <span className="text-muted/60 select-none w-4 text-right">6</span>
-                    <span>
-                      <span className="text-muted">&nbsp;&nbsp;&nbsp;&nbsp;</span>
-                      <span className="text-primary-text">def</span>{' '}
-                      <span className="text-foreground font-semibold">learn</span>
-                      <span className="text-muted">(self, course):</span>
-                    </span>
-                  </div>
-                  <div className="flex gap-4">
-                    <span className="text-muted/60 select-none w-4 text-right">7</span>
-                    <span>
-                      <span className="text-muted">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span>
-                      <span className="text-foreground">self.skills.append</span>
-                      <span className="text-muted">(course)</span>
-                    </span>
-                  </div>
-                  <div className="flex gap-4">
-                    <span className="text-muted/60 select-none w-4 text-right">8</span>
-                    <span>
-                      <span className="text-muted">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span>
-                      <span className="text-primary-text">return</span>{' '}
-                      <span className="text-primary-light">&quot;Level up&quot;</span>
-                    </span>
-                  </div>
-                  <div className="flex gap-4">
-                    <span className="text-muted/60 select-none w-4 text-right">9</span>
-                    <span>&nbsp;</span>
-                  </div>
-                  <div className="flex gap-4">
-                    <span className="text-muted/60 select-none w-4 text-right">10</span>
-                    <span>
-                      <span className="text-foreground">you</span>
-                      <span className="text-muted"> = </span>
-                      <span className="text-foreground font-semibold">Developer</span>
-                      <span className="text-muted">(</span>
-                      <span className="text-primary-light">&quot;Future You&quot;</span>
-                      <span className="text-muted">)</span>
-                    </span>
-                  </div>
-                  <div className="flex gap-4">
-                    <span className="text-muted/60 select-none w-4 text-right">11</span>
-                    <span>
-                      <span className="text-foreground">you.learn</span>
-                      <span className="text-muted">(</span>
-                      <span className="text-primary-light">&quot;Python&quot;</span>
-                      <span className="text-muted">)</span>
-                    </span>
-                  </div>
-                  <div className="flex gap-4">
-                    <span className="text-muted/60 select-none w-4 text-right">12</span>
-                    <span className="text-muted"># start today</span>
-                  </div>
+                  {CODE_LINES.map((line, i) => {
+                    const len = CODE_LINE_LENGTHS[i];
+                    const offset = CODE_LINE_OFFSETS[i];
+                    const reveal = Math.max(0, Math.min(len, codeTyped - offset));
+                    // The caret sits at the typing position — the
+                    // first line the stream has reached but not
+                    // finished. Once the code is complete it is gone.
+                    const isActive =
+                      codeTyped < CODE_TOTAL && codeTyped >= offset && codeTyped < offset + len + 1;
+                    let used = 0;
+                    return (
+                      <div key={i} className="flex gap-4">
+                        <span className="text-muted/60 select-none w-4 text-right">{i + 1}</span>
+                        <span>
+                          {line.map((seg, j) => {
+                            const shown = Math.max(0, Math.min(seg.text.length, reveal - used));
+                            const hidden = seg.text.slice(shown);
+                            used += seg.text.length;
+                            return (
+                              <span key={j} className={seg.className || undefined}>
+                                {nbsp(seg.text.slice(0, shown))}
+                                {hidden.length > 0 && <span className="opacity-0">{nbsp(hidden)}</span>}
+                              </span>
+                            );
+                          })}
+                          {isActive && (
+                            <span className="inline-block w-2 h-[1.1em] bg-primary animate-pulse align-middle" />
+                          )}
+                        </span>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             </div>
