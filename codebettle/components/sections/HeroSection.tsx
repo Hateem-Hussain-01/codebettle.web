@@ -17,7 +17,7 @@ const TYPEWRITER_WORDS = ['Web Developer', 'Mobile Developer', 'Data Scientist',
 //
 // Timing: one character every CODE_TYPE_MS, after a short start
 // delay so the window has settled in (its fade-up runs 0.5s in).
-// ~243 characters ≈ 3.8s of typing. Reduced-motion users get the
+// ~243 characters ≈ 1.3s of typing. Reduced-motion users get the
 // full code at once — no animation.
 type CodeSegment = { text: string; className: string };
 const CODE_LINES: CodeSegment[][] = [
@@ -85,7 +85,7 @@ const CODE_LINE_OFFSETS = CODE_LINE_LENGTHS.reduce<number[]>((offsets, len, i) =
   return offsets;
 }, []);
 const CODE_TOTAL = CODE_LINE_LENGTHS.reduce((n, len) => n + len, 0) + (CODE_LINES.length - 1);
-const CODE_TYPE_MS = 15;
+const CODE_TYPE_MS = 5;
 const CODE_TYPE_START_DELAY_MS = 500;
 // The code body is whitespace-nowrap (no pre), so plain spaces
 // would collapse — indentation is non-breaking spaces, exactly as
