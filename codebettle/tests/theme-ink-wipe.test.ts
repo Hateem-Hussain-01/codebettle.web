@@ -2,7 +2,7 @@
 // reference video, after he rejected the v1 gold-edge adaptation
 // ("bilkul fazol hay", 10:45 PKT): the new theme spreads as an organic
 // ink blob with smoky/feathery tendril edges from the toggle button,
-// ~1.2s — the video's own black/white ink, NO gold edge, no ring, no
+// ~2s (slowed from the video's ~1.2s on Eman's order, 28 Nov 2026) — the video's own black/white ink, NO gold edge, no ring, no
 // glow.
 //
 // These tests pin the pure helpers (unit) and the wiring
@@ -65,12 +65,12 @@ test('elementCenter: centre of the clicked element (works for keyboard activatio
   assert.deepEqual(elementCenter(el), { x: 120, y: 70 });
 });
 
-test('wipe duration is ~1.2s (the video: 1-1.5s per wipe, steady spread)', () => {
-  assert.ok(THEME_WIPE_DURATION_MS >= 1000 && THEME_WIPE_DURATION_MS <= 1500, `duration must be 1-1.5s, got ${THEME_WIPE_DURATION_MS}ms`);
+test('wipe duration is 2s (Eman, 28 Nov 2026: slower than the video\u2019s 1.2s)', () => {
+  assert.equal(THEME_WIPE_DURATION_MS, 2000, `duration must be 2s, got ${THEME_WIPE_DURATION_MS}ms`);
   assert.equal(THEME_WIPE_EASE, 'cubic-bezier(0.33, 0.66, 0.66, 1)', 'the mask must use the steady-spread ease (v1 slow-out covered the viewport in ~200ms)');
   const css = read('public/theme-ink-wipe.css');
-  assert.ok(css.includes('animation: theme-ink-wipe 1.2s'), 'the CSS animation must run the same 1.2s');
-  assert.ok(!css.includes('theme-ink-wipe 0.9s'), 'v1 ran 0.9s — v2 is the video timing, 1.2s');
+  assert.ok(css.includes('animation: theme-ink-wipe 2s'), 'the CSS animation must run the same 2s');
+  assert.ok(!css.includes('theme-ink-wipe 0.9s'), 'v1 ran 0.9s — v2 is the video timing, slowed to 2s');
 });
 
 // ---------------------------------------------------------------------------
@@ -86,7 +86,7 @@ test('theme-wipe helper: view transition with instant fallback + stale-var clean
   assert.ok(src.includes('wipeToken'), 'a second tap mid-wipe must not let the older wipe remove the new wipe variables early');
   assert.ok(!src.includes('showPopover') && !src.includes('hidePopover'), 'v2 has no gold ring popover (Eman rejected it) — no popover code');
   assert.ok(!src.includes('ring.animate') && !src.includes('getRingElements'), 'v2 has no ring to animate');
-  assert.ok(src.includes('THEME_WIPE_DURATION_MS = 1200'), 'the duration constant must be the v2 1.2s');
+  assert.ok(src.includes('THEME_WIPE_DURATION_MS = 2000'), 'the duration constant must be 2s');
 });
 
 test('theme-ink-wipe.css: ink-wipe keyframes — SVG blob MASK, no clip-path, no gold', () => {

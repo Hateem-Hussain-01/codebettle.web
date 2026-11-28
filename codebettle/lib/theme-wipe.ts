@@ -3,7 +3,8 @@
  * reference video, after he rejected the v1 gold-edge adaptation
  * ("bilkul fazol hay", 10:45 PKT): the new theme spreads as an
  * ORGANIC INK BLOB with smoky/feathery tendril edges from the toggle
- * button, ~1.2s — the video's own black/white ink, NO gold edge, no
+ * button, ~2s (slowed from the video's ~1.2s on Eman's order, 28 Nov
+ * 2026) — the video's own black/white ink, NO gold edge, no
  * ring, no glow.
  *
  * Mechanism: the View Transitions API (`document.startViewTransition`).
@@ -43,7 +44,7 @@
  */
 
 /** How long the wipe runs (must match the animation in theme-ink-wipe.css). */
-export const THEME_WIPE_DURATION_MS = 1200;
+export const THEME_WIPE_DURATION_MS = 2000;
 
 /** The wipe's ease (must match the keyframes in theme-ink-wipe.css).
  * Near-linear with a soft landing — the video's blob spreads
