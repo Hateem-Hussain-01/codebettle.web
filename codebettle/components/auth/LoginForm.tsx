@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { AlertTriangle, Eye, EyeOff, Lock, Mail, ShieldCheck } from 'lucide-react';
+import { AlertTriangle, ArrowLeft, Eye, EyeOff, Lock, Mail, ShieldCheck } from 'lucide-react';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
 import { getSafeRedirect } from '@/lib/security';
@@ -89,7 +89,16 @@ export default function LoginForm({
 
   return (
     <div>
-      <div className="mb-4 text-center">
+      <div className="relative mb-4 text-center">
+        <Link
+          href="/"
+          aria-label="Back to home"
+          className="absolute left-0 top-1 inline-flex items-center gap-1 text-sm font-semibold text-muted transition-colors hover:text-primary-text"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          <span className="hidden sm:inline">Back to Home</span>
+          <span className="sm:hidden">Home</span>
+        </Link>
         <Link href="/" className="gradient-text text-xl sm:text-2xl font-black">CodeBettle</Link>
         <h1 className="mt-2 text-lg sm:text-xl font-bold text-foreground">Welcome Back</h1>
         <p className="mt-1 text-sm text-muted">Sign in to continue your learning journey</p>
