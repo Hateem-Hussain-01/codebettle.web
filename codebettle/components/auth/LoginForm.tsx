@@ -89,14 +89,14 @@ export default function LoginForm({
 
   return (
     <div>
-      <div className="mb-5 text-center">
-        <Link href="/" className="gradient-text text-2xl font-black">CodeBettle</Link>
-        <h1 className="mt-3 text-xl font-bold text-foreground">Welcome Back</h1>
+      <div className="mb-4 text-center">
+        <Link href="/" className="gradient-text text-xl sm:text-2xl font-black">CodeBettle</Link>
+        <h1 className="mt-2 text-lg sm:text-xl font-bold text-foreground">Welcome Back</h1>
         <p className="mt-1 text-sm text-muted">Sign in to continue your learning journey</p>
       </div>
 
       {adminOnly ? (
-        <div role="tablist" aria-label="Sign in as" className="mb-4 rounded-lg border border-dark-border bg-background p-1">
+        <div role="tablist" aria-label="Sign in as" className="mb-3 rounded-lg border border-dark-border bg-background p-1">
           <button
             type="button"
             role="tab"
@@ -107,7 +107,7 @@ export default function LoginForm({
           </button>
         </div>
       ) : (
-        <div role="tablist" aria-label="Sign in as" className="mb-4 grid grid-cols-2 gap-1 rounded-lg border border-dark-border bg-background p-1">
+        <div role="tablist" aria-label="Sign in as" className="mb-3 grid grid-cols-2 gap-1 rounded-lg border border-dark-border bg-background p-1">
           <button
             type="button"
             role="tab"
@@ -130,14 +130,15 @@ export default function LoginForm({
       )}
 
       {roleMismatch && (
-        <div role="alert" className="mb-4 flex items-start gap-2 rounded-lg border border-primary/40 bg-primary/10 px-3 py-2.5 text-sm text-foreground">
+        <div role="alert" className="mb-3 flex items-start gap-2 rounded-lg border border-primary/40 bg-primary/10 px-3 py-2.5 text-sm text-foreground">
           <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-primary-text" />
           <span>{roleMismatch}</span>
         </div>
       )}
 
-      <form onSubmit={handleLogin} className="space-y-3">
+      <form onSubmit={handleLogin} className="space-y-2">
         <Input
+          compact
           label="Email Address"
           type="email"
           placeholder="you@example.com"
@@ -149,6 +150,7 @@ export default function LoginForm({
         />
         <div className="relative">
           <Input
+            compact
             label="Password"
             type={showPassword ? 'text' : 'password'}
             placeholder="Your password"
@@ -169,13 +171,13 @@ export default function LoginForm({
       </form>
 
       {role === 'instructor' && (
-        <p className="mt-4 text-center text-sm text-muted">
+        <p className="mt-3 text-center text-sm text-muted">
           Want to teach?{' '}
           <Link href="/become-instructor" className="font-medium text-primary-text hover:underline">Become an Instructor</Link>
         </p>
       )}
 
-      <p className="mt-4 flex items-center justify-center gap-1.5 text-center text-xs text-muted">
+      <p className="mt-3 flex items-center justify-center gap-1.5 text-center text-xs text-muted">
         <ShieldCheck className="h-3.5 w-3.5 text-primary-text" />
         Protected by secure sign-in
       </p>

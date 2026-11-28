@@ -108,9 +108,9 @@ export default function RegisterForm() {
 
   return (
     <div>
-      <div className="mb-5 text-center">
-        <Link href="/" className="gradient-text text-2xl font-black">CodeBettle</Link>
-        <h1 className="mt-3 text-xl font-bold text-foreground">Create Your Account</h1>
+      <div className="mb-4 text-center">
+        <Link href="/" className="gradient-text text-xl sm:text-2xl font-black">CodeBettle</Link>
+        <h1 className="mt-2 text-lg sm:text-xl font-bold text-foreground">Create Your Account</h1>
         <p className="mt-1 text-sm text-muted">Start your coding journey today</p>
       </div>
 
@@ -142,12 +142,13 @@ export default function RegisterForm() {
           </div>
         </div>
       ) : (
-        <form onSubmit={handleRegister} className="space-y-3">
-          <Input label="Full Name" placeholder="Your full name" value={form.name} onChange={set('name')} icon={<User className="h-4 w-4" />} error={errors.name} required />
-          <Input label="Email Address" type="email" placeholder="you@example.com" value={form.email} onChange={set('email')} icon={<Mail className="h-4 w-4" />} error={errors.email} required />
-          <Input label="Phone Number" type="tel" placeholder="+92 300 0000000" value={form.phone} onChange={set('phone')} icon={<Phone className="h-4 w-4" />} />
+        <form onSubmit={handleRegister} className="space-y-2">
+          <Input compact label="Full Name" placeholder="Your full name" value={form.name} onChange={set('name')} icon={<User className="h-4 w-4" />} error={errors.name} required />
+          <Input compact label="Email Address" type="email" placeholder="you@example.com" value={form.email} onChange={set('email')} icon={<Mail className="h-4 w-4" />} error={errors.email} required />
+          <Input compact label="Phone Number" type="tel" placeholder="+92 300 0000000" value={form.phone} onChange={set('phone')} icon={<Phone className="h-4 w-4" />} />
           <div className="relative">
             <Input
+              compact
               label="Password"
               type={showPassword ? 'text' : 'password'}
               placeholder="Min. 8 characters"
@@ -161,9 +162,9 @@ export default function RegisterForm() {
               {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
             </button>
           </div>
-          <Input label="Confirm Password" type="password" placeholder="Repeat your password" value={form.confirmPassword} onChange={set('confirmPassword')} icon={<Lock className="h-4 w-4" />} error={errors.confirmPassword} required />
+          <Input compact label="Confirm Password" type="password" placeholder="Repeat your password" value={form.confirmPassword} onChange={set('confirmPassword')} icon={<Lock className="h-4 w-4" />} error={errors.confirmPassword} required />
           <div>
-            <Input label="Referral code (optional)" placeholder="e.g. U5W5GK" value={form.referralCode} onChange={set('referralCode')} icon={<User className="h-4 w-4" />} error={errors.referralCode} />
+            <Input compact label="Referral code (optional)" placeholder="e.g. U5W5GK" value={form.referralCode} onChange={set('referralCode')} icon={<User className="h-4 w-4" />} error={errors.referralCode} />
             <p className="text-muted text-xs mt-1">Have a code from a CodeBettle ambassador? Enter it here — you get Rs 200 off your first course, and they earn credits for bringing you in.</p>
           </div>
           <Button type="submit" fullWidth size="lg" loading={loading}>Create Account</Button>
@@ -171,7 +172,7 @@ export default function RegisterForm() {
       )}
 
       {!verificationSent && (
-        <p className="mt-4 text-center text-sm text-muted">
+        <p className="mt-3 text-center text-sm text-muted">
           Already have an account?{' '}
           <Link href={signInHref} className="font-medium text-primary-text hover:underline">Sign in</Link>
         </p>

@@ -376,6 +376,13 @@ const FOLLOWUP_ALLOWLIST = [
   'codebettle/app/team/credits/credits-client.tsx',
   'codebettle/app/team/credits/page.tsx',
   'codebettle/components/auth/RegisterForm.tsx',
+  // Auth pages fit one screen (Eman, 28 Nov 2026): sign-in / sign-up
+  // must not scroll — compact Input density + tighter auth spacing.
+  // This branch touches RegisterForm (an allowlisted file), so every
+  // file it changes is listed here, same pattern as PR #79/#81.
+  'codebettle/components/auth/AuthShell.tsx',
+  'codebettle/components/auth/LoginForm.tsx',
+  'codebettle/components/ui/Input.tsx',
   'codebettle/lib/db/ambassador-credits.ts',
   'codebettle/lib/db/ambassadors.ts',
   'codebettle/lib/db/coupons.ts',
