@@ -48,6 +48,22 @@ export async function getUserByEmail(email: string): Promise<User | null> {
 }
 
 /**
+ * Public-safe lookup by email — SafeUser, no password hash.
+ * For public flows that identify a student by the email they enrolled
+ * with (e.g. the temporary certificate form): the caller only needs
+ * the id + name. Use this outside the auth service — never
+ * getUserByEmail, which returns the hash.
+ */
+export async function getSafeUserByEmail(email: string): Promise<SafeUser | null> {
+  const row = await getDb()
+    .orm.public.User.where((u) => u.email.eq(email))
+    .where((u) => u.deletedAt.isNull())
+    .first();
+  if (!row) return null;
+  return toSafeUser(mapUserRow(row, []));
+}
+
+/**
  * Get a user by id WITH the password hash.
  * INTERNAL / AUTH USE ONLY — never return this from a page or an API.
  * Needed for password verification (change-password), where the caller
