@@ -83,7 +83,7 @@ export default function AuthShell({ initialMode, loginForm, registerForm }: Auth
   );
 
   return (
-    <div className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden bg-background px-4 py-4">
+    <div className="relative flex min-h-dvh flex-col items-center justify-center overflow-hidden bg-background px-4 py-2 sm:py-3">
       {/* Page background: code-based grid texture (visible but subtle) + dark veil + gold glow.
           The texture never enters the cards. Lines raised from 4.5% to 12%
           and the layer from 40% to 70% opacity — the old values were so
@@ -104,7 +104,7 @@ export default function AuthShell({ initialMode, loginForm, registerForm }: Auth
       <div aria-hidden="true" className="absolute top-1/4 left-1/2 h-[400px] w-[600px] -translate-x-1/2 rounded-full bg-primary/5 blur-[100px]" />
 
       {/* Mobile switch banner: the sliding overlay is desktop-only. */}
-      <div className="relative z-10 mb-3 flex w-full max-w-4xl items-center justify-between gap-3 rounded-xl border border-dark-border bg-dark-card px-4 py-2.5 md:hidden">
+      <div className="relative z-10 mb-2 flex w-full max-w-4xl items-center justify-between gap-3 rounded-xl border border-dark-border bg-dark-card px-4 py-2 md:hidden">
         <p className="text-sm text-muted">
           {mode === 'login' ? 'New to CodeBettle?' : 'Already have an account?'}
         </p>
@@ -129,7 +129,7 @@ export default function AuthShell({ initialMode, loginForm, registerForm }: Auth
             <div
               aria-hidden={mode === 'register' || undefined}
               inert={mode === 'register' || undefined}
-              className={`flex flex-col justify-center p-5 sm:p-6 ${mode === 'register' ? 'hidden md:flex' : ''}`}
+              className={`flex flex-col justify-center p-4 sm:p-5 ${mode === 'register' ? 'hidden md:flex' : ''}`}
             >
               <Suspense fallback={<div className="text-center text-muted">Loading...</div>}>
                 {loginForm}
@@ -144,7 +144,7 @@ export default function AuthShell({ initialMode, loginForm, registerForm }: Auth
             <div
               aria-hidden={mode === 'login' || undefined}
               inert={mode === 'login' || undefined}
-              className={`flex flex-col justify-center p-5 sm:p-6 ${mode === 'login' ? 'hidden md:flex' : ''}`}
+              className={`flex flex-col justify-center p-4 sm:p-5 ${mode === 'login' ? 'hidden md:flex' : ''}`}
             >
               <Suspense fallback={<div className="text-center text-muted">Loading...</div>}>
                 {registerForm}
@@ -214,7 +214,7 @@ export default function AuthShell({ initialMode, loginForm, registerForm }: Auth
       </motion.div>
 
       {/* Social navbar — below the card, outside it. */}
-      <div className="relative z-10 mt-4">
+      <div className="relative z-10 mt-3">
         <AuthSocialNav />
       </div>
     </div>
