@@ -129,8 +129,12 @@ test('hero code window is student.py with the exact Developer code', () => {
   ]) {
     assert.ok(src.includes(token), `code window must contain '${token}'`);
   }
-  // Twelve numbered lines, like the preview.
-  assert.ok(src.includes('>12</span>'), 'code window must have 12 numbered lines');
+  // Twelve numbered lines, like the preview — the rows are mapped
+  // from CODE_LINES (28 Nov 2026, code typewriter), so the numbers
+  // render from the index instead of twelve hardcoded spans.
+  assert.ok(src.includes('CODE_LINES'), 'code window must map its 12 lines from CODE_LINES');
+  assert.ok(src.includes('{i + 1}'), 'line numbers must render from the row index');
+  assert.equal((src.match(/^  \[/gm) || []).length, 12, 'CODE_LINES must hold exactly 12 lines');
   // Gold dots stay (dark + gold); the red/yellow/green dots belong
   // to the course cards only.
   assert.ok(src.includes('bg-primary'), 'code window keeps its gold dots');
