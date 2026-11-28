@@ -309,6 +309,11 @@ const V32_ALLOWLIST = [
   'codebettle/src/prisma/contract.prisma',
   'codebettle/tests/ambassador-referral.test.ts',
   'codebettle/tests/ambassador-credits.test.ts',
+  // Back to Home link on the auth pages (Eman, 28 Nov 2026): the link
+  // lives in the Login/Register form headers; this branch touches the
+  // auth forms (allowlisted files), so every file it changes is
+  // listed here, same pattern as PR #79/#81.
+  'codebettle/tests/auth-back-to-home.test.ts',
   'codebettle/tests/view-as-extension.test.ts',
   'codebettle/tests/admin-access.test.ts',
   'codebettle/tests/team-credits.test.ts',
